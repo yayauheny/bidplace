@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-09-06
+Последнее обновление: 2026-10-15
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -1226,18 +1226,18 @@ The service starts free; subscription stays future scope. Figma is the visual
 direction; Pen remains on disk until a separate cleanup after a complete
 handoff.
 
-| Topic | Confirmed default |
-| --- | --- |
-| Offers | Buyer offer is server-owned. Seller may accept or reject. **No counteroffer** in MVP. |
-| Next bidder | Manual audited admin replacement only. Automatic next bidder is out of MVP (`DEC-054` stands). |
-| Contact window | Fixed 48-hour snapshot on every new Order (`DEC-070`). Seller 24/48/72 is deferred. |
-| Fixed buy | A unique work has at most one buyer. Buyer confirmation **atomically** creates the Order. Seller reconfirm is not required. The seller may withdraw the listing only **before** a successful buy. Auction Buy Now / buyout on a live auction is not added. |
-| Currency | Listing stores `BYN` or `RUB` by the seller's chosen market. No IP-based conversion. |
-| Portfolio | Portfolio-only author surface is **wave 2**, even if a Figma frame exists. RFC §12 keeps a simple examples block. |
-| Transactional email | In contract: verification, password reset, sale result, replacement/deadline, security/complaint. Outbid and marketing email stay later. RFC §9 still forbids outbid spam. |
-| Complaint attachments | Limited private images only. No video or arbitrary files. |
-| Legal review | Human legal review is required before a public audience. A closed local test among acquaintances is a separate gate. |
-| Pen files | Do not delete or edit canonical Pen in ordinary work. Cleanup is a separate commit only after a complete Figma handoff and an untracked-file inventory. |
+| Topic                 | Confirmed default                                                                                                                                                                                                                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Offers                | Buyer offer is server-owned. Seller may accept or reject. **No counteroffer** in MVP.                                                                                                                                                                      |
+| Next bidder           | Manual audited admin replacement only. Automatic next bidder is out of MVP (`DEC-054` stands).                                                                                                                                                             |
+| Contact window        | Fixed 48-hour snapshot on every new Order (`DEC-070`). Seller 24/48/72 is deferred.                                                                                                                                                                        |
+| Fixed buy             | A unique work has at most one buyer. Buyer confirmation **atomically** creates the Order. Seller reconfirm is not required. The seller may withdraw the listing only **before** a successful buy. Auction Buy Now / buyout on a live auction is not added. |
+| Currency              | Listing stores `BYN` or `RUB` by the seller's chosen market. No IP-based conversion.                                                                                                                                                                       |
+| Portfolio             | Portfolio-only author surface is **wave 2**, even if a Figma frame exists. RFC §12 keeps a simple examples block.                                                                                                                                          |
+| Transactional email   | In contract: verification, password reset, sale result, replacement/deadline, security/complaint. Outbid and marketing email stay later. RFC §9 still forbids outbid spam.                                                                                 |
+| Complaint attachments | Limited private images only. No video or arbitrary files.                                                                                                                                                                                                  |
+| Legal review          | Human legal review is required before a public audience. A closed local test among acquaintances is a separate gate.                                                                                                                                       |
+| Pen files             | Do not delete or edit canonical Pen in ordinary work. Cleanup is a separate commit only after a complete Figma handoff and an untracked-file inventory.                                                                                                    |
 
 Current runtime may remain auction + BYN until P0-E implements this contract.
 Code status lives in `11-PROJECT-STATUS.md`.
@@ -1337,21 +1337,21 @@ offer. Current runtime remains auction + BYN until the unresolved mechanics belo
 are researched and explicitly selected. No implementation may infer those rules
 from the former `DEC-072` defaults.
 
-| Topic | Status after revision |
-| --- | --- |
-| Work / Listing | Confirmed: separate identities and lifecycles; one Work may exist without an active Listing. Historical sale records remain immutable. |
-| Sale formats | Confirmed target: auction + fixed + optional offer. Auction Buy Now is not currently requested. |
-| Offer expiry/revoke/counteroffer | Open: compare current marketplace practice, then obtain the required legal answer. |
-| Fixed-buy contract moment | Product direction is one explicit buyer confirmation for an active unique work; exact legal copy/required terms remain a lawyer gate. Atomicity and double-sale prevention are mandatory. |
-| Next bidder / non-payment | Open: manual admin replacement is current runtime only. Research second-chance offers, ranking, seller choice and contact disclosure before choosing target behavior. |
-| Contact window | Current code stores 48 hours. Product duration, reminders, weekends and enforcement remain open to research/legal review. |
-| Currency | Current MVP stays BYN. RUB or viewer conversion is not confirmed. Research and lawyer review must define contract currency, display hint, rate source and RF implications. |
-| Cabinet | Confirmed IA name: `Покупки / Продажи`; cancelled and failed deals must remain visible as history. |
-| Expired scheduled | Confirmed: cancel with audit, notify the author and offer a simple relist path. No silent +24-hour shift. |
-| Notifications | In-app notifications are required before redesign completion; email is reserved for appropriate transactional/security events after legal/product mapping. |
-| Error complaint | Required before public MVP: explicit report action, privacy-safe technical context and optional private screenshot. |
-| Object storage | S3-compatible media migration and rendition plan occur before final redesign/launch proof, after the current audit tasks. |
-| Redesign | Final implementation layer after product, legal UX and core flows are stable. Original Figma is read-only and must never be modified. |
+| Topic                            | Status after revision                                                                                                                                                                     |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Work / Listing                   | Confirmed: separate identities and lifecycles; one Work may exist without an active Listing. Historical sale records remain immutable.                                                    |
+| Sale formats                     | Confirmed target: auction + fixed + optional offer. Auction Buy Now is not currently requested.                                                                                           |
+| Offer expiry/revoke/counteroffer | Open: compare current marketplace practice, then obtain the required legal answer.                                                                                                        |
+| Fixed-buy contract moment        | Product direction is one explicit buyer confirmation for an active unique work; exact legal copy/required terms remain a lawyer gate. Atomicity and double-sale prevention are mandatory. |
+| Next bidder / non-payment        | Open: manual admin replacement is current runtime only. Research second-chance offers, ranking, seller choice and contact disclosure before choosing target behavior.                     |
+| Contact window                   | Current code stores 48 hours. Product duration, reminders, weekends and enforcement remain open to research/legal review.                                                                 |
+| Currency                         | Current MVP stays BYN. RUB or viewer conversion is not confirmed. Research and lawyer review must define contract currency, display hint, rate source and RF implications.                |
+| Cabinet                          | Confirmed IA name: `Покупки / Продажи`; cancelled and failed deals must remain visible as history.                                                                                        |
+| Expired scheduled                | Confirmed: cancel with audit, notify the author and offer a simple relist path. No silent +24-hour shift.                                                                                 |
+| Notifications                    | In-app notifications are required before redesign completion; email is reserved for appropriate transactional/security events after legal/product mapping.                                |
+| Error complaint                  | Required before public MVP: explicit report action, privacy-safe technical context and optional private screenshot.                                                                       |
+| Object storage                   | S3-compatible media migration and rendition plan occur before final redesign/launch proof, after the current audit tasks.                                                                 |
+| Redesign                         | Final implementation layer after product, legal UX and core flows are stable. Original Figma is read-only and must never be modified.                                                     |
 
 ### Why `DEC-072` changed
 
@@ -1679,3 +1679,1781 @@ Commerce tests могут явно включать capability в изолиро
 ### Revisit when
 
 Commerce contract, документы, UX и release gates утверждены и проверены отдельно.
+
+## DEC-085 — Figma is the production visual source; Pen file stays historical
+
+Date: 2026-09-09
+Status: Confirmed
+Source: explicit founder cutover plan for phone UI
+Revises: `DEC-062` / `DEC-063` **runtime** role only. The `.pen` file remains
+protected historical source on disk and must not be edited, deleted, or adapted
+to code.
+
+### Decision
+
+- Production visual source for First MVP phone UI is the read-only Figma inspect
+  copy `uMo04w9bgrchWXXDgO4W62`. Canonical origin file `NM63j9lwRMqpo2HvAiYNll`
+  stays read-only.
+- Runtime has one token layer (`packages/design-tokens` `designTokens`) measured
+  from Figma. Nested `designTokens.figma` is not a second system.
+- Pen primitives (`AppHeader`, Pen buttons/fields, auction player, slide-to-bid)
+  are removed from the render path. `design/pen/bidplace-web-v2.pen` stays in git
+  as protected history.
+- Layout is phone-only (~390). Wide windows keep a centered 390 column. 1024/1440
+  compositions are out of this wave.
+- Search overlay, `Открытие недели`, catalog tabs Аукционы/Анонсы/Архив, cart and
+  Geist font files are deferred. Work shows an `Оплата и доставка` unavailable
+  stub.
+
+### Revisit when
+
+Desktop/tablet Figma compositions exist, search overlay is in scope, or commerce
+capability is enabled with matching frames.
+
+## DEC-086 — Opening of the week is a server-owned editorial selection
+
+Date: 2026-09-09
+Status: Confirmed
+Source: explicit founder correction that skipping Home «Открытие недели» was a
+mistake
+Revises: `DEC-085` only for `Открытие недели`. Search overlay, catalog tabs
+Аукционы/Анонсы/Архив, cart and Geist font files stay deferred.
+
+### Decision
+
+Home may show `Открытие недели` when a durable server-owned editorial pointer
+selects a published, publicly visible Work and author. Local/test seed may
+include one deterministic example. Production does not invent a selection.
+Missing, hidden, rejected or unpublished pointers resolve to `null` and the
+section is omitted. Newest-work, random pick and client hardcoded `publicId`
+are forbidden.
+
+### Revisit when
+
+Home UI implements the section from an approved capture, or editorial workflow
+needs a non-admin operator tool.
+
+## DEC-087 — Commerce v1 archived; active main becomes portfolio-native
+
+Date: 2026-09-10
+Status: Confirmed
+Source: explicit founder decision after
+`docs/audits/2026-09-10-portfolio-simplification-and-commerce-archive.md`
+Revises: retention clause of `DEC-084` only. Does not reopen `DEC-082`, `DEC-083`,
+`DEC-085`, or `DEC-086`.
+
+### Decision
+
+- First public MVP stays portfolio-only with **no displayed price**, sale status,
+  timer, bid, order or purchase CTA.
+- The last verified full commerce-v1 implementation is frozen at
+  `598d8696295d18d32956da7dd366dc19464cc366` under protected refs
+  `archive/commerce-v1` and annotated tag `commerce-v1-pre-portfolio`.
+  Manifest: `docs/audits/commerce-v1-archive-manifest.md`.
+- Do not develop on the archive branch and do not merge it wholesale back into
+  `main`. Future `commerce-v2` starts from then-current `main` and uses the
+  archive as reference material only.
+- After archive recovery verification, physically remove commerce application
+  code from `main` in small reviewed commits (P1–P6 in the removal graph). This
+  is a separate execution track from Git-history or storage cleanup.
+- Do **not** remove Prisma commerce models or edit applied migrations until a
+  verified database inventory exists for every supported environment.
+- Do **not** rewrite Git history or introduce Git LFS as part of source cleanup.
+- Commerce is deferred and may be redesigned; it is not `Rejected`.
+
+### Why
+
+Portfolio MVP is already the public product contract. Keeping commerce modules,
+adapters and schema in the active tree preserves naming drift, test burden and
+accidental re-exposure risk even with `COMMERCE_ENABLED=false`. A protected
+archive preserves the exact prior implementation without maintaining two active
+product lines.
+
+### Revisit when
+
+Commerce contract, legal/domain gate, UX and release gates are approved for a
+new wave; then port deliberate concepts from the archive into `commerce-v2`.
+
+## DEC-089 — Discovery facets are derived from public server data
+
+Date: 2026-09-13
+Status: Confirmed
+Source: explicit founder choice during the mobile-web discovery launch pass
+
+### Decision
+
+Works material options and Authors city/direction options are returned by
+`GET /api/portfolio/facets`. Values are normalized, deduplicated and sorted on
+the server from currently public authors and published Work revisions only.
+The client must not invent Figma/static fallback options. Each stored Work
+material string is one canonical facet value; delimiters are not guessed.
+
+The accepted Figma Work card remains title + author. RFC §6 “brief facts” is a
+documented product/design ambiguity and does not authorize adding unapproved
+fields or changing the Figma master during this implementation.
+
+### Why
+
+Server ownership keeps available filters aligned with public visibility and
+prevents stale, fake or private values from entering discovery. Preserving the
+accepted card avoids resolving an incomplete visual contract by invention.
+
+### Revisit when
+
+The domain gains structured multi-material data, or an approved Figma/card
+contract defines which brief facts must be visible.
+
+## DEC-090 — Home Opening curator note is an optional selection field
+
+Date: 2026-09-14
+Status: Confirmed
+Source: explicit founder acceptance of an in-place unreleased-table amendment
+plus Figma first-fold `439:4404` (390×860) as the Opening visual fixture
+Revises: `DEC-086` (editorial copy on the selection) and the additive-migration
+clause in `10-CODE-ARCHITECTURE.md` only for this unreleased
+`curator_selections` table. Does not reopen `DEC-087` commerce/baseline
+migrations.
+
+### Decision
+
+- Editorial copy for Home «Открытие недели» belongs on `CuratorSelection.note`,
+  not on `author.shortDescription` or `work.story`. The heading «Выбор куратора»
+  is UI chrome.
+- `note` is optional (`TEXT NULL`). Empty/null hides the heading and paragraph
+  and keeps the author row, profile button, and work card. Section visibility
+  still follows `DEC-086`.
+- Pre-production schema amendment of
+  `20260909120000_portfolio_media_socials_curator/migration.sql` is allowed for
+  this unreleased table. After the first production apply, further columns are
+  additive. This does not authorize editing commerce or baseline migrations.
+- Visual identity for Opening typography remains a later pass. The seed-identity
+  clause that kept `@vex` in Playwright only and Anna in Prisma is superseded
+  by `DEC-091`.
+- Do not change global `outline`. Do not reuse a typography or fill role because
+  it is close. The quiet profile pill hugs contents (padding 8/14, radius 28,
+  `#EFEFEF` fill, 16% white→`#999999` stroke).
+
+### Revisit when
+
+The table has been applied in production, an admin editor for `note` is in
+scope, or live Figma inspect copy `uMo04w9bgrchWXXDgO4W62` disagrees with the
+versioned first-fold snapshot.
+
+## DEC-091 — Figma Opening identity is local seed; curator is not the work owner
+
+Date: 2026-09-14
+Status: Confirmed
+Source: explicit founder instruction to implement the Figma-aligned local demo
+seed on `feature/portfolio-mvp-release`
+Revises: `DEC-090` (Playwright-only `@vex` / Anna seed). Does not reopen
+`DEC-087` commerce/baseline migrations or typography/layout of Opening.
+
+### Decision
+
+- Ordinary local `db:seed` is the Figma Home catalog, not Anna/Unsplash and not
+  a Playwright-only fixture. `@vex` is a seeded public author. Opening selected
+  work is Dali (`daliEstate1`), owned by `pixelp`. Curator is `vex`.
+- `CuratorSelection.curatorSellerProfileId` is required and points at an
+  approved public `SellerProfile`. `selectedByUserId` remains the admin actor.
+  Pre-production amendment of the unreleased `curator_selections` CREATE is
+  allowed for this FK (`DEC-090` table-amendment clause).
+- Home DTO is `{ curator, work: { ...work, author }, note }`. `work.author` is
+  the Product owner. Do not expose a sibling `author` on the selection.
+- Public slugs may include underscore (`bala_klava`) to match Figma handles.
+- `SellerProfile.biography` is additive and distinct from Opening
+  `shortDescription`. Author About prefers `biography` when present.
+- Do not invent a vex-owned Product from achievement copy unless a later
+  decision (`DEC-092`) assigns a demo work for catalog completeness. Missing
+  Figma rasters are not replaced with Unsplash.
+
+### Revisit when
+
+Figma confirms a vex-owned work, an isolated `pixelp` portrait exists, or the
+unreleased `curator_selections` table is applied in production.
+
+## DEC-092 — Demo data is invented in seed, production-quality in the UI
+
+Date: 2026-09-15
+Status: Confirmed
+Source: explicit founder instruction to revise local demo data quality on
+`feature/portfolio-mvp-release`
+Revises: `DEC-091` (empty vex Works / labeled demo stubs / pixelp 1×1 gap).
+Does not reopen Opening ownership (`vex` curator, Dali / `pixelp`) or
+`DEC-087` commerce/baseline migrations.
+
+### Decision
+
+- Demo data may be invented. It must look like production content in the UI.
+- Seed comments, fixture README and status docs may record Figma gaps.
+- User-facing fields must not contain `Demo copy`, `invented`, `placeholder`,
+  `not in Figma`, `test fixture`, `seed` or `mock`.
+- Allowed to invent: display names, biographies, practice, descriptions,
+  technique, story, exhibition text, and demo work ownership that does not
+  conflict with a confirmed Figma relation (Dali stays on `pixelp`).
+- `@vex` is a complete public author and may have demo works. Achievement
+  titles are not automatically Products; assigning a Figma fill to vex for
+  demo completeness is allowed when labeled in seed comments.
+- Public Work `История` stays RFC plain-text paragraphs. Extra `ProductImage`
+  rows are gallery photos, not a process-builder content model.
+
+### Revisit when
+
+Figma confirms an isolated `pixelp` portrait or a vex-owned work card, or the
+process photo/text story builder leaves the post-MVP backlog.
+
+## DEC-093 — Phone gallery hides arrows; History and achievements reuse media
+
+Date: 2026-09-15
+Status: Confirmed
+Source: explicit founder instruction on `feature/portfolio-mvp-release`
+Revises: `DEC-092` History-rendering clause only. Does not reopen Opening
+ownership, demo-copy quality, or the post-MVP process builder (`05-MVP-RFC` §15).
+Does not rewrite `05-MVP-RFC.md`.
+
+### Decision
+
+- Phone-width Work gallery keeps prev/next in `WorkGallery` but does not
+  render them when layout width ≤ `layout.phoneWidth`. Swipe/drag paging,
+  pagination dots and share stay. Wider galleries may show arrows.
+- Authoring of Work `История` remains one plain-text `story` field. Public
+  rendering may interleave published non-cover `ProductImage` rows between
+  story paragraphs. This is not `ProductCreationStep` and not a CMS.
+- Achievement cards use existing `SellerProfileRevisionAchievement` image
+  fields. Figma has no isolated exhibition-install photographs; seed may
+  attach a same-event Figma fill or same-work **detail** crop, never the
+  product cover and never one raster reused across authors.
+
+### Why
+
+Phone UI was duplicating swipe with overlay arrows. About cards were
+text-only grey blocks while Figma shows date → photo → description.
+History was a text wall despite existing gallery extras.
+
+### Revisit when
+
+Figma supplies isolated exhibition-install photos, a second same-work Dali
+History fill, or the process-builder leaves the post-MVP backlog.
+
+## DEC-088 — MVP dock is one four-item glass capsule
+
+Date: 2026-09-11
+Status: Confirmed
+Source: explicit founder instruction during Figma phone UI correction
+Revises: visual variant choice under `DEC-085` only. Does not reopen search
+overlay, cart, or 1024/1440 compositions.
+
+### Decision
+
+Production phone navigation is **one** 232×64 glass capsule with four items:
+logo (Home), search, plus (Add), profile. Search is an item inside that
+capsule. Figma first-fold split chrome (`Frame 182` + `Frame 46` 64×64 search
+FAB) and the long-Home five-icon pill (`436:1366`, 288×64 with cart) are unused
+variants, not separate production components. Cart stays deferred.
+
+### Why
+
+Handoff captures show two dock layouts. Implementing both would create two
+shells. The founder selected the unified capsule already described in
+`02-USER-FLOWS-AND-SCREENS.md` (Home, Search, Add, Profile).
+
+### Revisit when
+
+Search overlay, cart, or a designer-approved second dock layout is in scope.
+
+## DEC-094 — Infrastructure errors have one layered path
+
+Date: 2026-09-17
+Status: Confirmed
+Source: explicit founder instruction before canonical infrastructure error UX
+Does not reopen validation, password, registration, conflict, rate-limit, or
+domain/not-found copy.
+
+### Decision
+
+Backend owns what happened. Frontend owns how it is shown. Backend `message`
+is not a UI contract.
+
+There is one Nest `ApiExceptionFilter`. Shared public shape stays
+`{ status, code, message, details?, requestId? }` in `packages/contracts`.
+Transport parsing lives in `packages/api-client/src/errors/`. Mobile
+infrastructure policy lives in `apps/mobile/src/errors/` and presents through
+`PageState`. `SessionAlert` remains the session-only banner when page content
+loaded. Feature domain errors stay in their modules.
+
+Infrastructure UI copy is one sentence: «Проверьте соединение и попробуйте ещё раз.»
+
+### Why
+
+Infrastructure copy, mappers and dual Home retry/banner were scattered across
+screens. A second filter, a giant error enum, or a coordinator/state machine
+would duplicate existing layers.
+
+### Revisit when
+
+Form validation and other public-kind `error.message` leaks are migrated off
+the old mapper, or a product-specific infrastructure title is required.
+
+## DEC-095 — Public session failure is silent; ProtectedRoute owns the UI
+
+Date: 2026-09-17
+Status: Confirmed
+Source: explicit founder instruction during infrastructure error cleanup
+Revises: presentation ownership under `DEC-094` only. Does not reopen backend
+filter, contracts, api-client kinds, or canonical copy.
+
+### Decision
+
+A loaded public page plus `/api/auth/me` infrastructure failure keeps public
+content. The session error is logged. Public chrome does not show SessionAlert.
+Auth state is not masked as guest: 401/403 stay anonymous; network/5xx stay
+`status='error'`.
+
+`ProtectedRoute` is the owner of blocking session failure and shows the
+canonical infrastructure state with Retry → `auth.refreshSession()`.
+
+Feature screens do not suppress or coordinate session alerts. Infrastructure
+UI is one sentence plus Retry, via `InfrastructureErrorState`.
+
+### Why
+
+Per-screen `showSessionAlert={!query.isError}` recreated scattered policy.
+New public pages should not need to know about session-bootstrap chrome.
+
+### Revisit when
+
+A contextual, non-chrome use of `SessionAlert` is required, or logo-motion is
+wired into `InfrastructureErrorState`.
+
+## DEC-096 — Search is a fullscreen overlay over the current public page
+
+Date: 2026-09-18
+Status: Confirmed
+Source: explicit founder instruction for the Figma Search overlay batch
+Revises: `DEC-085` / `DEC-086` only for Search overlay deferral. Catalog tabs
+Аукционы/Анонсы/Архив, cart and Geist stay deferred. Does not change Works or
+Authors catalog URL filter contracts.
+
+### Decision
+
+Search is a fullscreen overlay over the current public context, not a landing
+page. Dock Search opens it as one history entry on the current public route.
+Close (X) and Escape return to the underlying entry. Query and tab edits
+replace the current Search entry. Result navigation pushes the detail route;
+Back restores Search from history. `/search` remains a deep-link compatibility
+host for the same overlay; close falls back to Home when there is no
+predecessor.
+
+Empty query shows the active tab’s public list. Typing live-searches: Categories
+are filtered client-side on name/slug; Authors and Works use existing `q` on
+`GET /api/authors` and `GET /api/works`. No `/search` API, no category backend
+`q`, and no category images in this batch. Default tab is Категории. One shared
+input query across tabs. Overlay pagination is first page only.
+
+Category visual fidelity is blocked until a taxonomy + media decision.
+
+### Revision 2026-09-18 — Browser Back
+
+Dock Search does not push a history entry. X and Escape dismiss the overlay and
+keep the underlying route. Browser Back follows browser history; if that changes
+the route, the overlay closes as a consequence of leaving the page. Custom
+overlay `pushState` plumbing was rejected as fragile against Expo Router.
+
+### Revision 2026-09-18 — Search is route/history state
+
+Supersedes the previous Back revision: Search must be restorable. Opening Search
+from the dock creates exactly one history entry on the current public route
+(`overlay=search`, plus `oq` / `otab` when they differ from empty / Категории).
+Query and tab edits `replace` that entry, so typing does not stack Back. Result
+navigation pushes the Author/Work/Works-filter route; Back restores the Search
+session from that history entry. Ordinary detail Back is history-first with a
+canonical fallback only when the stack is empty (`/works`, `/authors`). Direct
+`/search` and `/search?q=` still host the same overlay; close falls back to Home
+when there is no predecessor. Search does not use scenario flags
+(`cameFromSearch`, category parent, and similar).
+
+### Why
+
+The Figma Search frames are an overlay on the current page. A submit-only
+`/search` landing with stacked Works+Authors fought that contract.
+
+### Revisit when
+
+Category taxonomy and media are decided, or overlay result limits require
+in-overlay pagination.
+
+## DEC-097 — Portfolio release uses R2 and native Cloudflare CDN
+
+Date: 2026-10-04
+Status: Confirmed
+Source: explicit founder answers Q01–Q10 and final portfolio-only release scope.
+Reaffirms `DEC-082`–`DEC-084`; does not activate commerce capability.
+
+### Decision
+
+First public release includes email/password auth, author profiles, portfolio
+editing/publication, existing moderation and direct R2/CDN media delivery.
+Private SOURCE remains byte-identical, including original metadata; published
+public derivatives strip private metadata. Two separate buckets use the portable
+S3 boundary and a custom media domain. No Cloudflare Worker, Images, Redis,
+Kafka, external queue service or separate worker process.
+
+Publication waits for all media and preserves the previous snapshot until ready.
+Admin sees pending delivery. Neon stores a durable operation journal; unfinished
+operations retry inside existing NestJS. Hide/suspend/delete delete public
+variants and purge CDN with a target of ≤5 minutes. This Q01 answer explicitly
+replaces the earlier founder instruction to defer revocation. Downloaded copies
+cannot be recalled.
+
+JPEG/PNG/WebP retain current upload caps. HEIC and 20 MiB/~50 MP follow resource
+verification after MVP. Work FULL loads on viewer open; avatars and achievements
+do not automatically receive FULL. No original-archive guarantee, tariffs or
+90-day retention. Internal backup targets start at RPO ~24h / RTO ~1 day and
+require restore verification. Migration may briefly freeze media writes and
+moderation, without dual write; public reads should remain available.
+
+Domain is `bid.place`; PostgreSQL is Neon. Container hosting is undecided,
+including Render as a candidate. Production includes a labelled demo catalog
+without known-password test accounts. Google follows launch. Self-hosted SMTP/
+Postfix is excluded; existing Nodemailer may use minimal external SMTP.
+Portfolio Rules/Privacy are pending and do not stop technical implementation.
+
+### Implementation boundary
+
+Confirmed choices are not evidence of implementation. Current runtime still
+uses one ImageStore bucket and API media reads. Exact phased plan and remaining
+operational inputs: R2/CDN second pass.
+Lazy FULL generation is not implicitly selected by the lazy loading requirement.
+
+## DEC-098 — Cloudflare application deployment boundary
+
+Date: 2026-10-05
+Status: Confirmed
+Source: founder's pasted deployment implementation task and domain clarification.
+Revises only hosting and the application Worker restriction in `DEC-097`.
+
+`bid.place`, registered at Porkbun, is the primary domain. `bidplace.lol` is
+reserved for a future development environment. The selected target is a thin
+Cloudflare Worker routing API to a private Nest Container and serving Expo Web
+Static Assets, with Neon PostgreSQL. Public media continues to use R2 Custom
+Domain/native CDN; the application Worker does not proxy media or own auth,
+permissions, business rules or database queries. The required Container DO is
+an infrastructure adapter, not a business database or queue.
+
+Separate staging/production configuration and secrets are required. Production
+source remains the existing `feature/portfolio-mvp-release`. No real deployment
+is authorized before credentials and environment readiness. Secrets storage
+location and media polling optimization were asked separately and are not
+inferred as new founder decisions. `DEC-097` media journal, atomic publication
+and revocation semantics remain in force.
+
+## DEC-099 — Explicit publication, manual retry, revoke executor kept
+
+Date: 2026-10-05
+Status: Confirmed
+Source: founder instruction on the portfolio load reduction.
+Does not revise the ≤5 minute public revoke in `DEC-097`. An answer about a
+future route change is not permission to leave old public CDN links available.
+
+Publication runs as the explicit approve, restore or unhide action. The action
+prepares media, then the existing short transaction switches the published
+snapshot. HTTP success means the journal operation is done and the published
+revision matches. After an error, the same user or admin retries that action.
+Journal identity, idempotency and state checks stay. A lost upload SOURCE
+requires the file to be sent again. There is no single PostgreSQL and R2
+transaction.
+
+Hide, suspend, ban and replacement still revoke public objects. The existing
+Nest executor remains for `REVOKE` and `CLEANUP`, including recovery after
+restart while the process is running. Removing that executor, or treating
+manual recovery as enough after a dead process, is not accepted.
+
+`listing_viewed`, `seller_viewed`, `registration_started` and the admin metric
+definitions stay. Analytics flags stay on. The operating budget for Cloudflare
+and Neon is about $5–7 per month, with a ceiling of $10. That budget does not
+authorize sampling, history deletion or a new analytics service.
+
+## DEC-100 — Cloudflare Email Service SMTP and secret custody
+
+Date: 2026-10-05
+Status: Confirmed
+Source: explicit founder choice of the SMTP provider and the transferable
+secret model.
+Revises the open secrets-location question left by `DEC-098`. Does not revise
+`DEC-097` media, publication, or the five-minute revoke. Email Service is part
+of the Cloudflare spend in `DEC-099`. The included message quota is not an
+automatic stop, and overage stays inside that agreed budget.
+
+### Decision
+
+Outbound mail stays on the existing Nodemailer transport. The provider is
+Cloudflare Email Service over standard SMTP. No Cloudflare mail SDK, Workers
+email binding, or new mail adapter.
+
+Confirmed connection, both staging and production:
+
+- `SMTP_HOST=smtp.mx.cloudflare.net`
+- `SMTP_PORT=465`
+- `SMTP_SECURE=true` (implicit TLS; STARTTLS on 587 is not this provider)
+- `SMTP_AUTH_MODE=login`
+- `SMTP_USERNAME` is the literal string `api_token`
+- `SMTP_PASSWORD` is a separate Cloudflare API token with Email Sending: Edit
+- `SMTP_FROM` is an address on a domain onboarded to Email Sending
+
+Provider replacement remains a configuration change.
+
+Secret custody:
+
+- The recoverable copy is an operator-encrypted store, with a backup that is
+  outside both GitHub and Cloudflare.
+- GitHub Environments may supply values at deployment time.
+- Cloudflare holds the runtime copies the Container needs.
+- GitHub Secrets is not a backup: stored values cannot be read back in normal
+  operation.
+- Staging and production credentials stay separate.
+- No new CI workflow is added for this model. A later Actions deploy must not
+  place secret values in logs, artifacts, the image, or the frontend bundle.
+
+Email Sending on Workers Paid includes 3,000 outbound emails per account per
+billing month, then $0.35 per 1,000. That quota counts emails, not users.
+Email Service is a Cloudflare expense inside the agreed operating budget of
+about $5–7 per month, ceiling $10, together with Neon. Reaching 3,000 emails
+does not stop further sending or spending. Overage remains inside that budget.
+
+### Not confirmed
+
+Account setup, DNS onboarding, credential entry, and delivery of the
+verification code and the password-reset message to a real mailbox are
+`Needs verification`. SMTP acceptance is not mailbox delivery. No token was
+created and no account, DNS, or deploy was changed by this decision.
+
+## DEC-101 — Public revoke keeps deletion and retry without a hard deadline
+
+Date: 2026-10-05
+Status: Confirmed
+Source: founder answer «Снять жёсткий срок, сохранить удаление и retry
+(рекомендую)».
+Revises the ≤5 minute CDN purge target in `DEC-097` (“Hide/suspend/delete
+delete public variants and purge CDN with a target of ≤5 minutes”) and the
+`DEC-099` sentences that keep that deadline and reject recovery which waits
+until the process starts again. Does not revise publication, the journal,
+private SOURCE, or the Cloudflare and Neon budget.
+
+### Decision
+
+The mandatory public revoke within five minutes after a failure, stop, or
+sleep of the process is withdrawn for MVP. Deletion of public copies, CDN
+purge, the operation journal, the existing `REVOKE`/`CLEANUP` executor, and
+recovery of unfinished operations after the process starts all stay. Private
+SOURCE stays. An old public URL may keep working until that recovery succeeds.
+
+No executor was removed. No cron, alarm, or new service was added. Timers were
+not changed. This decision does not implement a wake of a stopped process and
+is not a runtime fix.
+
+`05-MVP-RFC.md` requires hidden works to stay out of the public profile. It
+does not set a five-minute CDN deadline, so the RFC is unchanged.
+
+### F01
+
+The missing deadline while the process is stopped is an accepted MVP
+limitation. Retry and recovery remain required. Their live check is still
+`Needs verification`. Local tests do not close CDN purge (`F11`/`D08`).
+
+## DEC-102 — One production deployment contour
+
+Date: 2026-10-06
+Status: Confirmed
+Source: founder decision to use one production environment, delete the Neon
+staging branch, and enter deployment values through GitHub Repository secrets
+and Actions Variables.
+Revises the `DEC-100` statements that no new CI workflow is added, that GitHub
+Environments supply deployment values, and that staging and production
+credentials stay separate. Does not revise the SMTP provider, the literal
+`api_token` username, secret custody outside GitHub, or the budget in
+`DEC-099`.
+
+### Decision
+
+The first portfolio MVP deployment has one contour: Cloudflare Worker
+`bidplace-production` on `https://bid.place`, Neon project
+`calm-rain-59989397`, existing default branch `production`
+`br-polished-haze-b2d6rop9`, database `neondb`. The founder deleted the Neon
+staging branch. No replacement staging project, branch, database, or role is
+created. Leftover staging buckets and DNS stay in place and are not part of
+the deployment.
+
+Deployment is a manual `workflow_dispatch` on
+`feature/portfolio-mvp-release`. It does not run on push, pull request, or a
+schedule. Checks, the production build, an explicitly confirmed direct-URL
+migration, and the deploy use one SHA. GitHub Repository secrets supply the
+deployment. They are not a recoverable backup. The operator keeps the
+originals in an encrypted store. `SERVICE_RULES_TEXT` is an Actions Variable.
+An empty value blocks the deploy. This decision does not approve the rules
+text.
+
+## DEC-103 — Production values stay in GitHub Environment prod
+
+Date: 2026-10-06
+Status: Confirmed
+Source: founder instruction to use the existing GitHub Environment `prod`
+and the names already stored there.
+Revises the `DEC-102` sentence that GitHub Repository secrets supply the
+deployment. Does not revise the single production contour, the manual
+release-branch workflow, or the rule that GitHub is not the recoverable copy.
+
+### Decision
+
+The production workflow job uses `environment: prod`. No second environment
+is created, and the operator does not move or re-enter credentials.
+`NEON_DIRECT_URL` is the direct migration URL and is passed to the existing
+migration script as `DATABASE_URL`. Pooled `DATABASE_URL` stays the runtime
+URL. `CLOUDFLARE_ACCOUNT_ID`, `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`,
+and `SERVICE_RULES_TEXT` are variables of `prod`. An empty rules value still
+blocks the deploy. This revision does not approve the rules text. Secret
+values were not read.
+
+### Revision
+
+Date: 2026-10-06
+Source: founder approval of the short temporary rules text already stored in
+Environment `prod` for the first launch.
+Revises the sentence above that this decision does not approve the rules
+text. Does not copy that text into the repository and does not replace it
+with a separately reviewed legal agreement.
+
+The first production launch uses owner `bidplace`, contact
+`work.evles@gmail.com`, and the approved temporary text from `prod`. The
+deploy script writes those three values only into a temporary production
+config. The committed production fields stay empty.
+
+## DEC-104 — No mint ring on ordinary press
+
+Date: 2026-10-07
+Status: Confirmed
+Source: founder decision that a green flash or outline on an ordinary press,
+tab change, or navigation harms the design and must be removed.
+
+### Decision
+
+Pressed `FigmaButton` and `FigmaChoiceChip` controls do not draw
+`rgba(0, 235, 151, 0.25)`. Pressed feedback stays the existing fill, inset,
+or opacity change. A selected chip keeps its charcoal fill. Keyboard focus
+keeps the existing blue outline. Field success `#039600` and real success
+messages stay. The captured Figma field board and the protected `.pen` file
+are not rewritten.
+
+### Alternatives
+
+- Drawing the ring again after a delay. That only hides the flash.
+- Replacing the mint ring with another colored ring. The founder did not ask
+  for a new color effect.
+- A route-local stylesheet. The ring is shared by buttons and choice chips.
+
+## DEC-105 — Auth sheets follow the supplied versioned capture
+
+Date: 2026-10-07
+Status: Confirmed
+Source: founder-provided six Figma captures; explicit instruction to prepare
+the design handoff/import first, preserve standard login and existing recovery,
+keep account «Имя», and show Google/Telegram as placeholders.
+
+### Decision
+
+The next auth UI wave uses the scoped
+[`2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md)
+capture set for login/registration sheets, verification and shared exit-confirm
+presentation. The imported source library and protected Pen stay unchanged.
+Exact style differences, missing assets/ranges and derived states are recorded
+in that package, not silently filled from another design version.
+
+Email/password remains the login method. The code design is adapted to existing
+email verification. Registration's first field is «Имя»/`displayName`, not an
+account nickname or reserved author slug. Google/Telegram are honest unavailable
+UI placeholders, without OAuth. Recovery retains the working single-use link
+and neutral response, with the entered email masked in result presentation.
+Exit-confirm copy reflects the actual pending/saved state; closing does not
+delete an account or cancel committed server work.
+
+### Superseded suggestions and limits
+
+- The generated-password-by-email suggestion and the interim recovery-button
+  placeholder suggestion are superseded by the founder's final instruction to
+  keep the current recovery logic and update its design only.
+- The imported passwordless-login/OAuth-email captures are references, not
+  activation decisions. First MVP auth behavior from RFC §12 stays.
+- Preparation imports sources/docs only. Runtime implementation, exact missing
+  states/assets and production acceptance are not declared complete.
+
+### Revision
+
+Date: 2026-10-08
+Source: owner instruction. Registration collects a nickname. The name is entered
+later in the author profile. One `User` can also become an author. Settings do
+not grow a second account or a second profile.
+Revises the decision above that registration uses the dialog capture and that
+its first field is «Имя»/`displayName`. Does not revise the login sheet,
+single-use recovery link, exit confirmation, history owner, Google/Telegram
+placeholders, or the exclusion of passwordless login and OAuth.
+
+Registration presentation is the full-screen sequence from the historical
+`2026-10-07-auth-fullscreen` bundle (recoverable in Git tree
+`3b56d84b36c27b623c2dd641a2958729701129c4`; visual source superseded by `DEC-106`):
+email `4547:23379`, nickname `4547:24138`, password `4547:24428`, then email
+confirmation `4547:25026`. Login stays the dialog sheet `526:14885`. Recovery
+and exit confirmation stay the dialog handoff. Step values live in one
+registration form. `register` runs once. A later mail failure does not create
+another account. Password confirmation stays on the client. The current OTP
+request and its server cooldown stay.
+
+`User.username` is a new nullable unique account nickname. It reuses the
+existing slug grammar, maximum 120 characters, and is not a rename of
+`displayName`. New registration sends `username` and does not send
+`displayName`. `displayName` becomes nullable for accounts that have not
+entered a name. Existing rows keep their `displayName` and receive no
+generated username. Email and `displayName` are not copied into `username`.
+
+`SellerProfile.slug` remains the only public author address (`/authors/:slug`
+and the public `@slug` in RFC §§7–8). Registration does not write a seller
+profile, does not change existing slugs, and does not add `/authors/:username`.
+A new author form may prefill an empty slug from `username`. Saving a slug,
+including a later edit, is still the author revision. Changing `username` does
+not rewrite a saved slug. That split is the existing public URL, not a second
+account and not a second public nickname. Author `fullName` remains the name
+entered in the author profile.
+
+A read of nickname availability does not insert or lock a row. The unique
+constraint on `users.username` at `register` is the conflict. No email
+existence check is added. Captures in both auth packages stay unmodified.
+
+### Revision
+
+Date: 2026-10-08
+Source: owner instruction that the account has one canonical nickname.
+Revises the revision above where it adds `User.username` beside
+`SellerProfile.slug`, prefills one from the other, and lets them diverge.
+Does not revise the full-screen registration order, login sheet, recovery,
+exit confirmation, or history owner.
+
+The nickname is `User.slug`: nullable, unique, `VarChar(120)`, using the
+existing slug grammar. It is not a second column named `username`, and it is
+not a rename of `displayName`. New registration sends `slug` and does not send
+`displayName`. `displayName` stays the later name column and becomes nullable.
+Existing `displayName` values stay. Nothing is copied from email or
+`displayName` into `slug`.
+
+`SellerProfile.slug` stops being an editable nickname. The author profile
+reads the account slug and still edits `fullName`. Create and update requests
+drop `slug`. A profile row is created only for a user who already has
+`User.slug`. Public paths stay `/authors/:slug` and
+`/api/sellers/:slug/photo`. `Category.slug` is unrelated.
+
+Migration, without renaming any current address:
+
+1. Add nullable unique `users.slug`.
+2. Copy `seller_profiles.slug` onto that user's `users.slug`. Profile
+   `user_id` and `slug` are already unique, so the copy cannot collide and
+   must not change the string. Users without a profile stay `null`.
+3. Check that every profile slug equals its user's slug before any new write.
+4. Switch public reads to `users.slug`. While `seller_profiles.slug` still
+   exists, the only write to it is the same transaction that writes
+   `users.slug`. The author form does not send it.
+5. New revisions copy `User.slug` into `seller_profile_revisions.slug`. Old
+   revision rows stay as history and are not rewritten.
+6. Drop `seller_profiles.slug` after every live read uses `users.slug`.
+
+Availability is a read of `users.slug` and does not reserve it. The register
+conflict is the unique constraint, reported as `slug_taken`. No email
+existence check is added. This revision is not implemented. No migration has
+run.
+
+### Revision
+
+Date: 2026-10-08
+Source: owner instruction before implementation. Confirms one `User.slug`.
+Adds the account that has no slug yet, and the rule for old revision
+snapshots. Does not add a nickname change, a second nickname, or a field
+sync.
+
+A signed-in user with `users.slug` null chooses the nickname before
+`SellersService.create`. The choice reuses the registration nickname field
+and `nicknameSlugSchema` (`slugTextSchema`, message «Введите никнейм»). It
+does not call `register`, does not insert a user, and does not copy email or
+`displayName`. The write is one conditional update of that user's row, and
+only while `slug` is null. A unique conflict is `slug_taken`. If the row
+already has a slug, the request writes nothing. This wave has no later edit
+of a slug that is already set.
+
+`SellersService.create` requires an existing `User.slug` and refuses the
+request when it is null. The create body does not contain `slug`. The new
+profile stays `DRAFT`. The new revision copies `User.slug` into
+`seller_profile_revisions.slug` once, inside that create transaction. While
+`seller_profiles.slug` still exists, that same create copies the stored
+account slug into the column. It does not accept another value. The claim
+request does not create a profile.
+
+`publishedSellerProfileData` currently returns `slug: revision.slug`.
+`AdminModerationService` spreads that object onto `sellerProfile.update`
+when a revision is approved, and `MediaLifecycleService.switchPublication`
+spreads it when a revision is published or restored. Both stop receiving
+`slug` from that helper. Neither path updates `users`. Old
+`seller_profile_revisions.slug` values stay snapshots and are not rewritten.
+A snapshot that differs from the account slug does not become the current
+nickname or the public address.
+
+Public visibility stays the current gates. `publicAuthorCte` and
+`getApprovedPublicAuthor` require `seller_profiles.status = APPROVED` and
+`users.status = active`. `getPhoto` is public only for that same pair.
+`/authors/:slug` and `/api/sellers/:slug/photo` keep those strings.
+`User.slug` alone does not publish an author. Catalog search reads the
+account slug through the same approved, active profile filter.
+
+No sync job, trigger, or second writer keeps the revision snapshot equal to
+`User.slug` after insert. This addition is not implemented. No migration has
+run.
+
+## DEC-106 — Updated brand and fullscreen auth source
+
+Date: 2026-10-08
+Status: Confirmed source/visual decision; runtime replacement pending.
+Source: founder supplied the new brush-mark SVG and four updated Figma captures,
+requested project-wide logo/favicon replacement and removal of the superseded
+fullscreen packages. Revises only the visual source of `DEC-105`.
+
+Registration and email confirmation use
+[`2026-10-08-auth-fullscreen`](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/README.md),
+with the mark above the form and outlined `bidplace` wordmark below. The new
+brush mark replaces the eye mark in live project branding and consumed icon
+assets. Shared exact vector sources and original SVG are preserved in
+[`2026-10-08-brand`](../../design/figma-handoff/branding/2026-10-08-brand/README.md).
+
+The four previous fullscreen packages are removed from active checkout, with
+archive hashes and recoverable Git tree recorded in `SOURCE-COMPARISON.json`.
+Login/recovery/exit dialog sources, shared fields, read-only canonical portfolio
+library and protected Pen remain. This does not change one `User.slug`, account
+creation, author capability, safe navigation, password recovery, OTP limits,
+OAuth placeholders or the production migration hold. It does not approve legal
+drafts or sample nickname suggestions.
+
+Only source preparation and read-only localhost review have run in this task.
+Runtime implementation, migration, push and production deployment have not run.
+
+## DEC-107 — New account nickname length, historical reads preserved
+
+Date: 2026-10-09
+Status: Confirmed.
+Source: founder requested a shared 3–20 character limit for a new nickname,
+without truncating or renaming historical nicknames or migrating the database.
+Revises the length constraint of DEC-105; ownership remains `User.slug`.
+
+`newAccountSlugSchema` owns the existing grammar and 3–20 character write
+constraint for registration, claim-slug and availability. Availability does
+not reserve a name. `accountSlugSchema` remains the 1–120 character read
+contract for stored users and claim responses. Existing account nicknames,
+author addresses, revision snapshots and the database column are unchanged.
+This decision does not authorize a migration, push or deployment.
+
+## DEC-108 — Local nickname suggestions and explicit availability check
+
+Date: 2026-10-09
+Status: Confirmed.
+Source: founder approved the first library option and the registration behavior.
+
+Registration shows exactly three neutral suggestions generated locally with
+locked `unique-names-generator`, curated short color/animal dictionaries, a
+three-digit suffix, and the existing nickname write contract. The 49,500-value
+space keeps labels compact while reducing collisions. The generator sits behind
+one small synchronous replaceable interface. Library imports stay in one
+adapter. There is no email derivation, AI, remote generation, reservation, new
+endpoint, or new persistence.
+
+Typing and suggestion selection do not check availability. Nickname `Next`
+validates locally and sends one request for the selected value. Taken refreshes
+the three suggestions; retryable failures preserve the field; stale replies
+cannot advance the form. A positive preflight is not a guarantee: `register`
+and the unique `User.slug` constraint remain final authority, and a final
+`slug_taken` returns to the nickname step without clearing the other fields.
+Suggestions remain stable while moving between steps in the same attempt.
+
+## DEC-109 — Auth abuse protection: PostgreSQL ledger, mail truth, deferred Redis
+
+Date: 2026-10-10
+Status: Confirmed
+Source: explicit founder auth/email MVP brief (pasted thresholds and ownership)
+
+Durable auth-abuse state lives in PostgreSQL (`auth_abuse_operations`,
+`auth_abuse_counters`) behind one Nest module (`apps/api/src/auth-abuse/`).
+Mail sends, OTP verify pause, login failure/Turnstile escalation, and password-reset
+send quotas use short locked transactions; SMTP and Siteverify run outside those
+transactions. Cheap per-IP spray limits stay process-local in
+`RateLimitService` until a future shared store is justified.
+
+Selected for MVP:
+
+- PostgreSQL for quotas, pauses, idempotent mail operations, and login counters.
+- Incremental idempotency keys and content-hash replay binding per purpose.
+- SMTP outcomes limited to `accepted`, definite `rejected` (SMTP 4xx–5xx or
+  recipient guard), or `unknown`; `accepted` is not mailbox delivery proof.
+- Turnstile on register, login, email-verification send, and forgot-password
+  send; server-only secret and hostname fail closed.
+- Pinned disposable-domain file (9222 domains; vendor `SOURCE.md`) for registration
+  and unverified email correction only.
+- Global `AUTH_MAIL_DAILY_BUDGET` / `AUTH_MAIL_MONTHLY_BUDGET` defaults 200 / 3000;
+  combined verification+recovery personal limit 10 per account and per address.
+- Neutral forgot `{ ok: true }` for valid accepted requests and account-specific
+  suppression only; validation and Turnstile failures remain typed refusals.
+- `sessionVersion` unchanged on successful login/register; foreign login failures
+  do not bump it (logout, reset, admin revocation do).
+
+Deferred:
+
+- Redis or another shared store for cheap IP gates / high-contention spray only;
+  atomic quota and idempotency remain in PostgreSQL.
+- Production SMTP deliverability proof, live Turnstile/WAF configuration, and
+  coordinated migration plus legacy import on production traffic (operator step).
+
+Additive migrations `20261010010000_auth_abuse_protection` and
+`20261010100000_auth_abuse_legacy_import` are tested on fresh isolated databases;
+they do not by themselves authorize production rollout.
+
+Revises: the **process-local auth critical counters** implication in
+`13-APPLICATION-SECURITY.md` §8 and pilot single-replica ops (**DEC-069**) for
+mail/login abuse state — durable counters moved to PostgreSQL; **DEC-069** itself
+and upload IP limits are unchanged. Original **DEC-069** entry text is not edited.
+
+## DEC-110 — Shared text-button matrix (`292:5058`)
+
+Date: 2026-10-10
+Status: Confirmed
+Source: founder button brief; Figma component set `292:5058` (`Кнопки.figmacapture.zip`)
+
+All text buttons use one renderer (`FigmaButton`) and one four-variant × four-state
+matrix (`solid`, `outline`, `ghost`, `muted` × idle, hover, pressed, disabled).
+Geometry, colors, gradient stroke axes, and disabled handling live in
+`packages/design-tokens` (`figma-button.ts`). This replaces special auth sizes,
+Home quiet+compact pill parameters, and the red `danger` text-button variant.
+`DestructiveButton` remains a semantic wrapper that renders `solid`.
+
+Pressed feedback stays on fill/overlay only; **DEC-104** still means no mint press
+ring. Gradient strokes are drawn with `react-native-svg`, not horizontal CSS
+gradients.
+
+Handoff: `design/figma-handoff/buttons/2026-10-10-buttons/`. Read-only portfolio
+library and canonical Pen are unchanged.
+
+## DEC-111 — Entered-data confirmation stays on registration only
+
+Date: 2026-10-11
+Status: Confirmed
+Source: refined designer and founder decision.
+
+Revises the runtime scope of the shared exit confirmation from `DEC-105`.
+The dialog component and its registration copy stay. Login, forgot-password,
+reset-password, and email verification no longer ask before closing, including
+when their fields contain input. Close, Escape, backdrop, and Back/Forward use
+that same policy. Registration explicitly protects entered data: an empty
+registration leaves without asking; a registration with input asks before an
+exit that leaves auth. Continue keeps the current step, values, and focus.
+Interrupt performs the chosen exit. Movement between auth routes still does
+not ask.
+
+An in-flight request still keeps the sheet. Leaving does not abort that
+request, delete an account, or replace a newer session. A late response from
+a login the user already left does not navigate. This decision does not change
+button geometry, Turnstile, auth contracts, or persistence.
+
+## DEC-112 — Portfolio Work story uses revision-owned blocks
+
+Date: 2026-10-11
+Status: Confirmed product decision; implementation planned
+Source: explicit founder answer to the story/MVP scope question.
+
+Revises: the plain-text authoring and automatic gallery-interleaving scope of
+`DEC-092`/`DEC-093`, and the story-builder deferral in `DEC-082` / RFC §10/§15.
+The earlier decision entries remain unchanged as history.
+
+The current portfolio MVP includes optional ordered `HEADING`, `PARAGRAPH`,
+`IMAGE` blocks, with add/delete/up/down and a server-confirmed save. Gallery and
+story have independent order; an image may be referenced in both via the existing
+`MediaAsset`. The selected target binds blocks to `ProductRevision` and reuses
+the existing moderation/publication/media boundaries. Published content remains
+on the last approved revision while a new revision is edited/reviewed.
+
+Video, rich-text/HTML/Markdown, AI fill and commerce screens remain out of this
+MVP. Numeric block/text limits and the migration of existing story data still
+require a bounded implementation plan; the proposed 5/20 limits are not approved
+merely by accepting the block editor.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
+author/story backend.
+Deferred trade screens and video: [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md).
+
+## DEC-113 — Shared approved classifiers now; user proposals after MVP
+
+Date: 2026-10-11
+Status: Confirmed product decision; implementation planned
+Source: explicit founder answer selecting common dictionaries now and deferring proposals.
+
+Categories, materials/techniques and author directions use shared approved
+dictionaries with stable IDs and a safely bootstrapped initial set. Forms,
+checkboxes/chips and public filters use those same records. No separate copy of
+the list belongs to each screen. The exact initial set and term applicability
+must be checked against the capture and existing data before migration.
+
+User-created suggestions, approval/mapping/rejection, admin proposal queues and
+controlled reclassification are explicitly deferred; their scope is preserved
+in [15-POST-MVP-BACKLOG.md §5](15-POST-MVP-BACKLOG.md#5-медиа-и-creator-profile).
+This does not approve an arbitrary initial category list from an attached proposal.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
+author/story backend.
+
+## DEC-114 — Country selection hides codes; city is optional
+
+Date: 2026-10-11
+Status: Confirmed product decision; implementation planned
+Source: explicit founder geography answer: popup list/search, country names only.
+
+Revises: mandatory city in RFC §8. Country remains required and is selected
+from a searchable popup. The UI shows a localized country name; the standard
+country code is internal storage/API data. City is one optional text value,
+without a city table, geocoding, multiple locations or delivery geography.
+An approved author is not hidden just because city is absent. Country selection
+does not itself authorize a new launch country.
+
+The change must cover validation, profile/revision writes, submit readiness,
+public author/work projections, search/facets and their consumers together.
+The old country strings need an explicit migration mapping, not silent guessing.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
+author/story backend.
+
+## DEC-115 — Next wave adds sales; one complete post-MVP plan
+
+Date: 2026-10-11
+Status: Confirmed direction; sales mechanics and implementation remain planned
+Source: explicit founder request to preserve all deferred work and make the next
+wave sales through the platform.
+
+The current launch remains portfolio-only. The next wave introduces sales,
+including the price/auction direction and required complaint/problem handling.
+[15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md) is the single product entrypoint
+for the complete future plan. The index routes auction/sales planning there;
+the execution backlog maps work without duplicating the full product contract.
+
+The plan must retain deferred Figma trade screens, classifier proposals, prices,
+auctions, buyer eligibility, Listings/Orders/handoff, double-sale prevention,
+complaints/moderation, notifications, privacy, legal and release gates. It must
+distinguish selected decisions, open mechanics, runtime evidence and later ideas.
+An auction plan cannot omit these boundaries by reducing the work to a price
+field or restoring an archived module.
+
+This direction does not approve unspecified auction timings, offer/second-chance
+rules, new countries, platform custody of money, escrow, fees or shipping services.
+Those require their own decisions before dependent implementation.
+
+## DEC-116 — Eighteen categories, proposals in MVP, story limits
+
+Date: 2026-10-11
+Status: Confirmed; backend implemented, client integration not started
+Source: explicit founder instruction for the author-story backend.
+
+Revises the deferred-proposal part of `DEC-113`. User proposals for a missing
+category, material or technique are in the current MVP. The author selects the
+existing category «Другое» when proposing a category name. A proposal stores the
+raw name, a Unicode/case/space normalized value, status and review result. It is
+not a substitute foreign key. Confirming it writes the real category or term onto
+the pending Work revision and does not publish the Work. Rejecting a still
+selected proposal returns that revision for changes. An old rejected proposal
+that the author has removed no longer blocks resubmission. Published revisions
+are not rewritten. MVP merge means mapping one proposal to an existing record.
+Bulk reassignment of terms already in use stays after MVP.
+
+Confirms the rest of `DEC-113`: one shared Category table, one CatalogTerm
+dictionary with material and technique roles, stable IDs, and idempotent
+bootstrap that does not delete rows or undo an admin rename or hide.
+
+The starting categories are the eighteen named in
+[08-SELLER-AND-ITEM-POLICY.md §5](08-SELLER-AND-ITEM-POLICY.md). Digital art as
+a standalone file is out. Author directions are several of those category IDs,
+not material names. Hiding a category does not hide works already approved with
+it. A category does not waive authorship or the ban on mass resale.
+
+New achievements are a MONTH/DAY date and a description. This flow no longer
+accepts an image. The profile photo stays. City stays optional (`DEC-114`).
+
+Story limits are five images, twenty heading and paragraph blocks together,
+200 / 5000 / 300 characters, the existing 5 MiB file cap, and a separate 20 MiB
+story-photo budget. An empty story and an image-only story are valid.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Client follow-up:
+UI-HANDOFF.md.
+
+---
+
+## DEC-117 — Author basics step copy, country popup and city clearing
+
+Date: 2026-10-12
+Status: Confirmed for the requester's answers in the author-application-figma task; extends `DEC-114` and `DEC-116` without revising them.
+Source: explicit answers recorded during that task on 2026-10-12.
+
+### Decision
+
+Step 1 of the author application uses the subtitle «Город можно не указывать».
+Its placeholders are «Ваше имя фамилия, (обязательное)», «Никнейм, (обязательное)»
+and «Страна (обязательное)», and the city placeholder is «Город». Step 1 shows no
+extra asterisk marks, and the validation does not depend on a visual marker.
+
+Country starts empty. «Продолжить» stays unavailable until a country is chosen, and
+a saved country is not replaced by a default. The popup reuses the shared filter
+sheet with search and radio rows. The shown value is the country name; the stored
+and sent value is the ISO code. City is an optional separate field under the country.
+
+Clearing the city goes in one save. The `PATCH` is `multipart/form-data`: profile
+JSON in the `data` part and the photo in the `profilePhoto` part. An absent field
+keeps the stored value, `null` clears it, and `[]` clears a list. The string `"null"`
+is not used. The shared serializer is unchanged.
+
+The initial photo state has no «Фото обязательно» line. The requirement stays in
+readiness and the server contract. Upload, selection and validation errors use the
+existing mechanisms. The logout action is a ghost «Выйти» below «Продолжить» in the
+normal flow. The field variant `authorApplication` changes only the empty border and
+the placeholder to `#999999`; icons keep their color.
+
+### Alternatives
+
+- A separate clear request or a second save for the city was rejected: it breaks one
+  save per user action.
+- Sending the city as the string `"null"` or an empty string was rejected: it mixes
+  a clear marker with user text.
+
+### Rationale
+
+The Figma copy and shared components stay as they are. City remains optional under
+`DEC-114`, so the wire format needs one explicit clear marker and no new endpoint.
+
+### Revisit when
+
+The step-3 direction control is implemented, or the placeholder or field copy is
+changed by the founder or the assigned designer.
+
+## DEC-118 — One legal handoff, DEC-078 registration and target retention
+
+Date: 2026-10-12
+Status: Confirmed product/documentation decisions; analytics legal basis Open
+Source: explicit founder answers in the legal consolidation session and repeated
+handwritten consultation notes identified by the founder as notes, not a transcript.
+
+### Decision
+
+- This task consolidates the audit and prepares legal texts. Connecting pages,
+  cookies/consents to UI/API is a separate task; runtime is not changed here.
+- Reaffirm DEC-078: three separate mandatory registration items (agreement,
+  policy acknowledgement, PD consent for the main service), plus separate 18+.
+  Analytics and marketing as distinct purposes are not silently bundled into them.
+- The first MVP has no auctions, purchases, payments, delivery or reviews. Preserve
+  future terms in an explicitly inactive annex; its presence does not activate a
+  feature or provide advance consent to every future processing purpose.
+- Keep the current immediately enabled analytics. Its legal basis remains open
+  until a specific Belarus lawyer answer addresses the actual persistent ID,
+  events, attribution, account linkage and infrastructure. A policy acknowledgement
+  is not recorded as that answer or as optional consent.
+- IP registration is reported complete. Public contact is `work.evles@gmail.com`;
+  `693460361` is a registration number, not a confirmed UNP. The home address is not
+  published. Full legal name/UNP and correspondence requirements remain factual
+  publication inputs, with public values suitable for GitHub Variables.
+- Neon is reported located in Frankfurt, Germany; R2 provider is Cloudflare.
+  Do not infer R2/backup geography or contract conditions from the provider name.
+- Adopt the retention schedule in the legal audit: main service data for the
+  service duration and removal from working systems within 30 calendar days after
+  a substantiated request; incomplete accounts and expired/used OTP/reset records
+  30 days; security logs 30 days; analytics 90 days; acceptance evidence 3 years
+  after termination, moderation/request evidence 3 years after resolution; backups
+  30 days. Mandatory shorter legal deadlines take precedence. Cleanup/restore
+  reapplication is a separate implementation and release requirement.
+- Restore historical consultation/closed-question evidence in the archive;
+  preserve source text and the new raw notes. Do not reclassify all settled points
+  as unanswered merely because the September manifest used a broad pending status.
+
+### Revises
+
+Reaffirms DEC-077/078 and DEC-082–084. Revises the indefinite retention assumption
+of DEC-047 as a target policy only; actual persistence remains unchanged. Does not
+override mandatory legal rules, close analytics legal review, approve missing
+operator/infrastructure facts or replace the temporary text allowed by DEC-103.
+
+### Ownership and verification
+
+Current legal owner: [final legal audit](../legal/00-FINAL-LEGAL-AUDIT.md).
+Public text owners are under `docs/legal/site`; future terms have one inactive
+annex. No schema, architecture, runtime or design change. See the audit for observed
+boundaries and publication requirements rather than duplicating the schedule here
+in future tasks.
+
+## DEC-119 — Pen removed; Figma is the single visual source
+
+Date: 2026-10-13
+Status: Confirmed
+Source: founder confirmation in chat, 2026-10-13.
+
+### Decision
+
+The `.pen` files and the creator-first explorations were deleted (recoverable
+from git history). Live Figma file
+`pAPQo6cADmG5XzVmBX76EE` is the only visual source. `design/figma-handoff` is
+secondary and may be stale; live Figma wins on disagreement. `AGENTS.md` and
+`docs/design/*` were updated accordingly.
+
+### Revises
+
+The "Pen is canonical / immutable" parts of `DEC-062` and `DEC-063`, and the
+"Pen file stays historical" part of `DEC-085`.
+
+### Revisit when
+
+A new design tool replaces Figma.
+
+## DEC-120 — Fluid container
+
+Date: 2026-10-13
+Status: Confirmed
+Source: designer decision relayed by the founder, 2026-10-13.
+
+### Decision
+
+Mobile/tablet content is 100% wide with a 12 px horizontal gutter; desktop
+content is centered with max-width 1280 and no extra padding. Wider windows
+no longer keep a 390 column.
+
+### Revises
+
+The layout clause of `DEC-085` only.
+
+### Revisit when
+
+Desktop Figma compositions define different widths.
+
+## DEC-121 — Local browser-only draft restore; no sync
+
+Date: 2026-10-15
+Status: Confirmed
+Source: founder-approved task boundaries (задание «восстановление ввода и
+исправление маршрутов MVP», 2026-10-15).
+
+### Decision
+
+Restore of in-progress input (Work creation and author application) is local
+to the browser only: `localStorage` keyed by account + entity, throttled
+writes, Zod-checked payload that tolerates an incomplete first step. No new
+backend endpoints, tables, server autosaves, offline queues, live-sync or
+cross-device conflict UI. Uploaded media stays server-side; not-yet-uploaded
+files are re-selected. Drafts clear on logout/session change, confirmed
+submit, and successful save without edits after the request snapshot; after
+the first confirmed create the `…:new` key migrates to the confirmed id.
+Simultaneous editing from several devices resolves to the last successful
+server save (server revision token decides whether a stored draft still
+applies).
+
+### Revisit when
+
+Cross-device editing or offline-first requirements appear, or a future SDK
+upgrade changes what the local browser layer must cover.
+
+### Implementation
+
+`apps/mobile/src/lib/local-form-draft.ts`,
+`apps/mobile/src/features/sellers/local-form-restore.ts`; branch
+`fix/draft-routing` (2026-10-15).
+
+## DEC-122 — Auth over the current page; sheets dismiss from their header
+
+Date: 2026-10-18. Status: Confirmed by founder in this task.
+
+Login opened from Home, a profile or a catalog keeps that current page and its
+scroll position underneath. A direct auth URL uses Home as its fallback anchor.
+Do not mount a second Home inside auth to imitate a background.
+
+Sheet dismissal starts with a downward drag from the handle/header. Content
+scrolling does not dismiss it. Existing dirty-state confirmation and busy-save
+blocking apply to this gesture through the same close owner as the cross button.
+Centered confirmation dialogs and full-screen registration are not draggable sheets.
+
+Owner: Expo Router root/auth presentation + AuthViewport; shared interaction:
+SheetDragSurface used by AuthViewport/AppDialog/FilterSheet. Server contracts,
+permissions, draft persistence and visual geometry are unchanged.
+
+## DEC-123 — Личный аккаунт, Share до одобрения и удаление Work
+
+Дата: 2026-10-19. Статус продукта: Confirmed — прямые ответы основателя в задаче личного профиля.
+Статус кода: Not implemented для новых account/settings и удаления; наличие intake не означает реализованную функцию.
+
+Личный аккаунт объединяет вход пользователя и автора; автору доступен кабинет
+своих работ. До одобрения фото остаётся серым placeholder; у одобренного автора
+используется опубликованная identity, не редактируемая ревизия.
+
+Настройки и Share доступны также до публикации. Публичная ссылка недоступного
+профиля показывает нейтральный not-found: существование аккаунта/заявки, её
+поля и статус проверки не становятся публичными.
+
+Избранное остаётся после MVP, не входит в текущий UI-срез и не имитируется
+фиктивными controls. Его владелец — [post-MVP backlog](15-POST-MVP-BACKLOG.md).
+Смена email и authenticated-смена пароля — отдельная будущая волна.
+
+Основатель разрешил удаление собственных работ в любом статусе отдельной волной:
+после подтверждения работа исчезает из кабинета и публичного доступа, технически
+помечается удалённой для сохранения связности данных. Удаление не равно
+обратимому hide/restore и не означает каскадного удаления истории/файлов.
+Endpoint, конкуренция с модерацией, suspended policy, media/cache и legacy
+relations требуют отдельного backend/security-плана перед реализацией.
+
+Граница этой задачи не включает возвращение торгов, цен, корзины, Premium,
+валют, локализации или избранного из старых Figma frames.
+Не менять server permissions ради визуального сходства.
+
+Дизайн/implementation handoff:
+2026-10-19-account-ui.
+
+## DEC-124 — Одно явное подтверждение регистрации
+
+Дата:2026-10-20. Статус:Confirmed. Источник: прямое требование основателя
+в этом чате — один чекбокс, документы ссылками внутри текста, без дублей.
+
+Пересматривает DEC-078 и handoff12октября только в UI-композиции регистрации:
+один изначально не отмеченный control явно подтверждает18+, принятие соглашения,
+ознакомление с политикой и согласие на необходимые данные. Три документа доступны
+отдельными inline-ссылками; открытие ссылки не означает принятия.
+Серверный контракт отдельных флагов/версий сохраняется, но один клик больше не
+выдаётся за четыре независимых пользовательских действия. При смене версии или
+недоступности пакета подтверждение сбрасывается. Маркетинг/аналитика/будущие цели
+не включаются. Публикационный gate реквизитов и текстов не обходится.
+Это продуктовая UI-правка основателя, не новое юридическое заключение.
+
+## DEC-125 — Согласие при регистрации независимо от чтения документа
+
+Дата:2026-10-20. Статус:Confirmed. Источник: прямое уточнение основателя:
+согласие происходит сразу при регистрации; недоступность чтения не блокирует
+аккаунт. Пересматривает зависимость выдачи текстов от регистрации в DEC-124/
+legal handoff, сохраняя единый explicit control и подтверждение18+.
+
+Не вводить отложенное принятие, pending-legal accounts или новые consent gates
+перед заявкой/публикацией. Register фиксирует подтверждения в той же транзакции,
+что User, с редакцией реальных канонических файлов, определённой сервером.
+Чтение —отдельный lazy GET по ссылке, ошибка внутри существующего AppDialog;
+сбой не сбрасывает email/checkbox и не меняет CTA «Дальше».
+Явно переданная старая клиентская версия сохраняет stale-check для совместимости.
+Это продуктовый порядок записи согласия, не подтверждение юридической готовности
+неполного пакета и не доказательство прочтения документа.
+
+## DEC-126 — Общий контрол дат: React Aria web и системный native picker
+
+Дата: 2026-10-20. Статус: Confirmed (прямой выбор основателя в чате).
+
+Основателю нравится React Aria; использовать его везде, где платформа позволяет.
+Веб, включая Safari на телефонах, использует React Aria. Нативный Expo не имеет
+DOM, поэтому за тем же DateField API находится системный SDK57 picker. Фирменный
+web стиль собирается существующими токенами и компонентами. Отдельную Material
+дизайн-систему и самописную календарную арифметику не вводим. Точность даты и
+серверные правила сохраняются; время/планирование не добавляется без потребителя.
+
+## DEC-127 — Монохромный фокус во всём сервисе
+
+Дата: 2026-10-20. Статус: Confirmed (прямое согласие основателя в чате).
+
+Общая роль focus становится #121212 в светлой теме и #FFFFFF в black вместо
+синей. Решение уточняет DEC-104 и заменяет старый Figma focus292:5037 только
+по цвету. Видимый клавиатурный фокус, существующий border полей и outline
+прочих контролов сохраняются. Компонентных/маршрутных исключений не вводим.
+Это не решение о запуске всей provisional black-палитры пользователям.
+
+## DEC-128 — Общая desktop-шапка и визуальная унификация навигации
+
+Date:2026-10-21
+Status: Confirmed
+
+Основатель подтвердил общую desktop-шапку на публичных Home/Works/Authors и
+страницах деталей; нижний dock остаётся мобильным. Корзину и уведомления вне MVP
+не добавлять. Для страницы автора актуальный визуальный источник — точные frames
+из HRRtDp0bQlukw7ptTkuEZg, page1:3, вместо старой копии; текущий master кнопок и
+MVP-ограничения сохраняются. Общие FilterOptionRow — с галочкой справа, без
+видимого индикатора скролла. Одна круглая кнопка Back для всех экранов со
+состояниями normal/pressed/disabled. Избранное/подписки и их экраны остаются после
+MVP; показ макета выбранного состояния не является решением включить backend.
+
+Implementation status: author parity audit.
+
+
+### DEC-129 — Public desktop navigation threshold (2026-10-21)
+
+Confirmed by founder: shared public desktop header starts at1024 CSS px;
+mobile dock below. Extends DEC-128; no cart/notifications/favorites scope added.
+
+
+## DEC-130 — Shared footer and desktop header completion (2026-10-21)
+
+Confirmed by founder: footer on ordinary pages including account/settings,
+excluding auth, forms, step editors and overlays; responsive visibility belongs
+to shared owners. New visual source ibHSgpAKXnItNSHaHzvRk2: footer5065:21196 /
+4980:16299 and desktop Home3139:2222. Works/Authors use the third ghost button
+variant. Cart/notification placeholders are allowed in desktop chrome; this
+revises the visual omission in DEC-128 only, without adding commerce or
+notification functionality to MVP. DEC-129's1024px navigation threshold stands.
+
+## DEC-131 — Автоматическая оптимизация фотографий и нормализованный SOURCE
+
+Дата: 2026-10-22. Статус: Confirmed (прямое решение основателя в чате).
+
+Вместо требования архивировать исходные байты сервис автоматически готовит
+допустимые фотографии. SOURCE — приватный нормализованный мастер до 5 МиБ;
+для портрета действует более строгий лимит 2 МиБ. Сжатие с потерями и уменьшение
+разрешения допустимы, когда иначе невозможно соблюсти размер. Невозможность
+уместить фото при высоком качестве не является причиной просить автора
+редактировать его самостоятельно. Защитные входные лимиты и отклонение
+повреждённых/неподдерживаемых файлов сохраняются. Основная галерея принимает
+до 25 МиБ по одному файлу; продуктовый лимит входа истории не изменяется.
+
+Обработка скрывается за одним DI-контрактом ImageProcessor с реализацией Sharp;
+хранение и публикация остаются у текущего lifecycle и S3/CDN-адаптеров.
+Обновлённый контракт: `05-MVP-RFC.md` §10; реализация и совместимость старых
+объектов: `10-CODE-ARCHITECTURE.md`, раздел от 2026-10-22.
+
+## DEC-132 — Исправления ревью загрузки фотографий
+
+Дата: 2026-10-23. Статус: Confirmed (прямое поручение основателя исправить
+замечания обоих ревью). Уточняет DEC-131: галерея принимает до 8192 px по стороне
+и 50 331 648 пикселей, автоматически приводит мастер к 4096 px и 5 МиБ.
+Уменьшение больших фото ниже 1600 px и портретов до 256 px исключено;
+финальная попытка портрета — 640 px. Компактные 16-битные PNG сохраняют исходные
+байты. Таймаут зависит от размера, переходы блокируются на время отправки,
+legacy-хранилище гарантирует повтор по тому же ключу без дубля.
+
+Фото-решения перенумерованы при синхронизации веток: прежние номера
+DEC-128/129 в фото-ветке конфликтовали с независимыми UI-решениями release.
+Содержание решений сохранено.
+
+## DEC-133 — Единый вход по email-коду и явная привязка провайдеров
+
+Дата: 2026-10-22. Статус: Confirmed. Источник: основатель принял рекомендованную
+схему в чате и отдельно запретил пока приступать к реализации.
+
+Вход по коду доступен зарегистрированным пользователям независимо от способа
+создания аккаунта. Пароль остаётся альтернативой; social-вход не требует пароля.
+Google -> email-код ведёт в тот же профиль. Email -> Google требует подтверждения
+существующего аккаунта и явной привязки; совпадение email не объединяет аккаунты.
+Неизвестная почта не создаёт аккаунт автоматически: сохраняется регистрация с
+ником и подтверждением документов. Реальный email остаётся обязательным.
+
+Статус кода: Not implemented. Архитектура, порядок работ и проверки — в
+задании auth/media.
+
+
+## DEC-134 — Упростить MVP auth при сохранении базовой защиты
+
+Дата: 2026-10-22. Статус: Confirmed direction; implementation policy below.
+Источник: основатель попросил убрать избыточные проверки/CAPTCHA и сложность,
+сохранив базовую защиту; технический выбор сделан в рамках этой команды.
+
+У завершения social-регистрации убрана повторная CAPTCHA: шаг уже требует
+непросроченный browser-bound OIDC proof. CAPTCHA обычной регистрации,
+анонимной отправки писем и адаптивного password-login остаётся. Согласия,
+реальный email, одноразовый OTP, durable pause/quota, CSRF и отзыв доступа
+не ослабляются. Admission/cooldown email-login имеет одного владельца
+AuthAbuseService; публичный отказ verify нейтрален к наличию аккаунта.
+Это уточняет реализацию DEC-133 и первоначальное требование register CAPTCHA
+в auth handoff, не меняя выбор библиотек и правил явной привязки.
+
+
+## DEC-135 — Подтверждать email до создания аккаунта или social identity
+
+Дата: 2026-10-22. Статус: Confirmed. Источник: основатель выбрал
+«Подтверждение email до создания/привязки» при исправлении замечаний PR #58;
+продолжение работы подтверждено после обрыва.
+
+Уточняет DEC-133/DEC-134: парольная регистрация сначала доказывает владение
+email через browser-bound код, затем создаёт пользователя и юридические согласия.
+Social onboarding без авторитетного email proof хранит только pending flow;
+пользователь и identity создаются после кода. Авторитетный проверенный email
+Google сохраняет прежний путь. Занятость email раскрывается только после proof;
+совпадение email не связывает аккаунты автоматически. Явная привязка к уже
+подтверждённому аккаунту требует его действующей сессии и proof провайдера.
+
+Номера auth-решений изменены при синхронизации PR #58 с MVP: auth DEC-131/132/133
+стали DEC-133/134/135. DEC-131/132 MVP о фото сохранены без изменения содержания.
+
+
+## DEC-136 — Синхронный SMTP и принятое timing-ограничение MVP
+
+Дата: 2026-10-23. Статус: Confirmed. Источник: основатель утвердил план
+завершения PR #58 и уточнил приоритет минимальной сложности при scale-to-zero.
+Уточняет DEC-109 и DEC-133–135; не отменяет их proof, quota и session-инварианты.
+
+SMTP остаётся синхронным. Для известного email запрос кода может ждать SMTP,
+для неизвестного — завершаться раньше. Одинаковый HTTP-ответ не устраняет этот
+канал определения наличия аккаунта; timing запроса кода не объявляется закрытым.
+Исправленный путь отказа verify оценивается отдельно. Production readiness этим
+решением не подтверждается; нужны live provider/SMTP/Turnstile и staging gates.
+
+Cron Trigger + PostgreSQL outbox возможен, но требует dispatcher/lease/retry,
+внутренней защищённой точки запуска и проверки восстановления. Ежеминутный вызов
+Nest добавляет до минуты ожидания до отправки и при sleepAfter=10m не даёт idle
+контейнеру уснуть; более редкий запуск увеличивает задержку короткоживущего OTP.
+Проверка пустого outbox из Worker потребует доступа к БД или отдельного durable
+сигнала, меняя DEC-098. Для этого MVP такое расширение не выбрано. Sleep не
+считается гарантией запуска background-задач; fire-and-forget и искусственная
+задержка ответа не используются как исправление. Merge/deploy отдельно;
+самостоятельное слияние PR #58 не разрешено.
+
+## DEC-137 — Единый Explore вместо отдельных каталогов и Search overlay
+
+Date: 2026-10-25
+Status: Confirmed
+Source: explicit founder implementation request «Bidplace — реализация единого Explore»
+Revises: fullscreen Search overlay/navigation portion of `DEC-096` only.
+Preserves: portfolio-only restrictions of `DEC-083`, `DEC-087`.
+
+### Decision
+
+One `/explore` owns Categories / Authors / Works, rounded segmented variant1 from
+Figma `7240:2491`. Dock opens its inline animated search. X closes and clears the
+active query, retaining section, filters and sort via URL replace. Independent
+drafts may survive section switching; detail Back must restore state, pagination
+and scroll. Reload restores active URL state. Legacy URLs remain compatible.
+Works uses existing two-column caption cards without blur; large-card experiment,
+commerce and view-mode controls are excluded. Existing query hooks/cache/API stay.
+
+### Alternatives
+
+Separate overlay over catalogs and hidden competing result trees are rejected.
+PR44 must be reconciled selectively against current MVP, without merge/cherry-pick
+or a second filter implementation. Exact desktop/native design acceptance remains
+separate from responsive verification.
+
+
+## DEC-138 — Единая толщина линий иконок
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Источник:** явное решение founder
+в приёмке Explore.
+
+Обычные иконки — 1.3 физических px; отдельные icon-only кнопки и крупные иконки —
+1.6 физических px. Дробные 1.13/1.25 из масштабированных Figma SVG не являются
+токенами. Сохраняем исходные пропорции Hugeicons и явно компенсируем размер
+24-unit grid, чтобы контейнер не менял толщину штриха. Круглые кнопки вида и
+фильтров должны иметь одинаковый контейнер, визуальный размер и 1.6px stroke.
+Используем существующие Hugeicons/FigmaIcon/FigmaIconButton; новую систему не вводим.
+Правило заменяет прежние export-derived значения толщины; исключённые из MVP
+контролы не добавляются этим решением. Визуальные роли принадлежат
+[design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-139 — Контурная лупа Dock во всех состояниях
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Источник:** явная founder-правка
+приёмки Dock; рабочая копия Figma `7272:2707`, иконка `7272:2790`.
+
+Лупа поиска в Dock остаётся контурной при активном и неактивном разделе:
+24px, физическая линия 1.6px, как у плюса (`DEC-138`). Залитая лупа отклонена;
+новый набор иконок не нужен. Заливка активных Home/Profile сохраняется.
+Маршруты и accessibility selected state не меняются. Визуальный владелец —
+[design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-140 — Утолщение активной лупы Dock
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Revises:** `DEC-139` только в
+части одинаковой толщины обоих состояний. **Источник:** founder уточнил, что
+при переключении лупа должна становиться жирнее, сохраняя размер.
+
+Неактивный Search — контур 1.3px, активный — контур 1.6px, как у плюса
+(`DEC-138`). Размер 24px и исходная геометрия Hugeicons не меняются. Заливки
+лупы нет. Существующий selected route управляет толщиной без нового состояния.
+Home/Profile сохраняют активную заливку. Владелец —
+[design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-141 — Проба активной лупы Dock с линией 2.6px
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual trial; final visual
+acceptance pending. **Revises:** активные 1.6px из `DEC-140`.
+**Источник:** явное founder «в два раза попробуй, до 2.6».
+
+Активный Search — контур 2.6px (`stroke.iconActive`), неактивный — 1.3px.
+Размер 24px, заливки нет; плюс сохраняет 1.6px. Новый штрих вдвое толще
+неактивного. Маршруты, selected state, Home/Profile и остальные иконки неизменны.
+Визуальный владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-142 — Проба отдельного утолщения кольца Search
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual trial; final visual
+acceptance pending. **Revises:** одинаковую активную толщину двух путей `DEC-141`.
+**Источник:** founder согласился попробовать предложенные кольцо 3.6px и ручку 2.6px.
+
+Активный Search использует исходные Hugeicons paths: кольцо 3.6px, ручка 2.6px;
+неактивный остаётся 1.3px для обоих. Frame 24px, заливки нет, внутренний просвет
+уменьшается. SVG не парсится и не перерисовывается. Остальные иконки и маршруты
+не меняются. Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-143 — Заливка внутрь линзы Search с прозрачным отверстием
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual trial; final visual
+acceptance pending. **Revises:** разные толщины путей из `DEC-142`.
+**Источник:** founder уточнил: добавляем чёрное только внутрь, снаружи не расширяем;
+если невозможно — оставить оба штриха 2.6px.
+
+Реализуемый вариант: исходные контуры Hugeicons и оба штриха 2.6px сохраняются;
+линза заполняется цветом иконки, luminance mask вырезает прозрачный круг диаметром
+6px (начальная визуальная проба). Иконка 24px, неактивная — контурная 1.3px.
+Перерисовки/парсинга SVG нет; вариант с отдельным штрихом кольца 3.6px удаляется.
+Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-144 — Уменьшить внутреннюю заливку Search вдвое
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual trial; final visual
+acceptance pending. **Revises:** объём внутренней заливки из `DEC-143`.
+**Источник:** founder попросил вдвое уменьшить именно толщину добавленной заливки.
+
+При радиусе исходной линзы 8 и штрихе 2.6 внутренний край контура находится на
+радиусе 6.7. Вместо отверстия радиусом 3 используем 4.85 = 6.7 − (6.7 − 3) / 2:
+добавленная внутрь чёрная полоса уменьшается с 3.7 до 1.85px. Прозрачное отверстие
+имеет диаметр 9.7px. Снаружи геометрия и оба штриха 2.6px не меняются; frame 24px.
+Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-145 — Окончательно вернуть обычную контурную лупу Dock
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Supersedes:** `DEC-140`–`144`;
+восстанавливает простой вариант `DEC-139`. **Источник:** founder «верни как было
+и сделай толщину такой же, как у плюса ... без внутренних заливок».
+
+Search — исходный Hugeicons outline, frame 24px, линия 1.6px в активном и
+неактивном состоянии, как у Add. Маски, внутренние заливки, отдельные штрихи
+кольца и активные 2.6/3.6px отменены; экспериментальные варианты и токены удаляются.
+Home/Profile сохраняют активную заливку. Владелец —
+[design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-146 — Активная лупа имеет толщину плюса
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Revises:** одинаковые состояния
+Search из `DEC-145`; отмена внутренних заливок и экспериментов сохраняется.
+**Источник:** founder попросил при выборе лупы сделать толщину как у плюса.
+
+В Dock неактивная лупа — 1.3px, активная — 1.6px (равна Add). Исходная форма
+Hugeicons и frame 24px сохраняются; заливки и масок нет. Существующий selected
+route управляет толщиной. Add остаётся 1.6px; Home/Profile — без изменений.
+Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-147 — Толщина активных символов по жирному плюсу из макета
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual acceptance.
+**Revises:** неверный эталон 1.6px из `DEC-146`.
+**Источник:** founder показал жирный Plus из `5685:190` и попросил исправить.
+
+Выбранное значение — 2.5px: оценка по предоставленному скриншоту (не выдаётся за
+прочитанный Figma Stroke). Панель Frame36 подтверждает 36px/6px padding/24px glyph,
+но не Stroke. Search selected/pressed и Add pressed используют один `iconActive`.
+Неактивный Search — 1.3px, Add в покое — 1.6px; оба frame 24px. Исходные Hugeicons
+outline, без заливок и масок; используется existing MotionPressable pressed state.
+Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+## DEC-148 — Photo Workflow MVP: crop, order and recovery
+
+Date: 2026-10-26
+Status: Confirmed
+Source: explicit founder approval of Q1–Q5 in Photo Workflow implementation chat
+Extends: `DEC-131`, `DEC-132`
+
+- Work retains the full file after rotate/flip. A nullable crop belongs to the
+  image of a particular revision, in coordinates of that transformed full file;
+  the server validates it. Cards use the crop; the full-screen viewer uses the
+  complete image. Crop-only edits do not upload/re-encode the image. Published
+  revisions remain isolated through existing moderation.
+- Reset restores the state at editor opening, including its starting crop.
+  Cancel discards only the current opening's edits. Reopened saved photos start
+  from the current server version; no original/history archive is introduced.
+- File selection stays local until explicit upload. Failures do not stop other
+  files; each failed card retains its place and has its own retry. The selected
+  first card remains the cover. Removing it promotes the next card. Continue
+  requires no unresolved errors and confirmation of the saved server order.
+- Preparing/uploading/final-order saving locks composition, editing, adding and
+  reordering. Closing remains available and does not undo accepted uploads.
+- Duplicate detection compares exact original selected bytes within the current
+  preparation session only. Names/sizes are not proof. Removing a card permits
+  reselecting its file. Retry and replacing one's own slot are not additions.
+- Recovery is scoped to user/Work and the current app process (Web: until tab
+  reload). Closing retains files/order/operation keys/server IDs; explicit
+  confirmed discard clears local edits. Logout/account change clears private
+  state and owned resources. Lost responses reconcile by operation key/ID, never
+  position. After restart use the server gallery and reselect unsent files;
+  unfinished local order is not guaranteed across restart.
+
+Native device verification, crop implementation and safe replacement are
+implementation acceptance work, not confirmed completed behavior.
+
+## DEC-149 — Запуск включает прямые продажи: фиксированная цена и аукцион
+
+Date: 2026-10-28
+Status: Confirmed
+Source: explicit founder answers Q1–Q28 in the launch-planning chat
+Revises: `DEC-082` (launch scope is no longer portfolio-only); `DEC-123` (favorite
+works enter the launch)
+Refines: `DEC-115` (the sales wave is the launch; its plan lives in `docs/launch/`)
+
+- Every Work has one mode: portfolio, fixed price or auction. The author changes
+  mode by ending a listing and creating a new one; the Work and its story stay.
+- bidplace is a technological intermediary: no payments, escrow, delivery or
+  commission. Wording must not present bids as gambling.
+- Auction: start price, optional scheduled start, 1–14 days, server step table,
+  soft close, no reserve, no buy-now and no autobids. Bids are irrevocable; the
+  author may cancel only before the first bid.
+- Fixed price: the first buyer creates an order; the author may withdraw the
+  listing before a purchase.
+- Public labels: «Забронировано» while an order is open, «Продано» after the
+  author confirms the deal or after 14 days of automatic completion.
+- Second chance: the author's «Предложить следующему» offers the Work to the 2nd,
+  then 3rd bidder at their own bid, 48 hours each.
+- Orders carry a number, a 6-digit deal code, both parties' contacts, a buyer
+  comment, a seller note and a receipt image. Phone is optional; no SMS.
+- Anti-abuse: at most 3 open orders per buyer; 2 strikes block buying; seller
+  strikes come only from upheld reports. Trust signals are real counts, not ratings.
+- Reports use one generic table; the launch UI reports orders only. Support is a
+  Telegram link. Listings are not pre-moderated.
+- Email: mandatory transactional messages plus optional «outbid» (on by default).
+  The header shows an attention dot from a derived list; no notification feed.
+- Currency: BYN or RUB, stored as integer minor units.
+- Scheduled work runs from a Cloudflare Cron trigger through one internal tick.
+- Share export: Story, Post, Square and Original formats, rendered on the client.
+- Header animations ship at launch, mobile first. Tests are trimmed per wave.
+
+Mechanics, data, races and open defaults C1–C6:
+[COMMERCE.md](../launch/COMMERCE.md). Order of work: [launch plan](../launch/README.md).
+Nothing here is implemented yet; runtime status lives in `11-PROJECT-STATUS.md`.
+
+
+## DEC-151 — Story/Work photo limits unified
+
+Date: 2026-10-28
+Status: Confirmed contract; implementation acceptance Partial
+Source: explicit instruction to execute W0 photo Tasks 1–4 and related Task 6.
+Number: `DEC-151`. Published `DEC-150` on `fix/launch-docs-review` (`54925364`) is the deals decision and stays that number.
+Revises: `DEC-116` story file/aggregate budget; `DEC-148` session byte-deduplication clause.
+
+Gallery and story use the same client preparation: 3840px, 10 MiB output,
+25 MiB source, quality 0.85; PNG remains PNG. Avatar keeps 1600px / 2 MiB.
+Server story input is 10 MiB, gallery input remains 25 MiB; both use
+8192px / 50_331_648 input pixels and a 5 MiB stored master. The separate
+20 MiB story-photo aggregate budget is removed. Story keeps five image blocks,
+twenty text blocks and 200/5000/300 character limits; gallery keeps ten photos.
+Client source SHA-256/session duplicate rejection and v1 story restore are removed;
+server operation identity and input-checksum conflict checks remain authoritative.
+
+Unused story-owned holds are released by the server in the locked story-save
+transaction and queued through the existing cleanup owner. Gallery assets and
+other revisions are excluded. Media operations stop at twenty attempts without
+clearing `nextAttemptAt`. No migration, shared-byte lookup (`DEC-112`), story CDN,
+Cron move, native acceptance or main/CI/deploy cutover is included.
+
+Owners: [RFC §10](05-MVP-RFC.md#10-создание-work),
+[architecture](10-CODE-ARCHITECTURE.md), [status](11-PROJECT-STATUS.md),
+[W0 verification journal](../launch/waves/W0-photo-and-trunk.md#журнал-исполнения-2026-10-28).

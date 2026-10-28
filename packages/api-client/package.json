@@ -6,9 +6,11 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@bidplace/contracts": "workspace:*"
+    "@bidplace/contracts": "workspace:*",
+    "zod": "^3.24.2"
   }
 }

@@ -1,15 +1,20 @@
 import {
+  type DynamicModule,
   type MiddlewareConsumer,
   Module,
   type NestModule,
 } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { ScheduleModule } from '@nestjs/schedule';
 
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AuthAbuseModule } from './auth-abuse/auth-abuse.module';
 import { AuthModule } from './auth/auth.module';
+import { SocialAuthModule } from './auth/social-auth.module';
+import { CatalogModule } from './catalog/catalog.module';
 import { CategoriesModule } from './categories/categories.module';
+import { ServerEnvModule, type ServerEnv } from './core/config';
 import { DatabaseModule } from './core/database';
+import { MediaModule } from './core/media/media.module';
 import { ImageStoreModule } from './core/image-store';
 import { MailModule } from './core/mail';
 import { ApiExceptionFilter } from './core/errors';
@@ -21,60 +26,55 @@ import {
 import { ClockModule } from './core/time';
 import { PublicIdModule } from './core/public-id';
 import { ProductsModule } from './products/products.module';
-import { ListingsModule } from './listings/listings.module';
-import { BidsModule } from './bids/bids.module';
-import { LifecycleModule } from './lifecycle/lifecycle.module';
-import { OrdersModule } from './orders/orders.module';
 import { OtpModule } from './otp/otp.module';
 import { PasswordResetModule } from './password-reset/password-reset.module';
 import { AdminModule } from './admin/admin.module';
-import { ActivityModule } from './activity/activity.module';
 import { ImagesModule } from './images/images.module';
-import { RealtimeModule } from './realtime/realtime.module';
 import { SellersModule } from './sellers/sellers.module';
-import { DiscoveryModule } from './discovery/discovery.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 
-@Module({
-  imports: [
-    ScheduleModule.forRoot(),
-    HealthModule,
-    ClockModule,
-    PublicIdModule,
-    ImageStoreModule,
-    MailModule,
-    CategoriesModule,
-    DatabaseModule,
-    AuthModule,
-    AnalyticsModule,
-    ProductsModule,
-    ListingsModule,
-    BidsModule,
-    LifecycleModule,
-    OrdersModule,
-    OtpModule,
-    PasswordResetModule,
-    AdminModule,
-    ActivityModule,
-    ImagesModule,
-    RealtimeModule,
-    SellersModule,
-    DiscoveryModule,
-    PortfolioModule,
-  ],
-  providers: [
-    {
-      provide: APP_FILTER,
-      useClass: ApiExceptionFilter,
-    },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: RequestLoggingInterceptor,
-    },
-  ],
-})
+@Module({})
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+
+  static forRoot(env: ServerEnv): DynamicModule {
+    return {
+      module: AppModule,
+      imports: [
+        ServerEnvModule.forRoot(env),
+        HealthModule,
+        ClockModule,
+        PublicIdModule,
+        ImageStoreModule,
+        MediaModule,
+        MailModule,
+        CategoriesModule,
+        CatalogModule,
+        DatabaseModule,
+        AuthAbuseModule,
+        AuthModule,
+        SocialAuthModule,
+        AnalyticsModule,
+        ProductsModule,
+        OtpModule,
+        PasswordResetModule,
+        AdminModule,
+        ImagesModule,
+        SellersModule,
+        PortfolioModule,
+      ],
+      providers: [
+        {
+          provide: APP_FILTER,
+          useClass: ApiExceptionFilter,
+        },
+        {
+          provide: APP_INTERCEPTOR,
+          useClass: RequestLoggingInterceptor,
+        },
+      ],
+    };
   }
 }

@@ -1,9 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import sharp from 'sharp';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
   assertProductImageCapacity,
+  acceptSupportedUploadMimeType,
   detectImageMimeType,
   getImageCacheControl,
   productImagePixelBudgets,
@@ -75,6 +76,15 @@ describe('image policy', () => {
   it('detects supported image signatures', () => {
     expect(detectImageMimeType(pngBuffer)).toBe('image/png');
     expect(detectImageMimeType(gifBuffer)).toBeNull();
+  });
+
+  it('rejects unsupported upload MIME types before reading bytes', () => {
+    const done = vi.fn();
+    acceptSupportedUploadMimeType('image/gif', done);
+    expect(done).toHaveBeenCalledWith(expect.any(BadRequestException), false);
+    done.mockClear();
+    acceptSupportedUploadMimeType('image/png', done);
+    expect(done).toHaveBeenCalledWith(null, true);
   });
 
   it('normalizes validated uploads to canonical static bytes', async () => {

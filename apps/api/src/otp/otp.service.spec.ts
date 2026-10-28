@@ -1,74 +1,142 @@
-import { describe, expect, it, vi } from 'vitest';
+import { ApiErrorCode } from '@bidplace/contracts';
+import { HttpStatus } from '@nestjs/common';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { MailTransport } from '../core/mail';
+import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
+import { syntheticServerEnv } from '../core/config/synthetic-server-env';
+import { AppException } from '../core/errors';
+import { OtpController } from './otp.controller';
 import { OtpService } from './otp.service';
 
-const mail: MailTransport = { send: vi.fn() };
+const emailProof = syntheticTurnstileToken('email_verification');
+
 const rateLimits = { consume: vi.fn().mockReturnValue(true) };
+const abuse = {
+  sendEmailVerification: vi.fn().mockResolvedValue({ delivery: 'accepted' }),
+  verifyEmailCode: vi.fn().mockResolvedValue(undefined),
+};
 
 describe('OtpService', () => {
-  it('rejects an expired code without marking the user verified', async () => {
-    const prisma = {
-      emailVerificationCode: {
-        findFirst: vi.fn().mockResolvedValue({
-          expiresAt: new Date(Date.now() - 1),
-          attempts: 0,
-          usedAt: null,
-          codeHash: 'hash',
-        }),
-      },
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          emailVerifiedAt: null,
-        }),
-        update: vi.fn(),
-      },
-    };
-    const service = new OtpService(prisma as never, mail, rateLimits as never);
-
-    await expect(service.verify('user-id', '123456')).rejects.toThrow('OTP has expired');
-    expect(prisma.user.update).not.toHaveBeenCalled();
+  afterEach(() => {
+    vi.clearAllMocks();
+    rateLimits.consume.mockReturnValue(true);
   });
 
-  it('rejects a code after five failed attempts', async () => {
-    const prisma = {
-      emailVerificationCode: {
-        findFirst: vi.fn().mockResolvedValue({
-          expiresAt: new Date(Date.now() + 60_000),
-          attempts: 5,
-          usedAt: null,
-          codeHash: 'hash',
-        }),
-      },
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          emailVerifiedAt: null,
-        }),
-        update: vi.fn(),
-      },
-    };
-    const service = new OtpService(prisma as never, mail, rateLimits as never);
+  it('keeps the IP gate and delegates a send', async () => {
+    const service = new OtpService(
+      rateLimits as never,
+      abuse as never,
+      syntheticServerEnv(),
+    );
 
-    await expect(service.verify('user-id', '123456')).rejects.toThrow('OTP retry limit reached');
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    await expect(
+      service.request('user-id', {
+        ip: '203.0.113.8',
+        idempotencyKey: 'idem-key-1',
+        turnstileToken: emailProof,
+      }),
+    ).resolves.toEqual({ delivery: 'accepted' });
+
+    expect(rateLimits.consume).toHaveBeenCalledWith('email-otp:request:ip:203.0.113.8', 10, 60_000);
+    expect(abuse.sendEmailVerification).toHaveBeenCalledWith({
+      userId: 'user-id',
+      idempotencyKey: 'idem-key-1',
+      turnstileToken: emailProof,
+      ip: '203.0.113.8',
+    });
   });
 
-  it('enforces the resend cooldown before creating a new code', async () => {
-    const prisma = {
-      emailVerificationCode: {
-        findFirst: vi.fn().mockResolvedValue({ createdAt: new Date() }),
-        create: vi.fn(),
-      },
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          email: 'user@example.com',
-          emailVerifiedAt: null,
-        }),
-      },
-    };
-    const service = new OtpService(prisma as never, mail, rateLimits as never);
+  it('does not send when the request IP limit is exhausted', async () => {
+    rateLimits.consume.mockReturnValueOnce(false);
+    const service = new OtpService(
+      rateLimits as never,
+      abuse as never,
+      syntheticServerEnv(),
+    );
 
-    await expect(service.request('user-id')).rejects.toThrow('OTP resend cooldown is active');
-    expect(prisma.emailVerificationCode.create).not.toHaveBeenCalled();
+    const error = await service.request('user-id', {
+      ip: '203.0.113.8',
+      idempotencyKey: 'idem-key-1',
+      turnstileToken: emailProof,
+    }).then(
+      () => {
+        throw new Error('expected the request IP gate to refuse');
+      },
+      (caught: unknown) => caught,
+    );
+    expect(error).toBeInstanceOf(AppException);
+    expect((error as AppException).getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
+    expect((error as AppException).apiCode).toBe(ApiErrorCode.RATE_LIMITED);
+    expect((error as AppException).getResponse()).toMatchObject({
+      code: ApiErrorCode.RATE_LIMITED,
+      message: 'Too many requests',
+    });
+    expect(rateLimits.consume).toHaveBeenCalledWith('email-otp:request:ip:203.0.113.8', 10, 60_000);
+    expect(abuse.sendEmailVerification).not.toHaveBeenCalled();
+  });
+
+  it('keeps the verify IP gate and delegates the code', async () => {
+    const service = new OtpService(
+      rateLimits as never,
+      abuse as never,
+      syntheticServerEnv(),
+    );
+
+    await service.verify('user-id', '123456', {
+      ip: '203.0.113.9',
+      idempotencyKey: 'idem-key-2',
+    });
+
+    expect(rateLimits.consume).toHaveBeenCalledWith('email-otp:verify:ip:203.0.113.9', 20, 60_000);
+    expect(abuse.verifyEmailCode).toHaveBeenCalledWith({
+      userId: 'user-id',
+      code: '123456',
+      idempotencyKey: 'idem-key-2',
+    });
+  });
+
+  it('does not verify when the verify IP limit is exhausted', async () => {
+    rateLimits.consume.mockReturnValueOnce(false);
+    const service = new OtpService(
+      rateLimits as never,
+      abuse as never,
+      syntheticServerEnv(),
+    );
+
+    const error = await service.verify('user-id', '123456', {
+      ip: '203.0.113.9',
+      idempotencyKey: 'idem-key-2',
+    }).then(
+      () => {
+        throw new Error('expected the verify IP gate to refuse');
+      },
+      (caught: unknown) => caught,
+    );
+    expect(error).toBeInstanceOf(AppException);
+    expect((error as AppException).getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
+    expect((error as AppException).apiCode).toBe(ApiErrorCode.RATE_LIMITED);
+    expect((error as AppException).getResponse()).toMatchObject({
+      code: ApiErrorCode.RATE_LIMITED,
+      message: 'Too many requests',
+    });
+    expect(rateLimits.consume).toHaveBeenCalledWith('email-otp:verify:ip:203.0.113.9', 20, 60_000);
+    expect(abuse.verifyEmailCode).not.toHaveBeenCalled();
+  });
+
+  it('reads the prototype ip getter instead of a spread copy', async () => {
+    const request = Object.assign(Object.create({ get ip() { return '203.0.113.44'; } }), {
+      socket: { remoteAddress: '10.0.0.8' },
+    });
+    expect({ ...request }.ip).toBeUndefined();
+    const otp = { request: vi.fn().mockResolvedValue({ delivery: 'accepted' }) };
+    const controller = new OtpController(otp as never, {} as never);
+    await controller.request({ sub: 'user-id' } as never, request, {
+      idempotencyKey: 'idem-key-1',
+      turnstileToken: emailProof,
+    });
+    expect(otp.request).toHaveBeenCalledWith(
+      'user-id',
+      expect.objectContaining({ ip: '203.0.113.44', socket: { remoteAddress: '10.0.0.8' } }),
+    );
   });
 });

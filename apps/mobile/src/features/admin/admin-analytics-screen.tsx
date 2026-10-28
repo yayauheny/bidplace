@@ -1,573 +1,331 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import { Platform, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { Link, type Href } from 'expo-router';
-import { View } from 'react-native';
-
-import type {
-  AdminAnalyticsOverview,
-  AdminAnalyticsQuery,
-} from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
-
 import { FormPageShell } from '../../components/layout';
+import { FigmaTabs } from '../../components/figma/FigmaTabs';
+import {
+  PaddedGrid,
+  gridColumnsFromWidth,
+} from '../../components/figma/PaddedGrid';
 import {
   AppText,
   FormSection,
-  MotionPressable,
   PageHeader,
-  PageState,
   SecondaryButton,
+  TextField,
 } from '../../components/ui';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { useApiClient } from '../../providers/api-provider';
+import { useAppTheme } from '../../providers/theme-provider';
+import {
+  analyticsRange,
+  analyticsRate,
+  type AnalyticsPeriod,
+} from './admin-analytics-state';
+import { AdminAnalyticsGrowth } from './AdminAnalyticsGrowth';
 
-type PeriodOption = Exclude<AdminAnalyticsQuery['period'], 'custom'>;
-type Drilldown = NonNullable<AdminAnalyticsQuery['drilldown']>;
-
-const periodOptions: Array<{ value: PeriodOption; label: string }> = [
+const periods = [
   { value: 'today', label: 'Сегодня' },
   { value: '7d', label: '7 дней' },
   { value: '30d', label: '30 дней' },
   { value: '90d', label: '90 дней' },
+  { value: 'custom', label: 'Период' },
 ];
-
 function MetricCard({
   label,
   value,
   definition,
-  onPress,
 }: {
   label: string;
   value: number | string;
   definition: string;
-  onPress?: () => void;
 }) {
-  const content = (
+  const palette = useAppTheme();
+  return (
     <View
       style={{
-        flexGrow: 1,
-        flexBasis: 160,
-        minWidth: 140,
-        maxWidth: 220,
-        gap: designTokens.space.x1,
-        padding: designTokens.space.x4,
+        gap: designTokens.space.x2,
+        padding: designTokens.space.x3,
         borderWidth: 1,
-        borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surface,
+        borderColor: palette.border,
+        borderRadius: designTokens.radius.card,
+        flex: 1,
       }}
     >
-      <AppText role="label" tone="secondary">
+      <AppText role="bodySmall" tone="secondary">
         {label}
       </AppText>
-      <AppText role="numeric">{value}</AppText>
+      <AppText role="numeric">
+        {typeof value === 'number' ? value.toLocaleString('ru-RU') : value}
+      </AppText>
       <AppText role="caption" tone="secondary">
         {definition}
       </AppText>
     </View>
   );
-
-  if (!onPress) {
-    return content;
-  }
-
-  return (
-    <MotionPressable
-      accessibilityRole="button"
-      accessibilityLabel={`${label}: ${value}`}
-      onPress={onPress}
-      preset="card"
-    >
-      {content}
-    </MotionPressable>
-  );
-}
-
-function formatRate(value: number | null): string {
-  if (value === null) {
-    return '—';
-  }
-  return `${Math.round(value * 1000) / 10}%`;
-}
-
-function formatSeconds(value: number | null): string {
-  if (value === null) {
-    return '—';
-  }
-  if (value < 60) {
-    return `${Math.round(value)} с`;
-  }
-  if (value < 3600) {
-    return `${Math.round(value / 60)} мин`;
-  }
-  return `${Math.round(value / 3600)} ч`;
-}
-
-function GrowthBars({
-  growth,
-}: {
-  growth: AdminAnalyticsOverview['growth'];
-}) {
-  const max = Math.max(
-    1,
-    ...growth.map(
-      (day) =>
-        day.newUsers +
-        day.listingViews +
-        day.bids +
-        day.orders +
-        day.newListings +
-        day.newSellers,
-    ),
-  );
-
-  return (
-    <View style={{ gap: designTokens.space.x3 }}>
-      {growth.slice(-14).map((day) => {
-        const total =
-          day.newUsers +
-          day.listingViews +
-          day.bids +
-          day.orders +
-          day.newListings +
-          day.newSellers;
-        const widthPercent = Math.max(4, Math.round((total / max) * 100));
-        return (
-          <View key={day.date} style={{ gap: designTokens.space.x1 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                gap: designTokens.space.x3,
-              }}
-            >
-              <AppText role="label">{day.date}</AppText>
-              <AppText role="caption" tone="secondary">
-                users {day.newUsers} · views {day.listingViews} · bids{' '}
-                {day.bids} · orders {day.orders}
-              </AppText>
-            </View>
-            <View
-              style={{
-                height: 8,
-                backgroundColor: designTokens.color.border,
-                overflow: 'hidden',
-              }}
-            >
-              <View
-                style={{
-                  width: `${widthPercent}%`,
-                  height: '100%',
-                  backgroundColor: designTokens.color.ink,
-                }}
-              />
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-function RecentList({
-  title,
-  items,
-}: {
-  title: string;
-  items: Array<{ id: string; label: string; meta?: string; href?: string }>;
-}) {
-  return (
-    <FormSection title={title}>
-      {items.length === 0 ? (
-        <AppText role="bodySmall" tone="secondary">
-          Пока нет данных.
-        </AppText>
-      ) : (
-        <View style={{ gap: designTokens.space.x1 }}>
-          {items.map((item) => {
-            const row = (
-              <View
-                style={{
-                  gap: designTokens.space.x1,
-                  paddingVertical: designTokens.space.x2,
-                  borderBottomWidth: 1,
-                  borderBottomColor: designTokens.color.border,
-                }}
-              >
-                <AppText role="label">{item.label}</AppText>
-                {item.meta ? (
-                  <AppText role="caption" tone="secondary">
-                    {item.meta}
-                  </AppText>
-                ) : null}
-              </View>
-            );
-
-            if (!item.href) {
-              return <View key={item.id}>{row}</View>;
-            }
-
-            return (
-              <Link key={item.id} href={item.href as Href} asChild>
-                <MotionPressable
-                  accessibilityRole="link"
-                  accessibilityLabel={item.label}
-                  preset="card"
-                >
-                  {row}
-                </MotionPressable>
-              </Link>
-            );
-          })}
-        </View>
-      )}
-    </FormSection>
-  );
 }
 
 export function AdminAnalyticsScreen() {
   const api = useApiClient();
-  const [period, setPeriod] = useState<PeriodOption>('7d');
-  const [drilldown, setDrilldown] = useState<Drilldown | undefined>();
-
+  const [gridWidth, setGridWidth] = useState(0);
+  const [period, setPeriod] = useState<AnalyticsPeriod>('7d');
+  const [instant, setInstant] = useState(() => new Date());
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
+  const range = analyticsRange(period, instant, start, end);
   const query = useQuery({
-    queryKey: ['admin', 'analytics', period, drilldown],
-    queryFn: () =>
-      api.admin.getAnalyticsOverview({
-        period,
-        ...(drilldown ? { drilldown } : {}),
-      }),
+    queryKey: ['admin', 'analytics', 'foundation', range],
+    queryFn: ({ signal }) =>
+      api.admin.getAnalyticsFoundation(range!, { signal }),
+    enabled: range !== null,
   });
-
-  const data = query.data;
-
-  const overviewCards = useMemo(() => {
-    if (!data) {
-      return [];
-    }
-    return [
-      {
-        label: 'Users',
-        value: data.overview.users.value,
-        definition: data.overview.users.definition,
-      },
-      {
-        label: 'New users',
-        value: data.overview.newUsers.value,
-        definition: data.overview.newUsers.definition,
-        drilldown: 'new_users' as const,
-      },
-      {
-        label: 'Active users',
-        value: data.overview.activeUsers.value,
-        definition: data.overview.activeUsers.definition,
-      },
-      {
-        label: 'Creators',
-        value: data.overview.creators.value,
-        definition: data.overview.creators.definition,
-        drilldown: 'new_creators' as const,
-      },
-      {
-        label: 'Live auctions',
-        value: data.overview.liveAuctions.value,
-        definition: data.overview.liveAuctions.definition,
-      },
-      {
-        label: 'Bids',
-        value: data.overview.bids.value,
-        definition: data.overview.bids.definition,
-        drilldown: 'recent_bids' as const,
-      },
-      {
-        label: 'Ended auctions',
-        value: data.overview.endedAuctions.value,
-        definition: data.overview.endedAuctions.definition,
-      },
-      {
-        label: 'Successful auctions',
-        value: data.overview.successfulAuctions.value,
-        definition: data.overview.successfulAuctions.definition,
-        drilldown: 'recent_orders' as const,
-      },
-    ];
-  }, [data]);
-
-  if (query.isLoading) {
-    return (
-      <FormPageShell>
-        <PageState title="Загружаем аналитику…" loading />
-      </FormPageShell>
-    );
-  }
-
-  if (query.isError || !data) {
-    return (
-      <FormPageShell>
-        <PageState
-          title="Не удалось загрузить аналитику"
-          retry={() => void query.refetch()}
-        />
-      </FormPageShell>
-    );
-  }
-
+  const data = range ? query.data : undefined;
+  const clientEnabled =
+    Platform.OS === 'web' &&
+    process.env.EXPO_PUBLIC_ANALYTICS_WEB_ENABLED === 'true';
   return (
-    <FormPageShell>
-      <PageHeader
-        title="Аналитика"
-        description="Обзор роста, воронок и здоровья marketplace без SQL."
-      />
-
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: designTokens.space.x2,
-        }}
-      >
-        <Link href="/admin" asChild>
-          <MotionPressable
-            accessibilityRole="link"
-            accessibilityLabel="Модерация"
-            preset="button"
-            style={{
-              minHeight: designTokens.size.touch,
-              paddingHorizontal: designTokens.space.x4,
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: designTokens.color.border,
-              backgroundColor: designTokens.color.surface,
-            }}
-          >
-            <AppText role="button">Модерация</AppText>
-          </MotionPressable>
-        </Link>
-        {periodOptions.map((option) => (
-          <SecondaryButton
-            key={option.value}
-            label={period === option.value ? `✓ ${option.label}` : option.label}
-            onPress={() => {
-              setPeriod(option.value);
-              setDrilldown(undefined);
-            }}
-          />
-        ))}
-      </View>
-
-      <FormSection
-        title="Overview"
-        description={`${data.from.slice(0, 10)} → ${data.to.slice(0, 10)}`}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: designTokens.space.x3,
+    <View testID="admin-analytics-detail" style={{ flex: 1, minWidth: 0 }}>
+      <FormPageShell>
+        <PageHeader
+          title="Аналитика"
+          description="Публичное портфолио · данные UTC"
+        />
+        <FigmaTabs
+          tabs={periods}
+          value={period}
+          onChange={(value) => {
+            setInstant(new Date());
+            setPeriod(value as AnalyticsPeriod);
           }}
+          label="Период аналитики"
+          panelId="analytics-period"
+        />
+        <View
+          nativeID="analytics-period"
+          role="tabpanel"
+          aria-labelledby={`analytics-period-${period}`}
+          style={{ gap: designTokens.space.sectionGap }}
         >
-          {overviewCards.map((card) => (
-            <MetricCard
-              key={card.label}
-              label={card.label}
-              value={card.value}
-              definition={card.definition}
-              onPress={
-                card.drilldown
-                  ? () => setDrilldown(card.drilldown)
-                  : undefined
-              }
-            />
-          ))}
-        </View>
-      </FormSection>
-
-      <FormSection
-        title="Acquisition"
-        description="First-touch attribution из analytics; signup = linked User."
-      >
-        {data.acquisition.bySource.length === 0 ? (
-          <AppText role="bodySmall" tone="secondary">
-            Источников пока нет.
-          </AppText>
-        ) : (
-          <View style={{ gap: designTokens.space.x2 }}>
-            {data.acquisition.bySource.map((row) => (
-              <View
-                key={row.source}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  gap: designTokens.space.x3,
-                }}
-              >
-                <AppText role="label">{row.source}</AppText>
-                <AppText role="caption" tone="secondary">
-                  visitors {row.visitors} · signups {row.signups}
+          {period === 'custom' ? (
+            <View style={{ gap: designTokens.space.x3 }}>
+              <TextField
+                label="Начало (ГГГГ-ММ-ДД)"
+                value={start}
+                onChangeText={setStart}
+              />
+              <TextField
+                label="Конец включительно (ГГГГ-ММ-ДД)"
+                value={end}
+                onChangeText={setEnd}
+              />
+              {!range ? (
+                <AppText
+                  role="bodySmall"
+                  tone="danger"
+                  accessibilityRole="alert"
+                >
+                  Укажите существующие даты по порядку: не более 93 дней.
                 </AppText>
-              </View>
-            ))}
+              ) : null}
+            </View>
+          ) : null}
+          {range ? (
             <AppText role="caption" tone="secondary">
-              Visitor → signup:{' '}
-              {formatRate(data.acquisition.visitorToSignupRate)}
+              {range.from.slice(0, 10)} —{' '}
+              {new Date(Date.parse(range.to) - 1).toISOString().slice(0, 10)} ·
+              UTC
             </AppText>
-          </View>
-        )}
-      </FormSection>
-
-      <FormSection
-        title="Buyer funnel"
-        description="Views/CTA — analytics; accepted bids/winners — PostgreSQL."
-      >
-        <AppText role="body">
-          {data.buyerFunnel.listingViewed.value} listing viewed →{' '}
-          {data.buyerFunnel.bidCtaClicked.value} bid CTA →{' '}
-          {data.buyerFunnel.bidAccepted.value} bid accepted →{' '}
-          {data.buyerFunnel.winners.value} winners
-        </AppText>
-        <SecondaryButton
-          label="Отклонённые ставки"
-          onPress={() => setDrilldown('bid_rejected')}
-        />
-      </FormSection>
-
-      <FormSection title="Seller funnel" description="Почти всё из PostgreSQL.">
-        <AppText role="body">
-          {data.sellerFunnel.registeredUsers.value} registered →{' '}
-          {data.sellerFunnel.sellerProfiles.value} sellers →{' '}
-          {data.sellerFunnel.productsCreated.value} products →{' '}
-          {data.sellerFunnel.productsApproved.value} approved →{' '}
-          {data.sellerFunnel.auctionsStarted.value} auctions →{' '}
-          {data.sellerFunnel.auctionsWithBids.value} with bids →{' '}
-          {data.sellerFunnel.auctionsSold.value} sold
-        </AppText>
-      </FormSection>
-
-      <FormSection title="Marketplace health">
-        <View style={{ gap: designTokens.space.x2 }}>
-          <AppText role="bodySmall">
-            LIVE: {data.marketplace.liveAuctions.value}
-          </AppText>
-          <AppText role="bodySmall">
-            Started / ended: {data.marketplace.auctionsStarted.value} /{' '}
-            {data.marketplace.auctionsEnded.value}
-          </AppText>
-          <AppText role="bodySmall">
-            With bids / zero bids: {data.marketplace.auctionsWithBids.value} /{' '}
-            {data.marketplace.auctionsWithZeroBids.value}
-          </AppText>
-          <AppText role="bodySmall">
-            Avg bids / ended:{' '}
-            {data.marketplace.averageBidsPerEndedAuction ?? '—'}
-          </AppText>
-          <AppText role="bodySmall">
-            Unique bidders / active sellers:{' '}
-            {data.marketplace.uniqueBidders.value} /{' '}
-            {data.marketplace.uniqueActiveSellers.value}
-          </AppText>
-          <AppText role="bodySmall">
-            Median time to first bid:{' '}
-            {formatSeconds(data.marketplace.medianSecondsToFirstBid)}
-          </AppText>
-          <AppText role="bodySmall">
-            Receiving bid rate:{' '}
-            {formatRate(data.marketplace.auctionsReceivingBidRate)} · sold rate:{' '}
-            {formatRate(data.marketplace.auctionsSoldRate)}
-          </AppText>
-          <SecondaryButton
-            label={`Auctions without bids: ${data.marketplace.auctionsWithZeroBids.value}`}
-            onPress={() => setDrilldown('auctions_without_bids')}
-          />
+          ) : null}
+          {range && !data ? (
+            <InfrastructurePageStatus
+              status={query.isError ? 'error' : 'loading'}
+              onRetry={() => void query.refetch()}
+            />
+          ) : null}
+          {data ? (
+            <>
+              {query.isError ? (
+                <AppText role="bodySmall" tone="danger">
+                  Обновление не удалось. Показан последний загруженный ответ.
+                </AppText>
+              ) : null}
+              <FormSection title="Состояние данных">
+                <AppText role="bodySmall">
+                  Серверный сбор:{' '}
+                  {data.serverCollectionEnabled === undefined
+                    ? 'статус недоступен'
+                    : data.serverCollectionEnabled
+                      ? 'разрешён'
+                      : 'выключен'}
+                  . Среда: {data.environment}.
+                </AppText>
+                <AppText role="bodySmall">
+                  Клиентский web-сборщик этой сборки:{' '}
+                  {clientEnabled ? 'включён' : 'выключен'}.
+                </AppText>
+                <AppText role="caption" tone="secondary">
+                  Серверное разрешение не включает клиентский сборщик.
+                  Административные просмотры не собираются. Сохранённые данные
+                  доступны и при выключенном сборе.
+                </AppText>
+                <AppText role="bodySmall">
+                  {data.coverage.firstVisitAt
+                    ? `Наблюдения v2 с ${data.coverage.firstVisitAt.slice(0, 10)}.`
+                    : 'Начало наблюдений неизвестно; исторических web-данных нет.'}{' '}
+                  История до v2 исключена.
+                </AppText>
+                {data.coverage.firstVisitAt &&
+                Date.parse(data.from) <
+                  Date.parse(data.coverage.firstVisitAt) ? (
+                  <AppText role="bodySmall">
+                    Покрытие периода неполное: до начала наблюдений данные
+                    неизвестны.
+                  </AppText>
+                ) : null}
+              </FormSection>
+              <FormSection title="За выбранный период">
+                <View
+                  onLayout={(event) =>
+                    setGridWidth(event.nativeEvent.layout.width)
+                  }
+                  style={{ gap: designTokens.space.x3 }}
+                >
+                  <PaddedGrid
+                    columns={
+                      gridWidth
+                        ? gridColumnsFromWidth(gridWidth, {
+                            minCardWidth: 140,
+                            gap: designTokens.space.x3,
+                            max: 3,
+                          })
+                        : 2
+                    }
+                    gap={designTokens.space.x3}
+                    keyExtractor={(item) => item.label}
+                    items={[
+                      {
+                        label: 'Браузеры',
+                        value: data.product.visitors,
+                        definition: 'Уникальные анонимные браузеры, не люди',
+                      },
+                      {
+                        label: 'Сессии',
+                        value: data.product.sessions,
+                        definition: 'Сессии с публичными просмотрами',
+                      },
+                      {
+                        label: 'Просмотры',
+                        value: data.product.views,
+                        definition: 'Публичные страницы v2',
+                      },
+                      {
+                        label: 'Регистрации',
+                        value: data.operational.registrations,
+                        definition: 'Все регистрации, независимо от атрибуции',
+                      },
+                      {
+                        label: 'Первые авторы',
+                        value: data.product.firstAuthors,
+                        definition: 'Первая публикация автора',
+                      },
+                      {
+                        label: 'Первые работы',
+                        value: data.product.firstWorks,
+                        definition: 'Первая публикация работы',
+                      },
+                    ]}
+                    renderItem={(item) => <MetricCard {...item} />}
+                  />
+                </View>
+              </FormSection>
+              <FormSection title="Динамика">
+                <AdminAnalyticsGrowth rows={data.growth} />
+              </FormSection>
+              <FormSection title="Когортная конверсия за 30 дней">
+                <AppText role="numeric">
+                  {analyticsRate(data.acquisition.rate)}
+                </AppText>
+                <AppText role="bodySmall">
+                  {data.acquisition.registrations} доказанных регистраций /{' '}
+                  {data.acquisition.visitors} браузеров, впервые пришедших в
+                  выбранный период.
+                </AppText>
+                <AppText role="bodySmall">
+                  {data.acquisition.mature
+                    ? 'Окно наблюдения завершено.'
+                    : 'Когорта незрелая: 30-дневное окно ещё открыто.'}
+                </AppText>
+                <AppText role="caption" tone="secondary">
+                  Регистрация может произойти после выбранного периода.
+                  Недоказанная связь не участвует в конверсии. При отсутствии
+                  когорты конверсия неизвестна.
+                </AppText>
+                {data.acquisition.bySource.length ? (
+                  data.acquisition.bySource.map((source) => (
+                    <View
+                      key={source.source}
+                      style={{ gap: designTokens.space.x1 }}
+                    >
+                      <AppText role="label">
+                        {source.source === 'direct'
+                          ? 'Прямой переход'
+                          : source.source}
+                      </AppText>
+                      <AppText role="bodySmall">
+                        {source.visitors} браузеров · {source.registrations}{' '}
+                        регистраций
+                      </AppText>
+                    </View>
+                  ))
+                ) : (
+                  <AppText role="bodySmall">
+                    Источников в выбранной когорте нет.
+                  </AppText>
+                )}
+              </FormSection>
+              <FormSection title="Состояние портфолио сейчас">
+                <AppText role="body">
+                  Опубликовано: {data.operational.currentAuthors} авторов ·{' '}
+                  {data.operational.currentWorks} работ.
+                </AppText>
+                <AppText role="bodySmall">
+                  {data.coverage.firstAuthorPublicationAt
+                    ? `Наблюдения первой публикации авторов с ${data.coverage.firstAuthorPublicationAt.slice(0, 10)}.`
+                    : 'Историческая дата первой публикации авторов неизвестна.'}{' '}
+                  Без исторической даты:{' '}
+                  {data.operational.unknownAuthorFirstPublication}.
+                </AppText>
+              </FormSection>
+              <FormSection title="Модерация сейчас">
+                <AppText role="body">
+                  Ожидают: {data.operational.pendingAuthors} авторов ·{' '}
+                  {data.operational.pendingWorks} работ.
+                </AppText>
+                <AppText role="bodySmall">
+                  Более 7 дней: {data.operational.stuckAuthors} авторов ·{' '}
+                  {data.operational.stuckWorks} работ.
+                </AppText>
+                <AppText role="bodySmall">
+                  Время отправки неизвестно:{' '}
+                  {data.operational.unknownAuthorSubmissionTime} авторов ·{' '}
+                  {data.operational.unknownWorkSubmissionTime} работ. Они не
+                  включены в показатель «более 7 дней».
+                </AppText>
+                <SecondaryButton label="Открыть модерацию" href="/admin" />
+              </FormSection>
+              <SecondaryButton
+                label="Обновить данные"
+                loading={query.isFetching}
+                onPress={() => {
+                  if (period === 'custom') void query.refetch();
+                  else setInstant(new Date());
+                }}
+              />
+            </>
+          ) : null}
         </View>
-      </FormSection>
-
-      <FormSection title="Growth" description="Последние дни периода.">
-        <GrowthBars growth={data.growth} />
-      </FormSection>
-
-      <FormSection title="Needs attention">
-        <View style={{ gap: designTokens.space.x2 }}>
-          <SecondaryButton
-            label={`Stale LIVE past endsAt: ${data.attention.staleLiveListings}`}
-            onPress={() => setDrilldown('stale_live_listings')}
-          />
-          <SecondaryButton
-            label={`Products stuck in review: ${data.attention.stuckProducts}`}
-            onPress={() => setDrilldown('stuck_products')}
-          />
-          <SecondaryButton
-            label={`Sellers stuck in review: ${data.attention.stuckSellers}`}
-            onPress={() => setDrilldown('stuck_sellers')}
-          />
-          <SecondaryButton
-            label={`Bid rejected events: ${data.attention.bidRejectedEvents}`}
-            onPress={() => setDrilldown('bid_rejected')}
-          />
-        </View>
-      </FormSection>
-
-      {drilldown && data.drilldown ? (
-        <RecentList
-          title={`Drill-down: ${drilldown}`}
-          items={data.drilldown.map((item) => ({
-            id: item.id,
-            label: item.label,
-            meta: item.meta,
-            href: item.href,
-          }))}
-        />
-      ) : null}
-
-      <RecentList
-        title="Recent users"
-        items={data.recent.users.map((user) => ({
-          id: user.id,
-          label: user.displayName,
-          meta: user.createdAt,
-        }))}
-      />
-      <RecentList
-        title="Recent creators"
-        items={data.recent.creators.map((creator) => ({
-          id: creator.id,
-          label: creator.fullName,
-          meta: `${creator.slug} · ${creator.status} · ${creator.createdAt}`,
-          href: `/seller/${creator.slug}`,
-        }))}
-      />
-      <RecentList
-        title="Recent listings"
-        items={data.recent.listings.map((listing) => ({
-          id: listing.id,
-          label: listing.productTitle ?? listing.productPublicId,
-          meta: `${listing.status} · ${listing.createdAt}`,
-          href: `/product/${listing.productPublicId}`,
-        }))}
-      />
-      <RecentList
-        title="Recent bids"
-        items={data.recent.bids.map((bid) => ({
-          id: bid.id,
-          label: `${bid.amount} BYN`,
-          meta: `${bid.listingId} · ${bid.createdAt}`,
-        }))}
-      />
-      <RecentList
-        title="Recent ended auctions"
-        items={data.recent.endedAuctions.map((listing) => ({
-          id: listing.id,
-          label: listing.productTitle ?? listing.productPublicId,
-          meta: `bids ${listing.bidCount} · ${listing.closedAt ?? '—'}`,
-          href: `/product/${listing.productPublicId}`,
-        }))}
-      />
-      <RecentList
-        title="Recent orders"
-        items={data.recent.orders.map((order) => ({
-          id: order.publicId,
-          label: `${order.publicId} · ${order.finalAmount} BYN`,
-          meta: `${order.status} · ${order.createdAt}`,
-          href: `/order/${order.publicId}`,
-        }))}
-      />
-    </FormPageShell>
+      </FormPageShell>
+    </View>
   );
 }

@@ -14,18 +14,13 @@ export function isPrismaUniqueConstraintError(error: unknown): boolean {
   return hasPrismaErrorCode(error, PRISMA_UNIQUE_CONSTRAINT_ERROR_CODE);
 }
 
-export function getPrismaUniqueConstraintTargets(error: unknown): string[] {
-  if (!isPrismaUniqueConstraintError(error)) {
-    return [];
-  }
-
+export function prismaUniqueTargets(error: unknown): string[] {
+  if (!isPrismaUniqueConstraintError(error)) return [];
   const target = (error as { meta?: { target?: unknown } }).meta?.target;
   if (Array.isArray(target)) {
-    return target.filter((value): value is string => typeof value === 'string');
+    return target.filter((item): item is string => typeof item === 'string');
   }
-  if (typeof target === 'string') {
-    return [target];
-  }
+  if (typeof target === 'string') return [target];
   return [];
 }
 

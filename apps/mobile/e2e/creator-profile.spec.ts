@@ -5,67 +5,89 @@ import {
   createBuyerFixture,
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
+import { fillControl } from './support/fill-control';
+import { e2eApiBaseURL } from './support/e2e-env';
 
-test('creator profile creation stages public identity, links and private handoff', async ({
+test('four-step creator application validates public links before submit', async ({
   browser,
 }) => {
   const { buyer } = await createBuyerFixture();
   const { context, page } = await authenticatedPage(browser, buyer);
-  const slug = `creator-${Date.now()}`;
-
   try {
     await page.goto('/profile');
-    const chooserPromise = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Добавить фото' }).click();
-    await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
-    await page.getByLabel('Имя или название').fill('Новый автор');
-    await page.getByLabel('URL-slug').fill(slug);
-    await page.getByLabel('Дисциплина').fill('Керамика');
-    await page.getByLabel('Страна').fill('BY');
+    const chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Загрузить фото' }).click();
+    await (await chooser).setFiles('e2e/fixtures/profile-photo.png');
     await page
-      .getByLabel('Публичная ссылка')
-      .fill(`https://example.com/${slug}`);
-    await page.getByLabel('Короткое описание').fill('Авторская практика.');
+      .getByRole('textbox', { name: 'Имя или название', exact: true })
+      .fill('Новый автор');
+    // The nickname is the account slug assigned at registration: the application shows it read-only.
+    const nickname = page.getByRole('textbox', {
+      name: 'Никнейм',
+      exact: true,
+    });
+    await expect(nickname).not.toHaveValue('');
+    const slug = await nickname.inputValue();
+    await page.getByRole('button', { name: 'Страна' }).click();
+    await page.getByRole('radio', { name: 'Беларусь' }).click();
+    await page
+      .getByRole('textbox', { name: 'Город', exact: true })
+      .fill('Минск');
     await page.getByRole('button', { name: 'Продолжить' }).click();
-
-    await expect(page.getByText('Шаг 2 из 3')).toBeVisible();
-    await page.getByLabel('Telegram').fill('not-a-url');
-    await page.getByLabel('Instagram').fill('not-a-url');
-    await page.getByLabel('Сайт').fill('not-a-url');
-    await page.getByLabel('Основная публичная ссылка').fill('not-a-url');
-    await expect(
-      page.getByText('Введите HTTPS-ссылку, начиная с https://'),
-    ).toHaveCount(4);
+    await expect(page).toHaveURL(/\/profile\?step=2/);
+    await fillControl(
+      page.getByRole('textbox', { name: 'Сайт', exact: true }).last(),
+      'not-a-url',
+    );
     await expect(
       page.getByRole('button', { name: 'Продолжить' }),
     ).toBeDisabled();
-    await page
-      .getByLabel('Telegram')
-      .fill(`https://t.me/${slug.replaceAll('-', '_')}`);
-    await page.getByLabel('Instagram').fill(`https://instagram.com/${slug}`);
-    await page.getByLabel('Сайт').fill(`https://example.com/${slug}`);
-    await page
-      .getByLabel('Основная публичная ссылка')
-      .fill(`https://example.com/${slug}`);
+    await fillControl(
+      page.getByRole('textbox', { name: 'Telegram', exact: true }).last(),
+      `https://t.me/${slug.replaceAll('-', '_')}`,
+    );
+    await fillControl(
+      page.getByRole('textbox', { name: 'Instagram', exact: true }).last(),
+      'https://instagram.com/portfolio_author',
+    );
+    await fillControl(
+      page.getByRole('textbox', { name: 'Сайт', exact: true }).last(),
+      `https://example.com/${slug}`,
+    );
     await page.getByRole('button', { name: 'Продолжить' }).click();
-
-    await expect(page.getByText('Шаг 3 из 3')).toBeVisible();
-    await page.getByLabel('Контакт для передачи').fill('creator');
-    await expect(
-      page.getByText('Введите Telegram @username или https://t.me/username'),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Создать профиль' }),
-    ).toBeDisabled();
-    await page.getByLabel('Контакт для передачи').fill('@handoff_creator');
-    const responsePromise = page.waitForResponse(
+    await expect(page).toHaveURL(/\/profile\?step=3/);
+    await page
+      .getByRole('textbox', { name: 'Коротко о себе', exact: true })
+      .last()
+      .fill('Авторская практика.');
+    await page
+      .getByRole('textbox', { name: 'Практика', exact: true })
+      .last()
+      .fill('Авторская керамика');
+    await page
+      .getByRole('button', { name: 'Выберите основные направления' })
+      .click();
+    await page.getByRole('checkbox', { name: 'Керамика' }).click();
+    await page.getByRole('button', { name: 'Применить' }).click();
+    await page.getByRole('button', { name: 'Продолжить' }).click();
+    await expect(page).toHaveURL(/\/profile\?step=4/);
+    const submitted = page.waitForResponse(
       (response) =>
-        response.url().endsWith('/api/seller/profile') &&
+        response.url().endsWith('/api/author/application/submit') &&
         response.request().method() === 'POST',
     );
-    await page.getByRole('button', { name: 'Создать профиль' }).click();
-    expect((await responsePromise).ok()).toBeTruthy();
-    await expect(page.getByText('На модерации')).toBeVisible();
+    await page.getByRole('button', { name: 'Сохранить и завершить' }).click();
+    expect((await submitted).status()).toBe(201);
+    await expect(
+      page.getByText('На модерации', { exact: true }).last(),
+    ).toBeVisible();
+    const profile = await (
+      await context.request.get(`${e2eApiBaseURL}/api/seller/profile`)
+    ).json();
+    expect(profile.sellerProfile.slug).toBe(slug);
+    expect(profile.sellerProfile.websiteUrl).toBe(
+      `https://example.com/${slug}`,
+    );
   } finally {
     await context.close();
   }
@@ -81,19 +103,15 @@ test('public creator profile shows only public data and remains responsive', asy
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/seller/${fixture.sellerProfile.slug}`);
 
-  await expect(page.getByTestId('ambient-image-background')).toBeVisible();
+  await expect(page.getByTestId('author-header')).toBeVisible();
   await expect(
     page.getByText(fixture.sellerProfile.fullName, { exact: true }).first(),
   ).toBeVisible();
-  await expect(
-    page.getByTestId('app-shell-content').getByText('Работы', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Работы/ }).first()).toBeVisible();
   await expect(page.getByText(fixture.product.title)).toBeVisible();
   await expect(page.getByLabel('Сайт автора')).toHaveCount(0);
   await expect(
-    page.getByRole('button', {
-      name: `Скопировать ссылку на профиль ${fixture.sellerProfile.fullName}`,
-    }),
+    page.getByRole('button', { name: 'Поделиться профилем' }),
   ).toBeVisible();
 
   await expect(page.locator('body')).not.toContainText(
@@ -111,4 +129,39 @@ test('public creator profile shows only public data and remains responsive', asy
       page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
     )
     .toBe(true);
+});
+
+test('approved author can reach editing and sees safe hide confirmation', async ({
+  browser,
+}) => {
+  const fixture = await createAuctionFixture();
+  const { context, page } = await authenticatedPage(browser, fixture.seller);
+
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/seller/${fixture.sellerProfile.slug}`);
+
+    await expect(
+      page.getByRole('link', { name: 'Редактировать профиль автора' }),
+    ).toHaveAttribute('href', '/profile');
+    await expect(
+      page.getByRole('link', {
+        name: `Редактировать работу ${fixture.product.title}`,
+      }),
+    ).toHaveAttribute('href', `/products/${fixture.product.id}`);
+
+    await page
+      .getByRole('button', { name: `Скрыть работу ${fixture.product.title}` })
+      .click();
+    await expect(page.getByText('Скрыть работу?')).toBeVisible();
+    await expect(
+      page.getByText(
+        'Работа исчезнет из публичного профиля и останется доступна в кабинете.',
+      ),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Закрыть окно' }).click();
+    await expect(page.getByText('Скрыть работу?')).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
 });

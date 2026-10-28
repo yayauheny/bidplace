@@ -1,74 +1,51 @@
+import { useState } from 'react';
+import { View } from 'react-native';
+
+import { designTokens } from '@bidplace/design-tokens';
+import { useFormContext, useFormState, useWatch } from 'react-hook-form';
+
+import { normalizeCatalogName, type SellerProductDetailResponse } from '@bidplace/contracts';
+
 import { FormPageColumns } from '../../components/layout';
+import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
+import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
+import { ProductCatalogTermSheet } from './product-catalog-term-sheet';
 import {
   AppText,
   FormSection,
   PrimaryButton,
   SecondaryButton,
-  TextField,
 } from '../../components/ui';
+import { ProductDraftTextField, useProductDraftWriteGuard } from './product-draft-fields';
+import {
+  emptyProductDraftFormValues,
+  productDraftRequiredErrors,
+  productDraftTermLabels,
+  type ProductDraftFormValues,
+} from './product-draft-form';
 import {
   productWizardStep,
   productWizardStepOneIncompleteMessage,
 } from './product-draft-wizard';
 
-type StepOneErrors = {
-  categoryId?: string;
-  title?: string;
-  story?: string;
-  year?: string;
-  uniqueness?: string;
-  provenance?: string;
-  city?: string;
-  deliveryInfo?: string;
-};
-
 export type ProductDraftAboutStepProps = {
   isCreationFlow: boolean;
   wizardStep: number;
-
   editable: boolean;
-  categories: Array<{ id: string; name: string }>;
-
-  categoryId: string;
-  onChangeCategoryId: (id: string) => void;
-
-  technique: string;
-  onChangeTechnique: (value: string) => void;
-  materials: string;
-  onChangeMaterials: (value: string) => void;
-  dimensions: string;
-  onChangeDimensions: (value: string) => void;
-  weight: string;
-  onChangeWeight: (value: string) => void;
-  year: string;
-  onChangeYear: (value: string) => void;
-
-  city: string;
-  onChangeCity: (value: string) => void;
-  packaging: string;
-  onChangePackaging: (value: string) => void;
-  deliveryInfo: string;
-  onChangeDeliveryInfo: (value: string) => void;
-
-  title: string;
-  onChangeTitle: (value: string) => void;
-  story: string;
-  onChangeStory: (value: string) => void;
-  uniqueness: string;
-  onChangeUniqueness: (value: string) => void;
-  condition: string;
-  provenance: string;
-  onChangeProvenance: (value: string) => void;
-
+  categories: Array<{ id: string; name: string; slug: string }>;
+  selection?: SellerProductDetailResponse['selection'];
+  onCatalogOpen: (role: 'MATERIAL' | 'TECHNIQUE' | null) => void;
+  catalog: Record<'MATERIAL' | 'TECHNIQUE', {
+    terms: SellerProductDetailResponse['selection']['materialTerms'];
+    loading: boolean;
+    error: boolean;
+    onRetry: () => void;
+  }>;
   stepOneAttempted: boolean;
-  stepOneErrors: StepOneErrors;
-  canSaveStepOne: boolean;
-
   saveIsPending: boolean;
   saveIsError: boolean;
-
+  saveMessage?: string | null;
   onSavePress: () => void;
-
   wizardCanOpenImages: boolean;
   onContinueToImages: () => void;
 };
@@ -78,204 +55,189 @@ export function ProductDraftAboutStep({
   wizardStep,
   editable,
   categories,
-  categoryId,
-  onChangeCategoryId,
-  technique,
-  onChangeTechnique,
-  materials,
-  onChangeMaterials,
-  dimensions,
-  onChangeDimensions,
-  weight,
-  onChangeWeight,
-  year,
-  onChangeYear,
-  city,
-  onChangeCity,
-  packaging,
-  onChangePackaging,
-  deliveryInfo,
-  onChangeDeliveryInfo,
-  title,
-  onChangeTitle,
-  story,
-  onChangeStory,
-  uniqueness,
-  onChangeUniqueness,
-  condition,
-  provenance,
-  onChangeProvenance,
+  selection,
+  onCatalogOpen,
+  catalog,
   stepOneAttempted,
-  stepOneErrors,
-  canSaveStepOne,
   saveIsPending,
   saveIsError,
+  saveMessage,
   onSavePress,
   wizardCanOpenImages,
   onContinueToImages,
 }: ProductDraftAboutStepProps) {
-  const titleLabel = isCreationFlow
-    ? 'Сохранить и продолжить'
-    : 'Сохранить изменения';
+  const [openRole, setOpenRole] = useState<'MATERIAL' | 'TECHNIQUE' | null>(null);
+  const guard = useProductDraftWriteGuard();
+  const { control, setValue } = useFormContext<ProductDraftFormValues>();
+  const [
+    categoryId = '',
+    title = '',
+    materialTermIds = [],
+    techniqueTermIds = [],
+    materialProposals = [],
+    techniqueProposals = [],
+    categoryProposal = '',
+  ] = useWatch({
+    control,
+    name: [
+      'categoryId',
+      'title',
+      'materialTermIds',
+      'techniqueTermIds',
+      'materialProposals',
+      'techniqueProposals',
+      'categoryProposal',
+    ],
+  });
+  const activeRoleQuery = catalog[openRole ?? 'MATERIAL'];
+  const knownTerms = openRole === 'MATERIAL'
+    ? (selection?.materialTerms ?? [])
+    : (selection?.techniqueTerms ?? []);
+  const { errors } = useFormState({ control, name: 'year' });
+  const requiredErrors = productDraftRequiredErrors({
+    ...emptyProductDraftFormValues,
+    categoryId,
+    title,
+  });
+  const hiddenSelectedCategory =
+    selection?.category?.id === categoryId &&
+    !categories.some((category) => category.id === categoryId)
+      ? selection.category
+      : null;
+  const rejectedCategoryProposal = selection?.proposals.find(
+    (proposal) =>
+      proposal.kind === 'CATEGORY' &&
+      proposal.selected &&
+      proposal.status === 'REJECTED' &&
+      proposal.normalizedName === normalizeCatalogName(categoryProposal),
+  );
+  const yearError = typeof errors.year?.message === 'string' ? errors.year.message : undefined;
+  const canSaveStepOne = !requiredErrors.categoryId && !requiredErrors.title && !yearError;
+  const titleLabel = isCreationFlow ? 'Сохранить и продолжить' : 'Сохранить изменения';
 
   return (
     <>
       <FormPageColumns
+        sidebarFirstOnCompact={false}
         sidebar={
-          <>
-            <FormSection
-              title="Характеристики"
-              description="Параметры помогают точно описать работу."
-            >
-              <TextField
-                label="Техника"
-                value={technique}
-                onChangeText={onChangeTechnique}
-                placeholder="Необязательно"
-                editable={editable}
-              />
-              <TextField
-                label="Материал"
-                value={materials}
-                onChangeText={onChangeMaterials}
-                placeholder="Необязательно"
-                editable={editable}
-              />
-              <TextField
-                label="Размеры"
-                value={dimensions}
-                onChangeText={onChangeDimensions}
-                placeholder="Необязательно"
-                editable={editable}
-              />
-              <TextField
-                label="Вес"
-                value={weight}
-                onChangeText={onChangeWeight}
-                placeholder="Необязательно"
-                editable={editable}
-              />
-              <TextField
-                label="Год создания"
-                value={year}
-                onChangeText={onChangeYear}
-                placeholder="Необязательно"
-                keyboardType="number-pad"
-                editable={editable}
-                error={stepOneAttempted ? stepOneErrors.year : undefined}
-              />
-            </FormSection>
-            <FormSection title="Логистика">
-              <TextField
-                label="Город"
-                value={city}
-                onChangeText={onChangeCity}
-                placeholder="Город"
-                editable={editable}
-                required
-                error={stepOneAttempted ? stepOneErrors.city : undefined}
-              />
-              <TextField
-                label="Упаковка"
-                value={packaging}
-                onChangeText={onChangePackaging}
-                placeholder="Необязательно"
-                multiline
-                editable={editable}
-              />
-              <TextField
-                label="Передача или доставка"
-                value={deliveryInfo}
-                onChangeText={onChangeDeliveryInfo}
-                placeholder="Передача или доставка"
-                multiline
-                editable={editable}
-                required
-                error={
-                  stepOneAttempted ? stepOneErrors.deliveryInfo : undefined
-                }
-              />
-            </FormSection>
-          </>
+          <FormSection
+            title="Характеристики"
+            description="Параметры помогают точно описать работу."
+          >
+            <FigmaSelectField
+              label="Техники"
+              placeholder="Выберите или предложите"
+              value={productDraftTermLabels(techniqueTermIds, techniqueProposals, catalog.TECHNIQUE.terms, selection?.techniqueTerms ?? [])}
+              disabled={!editable}
+              onPress={() => {
+                onCatalogOpen('TECHNIQUE');
+                setOpenRole('TECHNIQUE');
+              }}
+            />
+            <FigmaSelectField
+              label="Материалы"
+              placeholder="Выберите или предложите"
+              value={productDraftTermLabels(materialTermIds, materialProposals, catalog.MATERIAL.terms, selection?.materialTerms ?? [])}
+              disabled={!editable}
+              onPress={() => {
+                onCatalogOpen('MATERIAL');
+                setOpenRole('MATERIAL');
+              }}
+            />
+            <ProductDraftTextField
+              name="dimensions"
+              label="Размеры"
+              placeholder="Необязательно"
+              editable={editable}
+            />
+            <ProductDraftTextField
+              name="year"
+              label="Год создания"
+              placeholder="Необязательно"
+              keyboardType="number-pad"
+              editable={editable}
+              error={stepOneAttempted ? yearError : null}
+            />
+          </FormSection>
         }
       >
-        <FormSection title="Категория">
-          {categories.map((category) => (
-            <SecondaryButton
-              key={category.id}
-              label={
-                categoryId === category.id
-                  ? `✓ ${category.name}`
-                  : category.name
-              }
-              disabled={!editable}
-              width="block"
-              onPress={() => onChangeCategoryId(category.id)}
-            />
-          ))}
-          {stepOneAttempted && stepOneErrors.categoryId ? (
-            <AppText role="bodySmall" tone="danger">
-              {stepOneErrors.categoryId}
-            </AppText>
-          ) : null}
-        </FormSection>
 
         <FormSection
-          title="О работе"
-          description="Основная информация для каталога и страницы предмета."
+          title={isCreationFlow ? undefined : "О работе"}
+          description={isCreationFlow ? undefined : "Основная информация для каталога и страницы предмета."}
         >
-          <TextField
+          <ProductDraftTextField
+            name="title"
             label="Название"
-            value={title}
-            onChangeText={onChangeTitle}
             placeholder="Название"
             editable={editable}
             required
-            error={stepOneAttempted ? stepOneErrors.title : undefined}
+            error={stepOneAttempted ? requiredErrors.title : undefined}
           />
-          <TextField
-            label="История предмета"
-            value={story}
-            onChangeText={onChangeStory}
-            placeholder="История предмета"
-            multiline
-            editable={editable}
-            required
-            error={stepOneAttempted ? stepOneErrors.story : undefined}
-          />
-          <TextField
+          <ProductDraftTextField
+            name="uniqueness"
             label="Уникальность или тираж"
-            value={uniqueness}
-            onChangeText={onChangeUniqueness}
-            placeholder="Уникальность или тираж"
+            placeholder="Необязательно"
             editable={editable}
-            required
-            error={
-              stepOneAttempted ? stepOneErrors.uniqueness : undefined
-            }
           />
-          {condition ? (
+        </FormSection>
+        <FormSection title="Категория">
+          {hiddenSelectedCategory ? (
             <AppText role="bodySmall" tone="secondary">
-              Состояние: {condition}
+              Ранее выбрана категория «{hiddenSelectedCategory.name}», сейчас она скрыта.
+              Можно оставить её или выбрать другую.
             </AppText>
           ) : null}
-          <TextField
-            label="Происхождение"
-            value={provenance}
-            onChangeText={onChangeProvenance}
-            placeholder="Происхождение"
-            multiline
-            editable={editable}
-            required
-            error={stepOneAttempted ? stepOneErrors.provenance : undefined}
-          />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
+            {categories.map((category) => (
+              <FigmaChoiceChip
+                key={category.id}
+                label={category.name}
+                selected={categoryId === category.id}
+                disabled={!editable}
+                onPress={() => {
+                  if (guard.current) return;
+                  if (category.slug !== 'other') {
+                    setValue('categoryProposal', '', { shouldDirty: true, shouldValidate: true });
+                  }
+                  setValue('categoryId', category.id, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  });
+                }}
+              />
+            ))}
+          </View>
+          {categories.find((category) => category.id === categoryId)?.slug === 'other' ||
+          (categoryId === selection?.category?.id && selection?.category?.slug === 'other') ? (
+            <>
+              <ProductDraftTextField
+                name="categoryProposal"
+                label="Предложить категорию"
+                placeholder="Укажите название, если нужной категории нет"
+                editable={editable}
+              />
+              {rejectedCategoryProposal ? (
+                <AppText role="bodySmall" tone="danger">
+                  {rejectedCategoryProposal.rejectionReason
+                    ? `Отклонено: ${rejectedCategoryProposal.rejectionReason}`
+                    : 'Предложение категории отклонено. Измените или удалите его.'}
+                </AppText>
+              ) : null}
+            </>
+          ) : null}
+          {stepOneAttempted && requiredErrors.categoryId ? (
+            <AppText role="bodySmall" tone="danger">
+              {requiredErrors.categoryId}
+            </AppText>
+          ) : null}
         </FormSection>
       </FormPageColumns>
 
       {!isCreationFlow || wizardStep === productWizardStep.about ? (
         <AppText role="bodySmall" tone="secondary">
-          Дата размещения установится автоматически при первой публичной
-          публикации.
+          Дата размещения установится автоматически при первой публичной публикации.
         </AppText>
       ) : null}
 
@@ -297,9 +259,7 @@ export function ProductDraftAboutStep({
         </AppText>
       ) : null}
 
-      {isCreationFlow &&
-      wizardStep === productWizardStep.about &&
-      wizardCanOpenImages ? (
+      {isCreationFlow && wizardStep === productWizardStep.about && wizardCanOpenImages ? (
         <SecondaryButton
           label="Продолжить к изображениям"
           width="block"
@@ -307,12 +267,37 @@ export function ProductDraftAboutStep({
         />
       ) : null}
 
-      {saveIsError && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
-        <AppText role="bodySmall" tone="danger">
-          Не удалось сохранить предмет.
+      {(saveMessage || saveIsError) && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
+        <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+          {saveMessage ?? 'Не удалось сохранить предмет.'}
         </AppText>
+      ) : null}
+      {openRole ? (
+        <ProductCatalogTermSheet
+          role={openRole}
+          open
+          selectedIds={openRole === 'MATERIAL' ? materialTermIds : techniqueTermIds}
+          proposals={openRole === 'MATERIAL' ? materialProposals : techniqueProposals}
+          availableTerms={activeRoleQuery.terms}
+          knownTerms={knownTerms}
+          knownProposals={selection?.proposals ?? []}
+          loading={activeRoleQuery.loading}
+          error={activeRoleQuery.error}
+          editable={editable}
+          onRetry={activeRoleQuery.onRetry}
+          onClose={() => {
+            setOpenRole(null);
+            onCatalogOpen(null);
+          }}
+          onApply={(ids, names) => {
+            if (guard.current) return;
+            const idField = openRole === 'MATERIAL' ? 'materialTermIds' : 'techniqueTermIds';
+            const proposalField = openRole === 'MATERIAL' ? 'materialProposals' : 'techniqueProposals';
+            setValue(idField, ids, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+            setValue(proposalField, names, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+          }}
+        />
       ) : null}
     </>
   );
 }
-

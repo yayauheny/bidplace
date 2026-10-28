@@ -1,11 +1,17 @@
+import { publicMediaUrlSchema, mediaDeliverySchema } from './media';
 import { z } from 'zod';
+import { portfolioAchievementSchema } from './portfolio';
 
 import {
+  authorApplicationStageSchema,
   handoffContactTypeSchema,
   handoffInitiatorSchema,
+  sellerProfileRevisionStatusSchema,
   sellerStatusSchema,
   sellerTypeSchema,
 } from './enums';
+import { selectedCategorySchema } from './catalog';
+import { isCountryCode } from './countries';
 import {
   httpsUrlSchema,
   isoDateTimeSchema,
@@ -31,12 +37,33 @@ export const sellerPhoneHandleSchema = z
   .min(1)
   .regex(/^\+[1-9]\d{1,14}$/);
 
-const sellerProfilePhotoUrlSchema = z
-  .string()
-  .regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/);
+const sellerProfilePhotoUrlSchema = z.union([
+  z.string().regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/),
+  publicMediaUrlSchema,
+]);
 
 export const sellerDisciplineSchema = z.string().trim().min(1).max(160);
 export const sellerPublicUrlSchema = httpsUrlSchema;
+export const sellerPublicEmailSchema = z
+  .string()
+  .trim()
+  .email('Введите корректный email')
+  .max(254)
+  .transform((value) => value.toLowerCase());
+
+export const sellerProfileConflictDetailsSchema = z
+  .object({
+    reason: z.enum(['profile_exists', 'slug_taken']),
+  })
+  .strict();
+
+const authorNameSchema = z.string().trim().min(1, 'Введите имя или название');
+const authorCountrySchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .refine(isCountryCode, 'Укажите страну');
+const authorCitySchema = z.string().trim().min(1).max(160);
 
 export const sellerProfileSchema = z
   .object({
@@ -44,21 +71,26 @@ export const sellerProfileSchema = z
     userId: uuidSchema,
     slug: slugSchema,
     sellerType: sellerTypeSchema,
-    discipline: sellerDisciplineSchema,
+    discipline: sellerDisciplineSchema.nullable(),
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
     city: z.string().trim().min(1).nullable(),
     practice: z.string().trim().min(1).nullable(),
+    biography: z.string().trim().min(1).nullable(),
     profilePhotoUrl: sellerProfilePhotoUrlSchema,
-    socialLink: sellerPublicUrlSchema,
+    socialLink: sellerPublicUrlSchema.nullable(),
     telegramUrl: sellerPublicUrlSchema.nullable(),
     instagramUrl: sellerPublicUrlSchema.nullable(),
     websiteUrl: sellerPublicUrlSchema.nullable(),
-    shortDescription: z.string().trim().min(1),
-    handoffContactType: handoffContactTypeSchema,
-    handoffContactValue: z.string().trim().min(1),
-    handoffInitiator: handoffInitiatorSchema,
+    publicEmail: sellerPublicEmailSchema.nullable(),
+    shortDescription: z.string().trim().min(1).nullable(),
+    directionCategoryIds: z.array(uuidSchema).default([]),
+    directions: z.array(selectedCategorySchema).default([]),
+    handoffContactType: handoffContactTypeSchema.nullable(),
+    handoffContactValue: z.string().trim().min(1).nullable(),
+    handoffInitiator: handoffInitiatorSchema.nullable(),
     status: sellerStatusSchema,
+    applicationStage: authorApplicationStageSchema.nullable(),
     createdAt: isoDateTimeSchema,
     updatedAt: isoDateTimeSchema,
   })
@@ -75,99 +107,56 @@ export const publicSellerProfileSchema = sellerProfileSchema
     country: true,
     city: true,
     practice: true,
+    biography: true,
     socialLink: true,
     telegramUrl: true,
     instagramUrl: true,
     websiteUrl: true,
+    publicEmail: true,
     shortDescription: true,
   })
   .extend({
-    achievements: z
-      .array(
-        z
-          .object({
-            id: uuidSchema,
-            occurredAt: isoDateTimeSchema.nullable(),
-            body: z.string().trim().min(1),
-          })
-          .strict(),
-      )
-      .optional(),
+    discipline: sellerDisciplineSchema.nullable(),
+    shortDescription: z.string().trim().min(1),
+    directionCategoryIds: z.array(uuidSchema).default([]),
+    directions: z.array(selectedCategorySchema).default([]),
+    achievements: z.array(portfolioAchievementSchema).optional(),
   });
 
-const sellerProfileBaseWriteSchema = z
+export const sellerProfileCreateRequestSchema = z
   .object({
-    slug: slugSchema,
-    sellerType: sellerTypeSchema,
+    fullName: authorNameSchema,
+    country: authorCountrySchema,
+    city: authorCitySchema.nullable().optional(),
+    directionCategoryIds: z.array(uuidSchema).optional(),
     discipline: sellerDisciplineSchema.optional(),
-    fullName: z.string().trim().min(1),
-    country: z.string().trim().min(1),
-    city: z.string().trim().min(1).optional(),
     practice: z.string().trim().min(1).nullable().optional(),
-    socialLink: sellerPublicUrlSchema,
+    biography: z.string().trim().min(1).nullable().optional(),
+    socialLink: sellerPublicUrlSchema.nullable().optional(),
     telegramUrl: sellerPublicUrlSchema.nullable().optional(),
     instagramUrl: sellerPublicUrlSchema.nullable().optional(),
     websiteUrl: sellerPublicUrlSchema.nullable().optional(),
-    shortDescription: z.string().trim().min(1),
-    handoffContactType: handoffContactTypeSchema,
-    handoffContactValue: z.string().trim().min(1),
-    handoffInitiator: handoffInitiatorSchema.optional(),
+    publicEmail: sellerPublicEmailSchema.nullable().optional(),
+    shortDescription: z.string().trim().min(1).optional(),
   })
-  .strict()
-  .superRefine((value, context) => {
-    const contactValue = value.handoffContactValue.trim();
-
-    if (
-      value.handoffContactType === 'TELEGRAM' &&
-      !sellerTelegramHandleSchema.safeParse(contactValue).success
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['handoffContactValue'],
-        message: 'Telegram contact must be @username or https://t.me/username',
-      });
-    }
-
-    if (
-      value.handoffContactType === 'PHONE' &&
-      !sellerPhoneHandleSchema.safeParse(contactValue).success
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['handoffContactValue'],
-        message: 'Phone contact must be in E.164 format',
-      });
-    }
-
-    if (
-      value.handoffContactType === 'INSTAGRAM' &&
-      !sellerInstagramHandleSchema.safeParse(contactValue).success
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['handoffContactValue'],
-        message:
-          'Instagram contact must be @username or https://instagram.com/username',
-      });
-    }
-  });
-
-export const sellerProfileCreateRequestSchema = sellerProfileBaseWriteSchema;
+  .strict();
 
 export const sellerProfileUpdateRequestSchema = z
   .object({
-    slug: slugSchema.optional(),
     sellerType: sellerTypeSchema.optional(),
     discipline: sellerDisciplineSchema.optional(),
-    fullName: z.string().trim().min(1).optional(),
-    country: z.string().trim().min(1).optional(),
-    city: z.string().trim().min(1).nullable().optional(),
+    fullName: authorNameSchema.optional(),
+    country: authorCountrySchema.optional(),
+    city: authorCitySchema.nullable().optional(),
+    directionCategoryIds: z.array(uuidSchema).optional(),
     practice: z.string().trim().min(1).nullable().optional(),
-    socialLink: sellerPublicUrlSchema.optional(),
+    biography: z.string().trim().min(1).nullable().optional(),
+    socialLink: sellerPublicUrlSchema.nullable().optional(),
     telegramUrl: sellerPublicUrlSchema.nullable().optional(),
     instagramUrl: sellerPublicUrlSchema.nullable().optional(),
     websiteUrl: sellerPublicUrlSchema.nullable().optional(),
-    shortDescription: z.string().trim().min(1).optional(),
+    publicEmail: sellerPublicEmailSchema.nullable().optional(),
+    shortDescription: z.string().trim().min(1).nullable().optional(),
     handoffContactType: handoffContactTypeSchema.optional(),
     handoffContactValue: z.string().trim().min(1).optional(),
     handoffInitiator: handoffInitiatorSchema.optional(),
@@ -228,7 +217,17 @@ export const sellerProfileUpdateRequestSchema = z
 
 export const sellerProfileResponseSchema = z
   .object({
+    publication: mediaDeliverySchema.optional(),
     sellerProfile: sellerProfileSchema,
+    editingRevision: z
+      .object({
+        id: uuidSchema,
+        version: z.number().int().positive(),
+        status: sellerProfileRevisionStatusSchema,
+        updatedAt: isoDateTimeSchema,
+      })
+      .strict()
+      .nullable(),
   })
   .strict();
 

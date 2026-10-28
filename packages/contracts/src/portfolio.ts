@@ -1,12 +1,45 @@
+import { selectedCategorySchema } from './catalog';
+import { publicMediaUrlSchema } from './media';
 import { z } from 'zod';
 
 import { paginationMetaSchema, paginationQuerySchema } from './pagination';
 import { productImageSchema } from './product';
-import { productStatusSchema } from './enums';
-import { sellerProfileRevisionStatusSchema } from './enums';
-import { slugSchema, uuidSchema } from './primitives';
+import { storyResponseSchema } from './story';
+import {
+  authorApplicationStageSchema,
+  productStatusSchema,
+  sellerProfileRevisionStatusSchema,
+  sellerStatusSchema,
+} from './enums';
+import {
+  achievementOccurredDateSchema,
+  isoDateTimeSchema,
+  slugSchema,
+  uuidSchema,
+} from './primitives';
 
 const publicText = z.string().trim().min(1);
+
+export const portfolioAchievementImageSchema = z
+  .object({
+    url: z.union([
+      z.string().regex(/^\/api\/author-achievements\/[0-9a-f-]+\/image$/),
+      publicMediaUrlSchema,
+    ]),
+    mimeType: publicText,
+    byteLength: z.number().int().positive(),
+    checksum: z.string().length(64),
+  })
+  .strict();
+
+export const portfolioAchievementSchema = z
+  .object({
+    id: uuidSchema,
+    occurredDate: achievementOccurredDateSchema.nullable(),
+    body: publicText,
+    image: portfolioAchievementImageSchema.nullable(),
+  })
+  .strict();
 
 export const portfolioWorkSchema = z
   .object({
@@ -17,10 +50,14 @@ export const portfolioWorkSchema = z
     categoryId: uuidSchema,
     technique: publicText.nullable(),
     materials: publicText.nullable(),
+    materialTermIds: z.array(uuidSchema).default([]),
+    techniqueTermIds: z.array(uuidSchema).default([]),
     dimensions: publicText.nullable(),
     year: z.number().int().nullable(),
+    uniqueness: z.string().trim().min(1).nullable(),
     images: z.array(productImageSchema).nonempty(),
     publishedAt: z.string().datetime(),
+    sharePath: z.string().regex(/^\/works\/[A-Za-z0-9_-]{11}$/),
   })
   .strict();
 
@@ -30,25 +67,23 @@ export const portfolioAuthorSchema = z
     slug: slugSchema,
     fullName: publicText,
     country: publicText,
-    city: publicText,
-    discipline: publicText,
+    city: publicText.nullable(),
+    discipline: publicText.nullable(),
+    directionCategoryIds: z.array(uuidSchema).default([]),
+    directions: z.array(selectedCategorySchema).default([]),
     practice: z.string().trim().min(1).nullable(),
-    profilePhotoUrl: z
-      .string()
-      .regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/),
+    biography: z.string().trim().min(1).nullable(),
+    profilePhotoUrl: z.union([
+      z.string().regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/),
+      publicMediaUrlSchema,
+    ]),
     telegramUrl: z.string().url().nullable(),
     instagramUrl: z.string().url().nullable(),
     websiteUrl: z.string().url().nullable(),
+    publicEmail: z.string().email().nullable().optional(),
     shortDescription: publicText,
-    achievements: z.array(
-      z
-        .object({
-          id: uuidSchema,
-          occurredAt: z.string().datetime().nullable(),
-          body: publicText,
-        })
-        .strict(),
-    ),
+    achievements: z.array(portfolioAchievementSchema),
+    sharePath: z.string().regex(/^\/authors\/[a-z0-9]+(?:[-_][a-z0-9]+)*$/),
   })
   .strict();
 
@@ -58,7 +93,9 @@ export const portfolioWorkListItemSchema = z
 
 export const portfolioWorkDetailResponseSchema = z
   .object({
-    work: portfolioWorkSchema,
+    work: portfolioWorkSchema.extend({
+      creationStory: storyResponseSchema,
+    }),
     author: portfolioAuthorSchema,
     relatedWorks: z.array(portfolioWorkListItemSchema),
   })
@@ -68,6 +105,11 @@ export const portfolioWorksQuerySchema = paginationQuerySchema
   .extend({
     q: z.string().trim().min(1).max(120).optional(),
     category: uuidSchema.optional(),
+    categories: z.preprocess(
+      (value) => typeof value === 'string' ? value.split(',') : value,
+      z.array(uuidSchema).min(1).max(20),
+    ).optional(),
+    author: z.string().trim().min(1).max(120).optional(),
     materials: z
       .preprocess(
         (value) =>
@@ -80,6 +122,8 @@ export const portfolioWorksQuerySchema = paginationQuerySchema
         z.array(z.string().trim().min(1).max(80)).max(20),
       )
       .optional(),
+    materialId: uuidSchema.optional(),
+    techniqueId: uuidSchema.optional(),
     sort: z.enum(['newest', 'oldest']).default('newest'),
   })
   .strict();
@@ -95,6 +139,7 @@ export const portfolioAuthorsQuerySchema = paginationQuerySchema
   .extend({
     q: z.string().trim().min(1).max(120).optional(),
     tag: z.string().trim().min(1).max(160).optional(),
+    directionId: uuidSchema.optional(),
     city: z.string().trim().min(1).max(160).optional(),
     sort: z.enum(['name', 'added']).default('added'),
   })
@@ -114,6 +159,14 @@ export const portfolioAuthorsResponseSchema = z
   })
   .strict();
 
+export const portfolioDiscoveryFacetsResponseSchema = z
+  .object({
+    materials: z.array(publicText),
+    cities: z.array(publicText),
+    tags: z.array(publicText),
+  })
+  .strict();
+
 export const portfolioAuthorDetailResponseSchema = z
   .object({
     author: portfolioAuthorSchema,
@@ -122,9 +175,23 @@ export const portfolioAuthorDetailResponseSchema = z
   })
   .strict();
 
+export const portfolioHomeWorkSchema = portfolioWorkSchema
+  .extend({
+    author: portfolioAuthorSchema,
+  })
+  .strict();
+
+export const portfolioHomeCuratorSelectionSchema = z
+  .object({
+    curator: portfolioAuthorSchema,
+    work: portfolioHomeWorkSchema,
+    note: publicText.max(2_000).nullable(),
+  })
+  .strict();
+
 export const portfolioHomeResponseSchema = z
   .object({
-    curatorSelection: portfolioWorkListItemSchema.nullable(),
+    curatorSelection: portfolioHomeCuratorSelectionSchema.nullable(),
     newWorks: z.array(portfolioWorkListItemSchema),
     newAuthors: z.array(portfolioAuthorSchema),
   })
@@ -136,13 +203,20 @@ export const portfolioCabinetWorkSchema = z
     publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
     title: z.string().trim().min(1).nullable(),
     status: productStatusSchema,
+    editingRevisionStatus: productStatusSchema.nullable(),
     updatedAt: z.string().datetime(),
     moderationMessage: z.string().nullable(),
+    coverImage: productImageSchema.nullable(),
   })
   .strict();
 
+export const portfolioCabinetWorksQuerySchema = paginationQuerySchema.strict();
+
 export const portfolioCabinetWorksResponseSchema = z
-  .object({ works: z.array(portfolioCabinetWorkSchema) })
+  .object({
+    works: z.array(portfolioCabinetWorkSchema),
+    pagination: paginationMetaSchema,
+  })
   .strict();
 
 export const portfolioAuthorApplicationSchema = z
@@ -151,16 +225,11 @@ export const portfolioAuthorApplicationSchema = z
     fullName: publicText,
     country: publicText,
     city: publicText.nullable(),
-    discipline: publicText,
+    discipline: publicText.nullable(),
     practice: z.string().trim().min(1).nullable(),
-    shortDescription: publicText,
-    status: z.enum([
-      'PENDING_REVIEW',
-      'APPROVED',
-      'CHANGES_REQUESTED',
-      'REJECTED',
-      'SUSPENDED',
-    ]),
+    shortDescription: publicText.nullable(),
+    status: sellerStatusSchema,
+    applicationStage: authorApplicationStageSchema.nullable(),
   })
   .strict();
 
@@ -172,28 +241,30 @@ export const portfolioAuthorApplicationResponseSchema = z
         id: uuidSchema,
         version: z.number().int().positive(),
         status: sellerProfileRevisionStatusSchema,
+        updatedAt: isoDateTimeSchema,
       })
       .strict()
       .nullable(),
+    achievements: z.array(portfolioAchievementSchema),
   })
   .strict();
 
 export const portfolioAchievementWriteRequestSchema = z
   .object({
-    occurredAt: z.string().datetime().nullable().optional(),
-    body: publicText.max(4_000),
+    occurredDate: achievementOccurredDateSchema,
+    body: publicText.max(4_000, 'Введите описание короче 4000 символов'),
   })
   .strict();
 
 export const portfolioAchievementResponseSchema = z
   .object({
-    achievement: z
-      .object({
-        id: uuidSchema,
-        occurredAt: z.string().datetime().nullable(),
-        body: publicText,
-      })
-      .strict(),
+    achievement: portfolioAchievementSchema,
+  })
+  .strict();
+
+export const portfolioOkResponseSchema = z
+  .object({
+    ok: z.literal(true),
   })
   .strict();
 
@@ -204,4 +275,16 @@ export type PortfolioAchievementWriteRequest = z.infer<
 export type PortfolioWorksQuery = z.output<typeof portfolioWorksQuerySchema>;
 export type PortfolioAuthorsQuery = z.output<
   typeof portfolioAuthorsQuerySchema
+>;
+export type PortfolioCabinetWorksQuery = z.output<
+  typeof portfolioCabinetWorksQuerySchema
+>;
+export type PortfolioCabinetWorksResponse = z.output<
+  typeof portfolioCabinetWorksResponseSchema
+>;
+export type PortfolioDiscoveryFacetsResponse = z.output<
+  typeof portfolioDiscoveryFacetsResponseSchema
+>;
+export type PortfolioWorkDetailResponse = z.infer<
+  typeof portfolioWorkDetailResponseSchema
 >;

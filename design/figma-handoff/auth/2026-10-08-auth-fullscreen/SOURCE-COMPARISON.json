@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "replaces": "auth/2026-10-07-auth-fullscreen",
+  "previousTreeCommit": "3b56d84b36c27b623c2dd641a2958729701129c4",
+  "scope": "Only four superseded fullscreen captures removed; dialogs, common fields and canonical library retained",
+  "captures": [
+    {
+      "id": "email",
+      "rootNodeId": "4547:23168",
+      "addedNodeIds": [
+        "4562:31590",
+        "4562:31591",
+        "4562:31592",
+        "4562:31593"
+      ],
+      "removedNodeIds": [],
+      "changedNodeIdsIgnoringAddedRenderBounds": []
+    },
+    {
+      "id": "nickname",
+      "rootNodeId": "4547:23927",
+      "addedNodeIds": [
+        "4562:31610",
+        "4562:31611",
+        "4562:31612",
+        "4562:31613"
+      ],
+      "removedNodeIds": [],
+      "changedNodeIdsIgnoringAddedRenderBounds": []
+    },
+    {
+      "id": "create-password",
+      "rootNodeId": "4547:24217",
+      "addedNodeIds": [
+        "4562:31615",
+        "4562:31616",
+        "4562:31617",
+        "4562:31618"
+      ],
+      "removedNodeIds": [],
+      "changedNodeIdsIgnoringAddedRenderBounds": []
+    },
+    {
+      "id": "verify-email",
+      "rootNodeId": "4547:24815",
+      "addedNodeIds": [
+        "4562:31620",
+        "4562:31621",
+        "4562:31622",
+        "4562:31623"
+      ],
+      "removedNodeIds": [],
+      "changedNodeIdsIgnoringAddedRenderBounds": []
+    }
+  ]
+}

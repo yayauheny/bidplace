@@ -1,11 +1,17 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { PrismaClient } from '../../../../packages/database/dist/index.js';
-import { e2eDatabaseURL } from './e2e-env';
+import { assertFixtureDatabaseIsolation, e2eDatabaseURL } from './e2e-env';
 
 const databaseUrl = e2eDatabaseURL;
+
+function fixtureDatabaseClient() {
+  assertFixtureDatabaseIsolation(databaseUrl);
+  return new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+}
+
 const password = 'password123';
 const passwordHash =
   '$argon2id$v=19$m=65536,t=3,p=4$Hv01HhuWHyFmMIRCcxhH3w$9dvY3hECfoulYwe4VEPwWEJ4OHvYCCYbiw685vNdLZM';
@@ -34,16 +40,19 @@ export type AuctionFixture = {
 };
 
 const seededDemoProductIds = [
-  'seedSched01',
-  'seedLive002',
-  'seedEnded03',
-  'seedVase004',
+  'daliEstate1',
+  'caricature1',
+  'yellowSapph',
+  'colorCalib1',
+  'rainbowMask',
+  'blossomVase',
+  'memoryWork1',
+  'aliceGlass1',
+  'sleepForm01',
 ] as const;
 
 export async function prioritizeSeededDemoProducts(): Promise<void> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
 
   try {
     await prisma.product.updateMany({
@@ -59,11 +68,116 @@ function uniqueEmail(prefix: string, suffix: string): string {
   return `${prefix}.${suffix}@e2e.test`;
 }
 
+async function attachPublishedProductRevision(
+  prisma: PrismaClient,
+  product: {
+    id: string;
+    categoryId: string | null;
+    title: string | null;
+    story: string | null;
+    technique: string | null;
+    materials: string | null;
+    dimensions: string | null;
+    year: number | null;
+    condition: string | null;
+    uniqueness: string | null;
+    provenance: string | null;
+    city: string | null;
+    packaging: string | null;
+    deliveryInfo: string | null;
+    images: Array<{ id: string }>;
+  },
+): Promise<string> {
+  const revision = await prisma.productRevision.create({
+    data: {
+      productId: product.id,
+      version: 1,
+      status: 'APPROVED',
+      categoryId: product.categoryId,
+      title: product.title,
+      story: product.story,
+      technique: product.technique,
+      materials: product.materials,
+      dimensions: product.dimensions,
+      year: product.year,
+      condition: product.condition,
+      uniqueness: product.uniqueness,
+      provenance: product.provenance,
+      city: product.city,
+      packaging: product.packaging,
+      deliveryInfo: product.deliveryInfo,
+      images: {
+        create: product.images.map((image, position) => ({
+          imageId: image.id,
+          position,
+        })),
+      },
+    },
+  });
+  await prisma.product.update({
+    where: { id: product.id },
+    data: {
+      editingRevisionId: revision.id,
+      publishedRevisionId: revision.id,
+    },
+  });
+  return revision.id;
+}
+
+// Public catalog reads seller content from the published revision; a bare
+// APPROVED profile without one is invisible (draft-restore contract).
+async function attachPublishedSellerProfileRevision(
+  prisma: PrismaClient,
+  profile: {
+    id: string;
+    slug: string;
+    fullName: string;
+    // Prisma read-back types optional profile fields as null; fixtures always
+    // set them, so the revision create asserts non-null below.
+    discipline: string | null;
+    country: string;
+    city: string | null;
+    shortDescription: string | null;
+    profilePhotoMimeType: string | null;
+    profilePhotoByteLength: number | null;
+    profilePhotoChecksum: string | null;
+    profilePhotoData: Uint8Array | null;
+  },
+): Promise<string> {
+  const revision = await prisma.sellerProfileRevision.create({
+    data: {
+      sellerProfileId: profile.id,
+      version: 1,
+      status: 'APPROVED',
+      slug: profile.slug,
+      discipline: profile.discipline!,
+      fullName: profile.fullName,
+      country: profile.country,
+      city: profile.city!,
+      shortDescription: profile.shortDescription!,
+      profilePhotoMimeType: profile.profilePhotoMimeType!,
+      profilePhotoByteLength: profile.profilePhotoByteLength!,
+      profilePhotoChecksum: profile.profilePhotoChecksum!,
+      profilePhotoObjectKey: `seller-photo:${profile.id}`,
+      profilePhotoData: profile.profilePhotoData! as Uint8Array<ArrayBuffer>,
+    },
+  });
+  await prisma.sellerProfile.update({
+    where: { id: profile.id },
+    data: {
+      publishedRevisionId: revision.id,
+      editingRevisionId: revision.id,
+    },
+  });
+  return revision.id;
+}
+
 async function createUser(
   prisma: PrismaClient,
   email: string,
   displayName: string,
   role: 'admin' | 'user' = 'user',
+  slug?: string,
 ): Promise<E2EUser> {
   const user = await prisma.user.create({
     data: {
@@ -72,6 +186,7 @@ async function createUser(
       phone: `+37529${Math.floor(1_000_000 + Math.random() * 8_999_999)}`,
       displayName,
       role,
+      ...(slug ? { slug } : {}),
       emailVerifiedAt: new Date(),
       phoneVerifiedAt: new Date(),
       termsAcceptances: {
@@ -89,9 +204,7 @@ export async function createAuctionFixture(options?: {
   additionalTitles?: string[];
 }): Promise<AuctionFixture> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const now = new Date();
   const startsAt = new Date(
     now.getTime() + (options?.live === false ? 30_000 : -5_000),
@@ -129,6 +242,8 @@ export async function createAuctionFixture(options?: {
       sellerType: 'creator',
       fullName: sellerName,
       country: 'BY',
+      city: 'Minsk',
+      discipline: 'Автор',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: photo.byteLength,
       profilePhotoChecksum: '0'.repeat(64),
@@ -172,7 +287,9 @@ export async function createAuctionFixture(options?: {
           },
         },
       },
+      include: { images: { orderBy: { position: 'asc' } } },
     });
+    await attachPublishedProductRevision(prisma, product);
     const listing = await prisma.listing.create({
       data: {
         productId: product.id,
@@ -242,9 +359,7 @@ export async function createSellerFixture(
   slug: string;
 }> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const seller = await createUser(
     prisma,
     uniqueEmail('seller', suffix),
@@ -264,6 +379,8 @@ export async function createSellerFixture(
       sellerType: 'creator',
       fullName: `E2E Seller ${suffix}`,
       country: 'BY',
+      city: 'Minsk',
+      discipline: 'Автор',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: photo.byteLength,
       profilePhotoChecksum: '0'.repeat(64),
@@ -279,25 +396,137 @@ export async function createSellerFixture(
   return { seller, categoryId: category.id, slug };
 }
 
+export async function createApprovedAuthorFixture(): Promise<{
+  author: E2EUser;
+  sellerProfileId: string;
+  slug: string;
+  fullName: string;
+  achievement: { id: string; body: string };
+}> {
+  const suffix = randomUUID().slice(0, 8);
+  const prisma = fixtureDatabaseClient();
+  const author = await createUser(
+    prisma,
+    uniqueEmail('author', suffix),
+    `author-${suffix}`,
+  );
+  const photo = readFileSync(
+    resolve(__dirname, '../fixtures/profile-photo.png'),
+  );
+  const photoChecksum = createHash('sha256').update(photo).digest('hex');
+  const slug = `author-${suffix}`;
+  const fullName = `Опубликованный автор ${suffix}`;
+  const achievementId = randomUUID();
+  const achievementBody = `Первая выставка ${suffix}`;
+  const category = await prisma.category.findUniqueOrThrow({
+    where: { slug: 'e2e-art' },
+  });
+  const profile = await prisma.sellerProfile.create({
+    data: {
+      userId: author.id,
+      slug,
+      sellerType: 'creator',
+      fullName,
+      discipline: 'Керамика',
+      country: 'BY',
+      city: 'Minsk',
+      shortDescription: 'Опубликованная биография',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: photo.byteLength,
+      profilePhotoChecksum: photoChecksum,
+      profilePhotoData: photo,
+      status: 'APPROVED',
+    },
+  });
+  const revision = await prisma.sellerProfileRevision.create({
+    data: {
+      sellerProfileId: profile.id,
+      version: 1,
+      status: 'APPROVED',
+      slug,
+      discipline: 'Керамика',
+      fullName,
+      country: 'BY',
+      city: 'Minsk',
+      shortDescription: 'Опубликованная биография',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: photo.byteLength,
+      profilePhotoChecksum: photoChecksum,
+      profilePhotoObjectKey: `seller-photo:${profile.id}`,
+      profilePhotoData: photo,
+    },
+  });
+  await prisma.sellerProfileRevisionAchievement.create({
+    data: {
+      id: achievementId,
+      revisionId: revision.id,
+      position: 0,
+      occurredAt: new Date(Date.UTC(2024, 5, 2)),
+      occurredAtPrecision: 'DAY',
+      body: achievementBody,
+      mimeType: 'image/png',
+      byteLength: photo.byteLength,
+      checksum: photoChecksum,
+      objectKey: `seller-achievement:${achievementId}`,
+      data: photo,
+    },
+  });
+  // The submit contract requires at least one direction on the revision.
+  await prisma.sellerProfileRevisionDirection.create({
+    data: { revisionId: revision.id, categoryId: category.id, position: 0 },
+  });
+  await prisma.sellerProfile.update({
+    where: { id: profile.id },
+    data: {
+      profilePhotoObjectKey: `seller-photo:${profile.id}`,
+      publishedRevisionId: revision.id,
+      editingRevisionId: revision.id,
+    },
+  });
+  await prisma.$disconnect();
+  return {
+    author,
+    sellerProfileId: profile.id,
+    slug,
+    fullName,
+    achievement: { id: achievementId, body: achievementBody },
+  };
+}
+
 export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const buyer = await createUser(
     prisma,
     uniqueEmail('buyer', suffix),
+    `buyer-${suffix}`,
+    'user',
     `buyer-${suffix}`,
   );
   await prisma.$disconnect();
   return { buyer };
 }
 
+export async function createUnverifiedBuyerFixture(input: {
+  email: string;
+  slug: string;
+}): Promise<{ buyer: E2EUser }> {
+  const prisma = fixtureDatabaseClient();
+  try {
+    const buyer = await createUser(prisma, input.email, input.slug, 'user', input.slug);
+    await prisma.user.update({
+      where: { id: buyer.id },
+      data: { emailVerifiedAt: null },
+    });
+    return { buyer };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 export async function createAdminModerationFixture(): Promise<AdminModerationFixture> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const admin = await createUser(
     prisma,
     uniqueEmail('admin', suffix),
@@ -381,10 +610,289 @@ export async function createAdminModerationFixture(): Promise<AdminModerationFix
   };
 }
 
+const catalogPageEpoch = new Date(Date.UTC(2020, 0, 1));
+
+function catalogPhoto() {
+  const photo = readFileSync(
+    resolve(__dirname, '../fixtures/profile-photo.png'),
+  );
+  return {
+    photo,
+    checksum: createHash('sha256').update(photo).digest('hex'),
+  };
+}
+
+async function deleteSellerProfiles(
+  prisma: PrismaClient,
+  profileIds: string[],
+  userIds: string[],
+) {
+  if (profileIds.length > 0) {
+    await prisma.sellerProfile.deleteMany({
+      where: { id: { in: profileIds } },
+    });
+  }
+  if (userIds.length > 0) {
+    await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  }
+}
+
+export async function createIsolatedWorksPaginationFixture(): Promise<{
+  categoryId: string;
+  material: string;
+  pageTwoPublicId: string;
+  publicIds: string[];
+  cleanup: () => Promise<void>;
+}> {
+  const suffix = randomUUID().slice(0, 8);
+  const material = `e2epage2m${suffix}`;
+  const prisma = fixtureDatabaseClient();
+  const profileIds: string[] = [];
+  const userIds: string[] = [];
+  let categoryId = '';
+  let materialTermId = '';
+  let closed = false;
+  const cleanup = async () => {
+    if (closed) return;
+    closed = true;
+    try {
+      if (profileIds.length > 0) {
+        const products = await prisma.product.findMany({
+          where: { sellerProfileId: { in: profileIds } },
+          select: { id: true },
+        });
+        const productIds = products.map((product) => product.id);
+        if (productIds.length > 0) {
+          await prisma.product.updateMany({
+            where: { id: { in: productIds } },
+            data: { publishedRevisionId: null, editingRevisionId: null },
+          });
+          await prisma.productRevisionImage.deleteMany({
+            where: { revision: { productId: { in: productIds } } },
+          });
+          await prisma.productRevision.deleteMany({
+            where: { productId: { in: productIds } },
+          });
+          await prisma.productImage.deleteMany({
+            where: { productId: { in: productIds } },
+          });
+          await prisma.product.deleteMany({
+            where: { id: { in: productIds } },
+          });
+        }
+      }
+      await deleteSellerProfiles(prisma, profileIds, userIds);
+      if (materialTermId) {
+        await prisma.catalogTerm.delete({ where: { id: materialTermId } });
+      }
+      if (categoryId) {
+        await prisma.category.delete({ where: { id: categoryId } });
+      }
+    } finally {
+      await prisma.$disconnect();
+    }
+  };
+
+  try {
+    const { photo, checksum } = catalogPhoto();
+    const seller = await createUser(
+      prisma,
+      uniqueEmail('page2-works', suffix),
+      `page2-works-${suffix}`,
+    );
+    userIds.push(seller.id);
+    const category = await prisma.category.create({
+      data: {
+        slug: `e2e-page2-${suffix}`,
+        name: `E2E page2 ${suffix}`,
+        normalizedName: `E2E page2 ${suffix}`
+          .normalize('NFKC')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLocaleLowerCase('ru'),
+      },
+    });
+    categoryId = category.id;
+    // The materials catalog filter matches MATERIAL revision terms, not the
+    // legacy materials string (draft-restore catalog contract).
+    const materialTerm = await prisma.catalogTerm.create({
+      data: {
+        role: 'MATERIAL',
+        slug: `e2e-page2-material-${suffix}`,
+        name: material,
+        normalizedName: material
+          .normalize('NFKC')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLocaleLowerCase('ru'),
+      },
+    });
+    materialTermId = materialTerm.id;
+    const profile = await prisma.sellerProfile.create({
+      data: {
+        userId: seller.id,
+        slug: `page2works${suffix}`,
+        sellerType: 'creator',
+        fullName: `Page2 works ${suffix}`,
+        discipline: `e2epage2works${suffix}`,
+        country: 'BY',
+        city: 'Minsk',
+        shortDescription: 'Isolated works page fixture',
+        profilePhotoMimeType: 'image/png',
+        profilePhotoByteLength: photo.byteLength,
+        profilePhotoChecksum: checksum,
+        profilePhotoData: photo,
+        status: 'APPROVED',
+      },
+    });
+    profileIds.push(profile.id);
+    await attachPublishedSellerProfileRevision(prisma, profile);
+    const publicIds: string[] = [];
+    for (let index = 0; index < 13; index += 1) {
+      const publicId = `p${String(index).padStart(2, '0')}${suffix}`;
+      publicIds.push(publicId);
+      const title = `Page2 work ${suffix} ${index}`;
+      const product = await prisma.product.create({
+        data: {
+          publicId,
+          sellerProfileId: profile.id,
+          categoryId: category.id,
+          title,
+          story: 'Isolated catalog page fixture.',
+          materials: material,
+          status: 'APPROVED',
+          publishedAt: new Date(
+            catalogPageEpoch.getTime() + (12 - index) * 1000,
+          ),
+          images: {
+            create: {
+              position: 0,
+              mimeType: 'image/png',
+              byteLength: photo.byteLength,
+              data: photo,
+              checksum,
+            },
+          },
+        },
+        include: { images: { orderBy: { position: 'asc' } } },
+      });
+      const revisionId = await attachPublishedProductRevision(prisma, product);
+      await prisma.productRevisionTerm.create({
+        data: { revisionId, termId: materialTerm.id },
+      });
+    }
+    return {
+      categoryId,
+      material,
+      pageTwoPublicId: publicIds[12]!,
+      publicIds,
+      cleanup,
+    };
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
+}
+
+export async function createIsolatedAuthorsPaginationFixture(): Promise<{
+  tag: string;
+  searchQuery: string;
+  city: string;
+  pageTwoSlug: string;
+  slugs: string[];
+  cleanup: () => Promise<void>;
+}> {
+  const suffix = randomUUID().slice(0, 8);
+  const tag = `e2epage2tag${suffix}`;
+  const city = `e2epage2city${suffix}`;
+  const searchQuery = `Page2 author ${suffix}`;
+  const prisma = fixtureDatabaseClient();
+  const profileIds: string[] = [];
+  const userIds: string[] = [];
+  let directionCategoryId = '';
+  let closed = false;
+  const cleanup = async () => {
+    if (closed) return;
+    closed = true;
+    try {
+      await deleteSellerProfiles(prisma, profileIds, userIds);
+      if (directionCategoryId) {
+        await prisma.category.delete({ where: { id: directionCategoryId } });
+      }
+    } finally {
+      await prisma.$disconnect();
+    }
+  };
+
+  try {
+    const { photo, checksum } = catalogPhoto();
+    // The author tag catalog filter matches direction category names, not the
+    // legacy discipline string (draft-restore catalog contract).
+    const directionCategory = await prisma.category.create({
+      data: {
+        slug: `e2e-page2-tag-${suffix}`,
+        name: tag,
+        normalizedName: tag
+          .normalize('NFKC')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLocaleLowerCase('ru'),
+      },
+    });
+    directionCategoryId = directionCategory.id;
+    const slugs: string[] = [];
+    for (let index = 0; index < 9; index += 1) {
+      const author = await createUser(
+        prisma,
+        uniqueEmail(`page2-author-${index}`, suffix),
+        `page2-author-${index}-${suffix}`,
+      );
+      userIds.push(author.id);
+      const slug = `page2a${index}${suffix}`;
+      slugs.push(slug);
+      const profile = await prisma.sellerProfile.create({
+        data: {
+          userId: author.id,
+          slug,
+          sellerType: 'creator',
+          fullName: `${searchQuery} ${index}`,
+          discipline: tag,
+          country: 'BY',
+          city,
+          shortDescription: 'Isolated authors page fixture',
+          profilePhotoMimeType: 'image/png',
+          profilePhotoByteLength: photo.byteLength,
+          profilePhotoChecksum: checksum,
+          profilePhotoData: photo,
+          status: 'APPROVED',
+          createdAt: new Date(catalogPageEpoch.getTime() + (8 - index) * 1000),
+        },
+      });
+      profileIds.push(profile.id);
+      const revisionId = await attachPublishedSellerProfileRevision(
+        prisma,
+        profile,
+      );
+      await prisma.sellerProfileRevisionDirection.create({
+        data: { revisionId, categoryId: directionCategory.id, position: 0 },
+      });
+    }
+    return {
+      tag,
+      searchQuery,
+      city,
+      pageTwoSlug: slugs[8]!,
+      slugs,
+      cleanup,
+    };
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
+}
+
 export async function approveProduct(productId: string): Promise<void> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   await prisma.product.update({
     where: { id: productId },
     data: { status: 'APPROVED', publishedAt: new Date() },
@@ -393,9 +901,7 @@ export async function approveProduct(productId: string): Promise<void> {
 }
 
 export async function removeRulesAcceptance(userId: string): Promise<void> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   await prisma.termsAcceptance.deleteMany({ where: { userId } });
   await prisma.$disconnect();
 }

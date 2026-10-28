@@ -7,7 +7,15 @@
     "tsconfig.json"
   ],
   "tasks": {
+    "generate": {
+      "cache": true,
+      "outputs": ["src/generated/prisma/**"]
+    },
     "build": {
+      "dependsOn": ["^build", "generate"],
+      "outputs": ["dist/**"]
+    },
+    "build:web": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
@@ -16,6 +24,7 @@
     },
     "dev": {
       "dependsOn": ["^build"],
+      "passThroughEnv": ["*"],
       "cache": false,
       "persistent": true
     },
@@ -23,7 +32,11 @@
       "dependsOn": ["^lint"]
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^build", "^typecheck", "generate"]
+    },
+    "test": {
+      "dependsOn": ["generate"],
+      "cache": false
     }
   }
 }

@@ -1,7 +1,12 @@
+import { publicMediaUrlSchema, mediaDeliverySchema } from './media';
 import { z } from 'zod';
+
+import { workSelectionSchema } from './catalog';
 
 import { type ProductStatus, productStatusSchema } from './enums';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
+
+export const WORK_PHOTO_LIMITS = { maxPhotos: 10 } as const;
 
 export const EDITABLE_PRODUCT_STATUSES = [
   'DRAFT',
@@ -19,11 +24,69 @@ export function isEditableProductStatus(
 
 const optionalText = z.string().trim().min(1).nullable();
 
+export const photoCropSchema = z
+  .object({
+    x: z.number().finite().min(0).max(1),
+    y: z.number().finite().min(0).max(1),
+    width: z.number().finite().positive().max(1),
+    height: z.number().finite().positive().max(1),
+  })
+  .strict()
+  .refine(
+    (crop) => crop.x + crop.width <= 1 && crop.y + crop.height <= 1,
+    'Crop must fit the transformed full image',
+  );
+export type PhotoCrop = z.infer<typeof photoCropSchema>;
+
+export const workPhotoResultSchema = z
+  .object({
+    revisionId: uuidSchema,
+    slotId: uuidSchema,
+    imageId: uuidSchema,
+    version: z.number().int().nonnegative(),
+    crop: photoCropSchema.nullable(),
+  })
+  .strict();
+export type WorkPhotoResult = z.infer<typeof workPhotoResultSchema>;
+export const workPhotoUploadResponseSchema = z
+  .object({
+    ok: z.literal(true),
+    photos: z.array(workPhotoResultSchema).nonempty().max(WORK_PHOTO_LIMITS.maxPhotos),
+  })
+  .strict();
+export const workPhotoEditRequestSchema = z
+  .object({
+    revisionId: uuidSchema,
+    version: z.number().int().nonnegative(),
+    crop: photoCropSchema.nullable(),
+    operationKey: z.string().regex(/^[a-zA-Z0-9:_-]{1,100}$/),
+  })
+  .strict();
+export type WorkPhotoEditRequest = z.infer<typeof workPhotoEditRequestSchema>;
+
 export const productImageSchema = z
   .object({
     id: uuidSchema,
+    slotId: uuidSchema.optional(),
+    slotVersion: z.number().int().nonnegative().optional(),
+    crop: photoCropSchema.nullable().optional(),
+    mediaAssetId: uuidSchema.nullable().optional(),
     position: z.number().int().nonnegative(),
-    url: z.string().regex(/^\/api\/images\/[0-9a-f-]+$/),
+    full: z
+      .object({
+        url: publicMediaUrlSchema,
+        mimeType: z.string(),
+        byteLength: z.number().int().positive(),
+        checksum: z.string().length(64),
+        width: z.number().int().positive(),
+        height: z.number().int().positive(),
+      })
+      .strict()
+      .optional(),
+    url: z.union([
+      z.string().regex(/^\/api\/images\/[0-9a-f-]+$/),
+      publicMediaUrlSchema,
+    ]),
     mimeType: z.string(),
     byteLength: z.number().int().positive(),
     checksum: z.string().length(64),
@@ -34,7 +97,10 @@ export const productImageSchema = z
 
 export const creationStepImageSchema = z
   .object({
-    url: z.string().regex(/^\/api\/creation-steps\/[0-9a-f-]+\/image$/),
+    url: z.union([
+      z.string().regex(/^\/api\/creation-steps\/[0-9a-f-]+\/image$/),
+      publicMediaUrlSchema,
+    ]),
     mimeType: z.string(),
     byteLength: z.number().int().positive(),
     checksum: z.string().length(64),
@@ -54,7 +120,10 @@ export const creationStepSchema = z
   .strict();
 
 export const productImageOrderRequestSchema = z
-  .object({ imageIds: z.array(uuidSchema).min(1).max(10) })
+  .object({
+    imageIds: z.array(uuidSchema).min(1).max(WORK_PHOTO_LIMITS.maxPhotos),
+    revisionId: uuidSchema.optional(),
+  })
   .strict();
 
 export const productSchema = z
@@ -86,22 +155,27 @@ export const productSchema = z
 
 export const productWriteRequestSchema = z
   .object({
-    categoryId: uuidSchema.optional(),
-    title: z.string().trim().min(1).optional(),
-    story: z.string().trim().min(1).optional(),
-    technique: z.string().trim().min(1).nullable().optional(),
-    materials: z.string().trim().min(1).nullable().optional(),
+    categoryId: uuidSchema.nullable().optional(),
+    title: z.string().trim().min(1).nullable().optional(),
+    story: z.string().trim().min(1).nullable().optional(),
     dimensions: z.string().trim().min(1).nullable().optional(),
     weight: z.string().trim().min(1).nullable().optional(),
-    year: z.number().int().min(0).max(9999).nullable().optional(),
-    condition: z.string().trim().min(1).optional(),
-    uniqueness: z.string().trim().min(1).optional(),
-    provenance: z.string().trim().min(1).optional(),
-    city: z.string().trim().min(1).optional(),
-    packaging: z.string().trim().min(1).optional(),
-    deliveryInfo: z.string().trim().min(1).optional(),
+    year: z
+      .number()
+      .int()
+      .min(0, 'Введите год числом от 0 до 9999')
+      .max(9999, 'Введите год числом от 0 до 9999')
+      .nullable()
+      .optional(),
+    condition: z.string().trim().min(1).nullable().optional(),
+    uniqueness: z.string().trim().min(1).nullable().optional(),
+    provenance: z.string().trim().min(1).nullable().optional(),
+    city: z.string().trim().min(1).nullable().optional(),
+    packaging: z.string().trim().min(1).nullable().optional(),
+    deliveryInfo: z.string().trim().min(1).nullable().optional(),
     creationIntro: z.string().trim().min(1).max(5000).nullable().optional(),
   })
+  .merge(workSelectionSchema)
   .strict();
 
 export const creationStepWriteSchema = z
@@ -136,7 +210,10 @@ export const creationStepOrderRequestSchema = z
   .strict();
 
 export const productResponseSchema = z
-  .object({ product: productSchema })
+  .object({
+    publication: mediaDeliverySchema.optional(),
+    product: productSchema,
+  })
   .strict();
 
 export type Product = z.infer<typeof productSchema>;

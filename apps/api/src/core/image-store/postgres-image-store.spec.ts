@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
 
 import { imageKey } from './image-key';
 import { PostgresImageStore } from './postgres-image-store';
@@ -14,6 +15,14 @@ describe('PostgresImageStore', () => {
       findUnique: vi.fn(),
     },
     sellerProfile: {
+      update: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    sellerProfileRevision: {
+      update: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    sellerProfileRevisionAchievement: {
       update: vi.fn(),
       findUnique: vi.fn(),
     },
@@ -56,6 +65,39 @@ describe('PostgresImageStore', () => {
       data: {
         profilePhotoMimeType: 'image/jpeg',
         profilePhotoData: bytes,
+      },
+    });
+  });
+
+  it('stores revision and achievement bytes with mime, length and checksum', async () => {
+    const bytes = Uint8Array.from([9, 8, 7]);
+    const checksum = createHash('sha256').update(bytes).digest('hex');
+
+    await store.put(imageKey.sellerProfileRevision('revision-id'), {
+      bytes,
+      mimeType: 'image/png',
+    });
+    await store.put(imageKey.sellerAchievement('achievement-id'), {
+      bytes,
+      mimeType: 'image/jpeg',
+    });
+
+    expect(prisma.sellerProfileRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-id' },
+      data: {
+        profilePhotoMimeType: 'image/png',
+        profilePhotoByteLength: 3,
+        profilePhotoChecksum: checksum,
+        profilePhotoData: bytes,
+      },
+    });
+    expect(prisma.sellerProfileRevisionAchievement.update).toHaveBeenCalledWith({
+      where: { id: 'achievement-id' },
+      data: {
+        mimeType: 'image/jpeg',
+        byteLength: 3,
+        checksum,
+        data: bytes,
       },
     });
   });

@@ -1,8 +1,6 @@
 import { AccessibilityInfo, Platform } from 'react-native';
 import { useEffect, useState } from 'react';
 
-export { getMotionDuration } from './motion';
-
 export function getInitialReducedMotion(): boolean {
   if (
     Platform.OS === 'web' &&

@@ -1,0 +1,43 @@
+/* Figma 7330:729–7333: four corner handles, 2px frame, 40% outside dim. */
+.photo-cropper .advanced-cropper-simple-handler {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+}
+.photo-cropper .advanced-cropper-simple-line {
+  border-color: white;
+
+  transition: none;
+}
+.photo-cropper .advanced-cropper-stencil-overlay {
+  color: rgba(0, 0, 0, 0.4);
+}
+.photo-cropper .advanced-cropper-circle-stencil__preview {
+  border: 2px solid white;
+}
+
+.photo-cropper .advanced-cropper-simple-line--north {
+  border-top-width: 2px;
+}
+.photo-cropper .advanced-cropper-simple-line--south {
+  border-bottom-width: 2px;
+}
+.photo-cropper .advanced-cropper-simple-line--east {
+  border-right-width: 2px;
+}
+.photo-cropper .advanced-cropper-simple-line--west {
+  border-left-width: 2px;
+}
+[aria-label^='Кадрирование:']:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+
+.photo-cropper--avatar .advanced-cropper-stencil-overlay {
+  color: inherit;
+}
+@media (prefers-reduced-motion: reduce) {
+  .photo-cropper .advanced-cropper-fade {
+    transition: none;
+  }
+}

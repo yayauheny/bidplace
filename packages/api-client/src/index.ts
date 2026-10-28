@@ -1,56 +1,54 @@
 import { type ZodType } from 'zod';
 
 import { createAdminClient } from './admin';
-import { createActivityClient } from './activity';
 import { createAnalyticsClient } from './analytics';
 import { createAuthClient } from './auth';
 import { createCategoriesClient } from './categories';
-import { createDiscoveryClient } from './discovery';
+import { createCatalogClient } from './catalog';
+import { createCountriesClient } from './countries';
 export {
   ApiClientError,
+  classifyApiError,
   getApiErrorCode,
-  getBidTooLowMinimum,
+  parseApiError,
   type ApiClientErrorKind,
 } from './errors';
-import { createListingsClient } from './listings';
 import { createImagesClient } from './images';
-import { createOrdersClient } from './orders';
 import { createProductsClient } from './products';
 import { createPortfolioClient } from './portfolio';
 import {
   createRequestContext,
   requestJson,
   type ApiClientOptions,
+  type ReadCallOptions,
   type RequestOptions,
 } from './request';
 import { createSellersClient } from './sellers';
 
-export type { ApiClientOptions, RequestOptions };
+export type { ApiClientOptions, ReadCallOptions, RequestOptions };
 
 export function createApiClient(options: ApiClientOptions) {
   const context = createRequestContext(options);
 
   return {
     baseUrl: context.baseUrl,
-    request<T>(
+    request<TSchema extends ZodType>(
       path: string,
-      schema: ZodType<T>,
+      schema: TSchema,
       requestOptions?: RequestOptions,
     ) {
       return requestJson(context, path, schema, requestOptions);
     },
     auth: createAuthClient(context),
-    activity: createActivityClient(context),
     analytics: createAnalyticsClient(context),
-    listings: createListingsClient(context),
     images: createImagesClient(context),
     products: createProductsClient(context),
     portfolio: createPortfolioClient(context),
-    orders: createOrdersClient(context),
     sellers: createSellersClient(context),
     admin: createAdminClient(context),
     categories: createCategoriesClient(context),
-    discovery: createDiscoveryClient(context),
+    catalog: createCatalogClient(context),
+    countries: createCountriesClient(context),
   };
 }
 

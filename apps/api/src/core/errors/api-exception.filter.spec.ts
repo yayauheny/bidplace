@@ -88,13 +88,14 @@ describe('ApiExceptionFilter', () => {
     const loggerError = vi
       .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
       .mockImplementation(() => undefined);
+    const requestId = '6c456e1f-37b0-4733-a939-b5fa1a1e565d';
 
     filter.catch(
       new Error('relation "bids" does not exist'),
       createHost(captured, {
         method: 'POST',
         url: '/api/listings/x/bids',
-        requestId: 'req-123',
+        requestId,
       }) as never,
     );
 
@@ -103,13 +104,143 @@ describe('ApiExceptionFilter', () => {
       status: 500,
       code: ApiErrorCode.INTERNAL_ERROR,
       message: 'Internal server error',
+      requestId,
     });
-    expect(captured.headers?.['X-Request-Id']).toBe('req-123');
+    expect(captured.headers?.['X-Request-Id']).toBe(requestId);
     expect(JSON.stringify(captured.body)).not.toContain('relation');
-    expect(loggerError).toHaveBeenCalledWith(
-      expect.stringContaining('requestId=req-123'),
-      expect.any(String),
+    expect(loggerError).toHaveBeenCalledOnce();
+    const line = String(loggerError.mock.calls[0]?.[0]);
+    expect(loggerError.mock.calls[0]).toHaveLength(1);
+    expect(line).toContain(`requestId=${requestId}`);
+    expect(line).toContain('status=500');
+    expect(line).toContain(`code=${ApiErrorCode.INTERNAL_ERROR}`);
+    expect(line).not.toContain('relation');
+    expect(line).not.toContain('/api/listings');
+    expect(line).not.toContain('/Users/');
+    loggerError.mockRestore();
+  });
+
+  it('keeps a safe 5xx location and drops request secrets', () => {
+    const filter = new ApiExceptionFilter();
+    const captured: {
+      statusCode?: number;
+      body?: unknown;
+      headers?: Record<string, string>;
+    } = {};
+    const loggerError = vi
+      .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
+      .mockImplementation(() => undefined);
+    const pathMarker = 'path-secret-marker';
+    const queryMarker = 'query-secret-marker';
+    const exceptionMarker = 'exception-secret-marker';
+    const requestIdMarker = 'header-secret-marker';
+    const error = new Error(exceptionMarker);
+    error.stack = [
+      `Error: ${exceptionMarker}`,
+      `    at leak (/tmp/${pathMarker}.ts:1:1)`,
+      '    at WorkService.create (/Users/dev/bidplace/apps/api/src/products/products.service.ts:42:5)',
+    ].join('\n');
+
+    filter.catch(
+      error,
+      createHost(captured, {
+        method: 'POST',
+        url: `/api/${pathMarker}?token=${queryMarker}`,
+        requestId: requestIdMarker,
+      }) as never,
     );
+
+    const line = String(loggerError.mock.calls[0]?.[0]);
+    expect(line).toContain('requestId=unknown');
+    expect(line).toContain('status=500');
+    expect(line).toContain(`code=${ApiErrorCode.INTERNAL_ERROR}`);
+    expect(line).toContain('at=apps/api/src/products/products.service.ts:42');
+    expect(line).not.toContain(pathMarker);
+    expect(line).not.toContain(queryMarker);
+    expect(line).not.toContain(exceptionMarker);
+    expect(line).not.toContain(requestIdMarker);
+    expect(line).not.toContain('/Users/');
+    expect(JSON.stringify(captured.body)).not.toContain(exceptionMarker);
+    expect(captured.headers?.['X-Request-Id']).toBe(requestIdMarker);
+
+    captured.body = undefined;
+    filter.catch(
+      exceptionMarker,
+      createHost(captured, {
+        url: `/api/${pathMarker}`,
+        requestId: requestIdMarker,
+      }) as never,
+    );
+    const stringLine = String(loggerError.mock.calls[1]?.[0]);
+    expect(stringLine).toContain('status=500');
+    expect(stringLine).toContain(`code=${ApiErrorCode.INTERNAL_ERROR}`);
+    expect(stringLine).not.toContain(exceptionMarker);
+    expect(stringLine).not.toContain(pathMarker);
+    loggerError.mockRestore();
+  });
+
+  it('does not treat a frame inside the error message as the failure site', () => {
+    const filter = new ApiExceptionFilter();
+    const captured: { statusCode?: number; body?: unknown } = {};
+    const loggerError = vi
+      .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
+      .mockImplementation(() => undefined);
+    const requestId = '6c456e1f-37b0-4733-a939-b5fa1a1e565d';
+    const error = new Error(
+      'synthetic error\n    at Fake (/repo/apps/api/src/message-marker.ts:9:1)',
+    );
+    error.stack = [
+      error.toString(),
+      '    at WorkService.create (/Users/dev/bidplace/apps/api/src/products/products.service.ts:42:5)',
+    ].join('\n');
+
+    filter.catch(
+      error,
+      createHost(captured, { requestId }) as never,
+    );
+
+    const line = String(loggerError.mock.calls[0]?.[0]);
+    expect(line).toContain(`requestId=${requestId}`);
+    expect(line).toContain('status=500');
+    expect(line).toContain(`code=${ApiErrorCode.INTERNAL_ERROR}`);
+    expect(line).toContain('at=apps/api/src/products/products.service.ts:42');
+    expect(line).not.toContain('message-marker');
+    expect(line).not.toContain('synthetic error');
+    expect(JSON.stringify(captured.body)).not.toContain('message-marker');
+    loggerError.mockRestore();
+  });
+
+  it('records a short path for a production dist frame', () => {
+    const filter = new ApiExceptionFilter();
+    const captured: { body?: unknown } = {};
+    const loggerError = vi
+      .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
+      .mockImplementation(() => undefined);
+    const requestId = '6c456e1f-37b0-4733-a939-b5fa1a1e565d';
+    const error = new Error('relation "bids" does not exist');
+    error.stack = [
+      error.toString(),
+      '    at leak (/tmp/path-secret-marker.js:3:1)',
+      '    at ProductsService.create (/app/dist/products/products.service.js:88:4)',
+    ].join('\n');
+
+    filter.catch(
+      error,
+      createHost(captured, {
+        url: '/api/path-secret-marker?token=query-secret-marker',
+        requestId,
+      }) as never,
+    );
+
+    const line = String(loggerError.mock.calls[0]?.[0]);
+    expect(line).toContain(`requestId=${requestId}`);
+    expect(line).toContain('status=500');
+    expect(line).toContain(`code=${ApiErrorCode.INTERNAL_ERROR}`);
+    expect(line).toContain('at=dist/products/products.service.js:88');
+    expect(line).not.toContain('/app/');
+    expect(line).not.toContain('path-secret-marker');
+    expect(line).not.toContain('query-secret-marker');
+    expect(line).not.toContain('relation');
     loggerError.mockRestore();
   });
 

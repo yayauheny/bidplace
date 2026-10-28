@@ -1,65 +1,83 @@
-import { Redirect } from 'expo-router';
-import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import {
+  Redirect,
+  useGlobalSearchParams,
+  usePathname,
+  useSegments,
+  type Href,
+} from 'expo-router';
+import { useState, type ReactNode } from 'react';
 
-import { designTokens } from '@bidplace/design-tokens';
-
-import { AppText, SecondaryButton } from '../ui';
+import { logInfrastructureError } from '../../errors';
+import { AppShell } from '../layout';
+import { InfrastructurePageStatus } from './InfrastructurePageStatus';
 import { useAuth } from '../../providers/auth-provider';
+import { getRouteSearchRedirect } from '../../features/auth/auth-redirect';
+import { resolveProtectedRouteAccess } from '../../features/auth/author-email-verification';
 
 type ProtectedRouteProps = {
   children: ReactNode;
   requireAdmin?: boolean;
+  requireVerifiedEmail?: boolean;
 };
 
 export function ProtectedRoute({
   children,
   requireAdmin = false,
+  requireVerifiedEmail = false,
 }: ProtectedRouteProps) {
   const auth = useAuth();
+  const pathname = usePathname();
+  const params = useGlobalSearchParams();
+  const segments = useSegments();
+  const [refreshing, setRefreshing] = useState(false);
+  const pageStatus =
+    !auth.ready || refreshing
+      ? 'loading'
+      : auth.status === 'error'
+        ? 'error'
+        : null;
 
-  if (!auth.ready) {
+  if (pageStatus) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: designTokens.color.canvas,
-        }}
-      >
-        <AppText role="bodySmall" tone="secondary">
-          Проверяем доступ…
-        </AppText>
-      </View>
-    );
-  }
-
-  if (auth.status === 'error') {
-    return (
-      <View
-        accessibilityRole="alert"
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: designTokens.space.x3,
-          backgroundColor: designTokens.color.canvas,
-        }}
-      >
-        <AppText role="bodySmall" tone="danger">
-          {auth.sessionError}
-        </AppText>
-        <SecondaryButton
-          label="Повторить"
-          onPress={() => void auth.refreshSession()}
+      <AppShell>
+        <InfrastructurePageStatus
+          status={pageStatus}
+          onRetry={() => {
+            setRefreshing(true);
+            void auth.refreshSession().then(
+              () => {
+                setRefreshing(false);
+              },
+              (error: unknown) => {
+                logInfrastructureError(error, 'protected-route');
+                setRefreshing(false);
+              },
+            );
+          }}
         />
-      </View>
+      </AppShell>
     );
   }
 
-  if (!auth.isAuthenticated) {
-    return <Redirect href="/login" />;
+  const redirectTo = getRouteSearchRedirect(pathname, segments, params);
+  const access = resolveProtectedRouteAccess({
+    isAuthenticated: auth.isAuthenticated,
+    emailVerifiedAt: auth.user?.emailVerifiedAt,
+    requireVerifiedEmail,
+  });
+
+  if (access === 'login') {
+    return <Redirect href={{ pathname: '/login', params: { redirectTo } }} />;
+  }
+
+  if (access === 'verify-email') {
+    return (
+      <Redirect
+        href={
+          `/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as Href
+        }
+      />
+    );
   }
 
   if (requireAdmin && !auth.canModerate) {

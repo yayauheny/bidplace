@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ApiClientError,
+  createNetworkError,
   getApiErrorCode,
-  getBidTooLowMinimum,
+  parseApiError,
   throwApiClientResponseError,
 } from '../src/errors';
 
@@ -52,7 +53,7 @@ describe('api-client errors', () => {
     });
   });
 
-  it('exposes helpers for code and bid minimum', () => {
+  it('exposes the API error code', () => {
     const error = new ApiClientError('Bid must be at least 11.50', {
       kind: 'bad_request',
       status: 400,
@@ -61,7 +62,70 @@ describe('api-client errors', () => {
     });
 
     expect(getApiErrorCode(error)).toBe(ApiErrorCode.BID_TOO_LOW);
-    expect(getBidTooLowMinimum(error)).toBe(11.5);
-    expect(getBidTooLowMinimum(new Error('nope'))).toBeNull();
+  });
+
+  it('keeps requestId and diagnostic message off the UI contract', async () => {
+    const error = await throwApiClientResponseError(
+      new Response(
+        JSON.stringify({
+          status: 500,
+          code: ApiErrorCode.INTERNAL_ERROR,
+          message: 'Internal server error',
+          requestId: 'req-456',
+        }),
+        {
+          status: 500,
+          statusText: 'Internal Server Error',
+          headers: {
+            'content-type': 'application/json',
+            'x-request-id': 'req-header',
+          },
+        },
+      ),
+    ).catch((value: unknown) => value);
+
+    expect(error).toMatchObject({
+      name: 'ApiClientError',
+      kind: 'server',
+      status: 500,
+      code: ApiErrorCode.INTERNAL_ERROR,
+      requestId: 'req-456',
+      message: 'Internal server error',
+    });
+    expect(
+      parseApiError({
+        status: 500,
+        code: ApiErrorCode.INTERNAL_ERROR,
+        message: 'Internal server error',
+        requestId: 'req-456',
+      }),
+    ).toMatchObject({ requestId: 'req-456' });
+  });
+
+  it('preserves the original network cause', () => {
+    const cause = new TypeError('Failed to fetch');
+    const error = createNetworkError(cause);
+
+    expect(error.kind).toBe('network');
+    expect(error.status).toBe(0);
+    expect(error.cause).toBe(cause);
+    expect(error.message).toBe('Network request failed');
+  });
+
+  it('leaves code null when the JSON body is not the API error contract', async () => {
+    const error = await throwApiClientResponseError(
+      jsonResponse(500, {
+        status: 500,
+        code: 'not_a_real_code',
+        message: 'nope',
+      }),
+    ).catch((value: unknown) => value);
+
+    expect(error).toMatchObject({
+      name: 'ApiClientError',
+      kind: 'server',
+      status: 500,
+      code: null,
+    });
   });
 });

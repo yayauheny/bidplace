@@ -1,7 +1,15 @@
+import { createHash } from 'node:crypto';
+
 import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ImagesService } from './images.service';
+import { mediaChecksum } from '../core/media/media-object-store';
+
+import {
+  ImagesService,
+  productImageAuthorizationSelect,
+} from './images.service';
+import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import * as imagePolicy from './image-policy';
 
 vi.mock('./image-policy', async (importOriginal) => {
@@ -23,6 +31,7 @@ function createApprovedProduct(
   return {
     id: 'product-id',
     editingRevisionId: 'revision-id',
+    publishedRevisionId: null as string | null,
     status: 'DRAFT',
     sellerProfile: {
       userId: 'owner-id',
@@ -30,6 +39,10 @@ function createApprovedProduct(
     },
     listings: [] as Array<{ id: string }>,
     images,
+    editingRevision: {
+      status: 'DRAFT',
+      images: images.map((image) => ({ position: image.position, image })),
+    },
   };
 }
 
@@ -44,27 +57,76 @@ function createPrismaForAdd(options: {
       : (options.product ?? createApprovedProduct([]));
 
   const tx = {
-    $queryRaw: vi.fn().mockResolvedValue(
-      productPayload ? [{ id: 'product-id' }] : [],
-    ),
+    $queryRaw: vi
+      .fn()
+      .mockResolvedValue(productPayload ? [{ id: 'product-id' }] : []),
     product: {
       findUnique: vi.fn().mockResolvedValue(productPayload),
     },
     productImage: { create, update: vi.fn() },
     productRevisionImage: { create: vi.fn() },
   };
-    const prisma = {
-      product: {
-        findUnique: vi.fn().mockResolvedValue(productPayload),
-      },
-      $transaction: vi.fn(
-        async (callback: (client: typeof tx) => Promise<unknown>) =>
-          callback(tx),
-      ),
-    };
+  const prisma = {
+    product: {
+      findUnique: vi.fn().mockResolvedValue(productPayload),
+    },
+    $transaction: vi.fn(
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+    ),
+  };
 
-    return { prisma, tx, create };
+  return { prisma, tx, create };
 }
+
+function projectSelected(
+  select: Record<string, unknown>,
+  value: unknown,
+): unknown {
+  if (value == null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => projectSelected(select, item));
+  }
+  const source = value as Record<string, unknown>;
+  const projected: Record<string, unknown> = {};
+  for (const [key, spec] of Object.entries(select)) {
+    if (spec === true) {
+      projected[key] = source[key];
+      continue;
+    }
+    if (
+      spec &&
+      typeof spec === 'object' &&
+      'select' in spec &&
+      spec.select &&
+      typeof spec.select === 'object'
+    ) {
+      projected[key] = projectSelected(
+        spec.select as Record<string, unknown>,
+        source[key],
+      );
+    }
+  }
+  return projected;
+}
+
+const baselineProductImageAuthorizationSelect = {
+  id: true,
+  mimeType: true,
+  revisions: { select: { revisionId: true } },
+  product: {
+    select: {
+      status: true,
+      publishedRevisionId: true,
+      sellerProfile: {
+        select: {
+          userId: true,
+          status: true,
+          ...publicSellerProfileSelect,
+        },
+      },
+    },
+  },
+};
 
 function createImageStoreMock() {
   return {
@@ -96,7 +158,10 @@ describe('ImagesService', () => {
         })),
       ),
     });
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await expect(
       service.add('owner-id', 'product-id', [
@@ -114,7 +179,10 @@ describe('ImagesService', () => {
     const { prisma } = createPrismaForAdd({
       product: createApprovedProduct([], 'PENDING'),
     });
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await expect(
       service.add('owner-id', 'product-id', [
@@ -130,7 +198,10 @@ describe('ImagesService', () => {
     const { prisma } = createPrismaForAdd({
       product: createApprovedProduct([]),
     });
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await expect(
       service.add('other-user-id', 'product-id', [
@@ -144,7 +215,12 @@ describe('ImagesService', () => {
 
   it('locks image writes when the Product is approved', async () => {
     const { prisma } = createPrismaForAdd({
-      product: { ...createApprovedProduct([]), status: 'APPROVED' },
+      product: {
+        ...createApprovedProduct([]),
+        status: 'APPROVED',
+        publishedRevisionId: 'revision-id',
+        editingRevision: { status: 'APPROVED', images: [] },
+      },
     });
     const service = new ImagesService(
       prisma as never,
@@ -158,6 +234,37 @@ describe('ImagesService', () => {
     ).rejects.toThrow('Product images are locked');
     expect(validateAndNormalizeProductImageUploads).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('writes images only to an editable revision of an approved Product', async () => {
+    const product = {
+      ...createApprovedProduct([]),
+      status: 'APPROVED',
+      publishedRevisionId: 'published-revision',
+      editingRevisionId: 'editing-revision',
+      images: [{ id: 'published-image', position: 0, byteLength: 1 }],
+      editingRevision: { status: 'DRAFT', images: [] },
+    };
+    const { prisma, tx } = createPrismaForAdd({ product });
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
+
+    await service.add('owner-id', 'product-id', [
+      { buffer: Buffer.from([1]), mimetype: 'image/png' },
+    ]);
+
+    expect(tx.productImage.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ position: 1 }),
+    });
+    expect(tx.productRevisionImage.create).toHaveBeenCalledWith({
+      data: {
+        revisionId: 'editing-revision',
+        imageId: 'image-id',
+        position: 0,
+      },
+    });
   });
 
   it('allows image writes when the Product is rejected', async () => {
@@ -267,6 +374,7 @@ describe('ImagesService', () => {
             sellerProfile: {
               userId: 'owner-id',
               status: 'APPROVED',
+              user: { status: 'active' },
             },
           },
         }),
@@ -299,6 +407,7 @@ describe('ImagesService', () => {
             sellerProfile: {
               userId: 'owner-id',
               status: 'APPROVED',
+              user: { status: 'active' },
             },
           },
         }),
@@ -312,6 +421,167 @@ describe('ImagesService', () => {
     expect(imageStore.get).toHaveBeenCalledWith('product-image:image-id');
   });
 
+  it('authorizes product bytes without reading the public seller profile', async () => {
+    const biography = `BIOGRAPHY_MARKER${'б'.repeat(80_000)}`;
+    const storedBytes = Uint8Array.from([9, 8, 7]);
+    const wideRow = {
+      id: 'image-id',
+      mimeType: 'image/jpeg',
+      revisions: [{ revisionId: 'published-revision' }],
+      product: {
+        status: 'APPROVED',
+        publishedRevisionId: 'published-revision',
+        sellerProfile: {
+          userId: 'owner-id',
+          status: 'APPROVED',
+          user: { status: 'active' },
+          id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+          slug: 'seller-slug',
+          sellerType: 'creator',
+          discipline: 'Керамика',
+          fullName: 'Seller',
+          country: 'BY',
+          city: 'Минск',
+          practice: null,
+          biography,
+          socialLink: null,
+          telegramUrl: null,
+          instagramUrl: null,
+          websiteUrl: null,
+          publicEmail: null,
+          shortDescription: 'Short',
+          publishedRevision: {
+            achievements: Array.from({ length: 12 }, (_, index) => ({
+              id: `achievement-${index}`,
+              occurredAt: null,
+              occurredAtPrecision: null,
+              body: `ACHIEVEMENT_MARKER${'а'.repeat(4_000)}`,
+              mimeType: null,
+              byteLength: null,
+              checksum: null,
+              objectKey: null,
+            })),
+          },
+        },
+      },
+    };
+    const narrowPayload = projectSelected(
+      productImageAuthorizationSelect,
+      wideRow,
+    );
+    const baselinePayload = projectSelected(
+      baselineProductImageAuthorizationSelect,
+      wideRow,
+    );
+    const narrowBytes = Buffer.byteLength(JSON.stringify(narrowPayload));
+    const baselineBytes = Buffer.byteLength(JSON.stringify(baselinePayload));
+    expect(narrowBytes).toBeLessThan(baselineBytes);
+    expect(baselineBytes - narrowBytes).toBeGreaterThan(80_000);
+    expect(JSON.stringify(narrowPayload).includes('BIOGRAPHY_MARKER')).toBe(
+      false,
+    );
+    expect(JSON.stringify(narrowPayload).includes('ACHIEVEMENT_MARKER')).toBe(
+      false,
+    );
+    expect(JSON.stringify(baselinePayload).includes('BIOGRAPHY_MARKER')).toBe(
+      true,
+    );
+
+    const imageStore = createImageStoreMock();
+    imageStore.get.mockResolvedValue({
+      bytes: storedBytes,
+      mimeType: 'image/png',
+    });
+    const findUnique = vi.fn(
+      async (args: { select: Record<string, unknown> }) =>
+        projectSelected(args.select, wideRow),
+    );
+    const service = new ImagesService(
+      { productImage: { findUnique } } as never,
+      imageStore as never,
+    );
+
+    await expect(service.get('image-id')).resolves.toEqual({
+      mimeType: 'image/png',
+      data: storedBytes,
+      isPublic: true,
+    });
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'image-id' },
+      select: productImageAuthorizationSelect,
+    });
+    expect(imageStore.get).toHaveBeenCalledWith('product-image:image-id');
+
+    findUnique.mockClear();
+    imageStore.get.mockClear();
+    await expect(
+      service.get('image-id', 'stranger-id', 'user'),
+    ).resolves.toEqual({
+      mimeType: 'image/png',
+      data: storedBytes,
+      isPublic: true,
+    });
+
+    const privateRow = {
+      ...wideRow,
+      revisions: [{ revisionId: 'editing-revision' }],
+    };
+    findUnique.mockImplementation(
+      async (args: { select: Record<string, unknown> }) =>
+        projectSelected(args.select, privateRow),
+    );
+    imageStore.get.mockClear();
+    await expect(service.get('image-id')).rejects.toThrow('Image not found');
+    await expect(
+      service.get('image-id', 'stranger-id', 'user'),
+    ).rejects.toThrow('Image not found');
+    expect(imageStore.get).not.toHaveBeenCalled();
+    await expect(
+      service.get('image-id', 'owner-id', 'user'),
+    ).resolves.toMatchObject({
+      mimeType: 'image/png',
+      data: storedBytes,
+      isPublic: false,
+    });
+    await expect(
+      service.get('image-id', 'admin-id', 'admin'),
+    ).resolves.toMatchObject({
+      isPublic: false,
+    });
+
+    const pendingProduct = {
+      ...wideRow,
+      product: { ...wideRow.product, status: 'PENDING_REVIEW' },
+    };
+    findUnique.mockImplementation(
+      async (args: { select: Record<string, unknown> }) =>
+        projectSelected(args.select, pendingProduct),
+    );
+    imageStore.get.mockClear();
+    await expect(service.get('image-id')).rejects.toThrow('Image not found');
+    await expect(
+      service.get('image-id', 'owner-id', 'user'),
+    ).resolves.toMatchObject({
+      isPublic: false,
+    });
+
+    findUnique.mockResolvedValue(null);
+    imageStore.get.mockClear();
+    await expect(service.get('missing-id', 'owner-id', 'user')).rejects.toThrow(
+      'Image not found',
+    );
+    expect(imageStore.get).not.toHaveBeenCalled();
+
+    findUnique.mockImplementation(
+      async (args: { select: Record<string, unknown> }) =>
+        projectSelected(args.select, wideRow),
+    );
+    imageStore.get.mockResolvedValue(null);
+    await expect(service.get('image-id', 'owner-id', 'admin')).rejects.toThrow(
+      'Image not found',
+    );
+  });
+
   it('reorders images through temporary positions before final positions', async () => {
     const update = vi.fn().mockResolvedValue({});
     const productRow = {
@@ -321,6 +591,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -343,13 +614,67 @@ describe('ImagesService', () => {
         } as never),
       ),
     };
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await service.reorder('owner-id', 'product-id', ['image-b', 'image-a']);
 
     expect(update.mock.calls.map(([args]) => args.data.position)).toEqual([
       2, 3, 0, 1,
     ]);
+  });
+
+  it('reorders an approved Work draft without changing Product image positions', async () => {
+    const productImageUpdate = vi.fn().mockResolvedValue({});
+    const revisionImageUpdate = vi.fn().mockResolvedValue({});
+    const productRow = {
+      id: 'product-id',
+      editingRevisionId: 'editing-revision',
+      publishedRevisionId: 'published-revision',
+      status: 'APPROVED',
+      sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
+      listings: [],
+      images: [
+        { id: 'published-image', position: 0, byteLength: 1 },
+        { id: 'image-a', position: 1, byteLength: 1 },
+        { id: 'image-b', position: 2, byteLength: 1 },
+      ],
+      editingRevision: {
+        status: 'DRAFT',
+        images: [
+          {
+            position: 0,
+            image: { id: 'image-a', position: 1, byteLength: 1 },
+          },
+          {
+            position: 1,
+            image: { id: 'image-b', position: 2, byteLength: 1 },
+          },
+        ],
+      },
+    };
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(productRow) },
+      $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
+        callback({
+          $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+          product: { findUnique: vi.fn().mockResolvedValue(productRow) },
+          productImage: { update: productImageUpdate },
+          productRevisionImage: { update: revisionImageUpdate },
+        } as never),
+      ),
+    };
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
+
+    await service.reorder('owner-id', 'product-id', ['image-b', 'image-a']);
+
+    expect(productImageUpdate).not.toHaveBeenCalled();
+    expect(revisionImageUpdate).toHaveBeenCalledTimes(4);
   });
 
   it('reindexes remaining images through temporary positions when removing one', async () => {
@@ -365,6 +690,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -389,10 +715,12 @@ describe('ImagesService', () => {
           productRevisionImage: {
             deleteMany: vi.fn(),
             count: vi.fn().mockResolvedValue(0),
-            findMany: vi.fn().mockResolvedValue([
-              { imageId: 'image-b' },
-              { imageId: 'image-c' },
-            ]),
+            findMany: vi
+              .fn()
+              .mockResolvedValue([
+                { imageId: 'image-b' },
+                { imageId: 'image-c' },
+              ]),
             update: vi.fn(),
           },
         } as never),
@@ -404,7 +732,10 @@ describe('ImagesService', () => {
     await service.remove('owner-id', 'product-id', 'image-a');
 
     expect(findMany).toHaveBeenCalledTimes(1);
-    expect(imageStore.delete).toHaveBeenCalledWith('product-image:image-a', expect.anything());
+    expect(imageStore.delete).toHaveBeenCalledWith(
+      'product-image:image-a',
+      expect.anything(),
+    );
     expect(deleteImage).toHaveBeenCalledWith({ where: { id: 'image-a' } });
     expect(update.mock.calls.map(([args]) => args.data.position)).toEqual([
       3, 4, 0, 1,
@@ -424,6 +755,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -455,10 +787,12 @@ describe('ImagesService', () => {
           productRevisionImage: {
             deleteMany: vi.fn(),
             count: vi.fn().mockResolvedValue(0),
-            findMany: vi.fn().mockResolvedValue([
-              { imageId: 'image-b' },
-              { imageId: 'image-c' },
-            ]),
+            findMany: vi
+              .fn()
+              .mockResolvedValue([
+                { imageId: 'image-b' },
+                { imageId: 'image-c' },
+              ]),
             update: vi.fn(),
           },
         } as never),
@@ -482,6 +816,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -523,6 +858,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -550,13 +886,14 @@ describe('ImagesService', () => {
         } as never),
       ),
     };
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await expect(
       service.reorder('owner-id', 'product-id', ['image-b', 'image-a']),
-    ).rejects.toThrow(
-      'Image order must include every Product image exactly once',
-    );
+    ).rejects.toThrow('Product images changed while saving order');
     expect(update).not.toHaveBeenCalled();
   });
 
@@ -572,6 +909,7 @@ describe('ImagesService', () => {
           sellerProfile: {
             userId: 'owner-id',
             status: 'APPROVED',
+            user: { status: 'active' },
           },
           listings: [],
           images: [],
@@ -593,6 +931,7 @@ describe('ImagesService', () => {
           sellerProfile: {
             userId: 'owner-id',
             status: 'APPROVED',
+            user: { status: 'active' },
           },
           listings: [],
           images: [],
@@ -601,8 +940,9 @@ describe('ImagesService', () => {
       productCreationStep: {
         findFirst: vi.fn().mockResolvedValue({ id: stepId }),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
       ),
     };
     const imageStore = createImageStoreMock();
@@ -620,12 +960,10 @@ describe('ImagesService', () => {
       },
     ]);
 
-    await service.addCreationStepImage(
-      'owner-id',
-      'product-id',
-      stepId,
-      { buffer: Buffer.from('raw'), mimetype: 'image/jpeg' },
-    );
+    await service.addCreationStepImage('owner-id', 'product-id', stepId, {
+      buffer: Buffer.from('raw'),
+      mimetype: 'image/jpeg',
+    });
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(order).toEqual(['update', 'put']);
@@ -682,6 +1020,354 @@ describe('ImagesService', () => {
   });
 });
 
+describe('ImagesService media gallery admission', () => {
+  const file = { buffer: Buffer.from('same-bytes'), mimetype: 'image/png' };
+
+  function gallery(count: number, byteLength = 1) {
+    return Array.from({ length: count }, (_, position) => ({
+      position,
+      byteLength,
+    }));
+  }
+
+  function createMediaHarness(options: {
+    images?: { position: number; byteLength: number }[];
+    lockedImages?: { position: number; byteLength: number }[];
+    operation?: unknown;
+    assetState?: string;
+    attached?: { revisions: { revisionId: string }[] }[];
+  }) {
+    const product = createApprovedProduct(options.images ?? []);
+    const locked = createApprovedProduct(
+      options.lockedImages ?? options.images ?? [],
+    );
+    const stage = vi.fn().mockResolvedValue({
+      id: 'asset-new',
+      preview: {
+        objectKey: 'assets/asset-new/p1/preview.webp',
+        mimeType: 'image/webp',
+        sha256: 'b'.repeat(64),
+        width: 8,
+        height: 8,
+      },
+      source: { byteLength: file.buffer.byteLength },
+    });
+    const create = vi.fn().mockResolvedValue({ id: 'image-id' });
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      product: { findUnique: vi.fn().mockResolvedValue(locked) },
+      productImage: {
+        findMany: vi.fn().mockResolvedValue([]),
+        create,
+        update: vi.fn(),
+      },
+      productRevisionImage: { create: vi.fn() },
+    };
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue(options.operation ?? null),
+      },
+      mediaAsset: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ state: options.assetState ?? 'READY' }),
+      },
+      productImage: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        findMany: vi.fn().mockResolvedValue(options.attached ?? []),
+      },
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+      {
+        enabled: true,
+        stage,
+        assertNotPending: vi.fn(),
+        attach: vi.fn(),
+      } as never,
+    );
+    return { service, stage, prisma, create };
+  }
+
+  function storedUpload(sha256 = mediaChecksum(file.buffer)) {
+    return {
+      state: 'DONE' as const,
+      objects: [
+        {
+          object: {
+            variant: 'SOURCE' as const,
+            sha256,
+            mimeType: 'image/png',
+            assetId: 'asset-existing',
+          },
+        },
+      ],
+    };
+  }
+
+  it('rejects story uploads from a non-owner before staging media', async () => {
+    const { service, stage, prisma } = createMediaHarness({});
+    await expect(
+      service.addStoryImage(
+        'stranger-id',
+        'product-id',
+        file,
+        'story-upload',
+        'revision-id',
+      ),
+    ).rejects.toThrow(ForbiddenException);
+    expect(stage).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])('rejects a full story before stage or under the concurrent locked recheck (%s)', async (concurrent) => {
+    const product = createApprovedProduct([]);
+    const create = vi.fn();
+    const stage = vi.fn().mockResolvedValue({ id: 'story-asset' });
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue({ revisionId: 'revision-id' }),
+      },
+      productRevisionStoryAsset: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        count: vi.fn().mockResolvedValue(5), create,
+      },
+    };
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      productRevisionStoryAsset: { count: vi.fn().mockResolvedValue(concurrent ? 4 : 5) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new ImagesService(prisma as never, createImageStoreMock() as never, {
+      enabled: true, stage, assertNotPending: vi.fn(), attach: vi.fn(),
+    } as never);
+    await expect(service.addStoryImage('owner-id', 'product-id', file, 'new-story', 'revision-id')).rejects.toMatchObject({ status: 409 });
+    expect(stage).toHaveBeenCalledTimes(concurrent ? 1 : 0);
+    if (concurrent) {
+      expect(stage).toHaveBeenCalledWith(
+        'owner-id',
+        'STORY_IMAGE',
+        file,
+        createHash('sha256').update('product-id:story:new-story').digest('hex'),
+        false,
+        'revision-id',
+      );
+    }
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('does not stage a story retry that belongs to an earlier revision', async () => {
+    const product = createApprovedProduct([]);
+    const stage = vi.fn();
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue({ revisionId: 'old-revision' }),
+      },
+      $transaction: vi.fn(),
+    };
+    const service = new ImagesService(prisma as never, createImageStoreMock() as never, {
+      enabled: true, stage, assertNotPending: vi.fn(), attach: vi.fn(),
+    } as never);
+    await expect(
+      service.addStoryImage('owner-id', 'product-id', file, 'same-story', 'revision-id'),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(stage).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('does not create a story hold when the revision changes during staging', async () => {
+    const product = createApprovedProduct([]);
+    const locked = createApprovedProduct([]);
+    locked.editingRevisionId = 'revision-2';
+    const create = vi.fn();
+    const stage = vi.fn().mockResolvedValue({ id: 'story-asset' });
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      product: { findUnique: vi.fn().mockResolvedValue(locked) },
+      productRevisionStoryAsset: { create },
+    };
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      productRevisionStoryAsset: { count: vi.fn().mockResolvedValue(0) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new ImagesService(prisma as never, createImageStoreMock() as never, {
+      enabled: true, stage, assertNotPending: vi.fn(), attach: vi.fn(),
+    } as never);
+    await expect(
+      service.addStoryImage('owner-id', 'product-id', file, 'race-story', 'revision-id'),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(stage).toHaveBeenCalledTimes(1);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a full gallery before stage and provider writes', async () => {
+    const { service, stage, prisma } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+    });
+
+    await expect(
+      service.add('owner-id', 'product-id', [file], 'new-upload'),
+    ).rejects.toThrow(
+      `A Product can have at most ${imagePolicy.productImageUploadLimits.maxFiles} images`,
+    );
+    expect(stage).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects an oversized gallery before stage', async () => {
+    const { service, stage } = createMediaHarness({
+      images: [
+        {
+          position: 0,
+          byteLength: imagePolicy.productImageUploadLimits.maxTotalBytes,
+        },
+      ],
+    });
+
+    await expect(service.add('owner-id', 'product-id', [file])).rejects.toThrow(
+      `A Product cannot exceed ${imagePolicy.productImageUploadLimits.maxTotalBytes} total image bytes`,
+    );
+    expect(stage).not.toHaveBeenCalled();
+  });
+
+  it('keeps the locked recheck when a concurrent upload fills the gallery', async () => {
+    const { service, stage, create } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles - 1),
+      lockedImages: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+    });
+
+    await expect(service.add('owner-id', 'product-id', [file])).rejects.toThrow(
+      `A Product can have at most ${imagePolicy.productImageUploadLimits.maxFiles} images`,
+    );
+    expect(stage).toHaveBeenCalledTimes(1);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('replays an attached upload without staging when the gallery is full', async () => {
+    const { service, stage, prisma, create } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+      operation: storedUpload(),
+      attached: [{ revisions: [{ revisionId: 'revision-id' }] }],
+    });
+
+    await expect(
+      service.add('owner-id', 'product-id', [file], 'same-upload'),
+    ).resolves.toEqual({ ok: true });
+    expect(stage).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+    expect(prisma.mediaOperation.findUnique).toHaveBeenCalledWith({
+      where: {
+        identity: `upload:owner-id:WORK_IMAGE:${createHash('sha256').update('product-id:same-upload').digest('hex')}`,
+      },
+      include: { objects: { include: { object: true } } },
+    });
+  });
+
+  it('keeps the content conflict for a reused key before stage', async () => {
+    const { service, stage } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+      operation: storedUpload('f'.repeat(64)),
+    });
+
+    await expect(
+      service.add('owner-id', 'product-id', [file], 'same-upload'),
+    ).rejects.toThrow('Idempotency identity has different content');
+    expect(stage).not.toHaveBeenCalled();
+  });
+
+  it('keeps the earlier-revision conflict before a capacity rejection', async () => {
+    const { service, stage } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+      operation: storedUpload(),
+      attached: [{ revisions: [{ revisionId: 'old-revision' }] }],
+    });
+
+    await expect(
+      service.add('owner-id', 'product-id', [file], 'same-upload'),
+    ).rejects.toThrow('Upload identity belongs to an earlier revision');
+    expect(stage).not.toHaveBeenCalled();
+  });
+});
+
 function productImageUploadLimitMax(): number {
   return imagePolicy.productImageUploadLimits.maxFiles;
 }
+
+describe('Story image release safety', () => {
+  function setup(held: boolean, used = 0) {
+    const release = vi.fn();
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      product: {
+        findUnique: vi.fn().mockResolvedValue(createApprovedProduct([])),
+      },
+      productRevisionStoryBlock: { count: vi.fn().mockResolvedValue(used) },
+      productRevisionStoryAsset: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(held ? { revisionId: 'revision-id' } : null),
+        delete: vi.fn(),
+      },
+      mediaAsset: {
+        findUnique: vi.fn().mockResolvedValue({ purpose: 'STORY_IMAGE' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+      { enabled: true, enqueueCleanup: release } as never,
+    );
+    return { service, tx, release };
+  }
+
+  it('never cleans up a gallery asset without a story hold', async () => {
+    const { service, tx, release } = setup(false);
+    await expect(
+      service.removeStoryImage('owner-id', 'product-id', 'gallery-asset'),
+    ).resolves.toEqual({ ok: true });
+    expect(tx.productRevisionStoryAsset.delete).not.toHaveBeenCalled();
+    expect(release).not.toHaveBeenCalled();
+  });
+
+  it('releases a detached story asset only after deleting its hold', async () => {
+    const { service, tx, release } = setup(true);
+    await expect(
+      service.removeStoryImage('owner-id', 'product-id', 'story-asset'),
+    ).resolves.toEqual({ ok: true });
+    expect(tx.productRevisionStoryAsset.delete).toHaveBeenCalledOnce();
+    expect(release).toHaveBeenCalledOnce();
+  });
+
+  it('does not release an asset while it remains in a story block', async () => {
+    const { service, release } = setup(true, 1);
+    await expect(
+      service.removeStoryImage('owner-id', 'product-id', 'story-asset'),
+    ).rejects.toThrow('Story image is used by a block');
+    expect(release).not.toHaveBeenCalled();
+  });
+});

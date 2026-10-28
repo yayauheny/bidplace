@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 
@@ -40,7 +42,7 @@ async function createAdmin(): Promise<{
 }> {
   const user = await prisma.user.create({
     data: {
-      email: `admin.emergency.${Date.now()}@wave3.test`,
+      email: `admin.emergency.${randomUUID()}@wave3.test`,
       passwordHash: fixturePasswordHash,
       displayName: 'Emergency admin',
       role: 'admin',

@@ -1,6 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 
-import { loadServerEnv, requiresProductionSecurity } from '../config';
+import {
+  SERVER_ENV,
+  type ServerEnv,
+  requiresProductionSecurity,
+} from '../config';
 import { LocalMailTransport } from './local-mail-transport';
 import { MailTransport } from './mail-transport';
 import { SmtpMailTransport } from './smtp-mail-transport';
@@ -10,15 +14,14 @@ import { SmtpMailTransport } from './smtp-mail-transport';
   providers: [
     {
       provide: MailTransport,
-      useFactory: () => {
-        const env = loadServerEnv();
-
+      useFactory: (env: ServerEnv) => {
         if (requiresProductionSecurity(env)) {
           return SmtpMailTransport.create(env);
         }
 
-        return new LocalMailTransport();
+        return new LocalMailTransport(env);
       },
+      inject: [SERVER_ENV],
     },
   ],
   exports: [MailTransport],

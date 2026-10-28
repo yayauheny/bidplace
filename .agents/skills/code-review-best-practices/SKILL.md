@@ -1,40 +1,14 @@
 ---
 name: code-review-best-practices
-description: Short, repo-specific code review checklist for bidplace diffs, pull requests, and commits. Use when reviewing changes in apps/api, apps/mobile, or packages/*, or when the user asks for PR feedback, review findings, or code review best practices.
+description: Review bidplace changes for correctness, reuse, affected boundaries, and future maintenance; use for diffs and returned implementations.
 ---
 
-# Code Review Best Practices
+# Bidplace code review
 
-Review `bidplace` changes for real bugs and regressions first. Keep comments short,
-specific, and tied to the changed code.
+Apply root `AGENTS.md`; inspect the diff and real consumers, not only the implementation report.
 
-## Check First
-
-- `apps/api`: auth, permissions, Prisma/schema changes, migrations, webhooks, external APIs, error handling.
-- `apps/mobile`: list performance, navigation, images, safe areas, gestures, animation, rendering crashes.
-- `packages/*`: public exports, shared types, API contracts, dependency boundaries.
-- `turbo` impact: make sure touched packages cover the affected graph with tests and typecheck/lint where relevant.
-
-## What Matters Most
-
-- Correctness: broken assumptions, null/empty handling, state transitions, off-by-one errors.
-- Safety: auth bypasses, leaking sensitive data, unsafe external calls, bad validation.
-- Behavior: regressions in user flows, API contracts, mobile rendering, or shared types.
-- Tests: missing coverage for changed behavior and failure paths.
-- Performance: unnecessary rerenders, expensive loops, bad list rendering, unbounded work.
-
-## Communication
-
-- Start with findings ordered by severity.
-- Include file and line references.
-- Explain the risk in one sentence.
-- Suggest the smallest fix that makes the change safe.
-- If there are no findings, say that clearly and mention any residual risk or test gap.
-
-## Review Flow
-
-1. Read the PR description and understand the intended behavior.
-2. Scan the diff for risk hotspots.
-3. Trace the main code path end to end.
-4. Check tests, failure handling, and edge cases.
-5. Leave only comments that change the outcome of the PR.
+- Check existing components/tokens/services/contracts, duplicated state or rules, unnecessary helpers, and superseded code. Always give a brief future-maintenance assessment.
+- Trace affected UI -> contracts/client -> service -> repository/database -> build/release. Check compatibility, ownership, and unbounded work; use `security` when trust boundaries change.
+- Frontend: inspect rendered geometry, responsive/short/resize states, errors, focus, and hit behavior; DOM presence or tokens alone prove little. Backend: check validation, transactions, concurrency, canonical data, and old/new writers where affected.
+- Require a durable root-cause fix; use `grilling` before prescribing unresolved architecture/scope choices. Check meaningful assertions and cleanup; preserve important regressions and visual gates.
+- Report evidence-backed findings with severity, file/line, impact, and correction. Separate blockers, accepted differences, and optional improvements; distinguish own checks from reported results and verification gaps.

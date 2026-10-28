@@ -1,37 +1,21 @@
-import { z } from 'zod';
 import {
-  productListResponseSchema,
   productResponseSchema,
   productWriteRequestSchema,
-  creationStepOrderRequestSchema,
-  creationStoryResponseSchema,
-  creationStoryWriteRequestSchema,
-  publicDiscoveryQuerySchema,
-  publicProductDetailResponseSchema,
-  type PublicDiscoveryQueryInput,
+  storyResponseSchema,
+  storyWriteRequestSchema,
+  type StoryWriteRequest,
   type ProductWriteRequest,
 } from '@bidplace/contracts';
 
+import { parseRequest } from './errors/parse-request';
 import { requestJson, type RequestContext } from './request';
 
 export function createProductsClient(context: RequestContext) {
   return {
-    list(query?: PublicDiscoveryQueryInput) {
-      return requestJson(context, '/api/products', productListResponseSchema, {
-        query: publicDiscoveryQuerySchema.parse(query ?? {}),
-      });
-    },
-    get(publicId: string) {
-      return requestJson(
-        context,
-        `/api/products/${publicId}`,
-        publicProductDetailResponseSchema,
-      );
-    },
     create(input: ProductWriteRequest) {
       return requestJson(context, '/api/products', productResponseSchema, {
         method: 'POST',
-        body: productWriteRequestSchema.parse(input),
+        body: parseRequest(productWriteRequestSchema, input),
       });
     },
     submit(id: string) {
@@ -51,29 +35,18 @@ export function createProductsClient(context: RequestContext) {
         productResponseSchema,
         {
           method: 'PATCH',
-          body: productWriteRequestSchema.parse(input),
+          body: parseRequest(productWriteRequestSchema, input),
         },
       );
     },
-    replaceCreation(id: string, input: unknown) {
+    replaceCreation(id: string, input: StoryWriteRequest) {
       return requestJson(
         context,
         `/api/products/${id}/creation`,
-        creationStoryResponseSchema,
+        storyResponseSchema,
         {
           method: 'PUT',
-          body: creationStoryWriteRequestSchema.parse(input),
-        },
-      );
-    },
-    reorderCreation(id: string, stepIds: string[]) {
-      return requestJson(
-        context,
-        `/api/products/${id}/creation/order`,
-        z.object({ ok: z.literal(true) }).strict(),
-        {
-          method: 'PATCH',
-          body: creationStepOrderRequestSchema.parse({ stepIds }),
+          body: parseRequest(storyWriteRequestSchema, input),
         },
       );
     },

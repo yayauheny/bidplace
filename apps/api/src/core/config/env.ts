@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import {
   ENV_PROFILE_ERROR,
-  PRODUCTION_JWT_SECRET_MIN_LENGTH,
+  PRODUCTION_SESSION_SECRET_MIN_LENGTH,
   isExplicitLocalDevelopmentProfile,
   isExplicitLocalTestProfile,
   requiresProductionSecurity,
@@ -14,11 +14,6 @@ import {
 const booleanEnvSchema = z
   .enum(['true', 'false'])
   .optional()
-  .transform((value) => value === 'true');
-
-const booleanEnvDefaultFalseSchema = z
-  .enum(['true', 'false'])
-  .default('false')
   .transform((value) => value === 'true');
 
 const optionalNonEmptyStringEnvSchema = z.preprocess(
@@ -54,7 +49,15 @@ const serverEnvSchema = z
       .int()
       .positive()
       .default(40 * 1024 * 1024),
-    JWT_SECRET: z.string().min(1),
+    SESSION_SECRET: z.string().min(1),
+    OTP_HASH_SECRET: z.string().min(32),
+    GOOGLE_CLIENT_ID: optionalNonEmptyStringEnvSchema,
+    GOOGLE_CLIENT_SECRET: optionalNonEmptyStringEnvSchema,
+    GOOGLE_REDIRECT_URI: z.string().url().optional(),
+    TELEGRAM_CLIENT_ID: optionalNonEmptyStringEnvSchema,
+    TELEGRAM_CLIENT_SECRET: optionalNonEmptyStringEnvSchema,
+    TELEGRAM_REDIRECT_URI: z.string().url().optional(),
+    OIDC_TEST_ISSUER: z.string().url().optional(),
     SMTP_HOST: optionalNonEmptyStringEnvSchema,
     SMTP_PORT: z.coerce.number().int().positive().optional(),
     SMTP_SECURE: booleanEnvSchema.optional(),
@@ -68,29 +71,88 @@ const serverEnvSchema = z
     TEST_EMAIL_FILE: z.string().min(1).optional(),
     TEST_EMAIL_BYPASS: booleanEnvSchema,
     PASSWORD_RESET_URL_BASE: z.string().url().optional(),
+    TURNSTILE_SECRET_KEY: optionalNonEmptyStringEnvSchema,
+    TURNSTILE_HOSTNAME: optionalNonEmptyStringEnvSchema,
+    TURNSTILE_VERIFIER: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.enum(['cloudflare', 'test']).optional(),
+    ),
+    AUTH_MAIL_DAILY_BUDGET: z.preprocess(
+      (value) => (value === '' || value === undefined ? undefined : value),
+      z.coerce.number().int().positive().default(200),
+    ),
+    AUTH_MAIL_MONTHLY_BUDGET: z.preprocess(
+      (value) => (value === '' || value === undefined ? undefined : value),
+      z.coerce.number().int().positive().default(3000),
+    ),
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_WEBAPP_URL: z.string().url().optional(),
+    ANALYTICS_WEB_ENABLED: z.enum(['true', 'false']).optional(),
     ANALYTICS_INGEST_ENABLED: z.preprocess(
       (value) => (value === '' ? undefined : value),
       z.enum(['true', 'false']).optional(),
     ),
-    COMMERCE_ENABLED: booleanEnvDefaultFalseSchema,
     MEDIA_STORAGE_PROVIDER: z.enum(['postgres', 's3']).default('postgres'),
     S3_ENDPOINT: z.string().url().optional(),
     S3_REGION: z.string().min(1).optional(),
     S3_BUCKET: z.string().min(1).optional(),
     S3_ACCESS_KEY_ID: z.string().min(1).optional(),
     S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    S3_PUBLIC_BUCKET: z.string().min(1).optional(),
+    MEDIA_PUBLIC_BASE_URL: z.string().url().optional(),
+    CLOUDFLARE_ZONE_ID: z
+      .string()
+      .regex(/^[a-f0-9]{32}$/)
+      .optional(),
+    CLOUDFLARE_CACHE_TOKEN: z.string().min(1).optional(),
   })
   .passthrough()
   .refine(
     (env) => env.LOT_IMAGE_MAX_TOTAL_BYTES >= env.LOT_IMAGE_MAX_FILE_BYTES,
     {
-      message: 'LOT_IMAGE_MAX_TOTAL_BYTES must be at least LOT_IMAGE_MAX_FILE_BYTES',
+      message:
+        'LOT_IMAGE_MAX_TOTAL_BYTES must be at least LOT_IMAGE_MAX_FILE_BYTES',
       path: ['LOT_IMAGE_MAX_TOTAL_BYTES'],
     },
   )
   .superRefine((env, context) => {
+    for (const provider of ['GOOGLE', 'TELEGRAM'] as const) {
+      const values = [
+        env[`${provider}_CLIENT_ID`],
+        env[`${provider}_CLIENT_SECRET`],
+        env[`${provider}_REDIRECT_URI`],
+      ];
+      if (values.some(Boolean) && !values.every(Boolean))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [`${provider}_CLIENT_ID`],
+          message: `${provider} configuration must be complete`,
+        });
+      const redirect = env[`${provider}_REDIRECT_URI`];
+      if (
+        redirect &&
+        requiresProductionSecurity(env) &&
+        new URL(redirect).protocol !== 'https:'
+      )
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [`${provider}_REDIRECT_URI`],
+          message: 'Provider redirect must use HTTPS',
+        });
+    }
+    if (
+      env.OIDC_TEST_ISSUER &&
+      (!isExplicitLocalTestProfile(env) ||
+        !['127.0.0.1', 'localhost'].includes(
+          new URL(env.OIDC_TEST_ISSUER).hostname,
+        ))
+    )
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['OIDC_TEST_ISSUER'],
+        message:
+          'Test issuer requires explicit local test profile and loopback',
+      });
     const hasUsername = env.SMTP_USERNAME !== undefined;
     const hasPassword = env.SMTP_PASSWORD !== undefined;
 
@@ -114,7 +176,8 @@ const serverEnvSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['SMTP_AUTH_MODE'],
-        message: 'SMTP_AUTH_MODE must be explicit when SMTP credentials are configured',
+        message:
+          'SMTP_AUTH_MODE must be explicit when SMTP credentials are configured',
       });
     }
 
@@ -142,6 +205,8 @@ const serverEnvSchema = z
         'SMTP_AUTH_MODE',
         'SMTP_FROM',
         'PASSWORD_RESET_URL_BASE',
+        'TURNSTILE_SECRET_KEY',
+        'TURNSTILE_HOSTNAME',
         'SERVICE_RULES_OWNER',
         'SERVICE_RULES_CONTACT',
         'SERVICE_RULES_TEXT',
@@ -157,11 +222,11 @@ const serverEnvSchema = z
         }
       }
 
-      if (env.JWT_SECRET.length < PRODUCTION_JWT_SECRET_MIN_LENGTH) {
+      if (env.SESSION_SECRET.length < PRODUCTION_SESSION_SECRET_MIN_LENGTH) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['JWT_SECRET'],
-          message: ENV_PROFILE_ERROR.jwtSecretTooShortInProduction,
+          path: ['SESSION_SECRET'],
+          message: ENV_PROFILE_ERROR.sessionSecretTooShortInProduction,
         });
       }
 
@@ -173,6 +238,14 @@ const serverEnvSchema = z
         });
       }
 
+      if (env.TURNSTILE_VERIFIER === 'test') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TURNSTILE_VERIFIER'],
+          message: ENV_PROFILE_ERROR.turnstileTestVerifierRequiresLocalTest,
+        });
+      }
+
       if (env.MEDIA_STORAGE_PROVIDER !== 's3') {
         context.addIssue({
           code: z.ZodIssueCode.custom,
@@ -180,13 +253,75 @@ const serverEnvSchema = z
           message: 'MEDIA_STORAGE_PROVIDER=s3 is required in production',
         });
       }
+    } else {
+      if (
+        env.TURNSTILE_VERIFIER === 'test' &&
+        !isExplicitLocalTestProfile(env)
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TURNSTILE_VERIFIER'],
+          message: ENV_PROFILE_ERROR.turnstileTestVerifierRequiresLocalTest,
+        });
+      }
 
-    } else if (env.TEST_EMAIL_BYPASS && !isExplicitLocalTestProfile(env)) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['TEST_EMAIL_BYPASS'],
-        message: ENV_PROFILE_ERROR.testEmailBypassRequiresLocalTest,
-      });
+      if (env.TEST_EMAIL_BYPASS && !isExplicitLocalTestProfile(env)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TEST_EMAIL_BYPASS'],
+          message: ENV_PROFILE_ERROR.testEmailBypassRequiresLocalTest,
+        });
+      }
+    }
+
+    if (
+      env.S3_PUBLIC_BUCKET ||
+      env.MEDIA_PUBLIC_BASE_URL ||
+      requiresProductionSecurity(env)
+    ) {
+      for (const key of [
+        'S3_PUBLIC_BUCKET',
+        'MEDIA_PUBLIC_BASE_URL',
+        'CLOUDFLARE_ZONE_ID',
+        'CLOUDFLARE_CACHE_TOKEN',
+      ] as const) {
+        if (!env[key])
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} is required for public media delivery`,
+          });
+      }
+      if (env.S3_PUBLIC_BUCKET === env.S3_BUCKET)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['S3_PUBLIC_BUCKET'],
+          message: 'Private and public media buckets must differ',
+        });
+      if (env.MEDIA_STORAGE_PROVIDER !== 's3')
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['MEDIA_STORAGE_PROVIDER'],
+          message: 'Public media requires S3 storage',
+        });
+      if (env.MEDIA_PUBLIC_BASE_URL) {
+        const url = new URL(env.MEDIA_PUBLIC_BASE_URL);
+        if (
+          url.protocol !== 'https:' ||
+          url.username ||
+          url.password ||
+          url.search ||
+          url.hash ||
+          url.pathname !== '/' ||
+          url.hostname.endsWith('.r2.dev')
+        ) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['MEDIA_PUBLIC_BASE_URL'],
+            message: 'Public media requires an HTTPS custom-domain origin',
+          });
+        }
+      }
     }
 
     if (env.MEDIA_STORAGE_PROVIDER === 's3') {
@@ -209,6 +344,7 @@ const serverEnvSchema = z
   })
   .transform((env) => ({
     ...env,
+    ANALYTICS_WEB_ENABLED: env.ANALYTICS_WEB_ENABLED === 'true',
     ANALYTICS_INGEST_ENABLED:
       env.ANALYTICS_INGEST_ENABLED === undefined
         ? env.NODE_ENV !== 'test'
@@ -216,6 +352,14 @@ const serverEnvSchema = z
   }));
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
+
+export const SERVER_ENV = Symbol('SERVER_ENV');
+
+export function parseServerEnv(env: NodeJS.ProcessEnv): ServerEnv {
+  const parsed: ServerEnv = parseEnv(serverEnvSchema, env);
+  Object.freeze(parsed);
+  return parsed;
+}
 
 export function resolveCorsOrigin(
   env: Pick<ServerEnv, 'NODE_ENV' | 'APP_ENV' | 'CORS_ORIGIN'>,
@@ -270,5 +414,5 @@ export function loadServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
     }
   }
 
-  return parseEnv(serverEnvSchema, envInput);
+  return parseServerEnv(envInput);
 }

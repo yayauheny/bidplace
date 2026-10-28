@@ -1,324 +1,532 @@
-import type { Dispatch, SetStateAction } from 'react';
-
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
+import { useController, useFormContext, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
+import { countryName } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
-import type { ProfileFieldErrors } from './profile-validation';
-
-import {
-  handoffContactTypeLabels,
-  handoffInitiatorLabels,
-  presentEnum,
-} from '../../lib/presentation';
-
-import {
-  AppText,
-  FormSection,
-  SelectableRow,
-  SecondaryButton,
-  TextField,
-} from '../../components/ui';
+import { type FigmaIconName } from '../../components/figma/figma-icon-names';
+import { type FigmaFieldVariant } from '../../components/figma/figma-text-field-style';
+import { AppText, FormSection, TextField } from '../../components/ui';
+import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
+import { useAppTheme } from '../../providers/theme-provider';
+import { CountryPickerSheet } from './country-picker-sheet';
 
 export type ProfileFields = {
   slug: string;
   fullName: string;
   discipline: string;
+  directionCategoryIds: string[];
   country: string;
+  city: string;
+  practice: string;
   socialLink: string;
   telegramUrl: string;
   instagramUrl: string;
   websiteUrl: string;
+  publicEmail: string;
   shortDescription: string;
-  handoffContactType: 'TELEGRAM' | 'PHONE' | 'INSTAGRAM';
-  handoffContactValue: string;
-  handoffInitiator: 'BUYER_CONTACTS_SELLER' | 'SELLER_CONTACTS_BUYER';
 };
 
-export type SellerProfileForDisplay = Pick<
-  ProfileFields,
-  'handoffContactType' | 'handoffContactValue' | 'handoffInitiator'
->;
+export const requiredProfileMessages: Partial<
+  Record<keyof ProfileFields, string>
+> = {
+  slug: 'Введите никнейм',
+  fullName: 'Введите имя или название',
+  country: 'Укажите страну',
+  discipline: 'Укажите направление',
+  directionCategoryIds: 'Выберите хотя бы одно направление',
+  shortDescription: 'Добавьте короткое описание о себе',
+};
+
+const ProfileFieldWriteGuardContext = createContext<RefObject<boolean> | null>(
+  null,
+);
+
+type RevealedRequirements = Partial<Record<keyof ProfileFields, true>>;
+
+type ProfileRequirements = {
+  revealed: RevealedRequirements;
+  reveal: (names: readonly (keyof ProfileFields)[]) => void;
+};
+
+const ProfileRequirementContext = createContext<ProfileRequirements | null>(
+  null,
+);
+
+export type ProfileRequirementControls = {
+  reveal: (names: readonly (keyof ProfileFields)[]) => void;
+};
+
+export function ProfileRequirementScope({
+  epoch,
+  controls,
+  children,
+}: {
+  epoch: number;
+  controls: RefObject<ProfileRequirementControls>;
+  children: ReactNode;
+}) {
+  const [revealed, setRevealed] = useState<RevealedRequirements>({});
+  const [seenEpoch, setSeenEpoch] = useState(epoch);
+  if (seenEpoch !== epoch) {
+    setSeenEpoch(epoch);
+    setRevealed({});
+  }
+  const reveal = useCallback((names: readonly (keyof ProfileFields)[]) => {
+    setRevealed((current) => {
+      let changed = false;
+      const next = { ...current };
+      for (const name of names) {
+        if (next[name]) continue;
+        next[name] = true;
+        changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, []);
+  const visibleRevealed = seenEpoch === epoch ? revealed : {};
+  controls.current = { reveal };
+  const value = useMemo(
+    () => ({ revealed: visibleRevealed, reveal }),
+    [visibleRevealed, reveal],
+  );
+  return (
+    <ProfileRequirementContext.Provider value={value}>
+      {children}
+    </ProfileRequirementContext.Provider>
+  );
+}
+
+export function ProfileFieldWriteGuard({
+  guard,
+  children,
+}: {
+  guard: RefObject<boolean>;
+  children: ReactNode;
+}) {
+  return (
+    <ProfileFieldWriteGuardContext.Provider value={guard}>
+      {children}
+    </ProfileFieldWriteGuardContext.Provider>
+  );
+}
+
+function ProfileDraftField({
+  name,
+  label,
+  placeholder,
+  autoCapitalize,
+  editable,
+  required,
+  requiredMarker = true,
+  multiline,
+  variant,
+  icon,
+  iconColor,
+}: {
+  name: Exclude<keyof ProfileFields, 'directionCategoryIds'>;
+  label: string;
+  placeholder?: string;
+  autoCapitalize?: 'none' | 'characters';
+  editable: boolean;
+  /** Reveals the requirement message on blur. */
+  required?: boolean;
+  /** Adds the ` *` label marker. The basic-information step states requirements in its placeholders instead. */
+  requiredMarker?: boolean;
+  multiline?: boolean;
+  variant?: FigmaFieldVariant;
+  icon?: FigmaIconName;
+  iconColor?: string;
+}) {
+  const guard = useContext(ProfileFieldWriteGuardContext);
+  if (!guard) {
+    throw new Error('Profile field write guard is missing');
+  }
+  const requirements = useContext(ProfileRequirementContext);
+  if (!requirements) {
+    throw new Error('Profile requirement scope is missing');
+  }
+  const { control, setValue } = useFormContext<ProfileFields>();
+  const { field, fieldState } = useController({ control, name });
+  const requiredMessage = required ? requiredProfileMessages[name] : undefined;
+  const revealed = requirements.revealed[name] === true;
+  const schemaMessage = fieldState.error?.message;
+  const requirementMessage =
+    requiredMessage && revealed && !field.value.trim()
+      ? requiredMessage
+      : undefined;
+  const message = schemaMessage ?? requirementMessage;
+  return (
+    <TextField
+      ref={field.ref}
+      label={label}
+      required={required && requiredMarker}
+      value={field.value}
+      onBlur={() => {
+        field.onBlur();
+        if (requiredMessage && !field.value.trim()) requirements.reveal([name]);
+      }}
+      onChangeText={(value) => {
+        if (guard.current) return;
+        setValue(name, value, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true,
+        });
+        if (requiredMessage && !value.trim()) requirements.reveal([name]);
+      }}
+      placeholder={placeholder}
+      autoCapitalize={autoCapitalize}
+      editable={editable}
+      multiline={multiline}
+      variant={variant}
+      icon={icon}
+      iconColor={iconColor}
+      error={typeof message === 'string' ? message : undefined}
+    />
+  );
+}
+
+/** Country is chosen from the `GET /countries` directory; the form keeps only the ISO code. */
+function ProfileCountryField({ editable }: { editable: boolean }) {
+  const guard = useContext(ProfileFieldWriteGuardContext);
+  if (!guard) {
+    throw new Error('Profile field write guard is missing');
+  }
+  const requirements = useContext(ProfileRequirementContext);
+  if (!requirements) {
+    throw new Error('Profile requirement scope is missing');
+  }
+  const { control, setValue } = useFormContext<ProfileFields>();
+  const { field, fieldState } = useController({ control, name: 'country' });
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const revealed = requirements.revealed.country === true;
+  const requirementMessage =
+    revealed && !field.value.trim()
+      ? requiredProfileMessages.country
+      : undefined;
+  const message = fieldState.error?.message ?? requirementMessage;
+  return (
+    <>
+      <FigmaSelectField
+        label="Страна"
+        placeholder="Страна (обязательное)"
+        value={field.value ? (countryName(field.value) ?? '') : ''}
+        disabled={!editable}
+        error={typeof message === 'string' ? message : undefined}
+        onPress={() => setPickerOpen(true)}
+      />
+      <CountryPickerSheet
+        open={pickerOpen}
+        selectedCode={field.value}
+        onClose={() => {
+          setPickerOpen(false);
+          if (!field.value.trim()) requirements.reveal(['country']);
+        }}
+        onSelect={(code) => {
+          setPickerOpen(false);
+          if (guard.current) return;
+          setValue('country', code, {
+            shouldDirty: true,
+            shouldTouch: true,
+            shouldValidate: true,
+          });
+        }}
+      />
+    </>
+  );
+}
+
+export function ProfileContactsFields({ editable }: { editable: boolean }) {
+  const palette = useAppTheme();
+  return (
+    <>
+      <ProfileDraftField
+        name="instagramUrl"
+        label="Instagram"
+        placeholder="Instagram"
+        autoCapitalize="none"
+        editable={editable}
+        variant="authorApplication"
+        icon="at-sign"
+        iconColor={palette.muted}
+      />
+      <ProfileDraftField
+        name="telegramUrl"
+        label="Telegram"
+        placeholder="Telegram"
+        autoCapitalize="none"
+        editable={editable}
+        variant="authorApplication"
+        icon="at-sign"
+        iconColor={palette.muted}
+      />
+      <ProfileDraftField
+        name="websiteUrl"
+        label="Сайт"
+        placeholder="Веб-сайт"
+        autoCapitalize="none"
+        editable={editable}
+        variant="authorApplication"
+      />
+      <ProfileDraftField
+        name="publicEmail"
+        label="Почта"
+        placeholder="Почта"
+        autoCapitalize="none"
+        editable={editable}
+        variant="authorApplication"
+      />
+    </>
+  );
+}
+
+export function ProfileAboutFields({ editable }: { editable: boolean }) {
+  return (
+    <>
+      <ProfileDraftField
+        name="shortDescription"
+        label="Коротко о себе"
+        placeholder="Коротко о себе, (обязательное)"
+        editable={editable}
+        required
+        requiredMarker={false}
+        variant="authorApplication"
+      />
+      <ProfileDraftField
+        name="practice"
+        label="Практика"
+        placeholder="Практика и подход"
+        editable={editable}
+        variant="authorApplication"
+      />
+    </>
+  );
+}
+
+/** Basic information of the author application; slug stays read-only after it is assigned. */
+export function ProfileBasicsFields({
+  editable,
+  slugEditable,
+}: {
+  editable: boolean;
+  slugEditable: boolean;
+}) {
+  const palette = useAppTheme();
+  return (
+    <>
+      <ProfileDraftField
+        name="fullName"
+        label="Имя или название"
+        placeholder="Ваше имя фамилия, (обязательное)"
+        editable={editable}
+        required
+        requiredMarker={false}
+        variant="authorApplication"
+      />
+      <ProfileDraftField
+        name="slug"
+        label="Никнейм"
+        placeholder="Никнейм, (обязательное)"
+        autoCapitalize="none"
+        editable={slugEditable}
+        required
+        requiredMarker={false}
+        variant="authorApplication"
+        icon="at-sign"
+        iconColor={palette.muted}
+      />
+      <ProfileCountryField editable={editable} />
+      <ProfileDraftField
+        name="city"
+        label="Город"
+        placeholder="Город"
+        editable={editable}
+        variant="authorApplication"
+      />
+    </>
+  );
+}
 
 export function SellerProfileCreationStepSelector({
   profileStep,
-  setProfileStep,
-  stepCount = 3,
+  total = 4,
 }: {
   profileStep: number;
-  setProfileStep: Dispatch<SetStateAction<number>>;
-  stepCount?: number;
+  total?: number;
+}) {
+  const palette = useAppTheme();
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={`Шаг ${profileStep} из ${total}`}
+      accessibilityValue={{ min: 1, max: total, now: profileStep }}
+      style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
+    >
+      {Array.from({ length: total }, (_, index) => index + 1).map((step) => (
+        <View
+          key={step}
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor:
+              step === profileStep ? palette.inkStrong : palette.border,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
+export function ProfileDirectionsControl({
+  labels,
+  error,
+  editable,
+  onOpen,
+  onRemove,
+}: {
+  labels: readonly { id: string; name: string }[];
+  error?: string;
+  editable: boolean;
+  onOpen: () => void;
+  onRemove?: (id: string) => void;
 }) {
   return (
-    <FormSection
-      title="Создание профиля"
-      description="Соберите публичную страницу автора и отдельно укажите закрытые данные для передачи предмета."
-    >
-      <View
-        accessibilityRole="tablist"
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: designTokens.space.x2,
-        }}
-      >
-        {['Об авторе', 'Публичные ссылки', 'Передача и проверка'].map(
-          (label, index) => {
-            const step = index + 1;
-            return (
-              <SecondaryButton
-                key={label}
-                label={`${step}. ${label}`}
-                disabled={step > profileStep}
-                onPress={() => setProfileStep(step)}
-              />
-            );
-          },
-        )}
-      </View>
-      <AppText role="metadata" tone="secondary">
-        Шаг {profileStep} из {stepCount}
-      </AppText>
-    </FormSection>
+    <View style={{ gap: designTokens.space.x3 }}>
+      <FigmaButton
+        label="Выберите основные направления"
+        variant="muted"
+        size="navigation"
+        contentAlign="navigation"
+        icon="arrow-right-01"
+        iconPosition="right"
+        width="full"
+        disabled={!editable}
+        onPress={onOpen}
+      />
+      {labels.length > 0 ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: designTokens.space.authorChipGap,
+          }}
+        >
+          {labels.map((direction) => (
+            <FigmaChoiceChip
+              key={direction.id}
+              label={direction.name}
+              selected
+              removable={onRemove !== undefined}
+              disabled={!editable}
+              onPress={onOpen}
+              onRemove={onRemove ? () => onRemove(direction.id) : undefined}
+            />
+          ))}
+        </View>
+      ) : null}
+      {error ? (
+        <AppText role="bodySmall" tone="danger">
+          {error}
+        </AppText>
+      ) : null}
+    </View>
   );
 }
 
 export function SellerProfileFormSteps({
-  isProfileCreation,
   profileStep,
+  showAllSteps,
   editable,
-  fields,
-  profile,
-  fieldErrors,
-  hasPublicLink,
-  handoffContactError,
-  update,
+  slugEditable,
+  directionLabels,
+  directionsError,
+  onOpenDirections,
 }: {
-  isProfileCreation: boolean;
   profileStep: number;
+  showAllSteps: boolean;
   editable: boolean;
-  fields: ProfileFields;
-  profile?: SellerProfileForDisplay | null;
-  fieldErrors: ProfileFieldErrors;
-  hasPublicLink: boolean;
-  handoffContactError: string | undefined;
-  update: (key: keyof ProfileFields, value: string) => void;
+  slugEditable: boolean;
+  directionLabels?: readonly { id: string; name: string }[];
+  directionsError?: string;
+  onOpenDirections?: () => void;
 }) {
   return (
     <>
-      {(!isProfileCreation || profileStep === 1) && (
+      {(showAllSteps || profileStep === 1) && (
         <FormSection
-          title="Публичный профиль"
-          description="Эти данные увидят коллекционеры на странице автора."
+          title="Основная информация"
+          description="Эти данные увидят посетители после одобрения заявки."
         >
-          <TextField
-            label="URL-slug"
-            value={fields.slug}
-            onChangeText={(value) => update('slug', value)}
-            placeholder="my-store"
-            autoCapitalize="none"
+          <ProfileBasicsFields
             editable={editable}
-            required
-          />
-          <TextField
-            label="Имя или название"
-            value={fields.fullName}
-            onChangeText={(value) => update('fullName', value)}
-            placeholder="Иван Иванов"
-            editable={editable}
-            required
-          />
-          <TextField
-            label="Страна"
-            value={fields.country}
-            onChangeText={(value) => update('country', value)}
-            placeholder="BY"
-            autoCapitalize="characters"
-            editable={editable}
-            required
-          />
-          <TextField
-            label="Дисциплина"
-            value={fields.discipline}
-            onChangeText={(value) => update('discipline', value)}
-            placeholder="Керамика, живопись, текстиль"
-            editable={editable}
-            required
-          />
-          <TextField
-            label="Публичная ссылка"
-            value={fields.socialLink}
-            onChangeText={(value) => update('socialLink', value)}
-            placeholder="https://t.me/..."
-            autoCapitalize="none"
-            editable={editable}
-            error={fieldErrors.socialLink}
-          />
-          <TextField
-            label="Короткое описание"
-            value={fields.shortDescription}
-            onChangeText={(value) => update('shortDescription', value)}
-            placeholder="Расскажите о себе и своих работах"
-            multiline
-            editable={editable}
-            required
+            slugEditable={slugEditable}
           />
         </FormSection>
       )}
-
-      {(!isProfileCreation || profileStep === 2) && (
+      {(showAllSteps || profileStep === 2) && (
         <FormSection
-          title="Публичные ссылки"
-          description="Эти ссылки попадут на открытую страницу автора."
+          title="Контакты"
+          description="Все контакты необязательны и станут публичными только после одобрения."
         >
-          <TextField
-            label="Telegram"
-            value={fields.telegramUrl}
-            onChangeText={(value) => update('telegramUrl', value)}
-            placeholder="https://t.me/username"
-            autoCapitalize="none"
-            editable={editable}
-            error={fieldErrors.telegramUrl}
-          />
-          <TextField
-            label="Instagram"
-            value={fields.instagramUrl}
-            onChangeText={(value) => update('instagramUrl', value)}
-            placeholder="https://instagram.com/username"
-            autoCapitalize="none"
-            editable={editable}
-            error={fieldErrors.instagramUrl}
-          />
-          <TextField
-            label="Сайт"
-            value={fields.websiteUrl}
-            onChangeText={(value) => update('websiteUrl', value)}
-            placeholder="https://example.com"
-            autoCapitalize="none"
-            editable={editable}
-            error={fieldErrors.websiteUrl}
-          />
-          <TextField
-            label="Основная публичная ссылка"
-            value={fields.socialLink}
-            onChangeText={(value) => update('socialLink', value)}
-            placeholder="Одна ссылка обязательна"
-            autoCapitalize="none"
-            editable={editable}
-            required
-            error={fieldErrors.socialLink}
-          />
-          {!hasPublicLink ? (
-            <AppText role="bodySmall" tone="danger">
-              Добавьте хотя бы одну публичную ссылку.
-            </AppText>
+          <ProfileContactsFields editable={editable} />
+        </FormSection>
+      )}
+      {(showAllSteps || profileStep === 3) && (
+        <FormSection
+          title="Раскройте себя как автора"
+          description="Расскажите посетителям о вашем направлении и подходе."
+        >
+          <ProfileAboutFields editable={editable} />
+          {onOpenDirections ? (
+            <ProfileDirectionsControl
+              labels={directionLabels ?? []}
+              error={directionsError}
+              editable={editable}
+              onOpen={onOpenDirections}
+            />
           ) : null}
-        </FormSection>
-      )}
-
-      {(!isProfileCreation || profileStep === 3) && (
-        <FormSection
-          title="Передача предмета"
-          description="Контакт используется для передачи предмета после завершения аукциона."
-        >
-          {!profile || editable ? (
-            <>
-              <SelectableRow
-                label="Способ передачи"
-                value={fields.handoffContactType}
-                options={Object.entries(handoffContactTypeLabels).map(
-                  ([value, label]) => ({ value, label }),
-                )}
-                onChange={(value) =>
-                  update(
-                    'handoffContactType',
-                    value as ProfileFields['handoffContactType'],
-                  )
-                }
-                disabled={!editable}
-              />
-              <TextField
-                label="Контакт для передачи"
-                value={fields.handoffContactValue}
-                onChangeText={(value) =>
-                  update('handoffContactValue', value)
-                }
-                placeholder="@username или +375..."
-                autoCapitalize="none"
-                editable={editable}
-                error={
-                  isProfileCreation &&
-                  profileStep === 3 &&
-                  !fields.handoffContactValue.trim()
-                    ? 'Укажите контакт для передачи'
-                    : handoffContactError
-                }
-              />
-              <SelectableRow
-                label="Кто начинает контакт"
-                value={fields.handoffInitiator}
-                options={Object.entries(handoffInitiatorLabels).map(
-                  ([value, label]) => ({ value, label }),
-                )}
-                onChange={(value) =>
-                  update(
-                    'handoffInitiator',
-                    value as ProfileFields['handoffInitiator'],
-                  )
-                }
-                disabled={!editable}
-              />
-            </>
-          ) : (
-            <View style={{ gap: designTokens.space.x2 }}>
-              <AppText role="bodySmall" tone="secondary">
-                {presentEnum(
-                  profile.handoffContactType,
-                  handoffContactTypeLabels,
-                  'Неизвестный тип контакта',
-                )}
-                : {profile.handoffContactValue}
-              </AppText>
-              <AppText role="bodySmall" tone="secondary">
-                Инициатор:{' '}
-                {presentEnum(
-                  profile.handoffInitiator,
-                  handoffInitiatorLabels,
-                  'Неизвестный режим контакта',
-                )}
-              </AppText>
-            </View>
-          )}
         </FormSection>
       )}
     </>
   );
 }
 
-export function SellerProfileVerificationSection({
-  isProfileCreation,
-  profileStep,
-  fields,
-}: {
-  isProfileCreation: boolean;
-  profileStep: number;
-  fields: ProfileFields;
-}) {
-  if (!isProfileCreation || profileStep !== 3) return null;
-
+export function SellerProfileVerificationSection() {
+  const [fullName, slug, directionCategoryIds, country, city] = useWatch<
+    ProfileFields,
+    ['fullName', 'slug', 'directionCategoryIds', 'country', 'city']
+  >({
+    name: ['fullName', 'slug', 'directionCategoryIds', 'country', 'city'],
+  });
+  const directionsSummary =
+    (directionCategoryIds?.length ?? 0) > 0
+      ? `${directionCategoryIds.length} направлений`
+      : 'Направления не выбраны';
   return (
     <FormSection
-      title="Проверка профиля"
-      description="Публичная страница показывает имя, адрес, описание, фото и ссылки. Контакт передачи остаётся закрытым до завершения сделки."
+      title="Проверка заявки"
+      description="Проверьте данные перед отправкой на модерацию."
     >
       <AppText role="label">
-        {fields.fullName || 'Имя автора'} · @{fields.slug || 'profile-address'}
+        {fullName || 'Имя автора'} · @{slug || 'profile-address'}
       </AppText>
       <AppText role="bodySmall" tone="secondary">
-        {fields.discipline || 'Дисциплина не заполнена'} ·{' '}
-        {fields.country || 'Страна не заполнена'}
+        {directionsSummary} · {country || 'Страна не заполнена'}
+        {(city ?? '').trim() ? ` · ${(city ?? '').trim()}` : ''}
       </AppText>
     </FormSection>
   );
 }
-

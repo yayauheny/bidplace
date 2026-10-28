@@ -7,6 +7,7 @@ import {
   type IntegrationDatabaseContext,
 } from './test-database';
 import {
+  attachAuthorDirection,
   createPermissionFixture,
   fixturePasswordHash,
   permissionImage,
@@ -19,6 +20,11 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
+import {
+  productModerationRequest,
+  sellerModerationRequest,
+} from './admin-status-request';
+import { sellerProfileForm } from './seller-profile-form';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -38,28 +44,20 @@ afterAll(async () => {
 });
 
 function applicationForm(): FormData {
-  const form = new FormData();
-  form.set('slug', '  wave3-applicant  ');
-  form.set('sellerType', 'creator');
-  form.set('fullName', '  Applicant Creator  ');
-  form.set('country', ' BY ');
-  form.set('city', ' Minsk ');
-  form.set('socialLink', 'https://example.com/applicant');
-  form.set('shortDescription', '  Applicant description  ');
-  form.set('handoffContactType', 'TELEGRAM');
-  form.set('handoffContactValue', '  @wave3_applicant  ');
-  form.set(
-    'profilePhoto',
+  return sellerProfileForm(
+    {
+      discipline: 'Керамика',
+      fullName: '  Applicant Creator  ',
+      country: ' BY ',
+      city: ' Minsk ',
+      shortDescription: '  Applicant description  ',
+    },
     new Blob([permissionImage], { type: 'image/png' }),
-    'profile.png',
   );
-  return form;
 }
 
 function sellerUpdateForm(fullName: string): FormData {
-  const form = new FormData();
-  form.set('fullName', fullName);
-  return form;
+  return sellerProfileForm({ fullName });
 }
 
 async function createAdmin(
@@ -92,12 +90,22 @@ async function login(
 
 async function createApplication(
   client: HttpTestClient,
+  userId: string,
 ): Promise<{ id: string; userId: string }> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { slug: 'wave3-applicant' },
+  });
   const response = await client.post('/seller/profile', applicationForm());
   expect(response.status).toBe(201);
   const body = (await response.json()) as {
     sellerProfile: { id: string; userId: string };
   };
+  const stored = await prisma.sellerProfile.findUniqueOrThrow({
+    where: { id: body.sellerProfile.id },
+    select: { editingRevisionId: true },
+  });
+  await attachAuthorDirection(prisma, stored.editingRevisionId!);
   return body.sellerProfile;
 }
 
@@ -137,7 +145,34 @@ async function adminAndApplicant(fixture: PermissionFixture) {
 }
 
 describe('seller application and moderation audit over HTTP and PostgreSQL', () => {
-  it('normalizes and persists a real seller application as PENDING_REVIEW', async () => {
+  it('rejects approval of a submitted revision without a direction and preserves its unpublished state', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const { adminClient, applicantClient } = await adminAndApplicant(fixture);
+    const profile = await createApplication(applicantClient, fixture.buyer.id);
+    expect((await applicantClient.post('/author/application/submit')).status).toBe(201);
+    const before = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: profile.id },
+    });
+    await prisma.sellerProfileRevisionDirection.deleteMany({
+      where: { revisionId: before.editingRevisionId! },
+    });
+    const auditBefore = await auditFor('SELLER_PROFILE', profile.id);
+    const rejected = await adminClient.patch(
+      `/admin/seller-profiles/${profile.id}/status`,
+      await sellerModerationRequest(prisma, profile.id, 'APPROVED'),
+    );
+
+    expect(rejected.status).toBe(409);
+    expect(await prisma.sellerProfile.findUniqueOrThrow({ where: { id: profile.id } })).toEqual(before);
+    const revision = await prisma.sellerProfileRevision.findUniqueOrThrow({
+      where: { id: before.editingRevisionId! },
+    });
+    expect(revision.status).toBe('PENDING_REVIEW');
+    expect(before.publishedRevisionId).toBeNull();
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toEqual(auditBefore);
+  });
+
+  it('normalizes and persists a real seller application as DRAFT', async () => {
     const fixture = await createPermissionFixture(prisma);
     const applicant = new HttpTestClient(
       http.baseUrl,
@@ -146,7 +181,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     );
     await login(applicant, fixture.buyer);
 
-    const profile = await createApplication(applicant);
+    const profile = await createApplication(applicant, fixture.buyer.id);
     const persisted = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: profile.id },
     });
@@ -157,8 +192,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       fullName: 'Applicant Creator',
       country: 'BY',
       shortDescription: 'Applicant description',
-      handoffContactValue: '@wave3_applicant',
-      status: 'PENDING_REVIEW',
+      handoffContactValue: null,
+      status: 'DRAFT',
     });
     expect(persisted.profilePhotoByteLength).toBe(
       Buffer.from(persisted.profilePhotoData).byteLength,
@@ -166,20 +201,33 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(0);
   });
 
-  it('persists seller moderation transitions, reasons and exactly one audit per accepted transition', async () => {
+  it('persists seller submissions, decisions and publication completions', async () => {
     const fixture = await createPermissionFixture(prisma);
     const { admin, adminClient, applicantClient } =
       await adminAndApplicant(fixture);
-    const profile = await createApplication(applicantClient);
+    const profile = await createApplication(applicantClient, fixture.buyer.id);
+    expect(
+      (await applicantClient.post('/author/application/submit')).status,
+    ).toBe(201);
 
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'APPROVED',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(prisma, profile.id, 'APPROVED'),
+        )
       ).status,
     ).toBe(200);
+    const firstPublication = (
+      await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: profile.id },
+        select: { firstPublishedAt: true },
+      })
+    ).firstPublishedAt;
+    expect(firstPublication).toBeInstanceOf(Date);
     expect(await auditFor('SELLER_PROFILE', profile.id)).toEqual([
+      { actorUserId: fixture.buyer.id, targetType: 'SELLER_PROFILE', targetId: profile.id,
+        oldStatus: 'DRAFT', newStatus: 'PENDING_REVIEW', reason: null },
       {
         actorUserId: admin.id,
         targetType: 'SELLER_PROFILE',
@@ -188,6 +236,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         newStatus: 'APPROVED',
         reason: null,
       },
+      { actorUserId: admin.id, targetType: 'SELLER_PROFILE', targetId: profile.id,
+        oldStatus: null, newStatus: 'APPROVED', reason: null },
     ]);
 
     expect(
@@ -204,14 +254,19 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
 
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'CHANGES_REQUESTED',
-          reason: 'Add a clearer provenance description',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(
+            prisma,
+            profile.id,
+            'CHANGES_REQUESTED',
+            'Add a clearer provenance description',
+          ),
+        )
       ).status,
     ).toBe(200);
-    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(2);
-    expect((await auditFor('SELLER_PROFILE', profile.id))[1]).toMatchObject({
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(5);
+    expect((await auditFor('SELLER_PROFILE', profile.id))[4]).toMatchObject({
       actorUserId: admin.id,
       oldStatus: 'PENDING_REVIEW',
       newStatus: 'CHANGES_REQUESTED',
@@ -221,14 +276,19 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     const repeatBefore = await permissionState(prisma);
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'CHANGES_REQUESTED',
-          reason: 'Repeated request',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(
+            prisma,
+            profile.id,
+            'CHANGES_REQUESTED',
+            'Repeated request',
+          ),
+        )
       ).status,
     ).toBe(409);
     expect(await permissionState(prisma)).toEqual(repeatBefore);
-    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(2);
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(5);
 
     expect(
       (
@@ -244,28 +304,43 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
 
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'APPROVED',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(prisma, profile.id, 'APPROVED'),
+        )
       ).status,
     ).toBe(200);
+    expect(
+      (
+        await prisma.sellerProfile.findUniqueOrThrow({
+          where: { id: profile.id },
+          select: { firstPublishedAt: true },
+        })
+      ).firstPublishedAt,
+    ).toEqual(firstPublication);
     const missingReasonBefore = await permissionState(prisma);
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'SUSPENDED',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(prisma, profile.id, 'SUSPENDED'),
+        )
       ).status,
     ).toBe(400);
     expect(await permissionState(prisma)).toEqual(missingReasonBefore);
-    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(3);
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(8);
 
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'SUSPENDED',
-          reason: 'Application is suspended for review',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(
+            prisma,
+            profile.id,
+            'SUSPENDED',
+            'Application is suspended for review',
+          ),
+        )
       ).status,
     ).toBe(200);
     expect(
@@ -275,14 +350,18 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         })
       ).status,
     ).toBe('SUSPENDED');
-    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(4);
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(9);
 
     const rejectedSellerBefore = await permissionState(prisma);
     expect(
       (
         await adminClient.patch(
           `/admin/seller-profiles/${fixture.sellers.pending.profileId}/status`,
-          { status: 'REJECTED' },
+          await sellerModerationRequest(
+            prisma,
+            fixture.sellers.pending.profileId,
+            'REJECTED',
+          ),
         )
       ).status,
     ).toBe(400);
@@ -295,10 +374,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/seller-profiles/${fixture.sellers.pending.profileId}/status`,
-          {
-            status: 'REJECTED',
-            reason: 'Application does not meet the creator criteria',
-          },
+          await sellerModerationRequest(
+            prisma,
+            fixture.sellers.pending.profileId,
+            'REJECTED',
+            'Application does not meet the creator criteria',
+          ),
         )
       ).status,
     ).toBe(200);
@@ -335,10 +416,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/seller-profiles/${fixture.sellers.approved.profileId}/status`,
-          {
-            status: 'SUSPENDED',
-            reason: 'Attempted suspension during auction',
-          },
+          await sellerModerationRequest(
+            prisma,
+            fixture.sellers.approved.profileId,
+            'SUSPENDED',
+            'Attempted suspension during auction',
+          ),
         )
       ).status,
     ).toBe(409);
@@ -379,9 +462,11 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          {
-            status: 'APPROVED',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'APPROVED',
+          ),
         )
       ).status,
     ).toBe(200);
@@ -394,6 +479,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         newStatus: 'APPROVED',
         reason: null,
       },
+      { actorUserId: admin.id, targetType: 'PRODUCT', targetId: fixture.approvedDraftProductId,
+        oldStatus: null, newStatus: 'APPROVED', reason: null },
     ]);
 
     const ownerClient = new HttpTestClient(
@@ -422,47 +509,55 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          {
-            status: 'CHANGES_REQUESTED',
-            reason: 'Correct the item story',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'CHANGES_REQUESTED',
+            'Correct the item story',
+          ),
         )
       ).status,
     ).toBe(200);
     expect(
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
 
     const productRepeatBefore = await permissionState(prisma);
     expect(
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          {
-            status: 'CHANGES_REQUESTED',
-            reason: 'Repeated product request',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'CHANGES_REQUESTED',
+            'Repeated product request',
+          ),
         )
       ).status,
     ).toBe(409);
     expect(await permissionState(prisma)).toEqual(productRepeatBefore);
     expect(
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
 
     const rejectedProductBefore = await permissionState(prisma);
     expect(
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          { status: 'REJECTED' },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'REJECTED',
+          ),
         )
       ).status,
     ).toBe(400);
     expect(await permissionState(prisma)).toEqual(rejectedProductBefore);
     expect(
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
 
     expect(
       (
@@ -484,10 +579,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          {
-            status: 'REJECTED',
-            reason: 'The item provenance could not be confirmed',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'REJECTED',
+            'The item provenance could not be confirmed',
+          ),
         )
       ).status,
     ).toBe(200);
@@ -500,8 +597,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       'PRODUCT',
       fixture.approvedDraftProductId,
     );
-    expect(rejectedProductAudit).toHaveLength(5);
-    expect(rejectedProductAudit[4]).toEqual({
+    expect(rejectedProductAudit).toHaveLength(6);
+    expect(rejectedProductAudit[5]).toEqual({
       actorUserId: admin.id,
       targetType: 'PRODUCT',
       targetId: fixture.approvedDraftProductId,
@@ -515,10 +612,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedProductId}/status`,
-          {
-            status: 'CHANGES_REQUESTED',
-            reason: 'Cannot change active product',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedProductId,
+            'CHANGES_REQUESTED',
+            'Cannot change active product',
+          ),
         )
       ).status,
     ).toBe(409);
@@ -531,10 +630,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedProductId}/status`,
-          {
-            status: 'ARCHIVED',
-            reason: 'Cannot archive an active product',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedProductId,
+            'ARCHIVED',
+            'Cannot archive an active product',
+          ),
         )
       ).status,
     ).toBe(200);
@@ -579,10 +680,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${archivedProduct.id}/status`,
-          {
-            status: 'ARCHIVED',
-            reason: 'The item is no longer offered',
-          },
+          await productModerationRequest(
+            prisma,
+            archivedProduct.id,
+            'ARCHIVED',
+            'The item is no longer offered',
+          ),
         )
       ).status,
     ).toBe(200);

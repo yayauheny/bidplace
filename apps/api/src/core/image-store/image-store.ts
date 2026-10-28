@@ -12,6 +12,7 @@ export type ImageStoreClient = Prisma.TransactionClient | PrismaService;
 export const emptyImageBytes = new Uint8Array(0) as Uint8Array<ArrayBuffer>;
 
 export abstract class ImageStore {
+  readonly transactionalWrites: boolean = false;
   abstract put(
     key: string,
     object: ImageObject,

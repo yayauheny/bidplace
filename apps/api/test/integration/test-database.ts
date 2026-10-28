@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 import { PrismaClient } from '@bidplace/database';
 
@@ -36,7 +38,7 @@ function assertSafeIntegrationDatabaseUrl(databaseUrl: string): URL {
     throw new Error('Integration database URL must use the PostgreSQL protocol');
   }
 
-  if (!ALLOWED_TEST_DATABASE_NAME.test(databaseName)) {
+  if (databaseName !== 'bidplace_e2e' && !ALLOWED_TEST_DATABASE_NAME.test(databaseName)) {
     throw new Error(
       `Refusing to use non-test integration database "${databaseName}"`,
     );
@@ -45,8 +47,8 @@ function assertSafeIntegrationDatabaseUrl(databaseUrl: string): URL {
   return url;
 }
 
-function createSchemaName(): string {
-  return `${INTEGRATION_SCHEMA_PREFIX}${randomUUID().replace(/-/g, '')}`;
+function createSchemaName(prefix: string): string {
+  return `${prefix}${randomUUID().replace(/-/g, '')}`;
 }
 
 function buildSchemaUrl(url: URL, schemaName: string): string {
@@ -98,23 +100,31 @@ async function ensureDatabaseExists(databaseUrl: URL): Promise<void> {
 
 function migrateSchema(databaseUrl: string): void {
   const databasePackageDir = resolve(__dirname, '../../../../packages/database');
-  const resolveFromDatabasePackage = createRequire(
-    resolve(databasePackageDir, 'package.json'),
-  );
-  const prismaCliPath = resolveFromDatabasePackage.resolve('prisma/build/index.js');
+  const stage = mkdtempSync(join(tmpdir(), 'bidplace-integration-migrate-'));
+  try {
+    cpSync(join(databasePackageDir, 'prisma'), join(stage, 'prisma'), { recursive: true });
+    const resolveFromDatabasePackage = createRequire(
+      resolve(databasePackageDir, 'package.json'),
+    );
+    const prismaCliPath = resolveFromDatabasePackage.resolve('prisma/build/index.js');
 
-  execFileSync(
-    process.execPath,
-    [prismaCliPath, 'migrate', 'deploy', '--schema=prisma/schema.prisma'],
-    {
-      cwd: databasePackageDir,
-      env: {
-        ...process.env,
-        DATABASE_URL: databaseUrl,
+    execFileSync(
+      process.execPath,
+      [prismaCliPath, 'migrate', 'deploy', '--schema=prisma/schema.prisma'],
+      {
+        cwd: stage,
+        env: {
+          PATH: process.env.PATH,
+          HOME: process.env.HOME,
+          TMPDIR: process.env.TMPDIR,
+          DATABASE_URL: databaseUrl,
+        },
+        stdio: 'pipe',
       },
-      stdio: 'pipe',
-    },
-  );
+    );
+  } finally {
+    rmSync(stage, { recursive: true, force: true });
+  }
 }
 
 async function dropSchema(databaseUrl: URL, schemaName: string): Promise<void> {
@@ -137,11 +147,11 @@ async function dropSchema(databaseUrl: URL, schemaName: string): Promise<void> {
   }
 }
 
-export async function createIntegrationDatabaseContext(): Promise<IntegrationDatabaseContext> {
+export async function createIntegrationDatabaseContext(schemaPrefix: 'itest_' | 'auth_browser_' = INTEGRATION_SCHEMA_PREFIX): Promise<IntegrationDatabaseContext> {
   const baseUrl = assertSafeIntegrationDatabaseUrl(
     process.env.INTEGRATION_DATABASE_URL ?? DEFAULT_INTEGRATION_DATABASE_URL,
   );
-  const schemaName = createSchemaName();
+  const schemaName = createSchemaName(schemaPrefix);
   const databaseUrl = buildSchemaUrl(baseUrl, schemaName);
 
   await ensureDatabaseExists(baseUrl);

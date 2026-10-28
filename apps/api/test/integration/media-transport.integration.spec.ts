@@ -90,11 +90,6 @@ describe('public media transport over HTTP and PostgreSQL', () => {
       select: { id: true },
     });
 
-    await prisma.listing.update({
-      where: { id: fixture.approvedListingId },
-      data: { status: 'SCHEDULED' },
-    });
-
     const guest = new HttpTestClient(
       http.baseUrl,
       'http://localhost:8081',
@@ -108,18 +103,15 @@ describe('public media transport over HTTP and PostgreSQL', () => {
     );
     expect(
       (await guest.get(`/listings/${fixture.approvedListingId}/bids`)).status,
-    ).toBe(200);
+    ).toBe(404);
     expect((await guest.get(`/sellers/${seller.slug}/detail`)).status).toBe(
-      200,
+      404,
     );
 
     const photoResponse = await guest.get(`/sellers/${seller.slug}/photo`);
     await expectImageResponse(photoResponse);
     expect(photoResponse.headers.get('cache-control')).toBe(
       'public, max-age=0, must-revalidate',
-    );
-    expect((await guest.get(`/sellers/${seller.slug}/detail`)).status).toBe(
-      200,
     );
 
     await prisma.sellerProfile.update({

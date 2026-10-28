@@ -1,4 +1,4 @@
-export const PRODUCTION_JWT_SECRET_MIN_LENGTH = 32;
+export const PRODUCTION_SESSION_SECRET_MIN_LENGTH = 32;
 
 export type EnvProfileInput = {
   NODE_ENV?: string;
@@ -14,7 +14,9 @@ export const ENV_PROFILE_ERROR = {
     'TEST_EMAIL_BYPASS cannot be enabled in production',
   testEmailBypassRequiresLocalTest:
     'TEST_EMAIL_BYPASS can only be enabled when NODE_ENV=test and APP_ENV=local',
-  jwtSecretTooShortInProduction: `JWT_SECRET must be at least ${PRODUCTION_JWT_SECRET_MIN_LENGTH} characters in production`,
+  turnstileTestVerifierRequiresLocalTest:
+    'TURNSTILE_VERIFIER=test can only be enabled when NODE_ENV=test and APP_ENV=local',
+  sessionSecretTooShortInProduction: `SESSION_SECRET must be at least ${PRODUCTION_SESSION_SECRET_MIN_LENGTH} characters in production`,
 } as const;
 
 export function requiresProductionSecurity(env: EnvProfileInput): boolean {

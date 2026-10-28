@@ -1,20 +1,30 @@
 import {
-  sellerInstagramHandleSchema,
-  sellerPhoneHandleSchema,
+  isCountryCode,
+  sellerPublicEmailSchema,
   sellerPublicUrlSchema,
-  sellerTelegramHandleSchema,
+  slugGrammarMessage,
+  slugSchema,
 } from '@bidplace/contracts';
+import { z } from 'zod';
 
-type HandoffContactType = 'TELEGRAM' | 'PHONE' | 'INSTAGRAM';
+import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
+
 type PublicLinkField =
   | 'socialLink'
   | 'telegramUrl'
   | 'instagramUrl'
-  | 'websiteUrl';
+  | 'websiteUrl'
+  | 'publicEmail';
 
-export type ProfileFieldErrors = Partial<
-  Record<PublicLinkField | 'handoffContactValue', string>
->;
+export type ProfileFieldErrors = Partial<Record<PublicLinkField, string>>;
+
+const profileDraftErrorFields = [
+  'socialLink',
+  'telegramUrl',
+  'instagramUrl',
+  'websiteUrl',
+  'publicEmail',
+] as const satisfies ReadonlyArray<keyof ProfileFieldErrors>;
 
 export function getPublicLinkError(value: string): string | undefined {
   if (!value.trim()) return undefined;
@@ -23,53 +33,134 @@ export function getPublicLinkError(value: string): string | undefined {
     : 'Введите HTTPS-ссылку, начиная с https://';
 }
 
-export function getHandoffContactError(
-  type: HandoffContactType,
-  value: string,
-): string | undefined {
-  if (!value.trim()) return undefined;
-
-  const schema = {
-    TELEGRAM: sellerTelegramHandleSchema,
-    PHONE: sellerPhoneHandleSchema,
-    INSTAGRAM: sellerInstagramHandleSchema,
-  }[type];
-
-  if (schema.safeParse(value.trim()).success) return undefined;
-  if (type === 'TELEGRAM') {
-    return 'Введите Telegram @username или https://t.me/username';
-  }
-  if (type === 'INSTAGRAM') {
-    return 'Введите Instagram @username или https://instagram.com/username';
-  }
-  return 'Введите телефон в международном формате, например +375291234567';
+function acceptsOptionalPublicLink(value: string) {
+  return getPublicLinkError(value) === undefined;
 }
 
+function acceptsOptionalHandle(
+  value: string,
+  normalize: (input: string) => string | null | undefined,
+) {
+  if (!value.trim()) return true;
+  return normalize(value) !== undefined;
+}
+
+function acceptsOptionalPublicEmail(value: string) {
+  if (!value.trim()) return true;
+  return sellerPublicEmailSchema.safeParse(value).success;
+}
+
+function acceptsProfileSlug(value: string) {
+  if (!value.trim()) return true;
+  return slugSchema.safeParse(value).success;
+}
+
+// Raw storage-level shape (only JSON types); the draft schema below adds the
+// business refinements used for validation and save.
+export const profileDraftFieldsSchema = z
+  .object({
+    slug: z.string(),
+    fullName: z.string(),
+    discipline: z.string(),
+    directionCategoryIds: z.array(z.string()),
+    country: z.string(),
+    city: z.string(),
+    practice: z.string(),
+    socialLink: z.string(),
+    telegramUrl: z.string(),
+    instagramUrl: z.string(),
+    websiteUrl: z.string(),
+    publicEmail: z.string(),
+    shortDescription: z.string(),
+  })
+  .strict();
+
+export const profileDraftSchema = profileDraftFieldsSchema
+  .extend({
+    slug: z.string().refine(acceptsProfileSlug, slugGrammarMessage),
+    country: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .refine((v) => !v || isCountryCode(v), 'Выберите страну из списка'),
+    socialLink: z
+      .string()
+      .refine(
+        acceptsOptionalPublicLink,
+        'Введите HTTPS-ссылку, начиная с https://',
+      ),
+    telegramUrl: z
+      .string()
+      .refine(
+        (value) => acceptsOptionalHandle(value, normalizeTelegram),
+        'Введите Telegram username или HTTPS-ссылку',
+      ),
+    instagramUrl: z
+      .string()
+      .refine(
+        (value) => acceptsOptionalHandle(value, normalizeInstagram),
+        'Введите Instagram username или HTTPS-ссылку',
+      ),
+    websiteUrl: z
+      .string()
+      .refine(
+        acceptsOptionalPublicLink,
+        'Введите HTTPS-ссылку, начиная с https://',
+      ),
+    publicEmail: z
+      .string()
+      .refine(acceptsOptionalPublicEmail, 'Введите корректный email'),
+  })
+  .strict();
+
+export const emptyProfileDraft: z.input<typeof profileDraftSchema> = {
+  slug: '',
+  fullName: '',
+  discipline: '',
+  directionCategoryIds: [],
+  country: '',
+  city: '',
+  practice: '',
+  socialLink: '',
+  telegramUrl: '',
+  instagramUrl: '',
+  websiteUrl: '',
+  publicEmail: '',
+  shortDescription: '',
+};
+
 export function getProfileFieldErrors(fields: {
+  city: string;
   socialLink: string;
   telegramUrl: string;
   instagramUrl: string;
   websiteUrl: string;
-  handoffContactType: HandoffContactType;
-  handoffContactValue: string;
+  publicEmail?: string;
 }): ProfileFieldErrors {
+  const parsed = profileDraftSchema.safeParse({
+    ...emptyProfileDraft,
+    ...fields,
+    publicEmail: fields.publicEmail ?? '',
+  });
+  if (parsed.success) return {};
   const errors: ProfileFieldErrors = {};
-  const publicFields: PublicLinkField[] = [
-    'socialLink',
-    'telegramUrl',
-    'instagramUrl',
-    'websiteUrl',
-  ];
-
-  for (const field of publicFields) {
-    const error = getPublicLinkError(fields[field]);
-    if (error) errors[field] = error;
+  for (const issue of parsed.error.issues) {
+    const key = issue.path[0];
+    if (typeof key !== 'string') continue;
+    if (
+      !profileDraftErrorFields.includes(
+        key as (typeof profileDraftErrorFields)[number],
+      )
+    )
+      continue;
+    const field = key as keyof ProfileFieldErrors;
+    if (!errors[field]) errors[field] = issue.message;
   }
-
-  const handoffError = getHandoffContactError(
-    fields.handoffContactType,
-    fields.handoffContactValue,
-  );
-  if (handoffError) errors.handoffContactValue = handoffError;
   return errors;
+}
+
+export function profileDraftAllowsSave(
+  fields: z.input<typeof profileDraftSchema>,
+): boolean {
+  return profileDraftSchema.safeParse(fields).success;
 }

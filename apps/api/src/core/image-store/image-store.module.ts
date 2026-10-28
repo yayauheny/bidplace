@@ -1,10 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 
+import { SERVER_ENV, type ServerEnv } from '../config';
 import { DatabaseModule, PrismaService } from '../database';
 import { ImageStore } from './image-store';
 import { PostgresImageStore } from './postgres-image-store';
 import { S3ImageStore } from './s3-image-store';
-import { loadServerEnv } from '../config/env';
 
 @Global()
 @Module({
@@ -12,11 +12,11 @@ import { loadServerEnv } from '../config/env';
   providers: [
     {
       provide: ImageStore,
-      useFactory: (prisma: PrismaService) =>
-        loadServerEnv().MEDIA_STORAGE_PROVIDER === 's3'
-          ? new S3ImageStore()
+      useFactory: (env: ServerEnv, prisma: PrismaService) =>
+        env.MEDIA_STORAGE_PROVIDER === 's3'
+          ? new S3ImageStore(env)
           : new PostgresImageStore(prisma),
-      inject: [PrismaService],
+      inject: [SERVER_ENV, PrismaService],
     },
   ],
   exports: [ImageStore],

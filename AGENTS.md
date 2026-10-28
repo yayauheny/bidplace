@@ -1,176 +1,64 @@
-# Repository Instructions
+# Repository instructions
 
-Apply these rules to every task in this repository.
+## Every task
 
-## Core
+- Inspect this checkout and applicable nested instructions first. Read [docs/AGENT-MAP.md](docs/AGENT-MAP.md), then only owner sections needed for the task; the product index is navigation, not mandatory extra reading.
+- State success criteria and a short practical plan before editing. Identify the cause, compare candidates explicitly as durable fix / acceptable workaround / hack, and choose the smallest durable fix. Resolve material scope, architecture or ownership ambiguity through `grilling` before dependent edits; preserve settled decisions and continue independent work.
+- Keep changes limited to the request. Preserve public behavior unless requested otherwise. No speculative abstractions/dependencies, unrelated refactors or error handling; remove only code made unused by this change.
+- Find existing components, tokens, contracts and services first. Reuse public package exports and one owner for state/business rules. Keep routes/controllers/screens thin; logic belongs in services/use cases/hooks/domain modules. Use descriptive names.
+- Trace only affected boundaries: UI/state → contracts/client → service → repository/database → build/release, including consumers and compatibility. State the concrete effect on future extension, reuse, ownership and maintenance.
+- Never hide a cause with `any`, `@ts-ignore`, suppressions, disabled lint rules, empty catches or silent fallbacks. A temporary exception needs explicit acceptance and documentation; it is not a completed durable fix.
+- Do not add comments/docs unless requested or needed for a non-obvious invariant; required owner status updates below still apply.
 
-- Inspect the local repository first before making assumptions.
-- State success criteria before implementation.
-- Keep changes minimal and limited to the request.
-- Prefer the simplest correct solution.
-- Do not add speculative abstractions, dependencies, or unrelated refactors.
-- Preserve existing public behavior unless the task requires a change.
-- Remove only code made unused by your own changes.
-- Never claim success without running the relevant checks.
+## Security
 
-## Change Workflow
+- Never read, open, print, summarize or quote `.env`, secrets, private keys, certificates, tokens, passwords or credentials. If a secret is required, stop and request a safe alternative.
+- Never expose secrets in clients, logs, source maps, analytics, tests or fixtures.
+- Auth, permissions, payments/purchases, bids/balances, webhooks, files/uploads, external APIs, admin actions and sensitive data require `security` and [13-APPLICATION-SECURITY.md](docs/product/13-APPLICATION-SECURITY.md); use `nest` too for high-risk backend work.
 
-- Before editing code, first identify the problem, list candidate fixes, and compare trade-offs.
-- Label each candidate explicitly as a durable fix, acceptable workaround, or hack.
-- Prefer a durable fix by default.
-- Do not start code edits until the chosen solution is clear.
-- If the issue is ambiguous, stop and ask instead of guessing.
-- Do not use workaround-only patches such as `suppressHydrationWarning`, `any`, `@ts-ignore`, empty catches, or silent fallbacks unless they are explicitly accepted as temporary and documented as such.
+## Skills and inspection
 
-## Skill Selection
+Load the smallest relevant set; root rules are not duplicated in skills:
 
-Use the most specific skill for the task:
+| Task | Skill |
+| --- | --- |
+| Implementation | `implement` |
+| Diff/PR/returned work review | `code-review-best-practices`; `review` for generic workflow |
+| Requested delegation / worker handoff | `agent` |
+| React/Expo UI | `ui`; `bidplace-ui` for `apps/mobile`, then `bidplace-ui-review` |
+| NestJS services/persistence/jobs/integrations | `nest` |
+| Sensitive behavior or review | `security` together with the domain/review skill |
+| Structural code exploration | installed `codebase-memory`; check coverage and use source fallback for gaps |
+| Planning/execution handoff | `2step-work` |
+| Specific platform issue | focused `vercel-react-native-skills` rules only |
 
-- `review` for diffs, pull requests, and review-only requests.
-- `security` for auth, permissions, payments, purchases, bids, balances, webhooks, files, external APIs, admin actions, or sensitive data.
-- `ui` for React, React Native, and Expo UI work.
-- `nest` for NestJS backend logic, persistence, jobs, events, and integrations.
+Inspect local code, tests and prior decisions before assumptions; check installed versions before APIs/docs. Use web research only for current/external facts. Do not load full skill corpora or historical journals by default.
 
-For high-risk backend changes, use both `nest` and `security`.
+## Product and documentation
 
-## Architecture
+The launch contract is the author portfolio plus direct sales (fixed price, auction, orders) per `DEC-149`; commerce rules live only in [docs/launch/COMMERCE.md](docs/launch/COMMERCE.md). Product value is significant, authored, limited or personally connected items sold directly; general resale, resellers, mass-market goods and artificial bids conflict with it.
 
-- Keep controllers, routes, handlers, and screens thin.
-- Keep business logic in services, use cases, hooks, or domain modules.
-- Reuse shared types, API contracts, UI primitives, and design tokens.
-- Do not bypass package public exports.
-- Do not duplicate server state, business rules, or shared models.
-- Use clear, descriptive names.
+- Before product-changing code: read [01-PRODUCT-FOUNDATION.md](docs/product/01-PRODUCT-FOUNDATION.md) and relevant [05-MVP-RFC.md](docs/product/05-MVP-RFC.md) sections. Owners are mapped in [00-PROJECT-INDEX.md](docs/product/00-PROJECT-INDEX.md); keep one owner per claim, link elsewhere.
+- Protected product files: `01`–`04`, `06`–`09` in `docs/product/`; protected design principles: `docs/design/01-DESIGN-FOUNDATION.md`. Change only by explicit founder decision (design: founder or assigned designer). If requested behavior conflicts, identify the exact conflict, stop that part and request the decision.
+- After code/behavior changes: add one compact dated entry to [11-PROJECT-STATUS.md](docs/product/11-PROJECT-STATUS.md), citing concrete modules/APIs/tables/screens/tests. Use `Implemented`, `Partial`, `Not implemented` or `Needs verification`; never call missing critical behavior/errors/checks Implemented. Keep product statuses (`Confirmed`, `Hypothesis`, `Planned`, `Rejected`) separate.
+- Update [10-CODE-ARCHITECTURE.md](docs/product/10-CODE-ARCHITECTURE.md) only for changed architecture, models, packages, contracts, persistence or security invariants. Check RFC alignment and record gaps in status; do not rewrite the RFC to fit code without an explicit contract decision.
+- [12-DECISION-LOG.md](docs/product/12-DECISION-LOG.md) is lookup-only and append-oriented. Add only an explicit new/revised/selected/rejected decision, referencing earlier decisions when revised. Never infer founder decisions or rewrite history; preserve rationale, alternatives and revision links.
+- `docs/research/raw/*` is immutable: no rewriting/deleting or promoting raw claims to decisions. New research belongs in a separate dated file; conclusions need status/source in the owner document. History/evidence is read only for a specific investigation, never a routine entrypoint.
 
-## Verification
+## UI and Figma
 
-- Cover every behavior change with tests.
-- Prefer unit tests unless the change crosses module, database, network, permission, or transaction boundaries.
-- Run the relevant typecheck, lint without auto-fix, tests, and builds for the affected graph.
-- Do not mark work complete while required checks fail.
+- Before UI changes read [design index](docs/design/00-DESIGN-INDEX.md), relevant [design-system](docs/design/03-DESIGN-SYSTEM.md) sections and screen status; flows only if routes change, foundation only if scope/principles are in question.
+- Source priority: live read-only Figma `pAPQo6cADmG5XzVmBX76EE` → exact `design/figma-handoff` node/package → screenshots/current code. Check `INDEX.md`, `catalog.json` and parent `nodes.json` before declaring a node missing. Exports may be stale; report disagreements before choosing values. Pen is removed (`DEC-119`). Never edit Figma during code work.
+- Missing/ambiguous nodes, responsive geometry, fonts/assets/interactions or product conflicts: stop the affected implementation and record `NEEDS-FIGMA` / required decision. Figma controls styling; product owners/server contracts control routes/data/privacy/permissions/auction behavior.
+- Exact Figma match first: reuse the design system, extend semantic tokens/variants/component APIs when needed; local values only for unique geometry. One semantic token layer (`packages/design-tokens`), one shared primitive per role, thin screens; fix repeatable rules at their owner, never route-local screenshot patches.
+- Hover/focus/open/close/blur/sticky/reduced motion follow the design system; static frames do not define interactions. Verify matched screenshots at 390/1024/1440 where frames exist; when only 390 exists, wider exact parity stays `NEEDS-FIGMA`.
+- After UI changes update [04-DESIGN-STATUS.md](docs/design/04-DESIGN-STATUS.md); system doc for shared components/tokens, flows doc for route/flow changes. No visual principle/flow change without founder/designer decision. Complete requires loading/empty/error/responsive/accessibility states.
+- `~/projects/bidplace-home-figma-completion` is read-only: never switch to it, commit there or alter its Git state.
 
-## Git
+## Verification and completion
 
-- Use short, specific branch and commit names.
-- Do not mention agents or automation in branches, commits, or pull requests.
-
-<!-- BIDPLACE_PROJECT_RULES_START -->
-
-## Bidplace Project Documentation
-
-Before every task in this repository:
-
-1. Read `docs/product/00-PROJECT-INDEX.md`.
-2. Read `docs/product/01-PRODUCT-FOUNDATION.md`.
-3. Read `docs/product/11-PROJECT-STATUS.md`.
-4. Use the index to open only the owner documents relevant to the task.
-5. Identify the affected product behavior, its owner document, and any conflict with confirmed bidplace principles before changing code.
-
-The core product principle is value. bidplace is for direct sales of significant, authored, limited, or personally connected items. General resale, resellers, mass-market goods, and artificial bids conflict with the product.
-
-### Document Ownership
-
-- Product boundaries and value: `01-PRODUCT-FOUNDATION.md`.
-- Product history: `02-PRODUCT-EVOLUTION.md`.
-- Market and competitive patterns: `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md`.
-- Exact MVP behavior: `05-MVP-RFC.md`.
-- Development waves: `06-ROADMAP-24-MONTHS.md`.
-- Growth and creator launch: `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md`.
-- Seller and item eligibility: `08-SELLER-AND-ITEM-POLICY.md`.
-- Bids, provenance, privacy, and integrity: `09-TRUST-AND-AUCTION-INTEGRITY.md`.
-- Application-layer security (auth, admin emergency, uploads, rate limits): `13-APPLICATION-SECURITY.md`.
-- Architecture and long-lived technical decisions: `10-CODE-ARCHITECTURE.md`.
-- Current implementation state: `11-PROJECT-STATUS.md`.
-- Decision history: `12-DECISION-LOG.md`.
-
-Keep one owner per claim. In other documents, add a short conclusion and a link instead of copying the full description.
-
-### Protected Product Documents
-
-Do not change these during ordinary development work without an explicit founder decision:
-
-- `01-PRODUCT-FOUNDATION.md`;
-- `02-PRODUCT-EVOLUTION.md`;
-- `03-CUSTDEV-TAISIA.md`;
-- `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md`;
-- `06-ROADMAP-24-MONTHS.md`;
-- `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md`;
-- `08-SELLER-AND-ITEM-POLICY.md`;
-- `09-TRUST-AND-AUCTION-INTEGRITY.md`.
-
-If a requested change conflicts with a protected document, identify the exact conflict, stop the product-changing part, and request an explicit founder decision.
-
-### Updating Documentation with Code
-
-After every task that changes code or actual system behavior:
-
-1. Update `docs/product/11-PROJECT-STATUS.md` with `Implemented`, `Partial`, `Not implemented`, or `Needs verification`.
-2. Cite concrete modules, APIs, tables, screens, and tests that support the status.
-3. Do not mark a feature `Implemented` when critical checks, server behavior, primary errors, or verification are missing.
-4. Update `docs/product/10-CODE-ARCHITECTURE.md` only when architecture boundaries, domain models, app/package structure, contracts, persistence, or security invariants changed.
-5. Check the result against `docs/product/05-MVP-RFC.md` and record implementation gaps in `11-PROJECT-STATUS.md`.
-
-Do not rewrite `05-MVP-RFC.md` merely because current code differs. Change it only after an explicit product-contract decision.
-
-### Decisions and Research
-
-- `12-DECISION-LOG.md` is append-oriented. Add an entry only for an explicit new decision, a selected alternative, a revised decision, or a rejected idea.
-- Do not infer a founder decision or rewrite previous entries. A revision must reference the earlier decision.
-- `docs/research/raw/*` is an immutable primary-material archive. Never rewrite, delete, or promote raw claims directly to confirmed product decisions.
-- Store new research in a separate dated file and move conclusions to the appropriate owner document only with the correct status and source.
-- Keep product statuses (`Confirmed`, `Hypothesis`, `Planned`, `Rejected`) separate from code statuses.
-
-### Design documentation
-
-Before changing user-facing UI, read:
-
-- `docs/design/00-DESIGN-INDEX.md`;
-- `docs/design/01-DESIGN-FOUNDATION.md`;
-- `docs/design/02-USER-FLOWS-AND-SCREENS.md`;
-- `docs/design/03-DESIGN-SYSTEM.md`;
-- `docs/design/04-DESIGN-STATUS.md`.
-
-After changing UI:
-
-1. Update `docs/design/04-DESIGN-STATUS.md`.
-2. Update `docs/design/03-DESIGN-SYSTEM.md` when shared components or tokens changed.
-3. Update `docs/design/02-USER-FLOWS-AND-SCREENS.md` when a user flow changed.
-4. Do not change visual principles or product flows without an explicit founder or assigned-designer decision.
-5. Do not mark a screen complete without loading, empty, error, responsive, and accessibility states.
-
-`docs/design/01-DESIGN-FOUNDATION.md` is protected and changes only by direct decision of the founder or assigned designer.
-
-### Canonical Pen Reference Protection
-
-`design/pen/bidplace-web-v2.pen` is the canonical visual reference for the current UI direction.
-
-- Never edit, delete, rename, move, replace, format, or resave this file during implementation, refactoring, testing, review, or documentation work.
-- Adapt production code to the canonical Pen reference; never adapt the Pen file to current code.
-- Pen changes are allowed only in a separately scoped design task with an explicit founder or assigned-designer instruction.
-- Even an authorized design task must not delete the canonical file; preserve history and explicit version lineage.
-- If a Pen node is missing, damaged, ambiguous, or conflicts with a product contract, stop the affected implementation and record the required decision. Do not repair Pen during a code task.
-- Before completing any UI task, verify that no `.pen` file appears in the diff.
-- Pen controls visual composition and styling. Product owner documents and server contracts continue to control routes, data, permissions, privacy, and auction behavior.
-
-### Pen UI Implementation Quality
-
-- Use only durable solutions for the Pen v2 migration. If a durable implementation is blocked by route, data, or contract ambiguity, stop the affected scope instead of adding a workaround.
-- Maintain one semantic token layer in `packages/design-tokens`, one shared primitive per UI role, and one production master per canonical Pen component.
-- Keep screens thin. Fix shared visual rules in tokens or shared components, never with duplicated route-local patches.
-- Do not use repeated magic values, duplicate token systems, fake data or controls, client-only API approximations, giant boolean-flag components, silent fallbacks, type/lint suppressions, or a hybrid final shell.
-- Implement exact Pen measurements only after reading the canonical nodes. Never guess missing geometry, fonts, assets, responsive behavior, or interactions.
-- Static Pen frames do not exhaust interaction behavior. Implement hover, focus, open/close, blur, artwork atmosphere, sticky transitions and reduced-motion exactly from `docs/design/03-DESIGN-SYSTEM.md`; never add route-local animation guesses or edit Pen to show them.
-- Verify visual parity at 1440, 1024, and 390 px with matched screenshots, plus required content, role, state, keyboard, zoom, and reduced-motion coverage.
-
-### Task Completion
-
-Before the final response:
-
-1. Run the relevant checks and tests.
-2. Verify code against `05-MVP-RFC.md` and architecture changes against `10-CODE-ARCHITECTURE.md`.
-3. Update `11-PROJECT-STATUS.md` for behavior changes.
-4. Update `12-DECISION-LOG.md` only when an explicit decision was made.
-5. Confirm that code and canonical documentation do not silently contradict each other.
-6. Report code changes, documentation changes, status changes, remaining gaps, and open founder decisions.
-
-<!-- BIDPLACE_PROJECT_RULES_END -->
+- Verify behavior changes with meaningful checks, extending existing owner specs for uncovered contracts. Prefer unit checks; use integration/e2e for DB/network/permissions/transactions and rendered/manual checks for decorative geometry. No test file per bug or implementation-mirroring tests; use parameterization when clearer.
+- Preserve session, permission, concurrency, saving and integrity regressions. Remove obsolete diagnostics/duplicate cases only after checking consumers. Never relax assertions/goldens/thresholds/retries/timeouts for unexplained failures.
+- Run relevant typecheck, lint without auto-fix, tests and builds for the affected dependency graph (Turbo filters where possible). Broaden/repeat only for new changes/failures/unresolved concerns. Documentation-only work requires `pnpm docs:link-check` and `git diff --check`; unchanged runtime needs no full build.
+- Before finishing: check RFC/architecture alignment, update applicable owners, confirm no silent code/doc contradictions. Report changed files, actual checks/failures, status changes, remaining gaps and open founder decisions. Never claim success with missing/failing required checks.
+- Branch: `feature/<short-name>` or `fix/<short-name>`; short specific lowercase commit. Do not mention agents, AI or automation in branches/commits/PRs.

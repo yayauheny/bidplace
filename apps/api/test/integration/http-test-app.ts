@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import type { INestApplication } from '@nestjs/common';
 
 import { configureHttpApp } from '../../src/bootstrap';
+import { CatalogService } from '../../src/catalog/catalog.service';
 import { loadServerEnv, resolveCorsOrigin } from '../../src/core/config';
 
 export type HttpTestApp = {
@@ -14,14 +15,17 @@ export async function createHttpTestApp(
   databaseUrl: string,
   corsOrigin = 'http://localhost:8081',
 ): Promise<HttpTestApp> {
+  process.env.BIDPLACE_ENV_FILE ??=
+    '/private/tmp/bidplace-missing-auth-abuse-env';
   process.env.NODE_ENV = 'test';
   process.env.APP_ENV = 'local';
   process.env.DATABASE_URL = databaseUrl;
   process.env.CORS_ORIGIN = corsOrigin;
   process.env.TRUST_PROXY = 'true';
-  process.env.JWT_SECRET = 'wave-3-http-test-secret';
+  process.env.SESSION_SECRET = 'wave-3-http-test-secret';
   process.env.TEST_EMAIL_BYPASS = 'false';
-  process.env.COMMERCE_ENABLED = 'true';
+  process.env.TURNSTILE_VERIFIER = 'test';
+  process.env.TURNSTILE_HOSTNAME = 'localhost';
 
   const { AppModule } = await import('../../src/app.module');
   const serverEnv = loadServerEnv();
@@ -29,10 +33,11 @@ export async function createHttpTestApp(
     ...serverEnv,
     CORS_ORIGIN: resolveCorsOrigin(serverEnv),
   };
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create(AppModule.forRoot(serverEnv), {
     logger: false,
     abortOnError: false,
   });
+  await app.get(CatalogService).bootstrap();
 
   configureHttpApp(app, runtimeEnv);
   await app.listen(0, '127.0.0.1');
@@ -62,7 +67,9 @@ export class HttpTestClient {
     const cookie = this.cookieHeader();
 
     if (cookie) headers.set('cookie', cookie);
-    if (this.origin) headers.set('origin', this.origin);
+    headers.set('origin', this.origin ?? 'http://localhost:8081');
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(init.method ?? 'GET'))
+      headers.set('X-Bidplace-Request', '1');
     if (this.forwardedFor) headers.set('x-forwarded-for', this.forwardedFor);
 
     let body = init.body;
@@ -100,6 +107,10 @@ export class HttpTestClient {
     return this.request(path, { method: 'PATCH', body });
   }
 
+  put(path: string, body?: HttpRequestInit['body']): Promise<Response> {
+    return this.request(path, { method: 'PUT', body });
+  }
+
   delete(path: string): Promise<Response> {
     return this.request(path, { method: 'DELETE' });
   }
@@ -134,3 +145,5 @@ export class HttpTestClient {
 export async function responseJson(response: Response): Promise<unknown> {
   return response.json();
 }
+
+process.env.OTP_HASH_SECRET ??= 'synthetic-otp-hash-key-for-tests-only';

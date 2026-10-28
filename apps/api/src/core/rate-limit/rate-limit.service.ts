@@ -1,6 +1,4 @@
-import { Inject, Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
-
-import { loadServerEnv } from '../config';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 
 type RateLimitBucket = {
   count: number;
@@ -12,15 +10,6 @@ export type RateLimitServiceConfig = {
   cleanupIntervalMs: number;
 };
 
-function loadRateLimitServiceConfig(): RateLimitServiceConfig {
-  const serverEnv = loadServerEnv();
-
-  return {
-    maxBuckets: serverEnv.RATE_LIMIT_MAX_BUCKETS,
-    cleanupIntervalMs: serverEnv.RATE_LIMIT_CLEANUP_INTERVAL_MS,
-  };
-}
-
 @Injectable()
 export class RateLimitService implements OnModuleDestroy {
   private readonly buckets = new Map<string, RateLimitBucket>();
@@ -29,11 +18,10 @@ export class RateLimitService implements OnModuleDestroy {
   private readonly config: RateLimitServiceConfig;
 
   constructor(
-    @Optional()
     @Inject('RATE_LIMIT_SERVICE_CONFIG')
-    config?: RateLimitServiceConfig,
+    config: RateLimitServiceConfig,
   ) {
-    this.config = config ?? loadRateLimitServiceConfig();
+    this.config = config;
     this.cleanupTimer = setInterval(() => {
       this.cleanupExpiredBuckets(Date.now());
     }, this.config.cleanupIntervalMs);

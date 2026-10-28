@@ -1,36 +1,6 @@
 import type { Href } from 'expo-router';
 import type { SellerStatus } from '@bidplace/contracts';
 
-export function isAuthorsRoute(pathname: string): boolean {
-  return pathname === '/authors' || pathname.startsWith('/authors/');
-}
-
-export function getDiscoveryLabel(
-  pathname: string,
-): 'Авторы' | 'Работы' {
-  return isAuthorsRoute(pathname) ? 'Авторы' : 'Работы';
-}
-
-export function getHeaderSearchPlaceholder(pathname: string): string {
-  const authorsRoute = isAuthorsRoute(pathname);
-  const worksRoute =
-    pathname === '/works' || pathname.startsWith('/works/');
-
-  return worksRoute || authorsRoute
-    ? 'Найти работу или автора'
-    : 'Найти предмет или автора';
-}
-
-export function canShowDesktopCreateListing({
-  isAdmin,
-  sellerStatus,
-}: {
-  isAdmin: boolean;
-  sellerStatus: SellerStatus | null;
-}): boolean {
-  return !isAdmin && sellerStatus === 'APPROVED';
-}
-
 export function getMobileCreateHref({
   isAuthenticated,
   sellerStatus,
@@ -48,23 +18,30 @@ export function getMobileCreateHref({
     } as Href;
   }
 
-  return (sellerStatus === 'APPROVED'
-    ? '/products/new'
-    : '/profile') as Href;
+  return (sellerStatus === 'APPROVED' ? '/products/new' : '/profile') as Href;
 }
 
-export function submitHeaderSearch(
-  router: { push: (href: Href) => void },
-  query: string,
-) {
-  const value = query.trim();
-  if (!value) return;
-  router.push({ pathname: '/search', params: { q: value } } as Href);
+export function getProfileHref({
+  isAdmin,
+  isAuthenticated,
+  returnPath,
+}: {
+  isAdmin: boolean;
+  isAuthenticated: boolean;
+  returnPath: string;
+}): Href {
+  if (isAdmin) return '/account';
+  if (isAuthenticated) return '/account';
+  return returnPath === '/'
+    ? '/login'
+    : { pathname: '/login', params: { redirectTo: returnPath } };
 }
 
-export function logoutAndGoHome(
-  auth: { logout: () => Promise<void> },
-  router: { replace: (href: Href) => void },
+// Founder-approved adaptation of the 1800px Figma header.
+export function hasDesktopNavigation(
+  platform: string,
+  width: number,
+  isPublic: boolean,
 ) {
-  return auth.logout().then(() => router.replace('/'));
+  return isPublic && platform === 'web' && width >= 1024;
 }

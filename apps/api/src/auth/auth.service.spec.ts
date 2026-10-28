@@ -1,11 +1,41 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  ConflictException,
+  UnauthorizedException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
+import { syntheticServerEnv } from '../core/config/synthetic-server-env';
 import { authCredentialsSelect, authUserContractSelect } from './auth.mapper';
 import { AuthService } from './auth.service';
-import { AuthTokenService } from './auth-token.service';
 import { PasswordHasherService } from './password-hasher.service';
-import { type AuthRepository } from './auth.service';
+import {
+  readPublishedLegalDocuments,
+  readRegistrationLegalVersion,
+} from './legal-documents';
+
+vi.mock('./legal-documents', () => ({
+  readRegistrationLegalVersion: vi.fn(() => 'portfolio-legal-2026-10-12'),
+  readPublishedLegalDocuments: vi.fn(() => ({
+    version: 'portfolio-legal-2026-10-12',
+    documents: [],
+  })),
+}));
+
+const legal = {
+  agreement: {
+    version: 'portfolio-legal-2026-10-12',
+    confirmed: true as const,
+  },
+  privacy: { version: 'portfolio-legal-2026-10-12', confirmed: true as const },
+  dataConsent: {
+    version: 'portfolio-legal-2026-10-12',
+    confirmed: true as const,
+  },
+  age18Confirmed: true as const,
+};
+const registerProof = syntheticTurnstileToken('register');
 
 type PrismaUser = {
   id: string;
@@ -15,7 +45,8 @@ type PrismaUser = {
   emailVerifiedAt: Date | null;
   phoneVerifiedAt: Date | null;
   acceptedRulesVersion?: string | null;
-  displayName: string;
+  displayName: string | null;
+  slug: string | null;
   role: 'admin' | 'user';
   status: 'active' | 'banned';
   sessionVersion: number;
@@ -33,6 +64,7 @@ function createPrismaUser(overrides: Partial<PrismaUser> = {}): PrismaUser {
     phoneVerifiedAt: null,
     acceptedRulesVersion: null,
     displayName: 'Demo Seller',
+    slug: null,
     role: 'user',
     status: 'active',
     sessionVersion: 0,
@@ -43,29 +75,41 @@ function createPrismaUser(overrides: Partial<PrismaUser> = {}): PrismaUser {
 }
 
 describe('AuthService', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   const prisma = {
     user: {
       findFirst: vi.fn(),
       create: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
-  } satisfies AuthRepository;
+  };
 
   const passwordHasher = {
     hash: vi.fn(),
     verify: vi.fn(),
-  } satisfies Pick<PasswordHasherService, 'hash' | 'verify'>;
+    dummyHash: vi.fn().mockResolvedValue('dummy-hash'),
+  } satisfies Pick<PasswordHasherService, 'hash' | 'verify' | 'dummyHash'>;
 
-  const authTokenService = {
-    sign: vi.fn(),
-    verify: vi.fn(),
-  } satisfies Pick<AuthTokenService, 'sign' | 'verify'>;
+  const abuse = {
+    assertRegistration: vi.fn().mockResolvedValue(undefined),
+    assertRegistrationEmail: vi.fn(),
+    assessLogin: vi.fn(async (input: { passwordAccepted: boolean }) =>
+      input.passwordAccepted
+        ? { outcome: 'accepted' as const }
+        : { outcome: 'invalid' as const },
+    ),
+  };
 
   const service = new AuthService(
     prisma,
     passwordHasher,
-    authTokenService,
+    abuse as never,
+    syntheticServerEnv(),
   );
 
   beforeEach(() => {
@@ -81,36 +125,42 @@ describe('AuthService', () => {
       }),
     );
     passwordHasher.hash.mockResolvedValue('hashed-value');
-    authTokenService.sign.mockReturnValue('signed-token');
 
     const result = await service.register({
       email: 'New-Seller@Example.com',
       password: 'super-secret',
       phone: '+15555550123',
-      displayName: 'Demo Seller',
+      slug: 'demo-seller',
+      turnstileToken: registerProof,
+      legal,
     });
 
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: {
         email: 'new-seller@example.com',
-        phone: '+15555550123',
-        displayName: 'Demo Seller',
+        slug: 'demo-seller',
+        displayName: null,
         passwordHash: 'hashed-value',
         status: 'active',
         sessionVersion: 0,
-        emailVerifiedAt: null,
+        emailVerifiedAt: expect.any(Date),
         phoneVerifiedAt: null,
+        registrationLegalEvidence: {
+          create: {
+            agreementVersion: legal.agreement.version,
+            agreementAcceptedAt: expect.any(Date),
+            privacyVersion: legal.privacy.version,
+            privacyAcknowledgedAt: expect.any(Date),
+            dataConsentVersion: legal.dataConsent.version,
+            dataConsentedAt: expect.any(Date),
+            age18ConfirmedAt: expect.any(Date),
+          },
+        },
       },
       select: authCredentialsSelect,
     });
-    expect(authTokenService.sign).toHaveBeenCalledWith({
-      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-      email: 'new-seller@example.com',
-      role: 'user',
-      sessionVersion: 0,
-    });
     expect(result).toEqual({
-      accessToken: 'signed-token',
+      sessionVersion: 0,
       user: {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
         email: 'new-seller@example.com',
@@ -119,12 +169,82 @@ describe('AuthService', () => {
         phoneVerifiedAt: null,
         acceptedRulesVersion: null,
         displayName: 'Demo Seller',
+        slug: null,
         role: 'user',
         status: 'active',
         createdAt: '2026-07-13T12:00:00.000Z',
         updatedAt: '2026-07-13T12:00:00.000Z',
       },
     });
+  });
+
+  it('creates the account and records the server revision when reading documents is unavailable', async () => {
+    vi.mocked(readPublishedLegalDocuments).mockImplementationOnce(() => {
+      throw new ServiceUnavailableException();
+    });
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue(createPrismaUser());
+    passwordHasher.hash.mockResolvedValue('hashed-value');
+    await service.register({
+      email: 'new-user@example.com',
+      password: 'registration-password',
+      slug: 'new-user',
+      turnstileToken: registerProof,
+      legal: {
+        agreement: { confirmed: true },
+        privacy: { confirmed: true },
+        dataConsent: { confirmed: true },
+        age18Confirmed: true,
+      },
+    });
+    expect(
+      prisma.user.create.mock.calls[0]?.[0].data.registrationLegalEvidence
+        .create,
+    ).toMatchObject({
+      agreementVersion: 'portfolio-legal-2026-10-12',
+      privacyVersion: 'portfolio-legal-2026-10-12',
+      dataConsentVersion: 'portfolio-legal-2026-10-12',
+      age18ConfirmedAt: expect.any(Date),
+    });
+    expect(readPublishedLegalDocuments).not.toHaveBeenCalled();
+    vi.mocked(readPublishedLegalDocuments).mockReset().mockReturnValue({
+      version: 'portfolio-legal-2026-10-12',
+      documents: [],
+    });
+  });
+
+  it('rejects a stale legal version without creating a user or checking abuse', async () => {
+    vi.mocked(readRegistrationLegalVersion).mockReturnValueOnce(
+      'new-legal-version',
+    );
+    await expect(
+      service.register({
+        email: 'seller@example.com',
+        password: 'super-secret',
+        slug: 'seller',
+        turnstileToken: registerProof,
+        legal,
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(abuse.assertRegistration).not.toHaveBeenCalled();
+  });
+
+  it('does not issue a session when the atomic user/evidence insert fails', async () => {
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.create.mockRejectedValueOnce(
+      new Error('registration evidence insert failed'),
+    );
+    passwordHasher.hash.mockResolvedValue('hash');
+    await expect(
+      service.register({
+        email: 'seller@example.com',
+        password: 'super-secret',
+        slug: 'seller',
+        turnstileToken: registerProof,
+        legal,
+      }),
+    ).rejects.toThrow('registration evidence insert failed');
   });
 
   it('rejects duplicate email or phone on registration', async () => {
@@ -135,20 +255,60 @@ describe('AuthService', () => {
         email: 'seller@example.com',
         password: 'super-secret',
         phone: '+15555550123',
-        displayName: 'Demo Seller',
+        slug: 'demo-seller',
+        turnstileToken: registerProof,
+        legal,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('rejects invalid login credentials', async () => {
+  it('rejects an unknown email after a dummy password check', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
+    passwordHasher.verify.mockResolvedValue(false);
 
     await expect(
       service.login({
         email: 'missing@example.com',
         password: 'super-secret',
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    ).rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
+
+    expect(passwordHasher.dummyHash).toHaveBeenCalled();
+    expect(passwordHasher.verify).toHaveBeenCalledWith(
+      'dummy-hash',
+      'super-secret',
+    );
+    expect(abuse.assessLogin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        passwordAccepted: false,
+        email: 'missing@example.com',
+      }),
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects a wrong password with the stored hash', async () => {
+    prisma.user.findUnique.mockResolvedValue(
+      createPrismaUser({ passwordHash: 'hashed-login-password' }),
+    );
+    passwordHasher.verify.mockResolvedValue(false);
+
+    await expect(
+      service.login({
+        email: 'seller@example.com',
+        password: 'super-secret',
+      }),
+    ).rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
+
+    expect(passwordHasher.dummyHash).not.toHaveBeenCalled();
+    expect(passwordHasher.verify).toHaveBeenCalledWith(
+      'hashed-login-password',
+      'super-secret',
+    );
+    expect(abuse.assessLogin).toHaveBeenCalledWith(
+      expect.objectContaining({ passwordAccepted: false }),
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it('logs a user in with a valid password', async () => {
@@ -159,7 +319,6 @@ describe('AuthService', () => {
       }),
     );
     passwordHasher.verify.mockResolvedValue(true);
-    authTokenService.sign.mockReturnValue('signed-token');
 
     const result = await service.login({
       email: 'Login@Example.com',
@@ -170,14 +329,9 @@ describe('AuthService', () => {
       'hashed-login-password',
       'super-secret',
     );
-    expect(authTokenService.sign).toHaveBeenCalledWith({
-      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-      email: 'login@example.com',
-      role: 'user',
-      sessionVersion: 0,
-    });
+    expect(prisma.user.update).not.toHaveBeenCalled();
     expect(result).toEqual({
-      accessToken: 'signed-token',
+      sessionVersion: 0,
       user: {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
         email: 'login@example.com',
@@ -186,6 +340,7 @@ describe('AuthService', () => {
         phoneVerifiedAt: null,
         acceptedRulesVersion: null,
         displayName: 'Demo Seller',
+        slug: null,
         role: 'user',
         status: 'active',
         createdAt: '2026-07-13T12:00:00.000Z',
@@ -197,9 +352,7 @@ describe('AuthService', () => {
   it('returns the current user from me', async () => {
     prisma.user.findUnique.mockResolvedValue(createPrismaUser());
 
-    const result = await service.me(
-      '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-    );
+    const result = await service.me('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1');
 
     expect(result).toEqual({
       id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
@@ -209,6 +362,7 @@ describe('AuthService', () => {
       phoneVerifiedAt: null,
       acceptedRulesVersion: null,
       displayName: 'Demo Seller',
+      slug: null,
       role: 'user',
       status: 'active',
       createdAt: '2026-07-13T12:00:00.000Z',
@@ -219,6 +373,19 @@ describe('AuthService', () => {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
       },
       select: authUserContractSelect,
+    });
+  });
+
+  it('returns the stored slug when a second claim loses the race', async () => {
+    prisma.user.updateMany.mockResolvedValue({ count: 0 });
+    prisma.user.findUnique.mockResolvedValue({ slug: 'kept-name' });
+
+    await expect(
+      service.claimSlug('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', 'other-name'),
+    ).resolves.toEqual({ slug: 'kept-name' });
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: { id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', slug: null },
+      data: { slug: 'other-name' },
     });
   });
 
@@ -236,6 +403,51 @@ describe('AuthService', () => {
         password: 'super-secret',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(passwordHasher.dummyHash).toHaveBeenCalled();
+    expect(passwordHasher.verify).toHaveBeenCalledWith(
+      'dummy-hash',
+      'super-secret',
+    );
+    expect(abuse.assessLogin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        passwordAccepted: false,
+        email: 'banned@example.com',
+      }),
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('reports slug availability without reserving the nickname', async () => {
+    prisma.user.findUnique.mockResolvedValueOnce(null);
+    await expect(service.slugAvailability('author')).resolves.toEqual({
+      available: true,
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+
+    prisma.user.findUnique.mockResolvedValueOnce({ id: 'taken' });
+    await expect(service.slugAvailability('author')).resolves.toEqual({
+      available: false,
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('reads service rules from the injected config', async () => {
+    vi.stubEnv('SERVICE_RULES_TEXT', 'from-process');
+    const rulesService = new AuthService(
+      prisma,
+      passwordHasher,
+      abuse as never,
+      syntheticServerEnv({
+        SERVICE_RULES_TEXT: 'from-snapshot',
+      }),
+    );
+
+    await expect(rulesService.getRules()).resolves.toEqual({
+      rules: expect.objectContaining({
+        text: 'from-snapshot',
+      }),
+    });
   });
 
   it('invalidates existing sessions on logout', async () => {
@@ -255,3 +467,46 @@ describe('AuthService', () => {
     });
   });
 });
+
+it.each(['malformed', 'storage failure'])(
+  'preserves a new account when analytics attribution has %s',
+  async (failure) => {
+    const { signAnalyticsBrowser, ANALYTICS_BROWSER_COOKIE } =
+      await import('../analytics/browser-attribution');
+    const env = syntheticServerEnv({ ANALYTICS_WEB_ENABLED: 'true' });
+    const user = createPrismaUser();
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(user),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockRejectedValue(new Error('fixture storage failure')),
+      },
+      acquisitionAttribution: { updateMany: vi.fn() },
+    };
+    const service = new AuthService(
+      prisma as never,
+      { hash: vi.fn().mockResolvedValue('fixture hash') } as never,
+      { assertRegistrationEmail: vi.fn() } as never,
+      env,
+    );
+    const id = '00000000-0000-4000-8000-000000000001';
+    const proof =
+      failure === 'malformed'
+        ? `${id}.${'é'.repeat(43)}`
+        : signAnalyticsBrowser(id, env);
+    const result = await service.register(
+      {
+        email: 'created@example.com',
+        password: 'password123',
+        slug: 'created',
+        legal,
+      },
+      `${ANALYTICS_BROWSER_COOKIE}=${proof}`,
+    );
+    expect(prisma.user.create).toHaveBeenCalledOnce();
+    expect(result.user.id).toBe(user.id);
+    expect(prisma.acquisitionAttribution.updateMany).not.toHaveBeenCalled();
+  },
+);

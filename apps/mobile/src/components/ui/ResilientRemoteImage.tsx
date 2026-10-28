@@ -1,5 +1,12 @@
 import { Image, type ImageProps } from 'expo-image';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  View,
+  type ImageStyle,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -20,107 +27,135 @@ import {
 } from './media-recovery';
 
 export type ResilientRemoteImageComponent =
-  | 'AuctionCard'
   | 'CreatorCard'
   | 'CreationStep'
   | 'ProductGallery'
   | 'ProductAuthor'
-  | 'AuthorPhoto';
+  | 'AuthorPhoto'
+  | 'AuthorAchievement'
+  | 'WorkCoverCard'
+  | 'AuthorCoverCard'
+  | 'AuthorIdentity'
+  | 'AuthorAtmosphere'
+  | 'AuthorSearchRow'
+  | 'AccountIdentity';
 
 type ResilientRemoteImageProps = {
   uri: string;
+  onLoad?: () => void;
+  onLoadStart?: () => void;
+  /** Reports exhausted automatic retries; the existing manual retry remains available. */
+  onLoadError?: () => void;
+  onDimensions?: (size: { width: number; height: number }) => void;
   component: ResilientRemoteImageComponent;
   accessibilityLabel: string;
   fallbackLabel: string;
   style: StyleProp<ViewStyle>;
   contentFit?: ImageProps['contentFit'];
+  loading?: ImageProps['loading'];
+  contentPosition?: ImageProps['contentPosition'];
   transition?: ImageProps['transition'];
   recyclingKey?: string;
+  blurRadius?: number;
+  /** Show the manual «Повторить» action after automatic retries exhaust. Default true. */
+  retryable?: boolean;
+  retryPosition?: 'bottom' | 'center';
+  /**
+   * `plain` renders just the surface on failure — for round avatar discs
+   * where the labelled placeholder text would be clipped by the circle.
+   * Default `labelled`.
+   */
+  fallback?: 'labelled' | 'plain';
 };
 
-export function ResilientRemoteImage({
+export function ResilientRemoteImage(props: ResilientRemoteImageProps) {
+  return <RemoteImageLifetime key={props.uri} {...props} />;
+}
+
+function RemoteImageLifetime({
   uri,
   component,
   accessibilityLabel,
   fallbackLabel,
   style,
   contentFit = 'cover',
+  loading,
+  contentPosition,
   transition,
   recyclingKey,
+  blurRadius,
+  retryable = true,
+  retryPosition = 'bottom',
+  fallback = 'labelled',
+  onDimensions,
+  onLoad,
+  onLoadStart,
+  onLoadError,
 }: ResilientRemoteImageProps) {
-  const recovery = useMediaRecovery(uri);
-  const currentUriRef = useRef(uri);
-  currentUriRef.current = uri;
-  const isCurrentUri = recovery.uri === uri;
-  const visibleRecovery = isCurrentUri
-    ? recovery
-    : createMediaRecoveryState(uri);
+  const [recovery, setRecovery] = useState(() => createMediaRecoveryState(uri));
+  const recoveryRef = useRef(recovery);
+  const mountedRef = useRef(true);
+  recoveryRef.current = recovery;
+
+  const commit = useCallback((next: MediaRecoveryState) => {
+    recoveryRef.current = next;
+    if (!mountedRef.current) return;
+    setRecovery(next);
+  }, []);
 
   useEffect(() => {
-    if (recovery.uri === uri) return;
-
-    const next = createMediaRecoveryState(uri);
-    recovery.ref.current = next;
-    recovery.set(next);
-  }, [recovery.ref, recovery.set, recovery.uri, uri]);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
-    if (
-      !isCurrentUri ||
-      !recovery.failed ||
-      recovery.exhausted ||
-      recovery.failureCount < 1
-    ) {
+    if (!recovery.failed || recovery.exhausted || recovery.failureCount < 1) {
       return;
     }
 
     const delay = mediaRetryDelaysMs[recovery.failureCount - 1];
     if (delay === undefined) return;
 
+    const scheduledFailureCount = recovery.failureCount;
     const timer = setTimeout(() => {
-      const current = recovery.ref.current;
+      const current = recoveryRef.current;
       if (
-        current.uri !== uri ||
-        current.failureCount !== recovery.failureCount ||
+        !mountedRef.current ||
+        current.failureCount !== scheduledFailureCount ||
         current.exhausted
       ) {
         return;
       }
 
-      const next = beginMediaRetry(current);
-      recovery.ref.current = next;
-      recovery.set(next);
+      commit(beginMediaRetry(current));
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [
-    isCurrentUri,
-    recovery.exhausted,
-    recovery.failed,
-    recovery.failureCount,
-    recovery.ref,
-    recovery.set,
-    uri,
-  ]);
+  }, [commit, recovery.exhausted, recovery.failed, recovery.failureCount]);
 
-  const sourceUri = addMediaCacheBust(uri, visibleRecovery.requestVersion);
+  const sourceUri = addMediaCacheBust(uri, recovery.requestVersion);
 
-  const handleLoad = () => {
-    const current = recovery.ref.current;
-    if (currentUriRef.current !== uri || current.uri !== uri) return;
-
-    const next = markMediaLoaded(current);
-    recovery.ref.current = next;
-    recovery.set(next);
+  const handleLoad = (event?: {
+    source: { width: number; height: number };
+  }) => {
+    if (!mountedRef.current) return;
+    if (event?.source.width && event.source.height)
+      onDimensions?.({
+        width: event.source.width,
+        height: event.source.height,
+      });
+    commit(markMediaLoaded(recoveryRef.current));
+    onLoad?.();
   };
 
   const handleError = (event: { error: string }) => {
-    const current = recovery.ref.current;
-    if (currentUriRef.current !== uri || current.uri !== uri) return;
+    if (!mountedRef.current) return;
 
-    const failure = recordMediaFailure(current);
-    recovery.ref.current = failure.state;
-    recovery.set(failure.state);
+    const failure = recordMediaFailure(recoveryRef.current);
+    commit(failure.state);
+    if (failure.state.exhausted) onLoadError?.();
 
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
@@ -136,17 +171,16 @@ export function ResilientRemoteImage({
   };
 
   const handleManualRetry = () => {
-    const current = recovery.ref.current;
-    const next = beginManualMediaRetry(
-      current.uri === uri ? current : createMediaRecoveryState(uri),
-    );
-    recovery.ref.current = next;
-    recovery.set(next);
+    if (!mountedRef.current) return;
+    commit(beginManualMediaRetry(recoveryRef.current));
   };
 
-  if (visibleRecovery.failed) {
+  if (recovery.failed) {
     return (
       <View
+        accessible={fallback === 'plain'}
+        accessibilityRole={fallback === 'plain' ? 'image' : undefined}
+        accessibilityLabel={fallback === 'plain' ? fallbackLabel : undefined}
         style={[
           style,
           {
@@ -157,17 +191,27 @@ export function ResilientRemoteImage({
           },
         ]}
       >
-        <ImagePlaceholder
-          label={fallbackLabel}
-          style={StyleSheet.absoluteFill}
-        />
-        {visibleRecovery.exhausted ? (
-          <View style={{ position: 'absolute', bottom: designTokens.space.x2 }}>
-            <SecondaryButton
-              compact
-              label="Повторить"
-              onPress={handleManualRetry}
-            />
+        {fallback === 'labelled' ? (
+          <ImagePlaceholder
+            label={fallbackLabel}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
+        {retryable && recovery.exhausted ? (
+          <View
+            pointerEvents="box-none"
+            style={
+              retryPosition === 'center'
+                ? {
+                    position: 'absolute',
+                    inset: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }
+                : { position: 'absolute', bottom: designTokens.space.x2 }
+            }
+          >
+            <SecondaryButton label="Повторить" onPress={handleManualRetry} />
           </View>
         ) : null}
       </View>
@@ -175,41 +219,32 @@ export function ResilientRemoteImage({
   }
 
   return (
-    <View style={[style, { overflow: 'hidden' }]}>
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={accessibilityLabel}
+      style={[style, { overflow: 'hidden' }]}
+    >
       <Image
         key={sourceUri}
         source={{ uri: sourceUri }}
         contentFit={contentFit}
+        loading={loading}
+        contentPosition={contentPosition}
         transition={transition}
-        recyclingKey={`${recyclingKey ?? uri}-${visibleRecovery.requestVersion}`}
-        accessibilityLabel={accessibilityLabel}
+        recyclingKey={`${recyclingKey ?? uri}-${recovery.requestVersion}`}
+        accessible={false}
+        blurRadius={blurRadius}
         onLoad={handleLoad}
+        onLoadStart={onLoadStart}
         onError={handleError}
-        style={StyleSheet.absoluteFill}
+        style={[
+          StyleSheet.absoluteFill,
+          Platform.OS === 'web' && blurRadius
+            ? ({ filter: `blur(${blurRadius}px)` } as ImageStyle)
+            : null,
+        ]}
       />
     </View>
   );
-}
-
-function useMediaRecovery(uri: string): {
-  readonly failed: boolean;
-  readonly exhausted: boolean;
-  readonly failureCount: number;
-  readonly requestVersion: number;
-  readonly uri: string;
-  readonly ref: { current: MediaRecoveryState };
-  readonly set: (next: MediaRecoveryState) => void;
-} {
-  const [state, setState] = useState(() => createMediaRecoveryState(uri));
-  const ref = useRef(state);
-  const set = useCallback((next: MediaRecoveryState) => {
-    ref.current = next;
-    setState(next);
-  }, []);
-
-  return {
-    ...state,
-    ref,
-    set,
-  };
 }

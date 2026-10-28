@@ -1,5 +1,7 @@
 # bidplace — журнал реализации Pen v2 UI
 
+> HISTORICAL: the Pen design this document describes was removed (DEC-119).
+
 Последнее обновление: 2026-08-12
 
 Ветка: `feature/pen-v2-ui`

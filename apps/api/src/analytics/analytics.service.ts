@@ -1,12 +1,16 @@
+import { portfolioDirectProductWhere } from '../products/public-visibility';
+import { randomUUID } from 'node:crypto';
 import {
+  type WebAnalyticsRequest,
   type AnalyticsIngestRequest,
   type AnalyticsIngestResponse,
 } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
-import { loadServerEnv } from '../core/config';
+import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService } from '../core/database';
+import { safeFailureLocation } from '../core/request-context/safe-request-log';
 import { Clock } from '../core/time';
 
 @Injectable()
@@ -16,7 +20,139 @@ export class AnalyticsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
+
+  async ingestWeb(input: WebAnalyticsRequest, browserId: string | null) {
+    if (!this.env.ANALYTICS_WEB_ENABLED)
+      return { accepted: 0, sessionId: null, browserId: null };
+    const workIds = input.events.flatMap((event) =>
+      event.page.page === 'work' ? [event.page.publicId] : [],
+    );
+    const authorSlugs = input.events.flatMap((event) =>
+      event.page.page === 'author' ? [event.page.slug] : [],
+    );
+    const [works, authors] = await Promise.all([
+      workIds.length
+        ? this.prisma.product.findMany({
+            where: {
+              ...portfolioDirectProductWhere,
+              publicId: { in: workIds },
+            },
+            select: { publicId: true },
+          })
+        : [],
+      authorSlugs.length
+        ? this.prisma.sellerProfile.findMany({
+            where: {
+              status: 'APPROVED',
+              user: { status: 'active' },
+              OR: [
+                { user: { slug: { in: authorSlugs } } },
+                { user: { slug: null }, slug: { in: authorSlugs } },
+              ],
+            },
+            select: { slug: true, user: { select: { slug: true } } },
+          })
+        : [],
+    ]);
+    const publicWorks = new Set(works.map((work) => work.publicId));
+    const publicAuthors = new Set(
+      authors.map((author) => author.user.slug ?? author.slug),
+    );
+    const publicEvents = input.events.filter(({ page }) =>
+      page.page === 'work'
+        ? publicWorks.has(page.publicId)
+        : page.page === 'author'
+          ? publicAuthors.has(page.slug)
+          : true,
+    );
+    if (!publicEvents.length)
+      return { accepted: 0, sessionId: null, browserId: null };
+    const id = browserId ?? randomUUID();
+    const now = this.clock.now();
+    const attribution = input.attribution;
+    const host = attribution?.referrerHost?.toLowerCase();
+    const ownHost = this.env.CORS_ORIGIN
+      ? new URL(this.env.CORS_ORIGIN).hostname
+      : null;
+    const hasUtm =
+      attribution &&
+      [
+        attribution.source,
+        attribution.medium,
+        attribution.campaign,
+        attribution.content,
+      ].some(Boolean);
+    const source = hasUtm
+      ? (attribution.source ?? 'utm')
+      : host && host !== ownHost
+        ? host
+        : 'direct';
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.acquisitionAttribution.upsert({
+        where: { anonymousId: id },
+        update: {},
+        create: {
+          anonymousId: id,
+          collectionVersion: 2,
+          environment: this.env.APP_ENV,
+          source,
+          medium: attribution?.medium ?? null,
+          campaign: attribution?.campaign ?? null,
+          content: attribution?.content ?? null,
+          referrer: host && host !== ownHost ? host : null,
+          capturedAt: now,
+        },
+      });
+      await tx.$queryRaw`SELECT id FROM acquisition_attributions WHERE anonymous_id = ${id}::uuid FOR UPDATE`;
+      const visit = await tx.acquisitionAttribution.findUniqueOrThrow({
+        where: { anonymousId: id },
+      });
+      if (
+        visit.collectionVersion !== 2 ||
+        visit.environment !== this.env.APP_ENV
+      )
+        throw new Error('Browser analytics identity is unavailable');
+      const existing = await tx.analyticsEvent.findMany({
+        where: {
+          environment: this.env.APP_ENV,
+          eventId: { in: publicEvents.map((event) => event.eventId) },
+        },
+        select: { eventId: true },
+      });
+      const seen = new Set(existing.map((event) => event.eventId));
+      const events = publicEvents.filter((event) => !seen.has(event.eventId));
+      const sessionId =
+        !visit.sessionId ||
+        !visit.lastEventAt ||
+        now.getTime() - visit.lastEventAt.getTime() >= 30 * 60_000
+          ? randomUUID()
+          : visit.sessionId;
+      if (!events.length) return { accepted: 0, sessionId: visit.sessionId };
+      const inserted = await tx.analyticsEvent.createMany({
+        data: events.map((event) => ({
+          eventId: event.eventId,
+          sessionId,
+          collectionVersion: 2,
+          eventName: 'public_page_viewed',
+          anonymousId: id,
+          environment: this.env.APP_ENV,
+          platform: 'web',
+          properties: event.page as Prisma.InputJsonValue,
+          createdAt: now,
+        })),
+        skipDuplicates: true,
+      });
+      if (inserted.count)
+        await tx.acquisitionAttribution.update({
+          where: { anonymousId: id },
+          data: { sessionId, lastEventAt: now },
+        });
+      return { accepted: inserted.count, sessionId };
+    });
+    return { ...result, browserId: id };
+  }
 
   async ingest(
     input: AnalyticsIngestRequest,
@@ -24,14 +160,16 @@ export class AnalyticsService {
   ): Promise<AnalyticsIngestResponse> {
     const accepted = input.events.length;
 
-    if (!loadServerEnv().ANALYTICS_INGEST_ENABLED) {
+    if (!this.env.ANALYTICS_INGEST_ENABLED) {
       return { accepted };
     }
 
     const now = this.clock.now();
     const userId = authUserId;
 
-    await this.upsertAttribution(input, userId, now);
+    if (input.attribution || input.claimAcquisition) {
+      await this.upsertAttribution(input, userId, now);
+    }
 
     if (input.events.length > 0) {
       await this.prisma.analyticsEvent.createMany({
@@ -100,10 +238,11 @@ export class AnalyticsService {
           },
         });
       } catch (error) {
+        const location = safeFailureLocation(error);
         this.logger.warn(
-          `Failed to create acquisition attribution for ${input.anonymousId}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          location
+            ? `Failed to create acquisition attribution at=${location}`
+            : 'Failed to create acquisition attribution',
         );
       }
       return;
@@ -135,10 +274,11 @@ export class AnalyticsService {
         },
       });
     } catch (error) {
+      const location = safeFailureLocation(error);
       this.logger.warn(
-        `Failed to claim acquisition attribution for ${input.anonymousId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        location
+          ? `Failed to claim acquisition attribution at=${location}`
+          : 'Failed to claim acquisition attribution',
       );
     }
   }

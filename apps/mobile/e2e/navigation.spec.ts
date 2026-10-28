@@ -1,278 +1,403 @@
-import { expect, test } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 
+import { expect, test, type Page } from '@playwright/test';
+
+import { authenticatedPage } from './support/auth-session';
 import {
-  createAuctionFixture,
+  createAdminModerationFixture,
   createSellerFixture,
 } from './support/e2e-fixtures';
-import { authenticatedPage } from './support/auth-session';
-import { e2eApiBaseURL } from './support/e2e-env';
 
-test('desktop header keeps the active home link and discovery menu visible', async ({
-  page,
-}) => {
-  const consoleErrors: string[] = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') consoleErrors.push(message.text());
-  });
+const w2EvidenceDir = '/tmp/w2-shots';
+mkdirSync(w2EvidenceDir, { recursive: true });
+const apiBaseURL = `http://localhost:${process.env.E2E_API_PORT ?? '3001'}`;
 
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/');
+const dockLabels = ['Главная', 'Поиск', 'Добавить', 'Профиль'] as const;
 
-  const homeLink = page.getByRole('link', { name: 'bidplace — на главную' });
-  await expect(homeLink).toBeVisible();
-  await expect(homeLink).toHaveAttribute('href', '/');
-  await expect(homeLink).not.toHaveAttribute('aria-selected');
-  await expect(homeLink).toHaveCSS('min-height', '44px');
-  await page.getByRole('button', { name: 'Аукционы' }).click();
-  const discoveryMenu = page.locator('#discovery-menu-dropdown');
-  await expect(
-    discoveryMenu.getByRole('link', { name: 'Аукционы' }),
-  ).toBeVisible();
-  await expect(
-    discoveryMenu.getByRole('link', { name: 'Авторы' }),
-  ).toBeVisible();
-  expect(
-    consoleErrors.filter((message) => message.includes('accessible')),
-  ).toEqual([]);
-});
-
-test('guest navigation exposes public discovery without seller actions', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1025, height: 900 });
-  await page.goto('/');
-
-  await expect(
-    page.getByRole('link', { name: 'bidplace — на главную' }),
-  ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Аукционы' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Покупки' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Добавить работу' })).toHaveCount(
-    0,
-  );
-});
-
-test('mobile guest header keeps canonical actions in one row', async ({
+test('guest 390 dock is one four-item capsule without auction chrome', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
-  const brand = page.getByRole('link', { name: 'bidplace — на главную' });
-  const search = page.getByRole('button', { name: 'Поиск' });
-  const create = page.getByRole('button', { name: 'Создать' });
-  const menuTrigger = page.getByRole('button', { name: 'Меню' });
-  const [brandBox, searchBox, createBox, menuBox] = await Promise.all([
-    brand.boundingBox(),
-    search.boundingBox(),
-    create.boundingBox(),
-    menuTrigger.boundingBox(),
-  ]);
+  const dock = page.getByTestId('figma-floating-dock');
+  await expect(dock).toBeVisible();
+  await expect(page.getByTestId('figma-floating-dock')).toHaveCount(1);
+  const box = await dock.boundingBox();
+  expect(box?.width).toBe(232);
+  expect(box?.height).toBe(64);
 
-  expect(brandBox).not.toBeNull();
-  expect(searchBox).not.toBeNull();
-  expect(createBox).not.toBeNull();
-  expect(menuBox).not.toBeNull();
-  expect(Math.abs((brandBox?.y ?? 0) - (menuBox?.y ?? 0))).toBeLessThan(20);
-  expect(Math.abs((searchBox?.y ?? 0) - (createBox?.y ?? 0))).toBeLessThan(4);
-  expect(searchBox?.height).toBe(44);
-  expect(createBox?.height).toBe(44);
-  expect(menuBox?.height).toBe(44);
+  for (const label of dockLabels) {
+    await expect(dock.getByLabel(label)).toBeVisible();
+  }
+
+  await expect(page.getByRole('link', { name: 'Аукционы' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Покупки' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Меню' })).toHaveCount(0);
+  await expect(page.getByLabel('Корзина')).toHaveCount(0);
 });
 
-test('mobile guest menu and search use canonical open states', async ({
+test('guest dock search, home, profile and plus stay inside the capsule', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 320, height: 844 });
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
-  await page.getByRole('button', { name: 'Меню' }).click();
-  const menu = page.locator('#mobile-menu-panel');
-  await expect(menu).toBeVisible();
-  const menuBox = await menu.boundingBox();
-  expect(menuBox).not.toBeNull();
-  expect(menuBox!.width).toBe(288);
-  expect(menuBox!.x).toBeGreaterThanOrEqual(16);
-  expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(304);
-  await expect(menu.getByRole('link', { name: 'Аукционы' })).toBeVisible();
-  await expect(menu.getByRole('link', { name: 'Авторы' })).toBeVisible();
-  await expect(menu.getByRole('link', { name: 'Войти' })).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(menu).toHaveCount(0);
+  const dock = page.getByTestId('figma-floating-dock');
+  await dock.getByLabel('Поиск').click();
+  await expect(page).toHaveURL(/search=1/);
+  await expect(page.getByTestId('explore-header')).toBeVisible();
+  await page.getByRole('button', { name: 'Закрыть поиск' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Открыть поиск' }),
+  ).toBeVisible();
+  await expect(page).not.toHaveURL(/search=1/);
 
-  await page.getByRole('button', { name: 'Поиск' }).click();
-  const searchInput = page.getByRole('textbox', {
-    name: 'Найти предмет или автора',
-  });
-  await expect(searchInput).toBeFocused();
-  await searchInput.fill('стекло');
-  await searchInput.press('Enter');
-  await expect(page).toHaveURL(
-    /\/search\?q=%D1%81%D1%82%D0%B5%D0%BA%D0%BB%D0%BE$/,
-  );
+  await dock.getByLabel('Главная').click();
+  await expect(page).toHaveURL(/\/$/);
+
+  await dock.getByLabel('Профиль').click();
+  await expect(page).toHaveURL(/\/login/);
+
+  await page.goto('/');
+  await page.getByTestId('figma-floating-dock').getByLabel('Добавить').click();
+  await expect(page).toHaveURL(/\/login/);
 });
 
-test('pending seller navigation does not expose approved seller actions', async ({
+test('pending seller plus opens the application profile, not create-work', async ({
   browser,
 }) => {
   const { seller } = await createSellerFixture({ status: 'PENDING_REVIEW' });
   const { context, page } = await authenticatedPage(browser, seller);
 
   try {
-    await page.setViewportSize({ width: 1025, height: 900 });
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.getByRole('button', { name: /Открыть меню аккаунта/ }).click();
-    await expect(
-      page.getByRole('link', { name: 'Заявка продавца' }),
-    ).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Кабинет' })).toHaveCount(0);
-    await expect(
-      page.getByRole('link', { name: 'Добавить работу' }),
-    ).toHaveCount(0);
+    await page
+      .getByTestId('figma-floating-dock')
+      .getByLabel('Добавить')
+      .click();
+    await expect(page).toHaveURL(/\/profile/);
+    await expect(page).not.toHaveURL(/\/products\/new/);
   } finally {
     await context.close();
   }
 });
 
-test('approved seller navigation exposes the cabinet and create action', async ({
+test('approved seller plus opens the existing create-work flow', async ({
   browser,
 }) => {
-  const fixture = await createAuctionFixture();
-  const { context, page } = await authenticatedPage(browser, fixture.seller);
+  const { seller } = await createSellerFixture({ status: 'APPROVED' });
+  const { context, page } = await authenticatedPage(browser, seller);
 
   try {
-    await page.setViewportSize({ width: 1025, height: 900 });
-    await page.goto(`/product/${fixture.product.publicId}`);
-    await page.getByRole('button', { name: 'Аукционы' }).click();
-    await expect(page.getByRole('link', { name: 'Аукционы' })).toBeVisible();
-    await expect(
-      page.getByRole('link', { name: 'Добавить работу' }),
-    ).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await page
+      .getByTestId('figma-floating-dock')
+      .getByLabel('Добавить')
+      .click();
+    await expect(page).toHaveURL(/\/products\/new/);
+  } finally {
+    await context.close();
+  }
+});
 
-    const discoveryMenu = page.locator('#discovery-menu-dropdown');
-    for (const label of ['Аукционы', 'Авторы']) {
-      const link = discoveryMenu.getByRole('link', { name: label });
-      await link.focus();
-      await expect(link).toBeFocused();
+test('admin dock separates moderation analytics and account without exposing create', async ({
+  browser,
+}) => {
+  const { admin } = await createAdminModerationFixture();
+  const { context, page } = await authenticatedPage(browser, admin);
+
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    const dock = page.getByTestId('figma-floating-dock');
+    await expect(dock.getByLabel('Главная')).toBeVisible();
+    await expect(dock.getByLabel('Поиск')).toBeVisible();
+    await expect(dock.getByLabel('Профиль')).toBeVisible();
+    await expect(dock.getByLabel('Добавить')).toHaveCount(0);
+    await dock.getByLabel('Модерация').click();
+    await expect(page).toHaveURL(/\/admin/);
+    await page
+      .getByTestId('figma-floating-dock')
+      .getByLabel('Аналитика')
+      .click();
+    await expect(page).toHaveURL(/\/analytics/);
+    await page.getByTestId('figma-floating-dock').getByLabel('Профиль').click();
+    await expect(page).toHaveURL(/\/account/);
+    await page.getByRole('button', { name: 'Настройки', exact: true }).click();
+    await expect(page).toHaveURL(/\/account\/settings/);
+    await expect(
+      page.getByRole('button', { name: 'Выйти', exact: true }),
+    ).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});
+
+test('public shell stays fluid without horizontal overflow across accepted W2 viewports', async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(180_000);
+  const [worksResponse, authorsResponse] = await Promise.all([
+    request.get(`${apiBaseURL}/api/works?limit=1`),
+    request.get(`${apiBaseURL}/api/authors?limit=1`),
+  ]);
+  const works = (await worksResponse.json()) as {
+    works: Array<{ work: { publicId: string } }>;
+  };
+  const authors = (await authorsResponse.json()) as {
+    authors: Array<{ author: { slug: string } }>;
+  };
+  const work = works.works[0]?.work;
+  const author = authors.authors[0]?.author;
+  expect(work).toBeDefined();
+  expect(author).toBeDefined();
+
+  const routes = [
+    {
+      name: 'home',
+      path: '/',
+      ready: (page: Page) => page.getByTestId('home-scroll'),
+    },
+    {
+      name: 'authors',
+      path: '/authors',
+      ready: (page: Page) => page.getByTestId('explore-header'),
+    },
+    {
+      name: 'works',
+      path: '/works',
+      ready: (page: Page) => page.getByTestId('explore-header'),
+    },
+    {
+      name: 'work',
+      path: `/product/${work!.publicId}`,
+      ready: (page: Page) => page.getByTestId('work-gallery'),
+    },
+    {
+      name: 'author',
+      path: `/seller/${author!.slug}`,
+      ready: (page: Page) => page.getByTestId('creator-static-header'),
+    },
+  ] as const;
+  const viewports = [390, 440, 768, 1024, 1440] as const;
+  const screenshotWidths = new Set([390, 1024, 1440]);
+
+  for (const width of viewports) {
+    await page.setViewportSize({ width, height: 844 });
+    const expectedContentWidth = Math.min(width - 24, 1280);
+    for (const route of routes) {
+      await page.goto(route.path);
+      await expect(route.ready(page)).toBeVisible();
+      // Branded Home already owns 24px desktop gutters; ordinary columns use 12px.
+      const innerWidth =
+        route.name === 'home' && width >= 1024
+          ? expectedContentWidth - 24
+          : expectedContentWidth;
+      await expectFluidShell(page, innerWidth);
+      if (route.name === 'work' && width === 390) {
+        await expect(page.getByTestId('work-gallery')).toHaveJSProperty(
+          'clientWidth',
+          390,
+        );
+      }
+      if (screenshotWidths.has(width)) {
+        await page.screenshot({
+          path: resolve(w2EvidenceDir, `${route.name}-${width}.png`),
+          fullPage: true,
+        });
+      }
     }
 
-    const account = page.getByRole('button', { name: /Открыть меню аккаунта/ });
-    await account.hover();
-    await expect(
-      page.locator('#app-overlay-host').locator('#account-menu-dropdown'),
-    ).toHaveCount(1);
-    await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
-    const accountMenu = page.locator('#account-menu-dropdown');
-    await expect(accountMenu).toBeVisible();
-    await expect(accountMenu).toHaveCSS('z-index', '20');
-    await expect(page.getByRole('link', { name: 'Кабинет' })).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: 'Выйти' })).toHaveCount(0);
-    await account.click();
-    await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
-    await page.getByRole('button', { name: 'Выйти' }).click();
-    await expect(page.getByRole('link', { name: 'Войти' })).toBeVisible();
-  } finally {
-    await context.close();
-  }
-});
-
-test('approved seller mobile navigation uses equal cells without horizontal overflow', async ({
-  browser,
-}) => {
-  const fixture = await createAuctionFixture();
-  const { context, page } = await authenticatedPage(browser, fixture.seller);
-
-  try {
-    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-
-    await expect(page.getByRole('button', { name: 'Поиск' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Создать' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Меню' })).toBeVisible();
-
-    const metrics = await page.evaluate(() => ({
-      documentWidth: document.documentElement.scrollWidth,
-      viewportWidth: window.innerWidth,
-    }));
-    expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
-
-    const navigationItems = [
-      page.getByRole('button', { name: 'Поиск' }),
-      page.getByRole('button', { name: 'Создать' }),
-      page.getByRole('button', { name: 'Меню' }),
-    ];
-    const boxes = await Promise.all(
-      navigationItems.map((item) => item.boundingBox()),
-    );
-    const visibleNavBoxes = boxes.filter(
-      (box): box is NonNullable<typeof box> => box !== null,
-    );
-    expect(visibleNavBoxes.length).toBe(3);
-    expect(
-      visibleNavBoxes.every((box) => box.x >= 0 && box.x + box.width <= 390),
-    ).toBe(true);
-  } finally {
-    await context.close();
+    const navigation = page.getByTestId(width >= 1024 ? 'desktop-navigation' : 'figma-floating-dock');
+    await navigation.getByRole('button', { name: 'Поиск', exact: true }).click();
+    await expectSearchOverlay(page, width);
+    if (screenshotWidths.has(width)) {
+      await page.screenshot({
+        path: resolve(w2EvidenceDir, `search-${width}.png`),
+        fullPage: true,
+      });
+    }
   }
 });
 
-test('mobile menu uses the shared overlay layer and viewport inset', async ({
-  browser,
-}) => {
-  const fixture = await createAuctionFixture();
-  const { context, page } = await authenticatedPage(browser, fixture.buyerA);
+async function expectFluidShell(page: Page, expectedContentWidth: number) {
+  const column = page.locator(
+    '[data-testid="page-content-column"]:not([inert] *)',
+  );
+  await expect
+    .poll(() =>
+      column.evaluate((node) => {
+        const style = getComputedStyle(node);
+        return (
+          node.getBoundingClientRect().width -
+          Number.parseFloat(style.paddingLeft) -
+          Number.parseFloat(style.paddingRight)
+        );
+      }),
+    )
+    .toBe(expectedContentWidth);
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    )
+    .toBe(true);
+}
 
-  try {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+async function expectSearchOverlay(page: Page, expectedViewportWidth: number) {
+  await expect(page.getByTestId('explore-header')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    expectedViewportWidth,
+  );
+  await expect(page.getByTestId('explore-query')).toBeEditable();
+}
 
-    await page.getByRole('button', { name: 'Меню' }).click();
-
-    const menu = page
-      .locator('#app-overlay-host')
-      .locator('#mobile-menu-panel');
-    await expect(menu).toBeVisible();
-    await expect(page.locator('#app-overlay-host')).toHaveCSS('z-index', '20');
-    const menuBox = await menu.boundingBox();
-    expect(menuBox).not.toBeNull();
-    expect(menuBox!.x).toBeGreaterThanOrEqual(8);
-    expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(382);
-
-    await menu.getByRole('link', { name: 'Аукционы' }).click();
-    await expect(page).toHaveURL(/\/works$/);
-    await expect(menu).toHaveCount(0);
-  } finally {
-    await context.close();
-  }
-});
-
-test('product author link opens the public seller profile', async ({
-  browser,
-}) => {
-  const fixture = await createAuctionFixture();
-  const { context, page } = await authenticatedPage(browser, fixture.buyerA);
-
-  try {
-    const detailResponse = await context.request.get(
-      `${e2eApiBaseURL}/api/products/${fixture.product.publicId}`,
-    );
-    const detail = await detailResponse.json();
-    const seller = detail.sellerProfile as { slug: string; fullName: string };
-    await page.goto(`/product/${fixture.product.publicId}`);
-    await page
-      .getByRole('link', {
-        name: new RegExp(`Открыть профиль автора ${seller.fullName}`),
-      })
-      .click();
-    await expect(page).toHaveURL(new RegExp(`/seller/${seller.slug}$`));
-    await expect(
-      page.getByRole('heading', { name: seller.fullName }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('link', { name: new RegExp(fixture.product.title) }),
-    ).toBeVisible();
-  } finally {
-    await context.close();
-  }
-});
+for (const locksAvailable of [true, false]) {
+  test(`public web analytics respects opt-in and navigation with Web Locks available=${locksAvailable}`, async ({
+    browser,
+    request,
+  }) => {
+    const context = await browser.newContext();
+    if (!locksAvailable)
+      await context.addInitScript(() => {
+        Object.defineProperty(navigator, 'locks', { value: undefined });
+      });
+    const requests: Array<{
+      events: Array<{ eventId: string; page: { page: string } }>;
+      attribution?: {
+        source?: string;
+        medium?: string;
+        campaign?: string;
+        content?: string;
+      };
+    }> = [];
+    const responses: Array<{ accepted: number; sessionId: string | null }> = [];
+    context.on('request', (request) => {
+      if (request.url().endsWith('/api/analytics/web-events'))
+        requests.push(request.postDataJSON());
+    });
+    context.on('response', async (response) => {
+      if (response.url().endsWith('/api/analytics/web-events'))
+        responses.push(await response.json());
+    });
+    try {
+      const first = await context.newPage();
+      if (process.env.EXPO_PUBLIC_ANALYTICS_WEB_ENABLED !== 'true') {
+        await first.goto('/', { waitUntil: 'networkidle' });
+        expect(requests).toHaveLength(0);
+        return;
+      }
+      const second = await context.newPage();
+      if (locksAvailable) {
+        await Promise.all([first.goto('/'), second.goto('/')]);
+      } else {
+        await first.goto('/');
+        await expect.poll(() => responses.length).toBe(1);
+        await second.goto('/');
+      }
+      await expect.poll(() => responses.length).toBe(2);
+      if (process.env.ANALYTICS_WEB_ENABLED !== 'true') {
+        expect(
+          responses.every(
+            (response) =>
+              response.accepted === 0 && response.sessionId === null,
+          ),
+        ).toBe(true);
+        expect(
+          (await context.cookies()).some(
+            (cookie) => cookie.name === 'bp_web_analytics',
+          ),
+        ).toBe(false);
+        return;
+      }
+      expect(responses[0]!.sessionId).toBeTruthy();
+      expect(responses[0]!.sessionId).toBe(responses[1]!.sessionId);
+      const cookie = (await context.cookies()).filter(
+        (item) => item.name === 'bp_web_analytics',
+      );
+      expect(cookie).toHaveLength(1);
+      expect(cookie[0]!.httpOnly).toBe(true);
+      expect(
+        await first.evaluate(() =>
+          document.cookie.includes('bp_web_analytics'),
+        ),
+      ).toBe(false);
+      await first.reload();
+      await expect.poll(() => responses.length).toBe(3);
+      await first
+        .getByRole('link', { name: 'Работы', exact: true })
+        .first()
+        .click();
+      await expect(first).toHaveURL(/\/explore\?section=works/);
+      await expect.poll(() => responses.length).toBe(4);
+      await first.evaluate(() => {
+        history.replaceState({}, '', `${location.pathname}?q=private#secret`);
+        dispatchEvent(new PopStateEvent('popstate'));
+      });
+      await first.goto('/login', { waitUntil: 'networkidle' });
+      await first.goto('/product/daliEstate1?preview=1', {
+        waitUntil: 'networkidle',
+      });
+      expect(requests).toHaveLength(4);
+      const authorsResponse = await request.get(
+        `${apiBaseURL}/api/authors?limit=1`,
+      );
+      const authors = (await authorsResponse.json()) as {
+        authors: Array<{ author: { slug: string } }>;
+      };
+      const slug = authors.authors[0]!.author.slug;
+      await first.goto(`/seller/${slug}`);
+      await expect.poll(() => responses.length).toBe(5);
+      await first.goto(
+        `/authors/${slug}?utm_source=review&utm_medium=share&utm_campaign=launch&utm_content=card&q=private`,
+        { waitUntil: 'networkidle' },
+      );
+      await expect
+        .poll(() => new URL(first.url()).pathname)
+        .toBe(`/seller/${slug}`);
+      await expect.poll(() => responses.length).toBe(6);
+      expect(requests).toHaveLength(6);
+      expect(requests.at(-1)?.attribution).toMatchObject({
+        source: 'review',
+        medium: 'share',
+        campaign: 'launch',
+        content: 'card',
+      });
+      for (const preview of ['1', '']) {
+        await first.goto(`/authors/${slug}?preview=${preview}`, {
+          waitUntil: 'networkidle',
+        });
+        await expect
+          .poll(() => new URL(first.url()).pathname)
+          .toBe(`/seller/${slug}`);
+        expect(new URL(first.url()).searchParams.has('preview')).toBe(true);
+        expect(requests).toHaveLength(6);
+      }
+      expect(
+        requests.slice(-2).map(({ events }) => events.map(({ page }) => page)),
+      ).toEqual([[{ page: 'author', slug }], [{ page: 'author', slug }]]);
+      expect(
+        new Set(
+          requests.flatMap((request) =>
+            request.events.map((event) => event.eventId),
+          ),
+        ).size,
+      ).toBe(6);
+      expect(
+        responses.every(
+          (response) => response.sessionId === responses[0]!.sessionId,
+        ),
+      ).toBe(true);
+      expect(JSON.stringify(requests)).not.toMatch(
+        /private|secret|clientCapturedAt|anonymousId/,
+      );
+    } finally {
+      await context.close();
+    }
+  });
+}

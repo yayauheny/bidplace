@@ -1,11 +1,22 @@
-import { productResponseSchema, type Product } from '@bidplace/contracts';
+import {
+  publicMediaAssetSelect,
+  mediaDeliverySelect,
+  publicVariant,
+  type PublicMediaAsset,
+} from '../core/media/media.mapper';
+import {
+  photoCropSchema,
+  productResponseSchema,
+  type Product,
+} from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
-export const productImageMetadataSelect = {
+export const productImageBlobSelect = {
+  mediaAsset: { select: publicMediaAssetSelect },
+  mediaAssetId: true,
   id: true,
-  position: true,
   mimeType: true,
   byteLength: true,
   checksum: true,
@@ -13,7 +24,215 @@ export const productImageMetadataSelect = {
   height: true,
 } satisfies Prisma.ProductImageSelect;
 
+export const productImageMetadataSelect = {
+  ...productImageBlobSelect,
+  position: true,
+} satisfies Prisma.ProductImageSelect;
+
+export const productRevisionImageSelect = {
+  slotId: true,
+  version: true,
+  crop: true,
+  position: true,
+  image: { select: productImageBlobSelect },
+} satisfies Prisma.ProductRevisionImageSelect;
+
+const selectedCategorySelect = {
+  id: true,
+  slug: true,
+  name: true,
+  description: true,
+  active: true,
+} satisfies Prisma.CategorySelect;
+
+export function selectedCategoryView(
+  category:
+    | {
+        id: string;
+        slug: string;
+        name: string;
+        description: string | null;
+        active: boolean;
+      }
+    | null
+    | undefined,
+) {
+  if (!category) return null;
+  const description = category.description?.trim();
+  return {
+    id: category.id,
+    slug: category.slug,
+    name: category.name,
+    description: description ? description : null,
+    active: category.active,
+  };
+}
+
+export const revisionSelectionSelect = {
+  category: { select: selectedCategorySelect },
+  terms: {
+    select: {
+      termId: true,
+      term: {
+        select: { id: true, role: true, slug: true, name: true, active: true },
+      },
+    },
+  },
+  proposals: {
+    orderBy: { createdAt: 'asc' as const },
+    select: {
+      id: true,
+      productRevisionId: true,
+      kind: true,
+      rawName: true,
+      normalizedName: true,
+      status: true,
+      selected: true,
+      mappedCategoryId: true,
+      mappedTermId: true,
+      rejectionReason: true,
+      reviewedAt: true,
+    },
+  },
+} satisfies Prisma.ProductRevisionSelect;
+
+export function selectionFromRevision(
+  revision:
+    | {
+        category?: {
+          id: string;
+          slug: string;
+          name: string;
+          description: string | null;
+          active: boolean;
+        } | null;
+        terms?: Array<{
+          termId: string;
+          term: {
+            id: string;
+            role: string;
+            slug: string;
+            name: string;
+            active: boolean;
+          };
+        }>;
+        proposals?: Array<{
+          id: string;
+          productRevisionId: string;
+          kind: string;
+          rawName: string;
+          normalizedName: string;
+          status: string;
+          selected: boolean;
+          mappedCategoryId: string | null;
+          mappedTermId: string | null;
+          rejectionReason: string | null;
+          reviewedAt: Date | null;
+        }>;
+      }
+    | null
+    | undefined,
+) {
+  const terms = revision?.terms ?? [];
+  const selectedTerms = (role: 'MATERIAL' | 'TECHNIQUE') =>
+    terms
+      .filter((item) => item.term.role === role)
+      .map((item) => ({
+        id: item.term.id,
+        role: item.term.role as 'MATERIAL' | 'TECHNIQUE',
+        slug: item.term.slug,
+        name: item.term.name,
+        active: item.term.active,
+      }));
+  return {
+    category: selectedCategoryView(revision?.category),
+    materialTermIds: terms
+      .filter((item) => item.term.role === 'MATERIAL')
+      .map((item) => item.termId),
+    techniqueTermIds: terms
+      .filter((item) => item.term.role === 'TECHNIQUE')
+      .map((item) => item.termId),
+    materialTerms: selectedTerms('MATERIAL'),
+    techniqueTerms: selectedTerms('TECHNIQUE'),
+    proposals: (revision?.proposals ?? []).map((proposal) => ({
+      id: proposal.id,
+      productRevisionId: proposal.productRevisionId,
+      kind: proposal.kind,
+      rawName: proposal.rawName,
+      normalizedName: proposal.normalizedName,
+      status: proposal.status,
+      selected: proposal.selected,
+      mappedCategoryId: proposal.mappedCategoryId,
+      mappedTermId: proposal.mappedTermId,
+      rejectionReason: proposal.rejectionReason,
+      reviewedAt: proposal.reviewedAt?.toISOString() ?? null,
+    })),
+  };
+}
+
+export const revisionTermLabelSelect = {
+  terms: {
+    select: {
+      termId: true,
+      term: { select: { role: true, name: true } },
+    },
+  },
+} satisfies Prisma.ProductRevisionSelect;
+
+export const productRevisionGallerySelect = {
+  title: true,
+  story: true,
+  categoryId: true,
+  dimensions: true,
+  year: true,
+  uniqueness: true,
+  images: {
+    orderBy: { position: 'asc' as const },
+    select: productRevisionImageSelect,
+  },
+  ...revisionTermLabelSelect,
+} satisfies Prisma.ProductRevisionSelect;
+
+export const productRevisionOwnerSelect = {
+  id: true,
+  version: true,
+  status: true,
+  updatedAt: true,
+  categoryId: true,
+  title: true,
+  story: true,
+  technique: true,
+  materials: true,
+  dimensions: true,
+  weight: true,
+  year: true,
+  condition: true,
+  uniqueness: true,
+  provenance: true,
+  city: true,
+  packaging: true,
+  deliveryInfo: true,
+  storyToken: true,
+  storyBlocks: {
+    orderBy: { position: 'asc' as const },
+    select: {
+      id: true,
+      position: true,
+      type: true,
+      text: true,
+      altText: true,
+      mediaAssetId: true,
+    },
+  },
+  ...revisionSelectionSelect,
+  images: {
+    orderBy: { position: 'asc' as const },
+    select: productRevisionImageSelect,
+  },
+} satisfies Prisma.ProductRevisionSelect;
+
 export const productSelect = {
+  mediaOperations: mediaDeliverySelect,
   id: true,
   publicId: true,
   sellerProfileId: true,
@@ -35,6 +254,8 @@ export const productSelect = {
   status: true,
   editingRevisionId: true,
   publishedRevisionId: true,
+  publishedRevision: { select: revisionTermLabelSelect },
+  editingRevision: { select: revisionTermLabelSelect },
   createdAt: true,
   updatedAt: true,
   images: {
@@ -47,7 +268,113 @@ export type ProductRecord = Prisma.ProductGetPayload<{
   select: typeof productSelect;
 }>;
 
+type GalleryImage = {
+  slotId?: string;
+  slotVersion?: number;
+  crop?: Prisma.JsonValue;
+  mediaAsset?: PublicMediaAsset | null;
+  mediaAssetId?: string | null;
+  id: string;
+  position: number;
+  mimeType: string;
+  byteLength: number;
+  checksum: string;
+  width: number | null;
+  height: number | null;
+};
+
+type RevisionGallery = {
+  images: Array<{
+    slotId?: string;
+    version?: number;
+    crop?: Prisma.JsonValue;
+    position: number;
+    image: Omit<GalleryImage, 'position'>;
+  }>;
+};
+
+export function toImageContracts(
+  images: readonly GalleryImage[],
+  visibility: 'private' | 'public' = 'private',
+  includeMediaAssetId = false,
+) {
+  return images.map((image) => {
+    const preview =
+      visibility === 'public'
+        ? publicVariant(image.mediaAsset, 'PREVIEW')
+        : null;
+    const full =
+      visibility === 'public' ? publicVariant(image.mediaAsset, 'FULL') : null;
+    if (visibility === 'public' && image.mediaAsset && !preview)
+      throw new Error('Published media is not delivered');
+    return {
+      id: image.id,
+      ...(image.slotId
+        ? {
+            slotId: image.slotId,
+            slotVersion: image.slotVersion,
+            crop: photoCropSchema.nullable().parse(image.crop),
+          }
+        : {}),
+      ...(includeMediaAssetId && image.mediaAssetId
+        ? { mediaAssetId: image.mediaAssetId }
+        : {}),
+      position: image.position,
+      url: `/api/images/${image.id}`,
+      mimeType: image.mimeType,
+      byteLength: image.byteLength,
+      checksum: image.checksum,
+      width: image.width ?? null,
+      height: image.height ?? null,
+      ...(preview ?? {}),
+      ...(full ? { full } : {}),
+    };
+  });
+}
+
+export function toRevisionGalleryImages(
+  revision: RevisionGallery | null | undefined,
+) {
+  if (!revision) return null;
+  return revision.images.map(({ position, image, slotId, version, crop }) => ({
+    ...image,
+    position,
+    ...(slotId ? { slotId, slotVersion: version, crop: crop ?? null } : {}),
+  }));
+}
+
+export function projectedCatalogLabel(
+  terms:
+    | ReadonlyArray<{ term: { role: string; name?: string } }>
+    | null
+    | undefined,
+  role: 'MATERIAL' | 'TECHNIQUE',
+) {
+  const names = (terms ?? [])
+    .flatMap((item) =>
+      item.term.role === role && item.term.name?.trim()
+        ? [item.term.name.trim()]
+        : [],
+    )
+    .sort((left, right) => left.localeCompare(right, 'ru-RU'));
+  return names.length > 0 ? names.join(', ') : null;
+}
+
+export function catalogContentTerms(product: {
+  publishedRevisionId?: string | null;
+  publishedRevision?: {
+    terms?: ReadonlyArray<{ term: { role: string; name?: string } }> | null;
+  } | null;
+  editingRevision?: {
+    terms?: ReadonlyArray<{ term: { role: string; name?: string } }> | null;
+  } | null;
+}) {
+  if (product.publishedRevisionId) return product.publishedRevision?.terms;
+  return product.editingRevision?.terms;
+}
+
 export function toContractProduct(product: ProductRecord): Product {
+  const terms = catalogContentTerms(product);
   return {
     id: product.id,
     publicId: product.publicId,
@@ -55,8 +382,8 @@ export function toContractProduct(product: ProductRecord): Product {
     categoryId: product.categoryId ?? null,
     title: product.title ?? null,
     story: product.story ?? null,
-    technique: product.technique ?? null,
-    materials: product.materials ?? null,
+    technique: projectedCatalogLabel(terms, 'TECHNIQUE'),
+    materials: projectedCatalogLabel(terms, 'MATERIAL'),
     dimensions: product.dimensions ?? null,
     weight: product.weight ?? null,
     year: product.year ?? null,
@@ -68,56 +395,65 @@ export function toContractProduct(product: ProductRecord): Product {
     deliveryInfo: product.deliveryInfo ?? null,
     publishedAt: product.publishedAt?.toISOString() ?? null,
     status: product.status,
-    images: product.images.map((image) => ({
-      id: image.id,
-      position: image.position,
-      url: `/api/images/${image.id}`,
-      mimeType: image.mimeType,
-      byteLength: image.byteLength,
-      checksum: image.checksum,
-      width: image.width ?? null,
-      height: image.height ?? null,
-    })),
+    images: toImageContracts(product.images),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };
 }
 
-export function toProductResponse(product: ProductRecord) {
-  return productResponseSchema.parse({ product: toContractProduct(product) });
+export type ProductRevisionOwnerRecord = Prisma.ProductRevisionGetPayload<{
+  select: typeof productRevisionOwnerSelect;
+}>;
+
+export function toOwnerContractProduct(
+  product: ProductRecord,
+  editingRevision: ProductRevisionOwnerRecord | null | undefined,
+): Product {
+  const base = toContractProduct(product);
+  if (!editingRevision) return base;
+  const editingImages = toRevisionGalleryImages(editingRevision);
+  return {
+    ...base,
+    categoryId: editingRevision.categoryId ?? null,
+    title: editingRevision.title ?? null,
+    story: editingRevision.story ?? null,
+    technique: projectedCatalogLabel(editingRevision.terms, 'TECHNIQUE'),
+    materials: projectedCatalogLabel(editingRevision.terms, 'MATERIAL'),
+    dimensions: editingRevision.dimensions ?? null,
+    weight: editingRevision.weight ?? null,
+    year: editingRevision.year ?? null,
+    condition: editingRevision.condition ?? null,
+    uniqueness: editingRevision.uniqueness ?? null,
+    provenance: editingRevision.provenance ?? null,
+    city: editingRevision.city ?? null,
+    packaging: editingRevision.packaging ?? null,
+    deliveryInfo: editingRevision.deliveryInfo ?? null,
+    images: editingImages
+      ? toImageContracts(editingImages, 'private', true)
+      : base.images,
+  };
 }
 
-export const publicCatalogProductSelect = {
+export function toProductResponse(product: ProductRecord) {
+  return productResponseSchema.parse({
+    product: toContractProduct(product),
+    ...(product.mediaOperations?.[0]
+      ? { publication: product.mediaOperations[0] }
+      : {}),
+  });
+}
+
+export const portfolioCatalogProductSelect = {
   id: true,
   publicId: true,
-  sellerProfileId: true,
-  categoryId: true,
-  title: true,
-  story: true,
-  technique: true,
-  materials: true,
-  dimensions: true,
-  weight: true,
-  year: true,
-  condition: true,
-  uniqueness: true,
-  provenance: true,
-  city: true,
-  packaging: true,
-  deliveryInfo: true,
-  creationIntro: true,
   publishedAt: true,
-  status: true,
-  editingRevisionId: true,
-  publishedRevisionId: true,
-  createdAt: true,
-  updatedAt: true,
   sellerProfile: { select: publicSellerProfileSelect },
-  images: {
-    orderBy: { position: 'asc' as const },
-    select: productImageMetadataSelect,
-  },
+  publishedRevision: { select: productRevisionGallerySelect },
 } satisfies Prisma.ProductSelect;
+
+export type PortfolioCatalogProductRecord = Prisma.ProductGetPayload<{
+  select: typeof portfolioCatalogProductSelect;
+}>;
 
 export function toCreationStepContract(step: {
   id: string;

@@ -16,7 +16,9 @@ docs/research/raw
 **/*.log
 .env
 .env.*
-!.env.example
+**/.env
+**/.env.*
+**/.dev.vars*
 apps/api/.email.jsonl
 apps/mobile/e2e/.email.jsonl
 backups

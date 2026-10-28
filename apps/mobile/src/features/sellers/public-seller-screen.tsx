@@ -1,211 +1,411 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useId, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { ScrollView, View } from 'react-native';
 
-import type {
-  PublicListingStatus,
-  PublicSellerWorksQuery,
-} from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell, FilterMenu } from '../../components/layout';
-import {
-  AppText,
-  AuctionCardGrid,
-  PageState,
-  SecondaryButton,
-} from '../../components/ui';
+import { useDesktopNavigation } from '../../components/layout/public-navigation';
+import { PageScrollView } from '../../components/layout/PageScrollView';
+import { AppShell, navigateBack } from '../../components/layout';
+import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
+import { AppDialog } from '../../components/ui/AppDialog';
+import { AppText, PageState, PrimaryButton } from '../../components/ui';
+import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
+import { categoryKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
-import { getAuthorWorkColumnCount } from './author-layout';
-import { CreatorHero } from './CreatorHero';
-import { CreatorStatusTabs } from './CreatorStatusTabs';
 
-const sortOptions: Array<{
-  value: PublicSellerWorksQuery['sort'];
-  label: string;
-}> = [
-  { value: 'activity', label: 'По активности' },
-  { value: 'newest', label: 'Сначала новые' },
-  { value: 'priceAsc', label: 'Сначала дешевле' },
-  { value: 'priceDesc', label: 'Сначала дороже' },
-];
+import { useAuthorWorks } from './use-author-works';
+import { authorWorksArePending } from './public-author-works-state';
+import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
+import { FilterSheet } from '../../components/figma/FilterSheet';
+import { useAppTheme } from '../../providers/theme-provider';
+import {
+  PaddedGrid,
+  gridColumnsFromWidth,
+} from '../../components/figma/PaddedGrid';
 
-function CreatorSort({
-  sort,
-  onChange,
-}: {
-  sort: PublicSellerWorksQuery['sort'];
-  onChange: (sort: PublicSellerWorksQuery['sort']) => void;
-}) {
-  return (
-    <View style={{ alignSelf: 'flex-start', position: 'relative' }}>
-      <FilterMenu
-        variant="sort"
-        label="Сортировка работ автора"
-        value={sort}
-        options={sortOptions}
-        onSelect={(next) => {
-          if (!next) return;
-          onChange(next as PublicSellerWorksQuery['sort']);
-        }}
-        dropdownAlign="right"
-        dropdownMinWidth={190}
-        dismissOnOutside
-      />
-    </View>
-  );
-}
+import { AuthorAbout } from './AuthorAbout';
+import { CreatorWorkCard } from './CreatorWorkCard';
+import { invalidateOwnerWorks } from './owner-work-query';
+import { CreatorHeader } from './CreatorHeader';
+
+import { type AuthorPublicTab } from './author-public-tabs';
+
+const categorySheetBottomSpace = 20; // Current Figma 4594:35522
 
 export function PublicSellerScreen({
   slug,
-  status,
-  sort = 'activity',
+  sort = 'newest',
+  category,
+  categoryIds,
 }: {
   slug: string;
-  status?: PublicListingStatus;
-  sort?: PublicSellerWorksQuery['sort'];
+  sort?: 'newest' | 'oldest';
+  category?: string;
+  categoryIds?: string[];
 }) {
+  const palette = useAppTheme();
+  const desktop = useDesktopNavigation();
   const api = useApiClient();
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const query = useInfiniteQuery({
-    queryKey: ['public-seller', slug, { status, sort }],
-    initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      api.sellers.getPublicDetail(slug, {
-        status,
-        sort,
-        page: pageParam,
-        limit: 20,
-      }),
-    getNextPageParam: (lastPage) => {
-      const loaded = lastPage.pagination.page * lastPage.pagination.limit;
-      return loaded < lastPage.pagination.total
-        ? lastPage.pagination.page + 1
-        : undefined;
-    },
-    enabled: Boolean(slug),
+  const queryClient = useQueryClient();
+  const capability = useSellerCapability();
+  const panelId = useId();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  const [tab, setTab] = useState<AuthorPublicTab>('works');
+  const [contentWidth, setContentWidth] = useState(0);
+  const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [pendingHide, setPendingHide] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const selectedCategories = categoryIds?.length
+    ? categoryIds
+    : category
+      ? [category]
+      : [];
+  const [draftCategories, setDraftCategories] =
+    useState<string[]>(selectedCategories);
+  const categories = useQuery({
+    queryKey: categoryKeys.all,
+    queryFn: ({ signal }) => api.categories.list({ signal }),
     retry: retryTransientPublicQuery,
   });
+  const query = useAuthorWorks(slug, sort, category, categoryIds);
   const firstPage = query.data?.pages[0];
-  const products = query.data?.pages.flatMap((page) => page.products) ?? [];
-  const sellerProfileId = firstPage?.sellerProfile.id;
+  const works = query.data?.pages.flatMap((page) => page.works) ?? [];
+  const author = firstPage?.author;
+  const sellerProfileId = author?.id;
+  const worksPending = authorWorksArePending(query);
+  const isOwner = Boolean(
+    author &&
+    capability.profile?.slug === author.slug &&
+    capability.status === 'APPROVED',
+  );
+  const hideWork = useMutation({
+    mutationFn: (id: string) => api.portfolio.hideWork(id),
+    onSuccess: () => {
+      setPendingHide(null);
+      void queryClient.invalidateQueries({ queryKey: ['public-author', slug] });
+      void queryClient.invalidateQueries({ queryKey: ['portfolio-home'] });
+      void invalidateOwnerWorks(queryClient);
+    },
+  });
 
   useTrackSellerView({
     sellerProfileId,
-    sellerSlug: firstPage?.sellerProfile.slug ?? slug,
+    sellerSlug: author?.slug ?? slug,
     enabled: Boolean(firstPage && sellerProfileId),
   });
 
-  let content: React.ReactNode;
-  if (query.isLoading) {
-    content = <PageState title="Загружаем работы автора…" loading />;
-  } else if (
+  const pageStatus = infrastructurePageFetchStatus(query);
+  if (
     query.isError &&
+    pageStatus !== 'loading' &&
     query.error instanceof ApiClientError &&
     query.error.kind === 'not_found'
   ) {
-    content = (
-      <PageState title="Автор не найден" message="Профиль больше недоступен." />
-    );
-  } else if (query.isError || !firstPage) {
-    content = (
-      <PageState
-        title="Не удалось загрузить работы автора"
-        retry={() => void query.refetch()}
-      />
-    );
-  } else if (products.length === 0) {
-    content = <PageState title="У автора пока нет опубликованных работ" />;
-  } else {
-    content = (
-      <View style={{ gap: designTokens.space.x5 }}>
-        <AuctionCardGrid
-          items={products}
-          columns={getAuthorWorkColumnCount(width)}
-        />
-        {query.hasNextPage ? (
-          <View style={{ alignItems: 'center', gap: designTokens.space.x2 }}>
-            <SecondaryButton
-              label="Загрузить ещё"
-              loading={query.isFetchingNextPage}
-              onPress={() => void query.fetchNextPage()}
+    return (
+      <AppShell contentLayout="bleed">
+        <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+          <PageScrollView
+            animated
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+          >
+            <PageState
+              title="Автор не найден"
+              message="Профиль больше недоступен."
             />
-            {query.isFetchNextPageError ? (
-              <AppText role="bodySmall" tone="danger">
-                Не удалось загрузить следующую страницу.
-              </AppText>
-            ) : null}
-          </View>
-        ) : null}
-      </View>
+          </PageScrollView>
+        </View>
+      </AppShell>
+    );
+  }
+  if (pageStatus !== 'ready' || !firstPage || !author) {
+    return (
+      <AppShell contentLayout="bleed">
+        <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+          <PageScrollView
+            animated
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+          >
+            <InfrastructurePageStatus
+              status={pageStatus === 'loading' ? 'loading' : 'error'}
+              onRetry={() => void query.refetch()}
+            />
+          </PageScrollView>
+        </View>
+      </AppShell>
     );
   }
 
+  const filters =
+    tab === 'works' ? (
+      categories.isError ? (
+        <PrimaryButton
+          label="Повторить загрузку категорий"
+          onPress={() => void categories.refetch()}
+        />
+      ) : (
+        <ScrollView
+          horizontal
+          testID="creator-filter-strip"
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: designTokens.space.x2,
+            paddingRight: designTokens.layout.gutter,
+          }}
+        >
+          <FigmaButton
+            label={
+              selectedCategories.length
+                ? `Категория ${selectedCategories.length}`
+                : 'Категория'
+            }
+            icon="arrow-right-01"
+            iconPosition="right"
+            variant="outline"
+            disabled={!categories.data}
+            onPress={() => {
+              setDraftCategories(selectedCategories);
+              setFilterOpen(true);
+            }}
+          />
+          {selectedCategories.map((id) => (
+            <FigmaChoiceChip
+              key={id}
+              label={
+                categories.data?.categories.find((item) => item.id === id)
+                  ?.name ?? 'Категория'
+              }
+              selected
+              removable
+              onPress={() => {
+                setDraftCategories(selectedCategories);
+                setFilterOpen(true);
+              }}
+              onRemove={() => {
+                const next = selectedCategories.filter(
+                  (current) => current !== id,
+                );
+                router.setParams({
+                  categories: next.length ? next.join(',') : undefined,
+                  category: undefined,
+                });
+              }}
+            />
+          ))}
+        </ScrollView>
+      )
+    ) : null;
+
   return (
-    <AppShell ambientVariant="creator">
-      <ScrollView
-        style={{ backgroundColor: 'transparent' }}
-        contentContainerStyle={{ paddingBottom: designTokens.space.x20 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={{ width: '100%', alignSelf: 'center' }}>
-          {firstPage ? (
-            <CreatorHero profile={firstPage.sellerProfile} slug={slug} />
-          ) : null}
+    <AppShell contentLayout="bleed">
+      <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+        <PageScrollView
+          animated
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          testID="creator-scroll"
+          contentContainerStyle={{
+            paddingBottom: 0,
+            overflow: 'visible',
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <CreatorHeader
+            toolbar={filters}
+            scrollY={scrollY}
+            profile={author}
+            onBack={() => navigateBack(router, { fallbackHref: '/authors' })}
+            tabs={[
+              {
+                value: 'works',
+                label: 'Работы',
+                count: query.isPlaceholderData
+                  ? undefined
+                  : firstPage.pagination.total,
+              },
+              { value: 'about', label: 'Об авторе' },
+            ]}
+            tab={tab}
+            onTabChange={(value) =>
+              setTab(value === 'about' ? 'about' : 'works')
+            }
+            panelId={panelId}
+            isOwner={isOwner}
+            onUnavailable={setUnavailable}
+          />
+
           <View
+            testID="author-content"
+            onLayout={(event) =>
+              setContentWidth(event.nativeEvent.layout.width)
+            }
+            nativeID={panelId}
+            role="tabpanel"
+            aria-labelledby={`${panelId}-${tab}`}
             style={{
-              gap: designTokens.space.x5,
-              paddingTop: designTokens.space.x6,
-              paddingHorizontal:
-                width >= designTokens.breakpoint.desktopShell
-                  ? designTokens.layout.creatorDesktopGutter
-                  : designTokens.layout.mobileGutter,
-              paddingBottom: designTokens.space.x12,
-              backgroundColor: designTokens.color.surfaceWarm,
+              backgroundColor: palette.canvas,
+              paddingTop:
+                tab === 'about'
+                  ? designTokens.space.authorHeaderBottom
+                  : desktop
+                    ? designTokens.space.x8
+                    : designTokens.space.sectionGap,
+              gap: designTokens.space.authorSectionGap,
             }}
           >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: designTokens.space.x4,
-              }}
-            >
-              <AppText
-                role="sectionTitle"
-                style={{
-                  fontFamily: 'Inter_700Bold',
-                  fontSize: 30,
-                  lineHeight: 34,
-                }}
-              >
-                Работы
-              </AppText>
-              <CreatorSort
-                sort={sort}
-                onChange={(nextSort) => router.setParams({ sort: nextSort })}
+            {tab === 'about' ? (
+              <AuthorAbout author={author} />
+            ) : worksPending ? (
+              <PageState title="Загружаем работы…" loading />
+            ) : query.isError ? (
+              <InfrastructureErrorState
+                presentation="inline"
+                onRetry={() => void query.refetch()}
               />
-            </View>
-            {firstPage ? (
-              <CreatorStatusTabs
-                status={status}
-                statusCounts={firstPage.statusCounts}
-                onChange={(nextStatus) =>
-                  router.setParams({ status: nextStatus, sort })
+            ) : works.length === 0 ? (
+              <PageState
+                title={
+                  selectedCategories.length
+                    ? 'В выбранных категориях пока нет работ'
+                    : 'У автора пока нет опубликованных работ'
                 }
               />
-            ) : null}
-            <View nativeID="creator-works-panel" role="tabpanel">
-              {content}
-            </View>
+            ) : (
+              <>
+                <View
+                  style={{
+                    width: '100%',
+                    gap: designTokens.space.x8,
+                  }}
+                >
+                  <PaddedGrid
+                    items={works}
+                    columns={gridColumnsFromWidth(contentWidth, {
+                      minCardWidth: designTokens.size.coverWidth,
+                      gap: designTokens.space.x3,
+                      max: 4,
+                    })}
+                    gap={designTokens.space.x3}
+                    keyExtractor={(item) => item.work.publicId}
+                    renderItem={(item) => (
+                      <CreatorWorkCard
+                        item={item}
+                        isOwner={isOwner}
+                        onUnavailable={setUnavailable}
+                        onHide={setPendingHide}
+                      />
+                    )}
+                  />
+                </View>
+                {query.hasNextPage ? (
+                  <PrimaryButton
+                    label="Смотреть все"
+                    width="full"
+                    loading={query.isFetchingNextPage}
+                    onPress={() => void query.fetchNextPage()}
+                  />
+                ) : null}
+              </>
+            )}
           </View>
-        </View>
-      </ScrollView>
+        </PageScrollView>
+        <FilterSheet
+          presentation="compact"
+          bottomSpace={categorySheetBottomSpace}
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          title="Категория"
+          primaryAction={{
+            label: 'Показать работы',
+            size: 'pickerAction',
+            onPress: () => {
+              router.setParams({
+                categories: draftCategories.length
+                  ? draftCategories.join(',')
+                  : undefined,
+                category: undefined,
+              });
+              setFilterOpen(false);
+            },
+          }}
+        >
+          {(categories.data?.categories ?? []).map((item) => (
+            <FilterOptionRow
+              key={item.id}
+              label={item.name}
+              mode="checkbox"
+              selected={draftCategories.includes(item.id)}
+              disabled={
+                !draftCategories.includes(item.id) &&
+                draftCategories.length >= 20
+              }
+              onPress={() =>
+                setDraftCategories((current) =>
+                  current.includes(item.id)
+                    ? current.filter((id) => id !== item.id)
+                    : [...current, item.id],
+                )
+              }
+            />
+          ))}
+        </FilterSheet>
+        <FilterSheet
+          presentation="compact"
+          open={Boolean(unavailable)}
+          title="Скоро появится"
+          onClose={() => setUnavailable(null)}
+          primaryAction={{
+            label: 'Понятно',
+            onPress: () => setUnavailable(null),
+          }}
+        >
+          <AppText role="bodySmall">
+            {unavailable} пока недоступны. Мы добавим эту возможность позже.
+          </AppText>
+        </FilterSheet>
+        <AppDialog
+          open={Boolean(pendingHide)}
+          title="Скрыть работу?"
+          description="Работа исчезнет из публичного профиля и останется доступна в кабинете."
+          onClose={() => setPendingHide(null)}
+        >
+          {hideWork.isError ? (
+            <AppText role="bodySmall" tone="danger">
+              Не удалось скрыть работу. Повторите попытку.
+            </AppText>
+          ) : null}
+          <PrimaryButton
+            label="Скрыть"
+            loading={hideWork.isPending}
+            disabled={!pendingHide || hideWork.isPending}
+            onPress={() => {
+              if (pendingHide) hideWork.mutate(pendingHide);
+            }}
+          />
+        </AppDialog>
+      </View>
     </AppShell>
   );
 }

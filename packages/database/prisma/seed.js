@@ -1,4 +1,4 @@
-const { Prisma, PrismaClient } = require('../dist');
+const { PrismaClient } = require('../dist');
 const { createHash } = require('node:crypto');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
@@ -18,14 +18,6 @@ if (!demoSeedAllowed) {
 }
 
 const prisma = new PrismaClient();
-const money = (value) => new Prisma.Decimal(value);
-const seedPhotoBuffer = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO0nM9sAAAAASUVORK5CYII=',
-  'base64',
-);
-const annaMorozovaPhotoBuffer = readFileSync(
-  join(__dirname, 'fixtures', 'seller-profile', 'anna-morozova.png'),
-);
 const sellerProfileFixturesDirectory = join(
   __dirname,
   'fixtures',
@@ -36,6 +28,50 @@ const productImageFixturesDirectory = join(
   'fixtures',
   'product-images',
 );
+
+// Public strings below are production-quality demo copy. Invented Figma gaps
+// stay in these comments only — never in user-facing biography/story/technique.
+const VEX_SHORT_DESCRIPTION =
+  'Ищу логику в абсурде.\nСтираю грань между реальностью и сном';
+const VEX_BIOGRAPHY =
+  'Илья Васильев — художник из Минска. В своих работах он исследует границу между знакомыми образами и ощущением сна, соединяя реалистичные детали с неожиданными формами и пространствами.';
+const VEX_PRACTICE =
+  'Работа начинается с наблюдения и небольших эскизов. Илья собирает визуальные фрагменты, экспериментирует с цветом и светом, а затем постепенно соединяет их в цельную композицию. Его интересует момент, когда привычный образ начинает восприниматься иначе.';
+const PIXELP_SHORT_DESCRIPTION =
+  'Соединяю классические мотивы с современным цветом.';
+const PIXELP_BIOGRAPHY =
+  'Павел работает с живописью и цифровыми образами, исследуя, как классическая визуальная культура меняется в современном контексте. Его работы строятся на сочетании узнаваемых мотивов, насыщенного цвета и сюрреалистичных деталей.';
+const PIXELP_PRACTICE =
+  'В основе работ — коллажный подход: Павел собирает референсы, делает серию эскизов и постепенно переносит композицию на большой формат. Особое внимание он уделяет цвету, фактуре поверхности и взаимодействию объектов внутри пространства.';
+const OPENING_CURATOR_NOTE =
+  'Тот случай, когда безупречная техника встречается с сильной идеей. Переосмысляет эстетику прошлого, создавая миры, где стирается грань реальности. Наша главная визуальная находка этой недели.';
+const DALI_STORY = `Работа построена вокруг образа, который одновременно кажется знакомым и невозможным. Плавные органические формы появляются на фоне почти классического пейзажа и постепенно превращают его в пространство сна.
+
+В процессе автор несколько раз менял композицию, добиваясь ощущения движения и глубины. Контраст холодных форм и насыщенного жёлтого света стал центральным элементом финальной версии.`;
+const MEMORY_STORY = `Серия началась с небольших пластических этюдов человеческого лица. Автор постепенно упрощал форму, оставляя только фрагменты, которые сильнее всего связаны с ощущением памяти и узнавания.
+
+Финальная работа соединяет несколько лиц в единую форму: одни черты проявляются сразу, другие становятся заметны только при изменении угла зрения.`;
+const COLOR_STORY = `Основой работы стала серия экспериментов с цветом. Автор собирал сочетания оттенков, наблюдая, как небольшое изменение насыщенности полностью меняет восприятие композиции.
+
+Финальная версия сохраняет часть этих тестов и превращает технический процесс настройки цвета в самостоятельный визуальный образ.`;
+const GRAPHIC_STORY = `Работа появилась из серии быстрых набросков. Автор сохранял случайные линии и несовершенства, постепенно объединяя их в более сложную композицию.
+
+В финале первоначальный рисунок остался заметен под новыми слоями и стал частью фактуры изображения.`;
+const ALICE_STORY = `Композиция собрана как оптический взгляд сквозь стекло: привычный свет распадается на кольца цвета и собирается снова уже в другом порядке.
+
+Автор несколько раз менял угол пересечения плоскостей, пока пространство не начало читаться одновременно как объект и как отражение.`;
+const BETWEEN_STORY = `Фигуры держат общую плоскость цвета и почти не показывают лиц. Жест руки становится главным событием кадра: касание, защита и поддержка происходят в одном движении.
+
+Работа собиралась из нескольких цветовых эскизов. Финальная версия оставляет только те сочетания, которые держат напряжение без лишних деталей.`;
+const RAINBOW_STORY = `Серия масок началась с повторяющегося профиля. Автор смещал цвет от лица к лицу, пока ритм не собрался в одну горизонталь.
+
+В финале одинаковые черты читаются по-разному из-за сдвигов красного, голубого и жёлтого. Повтор становится способом увидеть, как меняется узнавание.`;
+const BLOSSOM_STORY = `Ваза собрана из трёх объёмов, в каждом из которых спрятано лицо. Трещины глазури остаются видимыми: это не дефект, а след обжига и часть поверхности.
+
+Автор искал баланс между предметом и скульптурой, пока сосуд не начал читаться как несколько фигур, сложенных в один объект.`;
+const SAPPHIRE_STORY = `Камень написан как источник света, а не как ювелирный объект. Автор собирал жёлтые плоскости до тех пор, пока объём не начал светиться изнутри.
+
+Финальная композиция держит камень в центре и оставляет вокруг него только те цветовые поля, которые усиливают этот внутренний свет.`;
 
 function requiredEnvironment(name) {
   const value = process.env[name];
@@ -60,6 +96,17 @@ function readSeedProductImage(fileName) {
   };
 }
 
+function readSeedFixtureImage(relativePath) {
+  const data = readFileSync(join(__dirname, 'fixtures', relativePath));
+
+  return {
+    byteLength: data.byteLength,
+    checksum: createHash('sha256').update(data).digest('hex'),
+    data,
+    mimeType: 'image/png',
+  };
+}
+
 function readSeedSellerProfileImage(fileName) {
   const data = readFileSync(join(sellerProfileFixturesDirectory, fileName));
 
@@ -71,7 +118,7 @@ function readSeedSellerProfileImage(fileName) {
   };
 }
 
-async function createProductWithImages({
+async function createProductWithCover({
   publicId,
   sellerProfileId,
   categoryId,
@@ -81,41 +128,21 @@ async function createProductWithImages({
   materials,
   dimensions,
   year,
-  condition,
   uniqueness,
-  provenance,
   city,
-  packaging,
-  deliveryInfo,
   publishedAt,
   imageFileName,
-  creationSteps = [
-    [
-      'Замысел',
-      'Работа начинается с наблюдения за формой и светом.',
-      'painted-planter.png',
-    ],
-    [
-      'Материал',
-      'Автор выбирает материал и собирает первые пропорции вручную.',
-      'ceramic-brush-holder.png',
-    ],
-    [
-      'Ручная работа',
-      'Поверхность создаётся небольшими последовательными жестами.',
-      'handmade-mug.png',
-    ],
-    [
-      'Финальный предмет',
-      'После обработки предмет готовится к передаче новому владельцу.',
-      'handmade-vase.png',
-    ],
-  ],
+  detailFileName,
   status = 'APPROVED',
 }) {
-  const image = readSeedProductImage(imageFileName);
+  const covers = [
+    { position: 0, ...readSeedProductImage(imageFileName) },
+    ...(detailFileName
+      ? [{ position: 1, ...readSeedProductImage(detailFileName) }]
+      : []),
+  ];
 
-  return prisma.product.create({
+  const product = await prisma.product.create({
     data: {
       publicId,
       sellerProfileId,
@@ -126,42 +153,183 @@ async function createProductWithImages({
       materials,
       dimensions,
       year,
-      condition,
       uniqueness,
-      provenance,
       city,
-      packaging,
-      deliveryInfo,
-      creationIntro:
-        'История предмета — от первого замысла до готовой работы в мастерской автора.',
       publishedAt,
       status,
       images: {
-        create: [
-          {
-            position: 0,
-            ...image,
-          },
-        ],
-      },
-      creationSteps: {
-        create: creationSteps.map(([title, body, fileName], position) => {
-          const stepImage = readSeedProductImage(fileName);
-          return {
-            position,
-            title,
-            body,
-            mimeType: stepImage.mimeType,
-            byteLength: stepImage.byteLength,
-            data: stepImage.data,
-            checksum: stepImage.checksum,
-            width: stepImage.width,
-            height: stepImage.height,
-          };
-        }),
+        create: covers,
       },
     },
   });
+
+  await attachProductRevision(product.id, status === 'APPROVED');
+  return product;
+}
+
+async function attachProductRevision(productId, published) {
+  const product = await prisma.product.findUniqueOrThrow({
+    where: { id: productId },
+    include: { images: { orderBy: { position: 'asc' } } },
+  });
+  const revision = await prisma.productRevision.create({
+    data: {
+      productId: product.id,
+      version: 1,
+      status: published ? 'APPROVED' : 'PENDING_REVIEW',
+      categoryId: product.categoryId,
+      title: product.title,
+      story: product.story,
+      technique: product.technique,
+      materials: product.materials,
+      dimensions: product.dimensions,
+      weight: product.weight,
+      year: product.year,
+      uniqueness: product.uniqueness,
+      provenance: product.provenance,
+      city: product.city,
+      creationIntro: product.creationIntro,
+      images: {
+        create: product.images.map((image, position) => ({
+          imageId: image.id,
+          position,
+        })),
+      },
+    },
+  });
+
+  await prisma.product.update({
+    where: { id: product.id },
+    data: {
+      editingRevisionId: revision.id,
+      publishedRevisionId: published ? revision.id : null,
+    },
+  });
+}
+
+async function publishSellerProfile(profile, { achievements = [] } = {}) {
+  const revision = await prisma.sellerProfileRevision.create({
+    data: {
+      sellerProfileId: profile.id,
+      version: 1,
+      status: 'APPROVED',
+      slug: profile.slug,
+      discipline: profile.discipline,
+      fullName: profile.fullName,
+      country: profile.country,
+      city: profile.city,
+      practice: profile.practice,
+      biography: profile.biography,
+      socialLink: profile.socialLink,
+      telegramUrl: profile.telegramUrl,
+      instagramUrl: profile.instagramUrl,
+      websiteUrl: profile.websiteUrl,
+      shortDescription: profile.shortDescription,
+      profilePhotoMimeType: profile.profilePhotoMimeType,
+      profilePhotoByteLength: profile.profilePhotoByteLength,
+      profilePhotoChecksum: profile.profilePhotoChecksum,
+      profilePhotoData: profile.profilePhotoData,
+      submittedAt: profile.createdAt,
+      reviewedAt: profile.createdAt,
+      achievements:
+        achievements.length > 0
+          ? {
+              create: achievements.map((achievement, position) => {
+                const image = achievement.imageRelativePath
+                  ? readSeedFixtureImage(achievement.imageRelativePath)
+                  : null;
+                return {
+                  position,
+                  occurredAt: achievement.occurredAt,
+                  body: achievement.body,
+                  ...(image
+                    ? {
+                        mimeType: image.mimeType,
+                        byteLength: image.byteLength,
+                        checksum: image.checksum,
+                        data: image.data,
+                      }
+                    : {}),
+                };
+              }),
+            }
+          : undefined,
+    },
+  });
+
+  const imagedAchievements =
+    await prisma.sellerProfileRevisionAchievement.findMany({
+      where: { revisionId: revision.id, data: { not: null } },
+      select: { id: true },
+    });
+  await Promise.all(
+    imagedAchievements.map((achievement) =>
+      prisma.sellerProfileRevisionAchievement.update({
+        where: { id: achievement.id },
+        data: { objectKey: `seller-achievement:${achievement.id}` },
+      }),
+    ),
+  );
+
+  await prisma.sellerProfile.update({
+    where: { id: profile.id },
+    data: {
+      editingRevisionId: revision.id,
+      publishedRevisionId: revision.id,
+    },
+  });
+}
+
+async function createApprovedAuthor({
+  email,
+  passwordHash,
+  slug,
+  fullName,
+  discipline,
+  city,
+  practice,
+  biography,
+  shortDescription,
+  photoFileName,
+  createdAt,
+  handle,
+}) {
+  const photo = readSeedSellerProfileImage(photoFileName);
+  const user = await prisma.user.create({
+    data: {
+      email,
+      passwordHash,
+      phone: null,
+      displayName: fullName,
+      emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
+    },
+  });
+  const profile = await prisma.sellerProfile.create({
+    data: {
+      userId: user.id,
+      slug,
+      sellerType: 'creator',
+      discipline,
+      fullName,
+      country: 'BY',
+      city,
+      practice,
+      biography,
+      socialLink: `https://example.com/${slug}`,
+      telegramUrl: `https://t.me/${handle.replace(/^@/, '')}`,
+      shortDescription,
+      profilePhotoMimeType: photo.mimeType,
+      profilePhotoByteLength: photo.byteLength,
+      profilePhotoChecksum: photo.checksum,
+      profilePhotoData: photo.data,
+      handoffContactType: 'TELEGRAM',
+      handoffContactValue: handle,
+      handoffInitiator: 'BUYER_CONTACTS_SELLER',
+      status: 'APPROVED',
+      createdAt,
+    },
+  });
+  return { user, profile };
 }
 
 async function main() {
@@ -177,6 +345,16 @@ async function main() {
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.curatorSelection.deleteMany();
+  await prisma.sellerProfile.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.product.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.productRevision.deleteMany();
+  await prisma.sellerProfileRevision.deleteMany();
+  await prisma.productCreationStep.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.product.deleteMany();
   await prisma.sellerProfile.deleteMany();
@@ -186,12 +364,17 @@ async function main() {
   const category = await prisma.category.create({
     data: {
       slug: 'art-object',
-      name: 'Авторская керамика',
-      description: 'Предметы, созданные и предложенные авторами напрямую.',
+      name: 'Авторские работы',
+      normalizedName: 'Авторские работы'
+        .normalize('NFKC')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLocaleLowerCase('ru'),
+      description: 'Работы, созданные и предложенные авторами напрямую.',
     },
   });
 
-  const [admin, seller, buyer, pendingSeller] = await Promise.all([
+  const [admin, buyer, pendingSeller] = await Promise.all([
     prisma.user.create({
       data: {
         email: adminEmail,
@@ -199,15 +382,6 @@ async function main() {
         phone: '+375290000001',
         displayName: 'Local Admin',
         role: 'admin',
-        emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'seller@bidplace.test',
-        passwordHash: adminPasswordHash,
-        phone: null,
-        displayName: 'Анна Морозова',
         emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
       },
     }),
@@ -231,33 +405,7 @@ async function main() {
     }),
   ]);
 
-  const sellerProfile = await prisma.sellerProfile.create({
-    data: {
-      userId: seller.id,
-      slug: 'anna-morozova',
-      sellerType: 'creator',
-      discipline: 'Керамика',
-      fullName: 'Анна Морозова',
-      country: 'BY',
-      socialLink: 'https://example.com/anna-morozova',
-      telegramUrl: 'https://t.me/anna_morozova',
-      instagramUrl: 'https://instagram.com/anna_morozova',
-      websiteUrl: 'https://anna-morozova.example.com',
-      shortDescription:
-        'Керамистка из Минска. Создаёт небольшие предметы для дома вручную.',
-      profilePhotoMimeType: 'image/png',
-      profilePhotoByteLength: annaMorozovaPhotoBuffer.byteLength,
-      profilePhotoChecksum: createHash('sha256')
-        .update(annaMorozovaPhotoBuffer)
-        .digest('hex'),
-      profilePhotoData: annaMorozovaPhotoBuffer,
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: '@anna_morozova',
-      handoffInitiator: 'BUYER_CONTACTS_SELLER',
-      status: 'APPROVED',
-    },
-  });
-
+  const pendingPhoto = readSeedSellerProfileImage('pending-seller.png');
   const pendingSellerProfile = await prisma.sellerProfile.create({
     data: {
       userId: pendingSeller.id,
@@ -268,12 +416,10 @@ async function main() {
       country: 'BY',
       socialLink: 'https://example.com/pending-seller',
       shortDescription: 'Профиль продавца для проверки очереди модерации.',
-      profilePhotoMimeType: 'image/png',
-      profilePhotoByteLength: seedPhotoBuffer.byteLength,
-      profilePhotoChecksum: createHash('sha256')
-        .update(seedPhotoBuffer)
-        .digest('hex'),
-      profilePhotoData: seedPhotoBuffer,
+      profilePhotoMimeType: pendingPhoto.mimeType,
+      profilePhotoByteLength: pendingPhoto.byteLength,
+      profilePhotoChecksum: pendingPhoto.checksum,
+      profilePhotoData: pendingPhoto.data,
       handoffContactType: 'TELEGRAM',
       handoffContactValue: '@pending_seller',
       handoffInitiator: 'BUYER_CONTACTS_SELLER',
@@ -281,559 +427,294 @@ async function main() {
     },
   });
 
-  const additionalDemoCreators = [
-    {
-      email: 'irina-levchenko@bidplace.test',
-      slug: 'irina-levchenko',
-      fullName: 'Ирина Левченко',
-      discipline: 'Керамика',
-      description: 'Создаёт тихие предметы из глины для повседневных ритуалов.',
-      handle: '@irina_levchenko',
-      photoFileName: 'irina-levchenko.png',
-    },
-    {
-      email: 'pavel-sokolov@bidplace.test',
-      slug: 'pavel-sokolov',
-      fullName: 'Павел Соколов',
-      discipline: 'Предметный дизайн',
-      description: 'Исследует честные материалы и простые формы для дома.',
-      handle: '@pavel_sokolov',
-      photoFileName: 'pavel-sokolov.png',
-    },
-    {
-      email: 'olga-vlasova@bidplace.test',
-      slug: 'olga-vlasova',
-      fullName: 'Ольга Власова',
-      discipline: 'Текстиль',
-      description:
-        'Собирает фактуры и цвет в небольшие авторские текстильные серии.',
-      handle: '@olga_vlasova',
-      photoFileName: 'olga-vlasova.png',
-    },
-    {
-      email: 'mark-volkov@bidplace.test',
-      slug: 'mark-volkov',
-      fullName: 'Марк Волков',
-      discipline: 'Графика',
-      description: 'Работает с линией, бумагой и ручной печатью.',
-      handle: '@mark_volkov',
-      photoFileName: 'mark-volkov.png',
-    },
-    {
-      email: 'lena-kravets@bidplace.test',
-      slug: 'lena-kravets',
-      fullName: 'Лена Кравец',
-      discipline: 'Авторские объекты',
-      description: 'Создаёт небольшие объекты на стыке скульптуры и быта.',
-      handle: '@lena_kravets',
-      photoFileName: 'lena-kravets.png',
-    },
-    {
-      email: 'nikita-orlov@bidplace.test',
-      slug: 'nikita-orlov',
-      fullName: 'Никита Орлов',
-      discipline: 'Керамика',
-      description: 'Сочетает ручную лепку с графичными глазурными акцентами.',
-      handle: '@nikita_orlov',
-      photoFileName: 'nikita-orlov.png',
-    },
-    {
-      email: 'svetlana-gromova@bidplace.test',
-      slug: 'svetlana-gromova',
-      fullName: 'Светлана Громова',
-      discipline: 'Смешанная техника',
-      description: 'Соединяет найденные материалы, цвет и ручную сборку.',
-      handle: '@svetlana_gromova',
-      photoFileName: 'svetlana-gromova.png',
-    },
-  ];
+  // createdAt DESC for Home.newAuthors: vex, quantumparadox, havoc, bala_klava, then pixelp.
+  const vex = await createApprovedAuthor({
+    email: 'seller@bidplace.test',
+    passwordHash: adminPasswordHash,
+    slug: 'vex',
+    fullName: 'Илья Васильев',
+    discipline: 'Художник',
+    city: 'Минск',
+    practice: VEX_PRACTICE,
+    biography: VEX_BIOGRAPHY,
+    shortDescription: VEX_SHORT_DESCRIPTION,
+    photoFileName: 'vex.png',
+    createdAt: new Date('2026-09-04T12:00:00.000Z'),
+    handle: '@vex',
+  });
+  const quantumparadox = await createApprovedAuthor({
+    email: 'quantumparadox@bidplace.test',
+    passwordHash: adminPasswordHash,
+    slug: 'quantumparadox',
+    fullName: 'Анастасия Винова',
+    discipline: 'Живопись',
+    city: 'Гродно',
+    practice:
+      'Процесс строится вокруг серии цветовых проб и эскизов. Анастасия постепенно уточняет композицию, оставляя пространство для случайных сочетаний оттенков и фактур.',
+    biography:
+      'Анастасия исследует цвет, материал и оптические эффекты. В её работах строгая композиция соединяется с яркими визуальными акцентами и ощущением движения.',
+    shortDescription: 'Собираю цвет в плотные светящиеся плоскости.',
+    photoFileName: 'quantumparadox.png',
+    createdAt: new Date('2026-09-03T12:00:00.000Z'),
+    handle: '@quantumparadox',
+  });
+  const havoc = await createApprovedAuthor({
+    email: 'havoc@bidplace.test',
+    passwordHash: adminPasswordHash,
+    slug: 'havoc',
+    fullName: 'Константин Константинович',
+    discipline: 'Цифровая графика',
+    city: 'Брест',
+    practice:
+      'Он начинает с цифровых экспериментов, искажений и цветовых тестов, после чего отбирает наиболее выразительные фрагменты и собирает из них финальную композицию.',
+    biography:
+      'Константин работает с цифровой графикой и смешанными медиа. Его интересуют визуальный шум, ошибки изображения и эстетика технологических процессов.',
+    shortDescription: 'Собираю изображение из сбоев цвета и света.',
+    photoFileName: 'havoc.png',
+    createdAt: new Date('2026-09-02T12:00:00.000Z'),
+    handle: '@havoc',
+  });
+  const balaKlava = await createApprovedAuthor({
+    email: 'bala_klava@bidplace.test',
+    passwordHash: adminPasswordHash,
+    slug: 'bala_klava',
+    fullName: 'Клавдия Агаповна',
+    discipline: 'Скульптура',
+    city: 'Витебск',
+    practice:
+      'Работы развиваются от небольших пластических набросков к полноразмерным объектам. В процессе Клавдия экспериментирует с формой, поверхностью и светом, сохраняя следы ручной работы как часть произведения.',
+    biography:
+      'Клавдия работает на границе скульптуры и визуального искусства. Её интересуют память, телесность и то, как знакомые человеческие формы меняются под воздействием времени и восприятия.',
+    shortDescription: 'Собираю форму из памяти и касания.',
+    photoFileName: 'bala_klava.png',
+    createdAt: new Date('2026-09-01T12:00:00.000Z'),
+    handle: '@bala_klava',
+  });
+  const pixelp = await createApprovedAuthor({
+    email: 'pixelp@bidplace.test',
+    passwordHash: adminPasswordHash,
+    slug: 'pixelp',
+    fullName: 'Павел Пиксель',
+    discipline: 'Художник',
+    city: 'Минск',
+    practice: PIXELP_PRACTICE,
+    biography: PIXELP_BIOGRAPHY,
+    shortDescription: PIXELP_SHORT_DESCRIPTION,
+    photoFileName: 'pixelp.png',
+    createdAt: new Date('2026-08-01T12:00:00.000Z'),
+    handle: '@pixelp',
+  });
 
-  const additionalDemoUsers = await Promise.all(
-    additionalDemoCreators.map((creator) =>
-      prisma.user.create({
-        data: {
-          email: creator.email,
-          passwordHash: adminPasswordHash,
-          phone: null,
-          displayName: creator.fullName,
-          emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
-        },
-      }),
-    ),
-  );
-
-  const additionalDemoProfiles = await Promise.all(
-    additionalDemoCreators.map((creator, index) => {
-      const photo = readSeedSellerProfileImage(creator.photoFileName);
-      const website = `https://${creator.slug}.example.com`;
-
-      return prisma.sellerProfile.create({
-        data: {
-          userId: additionalDemoUsers[index].id,
-          slug: creator.slug,
-          sellerType: 'creator',
-          discipline: creator.discipline,
-          fullName: creator.fullName,
-          country: 'BY',
-          socialLink: website,
-          telegramUrl: `https://t.me/${creator.handle.slice(1)}`,
-          websiteUrl: website,
-          shortDescription: creator.description,
-          profilePhotoMimeType: photo.mimeType,
-          profilePhotoByteLength: photo.byteLength,
-          profilePhotoChecksum: photo.checksum,
-          profilePhotoData: photo.data,
-          handoffContactType: 'TELEGRAM',
-          handoffContactValue: creator.handle,
-          handoffInitiator: 'BUYER_CONTACTS_SELLER',
-          status: 'APPROVED',
-        },
-      });
-    }),
-  );
-
-  const now = new Date();
-  const [scheduledProduct, liveProduct, endedProduct, vaseProduct] =
-    await Promise.all([
-      createProductWithImages({
-        publicId: 'seedSched01',
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: 'Кашпо «Тёплый ритм»',
-        story:
-          'Небольшое кашпо, расписанное вручную по мотивам летнего света и движения листьев.',
-        technique: 'Ручная роспись акрилом по керамике',
-        materials: 'Керамика, акрил, защитный лак',
-        dimensions: '17 × 17 × 17 см',
-        year: 2025,
-        condition: 'Новое',
-        uniqueness: 'Единственный экземпляр',
-        provenance:
-          'Создано Анной Морозовой в её минской мастерской и впервые предлагается на bidplace.',
-        city: 'Минск',
-        packaging:
-          'Предмет фиксируется в коробке без контакта с внешними стенками и защищается мягким наполнителем.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
-        publishedAt: now,
-        imageFileName: 'painted-planter.png',
-      }),
-      createProductWithImages({
-        publicId: 'seedLive002',
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: 'Стакан для кистей «Голубая комета»',
-        story:
-          'Фактурный стакан для кистей с отверстиями разного размера: предмет для мастерской, который меняется вместе с набором инструментов.',
-        technique: 'Лепка вручную, глазурование',
-        materials: 'Керамика, цветная глазурь',
-        dimensions: '14 × 14 × 12 см',
-        year: 2026,
-        condition: 'Новое',
-        uniqueness: 'Единственный экземпляр',
-        provenance:
-          'Слеплен и покрыт глазурью Анной Морозовой. Продаётся напрямую из мастерской автора.',
-        city: 'Минск',
-        packaging:
-          'Предмет фиксируется в коробке без контакта с внешними стенками и защищается мягким наполнителем.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
-        publishedAt: now,
-        imageFileName: 'ceramic-brush-holder.png',
-      }),
-      createProductWithImages({
-        publicId: 'seedEnded03',
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: 'Чашка «Ты мне»',
-        story:
-          'Чашка с неровным силуэтом и цветными знаками, сделанная для медленного утреннего кофе.',
-        technique: 'Лепка вручную, цветная глазурь',
-        materials: 'Шамотная глина, глазурь',
-        dimensions: '12 × 9 × 10 см',
-        year: 2025,
-        condition: 'Новое',
-        uniqueness: 'Единственный экземпляр',
-        provenance:
-          'Создана Анной Морозовой в Минске; это первая публичная продажа предмета.',
-        city: 'Минск',
-        packaging:
-          'Чашка упаковывается в бумагу и амортизирующий материал, затем фиксируется в жёсткой коробке.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
-        publishedAt: now,
-        imageFileName: 'handmade-mug.png',
-      }),
-      createProductWithImages({
-        publicId: 'seedVase004',
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: 'Ваза «Северный сад»',
-        story:
-          'Небольшая ваза с мягкой неровностью формы и светлой поверхностью, которая хорошо ловит утренний свет.',
-        technique: 'Ручная лепка, матовая глазурь',
-        materials: 'Шамотная глина, матовая глазурь',
-        dimensions: '16 × 16 × 22 см',
-        year: 2026,
-        condition: 'Новое',
-        uniqueness: 'Единственный экземпляр',
-        provenance:
-          'Создана Анной Морозовой в минской мастерской и впервые предлагается на bidplace.',
-        city: 'Минск',
-        packaging:
-          'Ваза оборачивается мягким защитным материалом и фиксируется внутри усиленной коробки.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
-        publishedAt: now,
-        imageFileName: 'handmade-vase.png',
-      }),
-    ]);
-
-  const additionalAnnaProducts = await Promise.all(
-    [
+  await publishSellerProfile(vex.profile, {
+    achievements: [
       {
-        publicId: 'seedAnna005',
-        title: 'Скульптура «Тихая форма»',
-        story:
-          'Небольшой авторский объект с мягким силуэтом для полки или рабочего стола.',
-        technique: 'Ручная лепка, матовая поверхность',
-        materials: 'Шамотная глина, минеральный пигмент',
-        dimensions: '18 × 12 × 24 см',
-        year: 2026,
-        uniqueness: 'Единственный экземпляр',
-        price: '1900.00',
-        listingStatus: 'LIVE',
-        imageFileName: 'wooden-sculpture.png',
+        occurredAt: new Date('2026-04-01T00:00:00.000Z'),
+        body: '«Алиса в Зазеркалье»\nРабота представлена на групповой выставке, посвящённой современным интерпретациям сюрреализма и теме изменённого восприятия пространства.',
+        // Same-work detail crop of unused Figma search-grid fill, not the cover.
+        // Figma has no isolated exhibition-install photograph for this event.
+        imageRelativePath: 'product-images/alice-glass-detail.png',
       },
       {
-        publicId: 'seedAnna006',
-        title: 'Чаша «Медленный круг»',
-        story:
-          'Невысокая чаша с живой кромкой для спокойных домашних ритуалов.',
-        technique: 'Ручная лепка, прозрачная глазурь',
-        materials: 'Глина, прозрачная глазурь',
-        dimensions: '20 × 20 × 8 см',
-        year: 2026,
-        uniqueness: 'Единственный экземпляр',
-        price: '780.00',
-        listingStatus: 'SCHEDULED',
-        imageFileName: 'ceramic-bowl.png',
+        occurredAt: new Date('2025-09-01T00:00:00.000Z'),
+        body: '«Между сном и формой»\nПерсональная серия работ была показана в Минске. В экспозицию вошли живописные и графические произведения последних двух лет.',
+        // Same-work 3:4 crop of the Figma search-grid fill, not the cover.
+        // No separate exhibition photograph exists in the Figma file.
+        imageRelativePath: 'product-images/between-form-detail.png',
       },
-      {
-        publicId: 'seedAnna007',
-        title: 'Текстильная панель «След дождя»',
-        story:
-          'Фактурная работа из ткани и нитей, собранная вручную в одном экземпляре.',
-        technique: 'Ручная вышивка, аппликация',
-        materials: 'Лён, хлопок, нить',
-        dimensions: '42 × 32 см',
-        year: 2025,
-        uniqueness: 'Единственный экземпляр',
-        price: '1480.00',
-        listingStatus: 'ENDED',
-        imageFileName: 'textile-composition.png',
-      },
-      {
-        publicId: 'seedAnna008',
-        title: 'Графический лист «Линия света»',
-        story:
-          'Небольшой лист ручной печати с точной линией и живой фактурой бумаги.',
-        technique: 'Линогравюра, ручная печать',
-        materials: 'Бумага, типографская краска',
-        dimensions: '30 × 30 см',
-        year: 2026,
-        uniqueness: 'Ограниченный тираж',
-        price: '510.00',
-        listingStatus: 'SCHEDULED',
-        imageFileName: 'linocut-print.png',
-      },
-    ].map((fixture) =>
-      createProductWithImages({
-        publicId: fixture.publicId,
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: fixture.title,
-        story: fixture.story,
-        technique: fixture.technique,
-        materials: fixture.materials,
-        dimensions: fixture.dimensions,
-        year: fixture.year,
-        condition: 'Новое',
-        uniqueness: fixture.uniqueness,
-        provenance:
-          'Создано Анной Морозовой в минской мастерской и впервые предлагается на bidplace.',
-        city: 'Минск',
-        packaging:
-          'Работа упаковывается автором с учётом материала и защищается от движения внутри коробки.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
-        publishedAt: now,
-        imageFileName: fixture.imageFileName,
-      }).then((product) => ({ product, fixture })),
-    ),
-  );
-
-  const additionalDemoProducts = await Promise.all(
-    [
-      {
-        publicId: 'seedIrina05',
-        profileIndex: 0,
-        title: 'Чаша «Тёплая линия»',
-        story: 'Небольшая чаша с мягким силуэтом для ежедневных ритуалов.',
-        technique: 'Ручная лепка, прозрачная глазурь',
-        materials: 'Глина, глазурь',
-        uniqueness: 'Единственный экземпляр',
-        price: '640.00',
-        listingStatus: 'SCHEDULED',
-        imageFileName: 'ceramic-bowl.png',
-      },
-      {
-        publicId: 'seedPavel06',
-        profileIndex: 1,
-        title: 'Лампа «Тихий круг»',
-        story:
-          'Предметный светильник из дерева и матового стекла для спокойного интерьера.',
-        technique: 'Ручная сборка, шлифовка',
-        materials: 'Дерево, стекло',
-        uniqueness: 'Малая серия',
-        price: '920.00',
-        listingStatus: 'LIVE',
-        imageFileName: 'studio-lamp.png',
-      },
-      {
-        publicId: 'seedOlga007',
-        profileIndex: 2,
-        title: 'Текстильная композиция «След света»',
-        story:
-          'Фактурная работа из ткани и нитей, собранная вручную в одном экземпляре.',
-        technique: 'Аппликация, ручная вышивка',
-        materials: 'Лён, хлопок, нить',
-        uniqueness: 'Единственный экземпляр',
-        price: '1 480.00',
-        listingStatus: 'SCHEDULED',
-        imageFileName: 'textile-composition.png',
-      },
-      {
-        publicId: 'seedMark008',
-        profileIndex: 3,
-        title: 'Графический лист «Ночная карта»',
-        story: 'Ручная печать с точной линией и живой фактурой бумаги.',
-        technique: 'Линогравюра, ручная печать',
-        materials: 'Бумага, типографская краска',
-        uniqueness: 'Ограниченный тираж',
-        price: '510.00',
-        listingStatus: 'SCHEDULED',
-        imageFileName: 'linocut-print.png',
-      },
-    ].map((fixture) =>
-      createProductWithImages({
-        publicId: fixture.publicId,
-        sellerProfileId: additionalDemoProfiles[fixture.profileIndex].id,
-        categoryId: category.id,
-        title: fixture.title,
-        story: fixture.story,
-        technique: fixture.technique,
-        materials: fixture.materials,
-        dimensions: '30 × 30 см',
-        year: 2026,
-        condition: 'Новое',
-        uniqueness: fixture.uniqueness,
-        provenance: 'Создано автором для локального демо bidplace.',
-        city: 'Минск',
-        packaging:
-          'Работа упаковывается автором с учётом материала и защищается от движения внутри коробки.',
-        deliveryInfo: 'Передача после завершения торгов по договорённости.',
-        publishedAt: now,
-        imageFileName: fixture.imageFileName,
-      }).then((product) => ({ product, fixture })),
-    ),
-  );
-
+    ],
+  });
   await Promise.all([
-    ...additionalAnnaProducts.map(({ product, fixture }, index) => {
-      const startsAt =
-        fixture.listingStatus === 'LIVE'
-          ? new Date(now.getTime() - 1_800_000)
-          : fixture.listingStatus === 'ENDED'
-            ? new Date(now.getTime() - 10_800_000)
-            : new Date(now.getTime() + (index + 5) * 3_600_000);
-      const endsAt =
-        fixture.listingStatus === 'ENDED'
-          ? new Date(now.getTime() - 3_600_000)
-          : new Date(now.getTime() + (index + 6) * 3_600_000);
-
-      return prisma.listing.create({
-        data: {
-          productId: product.id,
-          status: fixture.listingStatus,
-          startsAt,
-          originalEndsAt: endsAt,
-          endsAt,
-          closedAt: fixture.listingStatus === 'ENDED' ? endsAt : null,
-          currentPrice: money(fixture.price),
-          auctionRules: {
-            create: { startPrice: money(fixture.price) },
-          },
+    publishSellerProfile(quantumparadox.profile),
+    publishSellerProfile(havoc.profile),
+    publishSellerProfile(balaKlava.profile),
+    publishSellerProfile(pixelp.profile, {
+      achievements: [
+        {
+          occurredAt: new Date('2025-11-01T00:00:00.000Z'),
+          body: '«После классики»\nГрупповая выставка в Минске, где Павел показал живопись, собранную вокруг узнаваемых мотивов и современного цвета.',
+          // Figma History raw fill 437:3989 (Spectre / crutches Dali), not
+          // Opening cover dali-estate.png. Thematically “after classics”.
+          imageRelativePath: 'seller-achievements/pixelp-after-classics.png',
         },
-      });
-    }),
-    ...additionalDemoProducts.map(({ product, fixture }, index) => {
-      const startsAt =
-        fixture.listingStatus === 'LIVE'
-          ? new Date(now.getTime() - 3_600_000)
-          : fixture.listingStatus === 'ENDED'
-            ? new Date(now.getTime() - 7_200_000)
-            : new Date(now.getTime() + (index + 2) * 3_600_000);
-      const endsAt =
-        fixture.listingStatus === 'ENDED'
-          ? new Date(now.getTime() - 3_600_000)
-          : new Date(now.getTime() + (index + 3) * 3_600_000);
-
-      return prisma.listing.create({
-        data: {
-          productId: product.id,
-          status: fixture.listingStatus,
-          startsAt,
-          originalEndsAt: endsAt,
-          endsAt,
-          closedAt: fixture.listingStatus === 'ENDED' ? endsAt : null,
-          currentPrice: money(fixture.price.replace(' ', '')),
-          auctionRules: {
-            create: { startPrice: money(fixture.price.replace(' ', '')) },
-          },
-        },
-      });
+      ],
     }),
   ]);
 
-  await createProductWithImages({
+  const unique = 'Единственный экземпляр';
+  const dali = await createProductWithCover({
+    publicId: 'daliEstate1',
+    sellerProfileId: pixelp.profile.id,
+    categoryId: category.id,
+    title: 'Salvador Dalí Estate & Fundació Gala Сальвадор Дали',
+    story: DALI_STORY,
+    technique: 'Живопись',
+    materials: 'Холст, масло',
+    dimensions: '80 × 100 см',
+    year: 2024,
+    uniqueness: unique,
+    city: 'Минск',
+    publishedAt: new Date('2026-08-20T12:00:00.000Z'),
+    imageFileName: 'dali-estate.png',
+    detailFileName: 'dali-estate-detail.png',
+  });
+  await createProductWithCover({
+    publicId: 'caricature1',
+    sellerProfileId: balaKlava.profile.id,
+    categoryId: category.id,
+    title: 'Картина по фото в стиле шарж',
+    story: GRAPHIC_STORY,
+    technique: 'Графика',
+    materials: 'Бумага, пигмент',
+    dimensions: '40 × 50 см',
+    year: 2025,
+    uniqueness: unique,
+    city: 'Витебск',
+    publishedAt: new Date('2026-09-10T12:00:00.000Z'),
+    imageFileName: 'caricature.png',
+    detailFileName: 'caricature-detail.png',
+  });
+  await createProductWithCover({
+    publicId: 'yellowSapph',
+    sellerProfileId: quantumparadox.profile.id,
+    categoryId: category.id,
+    title: 'Желтый сапфир',
+    story: SAPPHIRE_STORY,
+    technique: 'Живопись',
+    materials: 'Холст, масло',
+    dimensions: '70 × 90 см',
+    year: 2025,
+    uniqueness: unique,
+    city: 'Гродно',
+    publishedAt: new Date('2026-09-09T12:00:00.000Z'),
+    imageFileName: 'yellow-sapphire.png',
+    detailFileName: 'yellow-sapphire-detail.png',
+  });
+  await createProductWithCover({
+    publicId: 'colorCalib1',
+    sellerProfileId: havoc.profile.id,
+    categoryId: category.id,
+    title: 'Color calibration',
+    story: COLOR_STORY,
+    technique: 'Цифровая графика',
+    materials: 'Пигментная печать',
+    dimensions: '50 × 50 см',
+    year: 2025,
+    uniqueness: unique,
+    city: 'Брест',
+    publishedAt: new Date('2026-09-08T12:00:00.000Z'),
+    imageFileName: 'color-calibration.png',
+    detailFileName: 'color-calibration-detail.png',
+  });
+  await createProductWithCover({
+    publicId: 'rainbowMask',
+    sellerProfileId: balaKlava.profile.id,
+    categoryId: category.id,
+    title: 'Радуга (Mask Series 1997 no.8)',
+    story: RAINBOW_STORY,
+    technique: 'Живопись',
+    materials: 'Холст, масло',
+    dimensions: '90 × 120 см',
+    year: 2024,
+    uniqueness: unique,
+    city: 'Витебск',
+    publishedAt: new Date('2026-09-13T12:00:00.000Z'),
+    imageFileName: 'rainbow-mask.png',
+    detailFileName: 'rainbow-mask-detail.png',
+  });
+  await createProductWithCover({
+    publicId: 'blossomVase',
+    sellerProfileId: balaKlava.profile.id,
+    categoryId: category.id,
+    title: 'Ваза "Блоссом"',
+    story: BLOSSOM_STORY,
+    technique: 'Скульптура',
+    materials: 'Керамика',
+    dimensions: '28 × 18 см',
+    year: 2025,
+    uniqueness: unique,
+    city: 'Витебск',
+    publishedAt: new Date('2026-09-12T12:00:00.000Z'),
+    imageFileName: 'blossom-vase.png',
+    detailFileName: 'blossom-vase-detail.png',
+  });
+  await createProductWithCover({
+    publicId: 'memoryWork1',
+    sellerProfileId: balaKlava.profile.id,
+    categoryId: category.id,
+    title: 'Память',
+    story: MEMORY_STORY,
+    technique: 'Скульптура',
+    materials: 'Смешанная техника',
+    dimensions: '42 × 36 × 28 см',
+    year: 2025,
+    uniqueness: unique,
+    city: 'Витебск',
+    publishedAt: new Date('2026-09-11T12:00:00.000Z'),
+    imageFileName: 'memory.png',
+    detailFileName: 'memory-detail.png',
+  });
+  // Demo ownership: Figma does not assign these works to vex. Used so the
+  // curator profile is a complete public author, without moving Dali off pixelp.
+  await createProductWithCover({
+    publicId: 'aliceGlass1',
+    sellerProfileId: vex.profile.id,
+    categoryId: category.id,
+    title: 'Алиса в Зазеркалье',
+    story: ALICE_STORY,
+    technique: 'Смешанная техника',
+    materials: 'Стекло, пигмент',
+    dimensions: '90 × 120 см',
+    year: 2026,
+    uniqueness: unique,
+    city: 'Минск',
+    publishedAt: new Date('2026-09-14T12:00:00.000Z'),
+    imageFileName: 'alice-glass.png',
+    detailFileName: 'alice-glass-detail.png',
+  });
+  await createProductWithCover({
+    publicId: 'sleepForm01',
+    sellerProfileId: vex.profile.id,
+    categoryId: category.id,
+    title: 'Между сном и формой',
+    story: BETWEEN_STORY,
+    technique: 'Живопись',
+    materials: 'Холст, акрил',
+    dimensions: '100 × 100 см',
+    year: 2025,
+    uniqueness: unique,
+    city: 'Минск',
+    publishedAt: new Date('2026-08-16T12:00:00.000Z'),
+    imageFileName: 'between-form.png',
+    detailFileName: 'between-form-detail.png',
+  });
+
+  await createProductWithCover({
     publicId: 'seedPend004',
     sellerProfileId: pendingSellerProfile.id,
     categoryId: category.id,
     title: 'Этюд «Тихий свет»',
-    story: 'Предмет ожидает проверки перед публикацией.',
-    technique: 'Ручная роспись',
-    materials: 'Керамика, глазурь',
-    dimensions: '20 × 20 × 18 см',
-    year: 2026,
-    condition: 'Новое',
-    uniqueness: 'Единственный экземпляр',
-    provenance: 'Создано автором для локальной проверки модерации.',
+    story: 'Натюрморт с утренним светом на столе у окна.',
+    technique: 'Живопись',
+    materials: 'Холст, масло',
     city: 'Минск',
-    packaging: 'Работа будет защищена и зафиксирована в транспортной коробке.',
-    deliveryInfo: 'Передача после одобрения.',
     publishedAt: null,
-    imageFileName: 'painted-planter.png',
+    imageFileName: 'pending-placeholder.png',
     status: 'PENDING_REVIEW',
   });
 
-  const scheduled = await prisma.listing.create({
+  await prisma.curatorSelection.create({
     data: {
-      productId: scheduledProduct.id,
-      status: 'SCHEDULED',
-      startsAt: new Date(now.getTime() + 3_600_000),
-      originalEndsAt: new Date(now.getTime() + 7_200_000),
-      endsAt: new Date(now.getTime() + 7_200_000),
-      currentPrice: money('50.00'),
-      auctionRules: {
-        create: { startPrice: money('50.00') },
-      },
+      slot: 'home',
+      productId: dali.id,
+      curatorSellerProfileId: vex.profile.id,
+      note: OPENING_CURATOR_NOTE,
+      selectedAt: new Date('2026-09-14T12:00:00.000Z'),
+      selectedByUserId: admin.id,
     },
   });
-
-  const live = await prisma.listing.create({
-    data: {
-      productId: liveProduct.id,
-      status: 'LIVE',
-      startsAt: new Date(now.getTime() - 3_600_000),
-      originalEndsAt: new Date(now.getTime() + 3_600_000),
-      endsAt: new Date(now.getTime() + 3_600_000),
-      currentPrice: money('75.00'),
-      bidCount: 1,
-      auctionRules: {
-        create: { startPrice: money('50.00') },
-      },
-    },
-  });
-
-  const ended = await prisma.listing.create({
-    data: {
-      productId: endedProduct.id,
-      status: 'ENDED',
-      startsAt: new Date(now.getTime() - 7_200_000),
-      originalEndsAt: new Date(now.getTime() - 3_600_000),
-      endsAt: new Date(now.getTime() - 3_600_000),
-      closedAt: new Date(now.getTime() - 3_600_000),
-      currentPrice: money('120.00'),
-      bidCount: 1,
-      auctionRules: {
-        create: { startPrice: money('100.00') },
-      },
-    },
-  });
-
-  const vase = await prisma.listing.create({
-    data: {
-      productId: vaseProduct.id,
-      status: 'SCHEDULED',
-      startsAt: new Date(now.getTime() + 10_800_000),
-      originalEndsAt: new Date(now.getTime() + 14_400_000),
-      endsAt: new Date(now.getTime() + 14_400_000),
-      currentPrice: money('90.00'),
-      auctionRules: {
-        create: { startPrice: money('90.00') },
-      },
-    },
-  });
-
-  const liveBid = await prisma.bid.create({
-    data: {
-      listingId: live.id,
-      bidderUserId: buyer.id,
-      idempotencyKey: 'seed-live-bid',
-      amount: money('75.00'),
-    },
-  });
-
-  const endedBid = await prisma.bid.create({
-    data: {
-      listingId: ended.id,
-      bidderUserId: buyer.id,
-      idempotencyKey: 'seed-ended-bid',
-      amount: money('120.00'),
-    },
-  });
-
-  await prisma.order.create({
-    data: {
-      publicId: 'seedOrder01',
-      listingId: ended.id,
-      sellerId: seller.id,
-      buyerId: buyer.id,
-      sourceBidId: endedBid.id,
-      finalAmount: money('120.00'),
-      contactDueAt: new Date(now.getTime() + 82_800_000),
-      sellerHandoffType: 'TELEGRAM',
-      sellerHandoffValue: '@localseller',
-      buyerEmailAtClose: buyer.email,
-      handoffInitiator: 'BUYER_CONTACTS_SELLER',
-    },
-  });
-
-  await prisma.termsAcceptance.create({
-    data: {
-      userId: buyer.id,
-      rulesVersion: 'MVP_RULES_V1',
-      acceptedAt: new Date(now.getTime() - 60_000),
-    },
-  });
-
-  void scheduled;
-  void liveBid;
-  void vase;
 
   console.log(
-    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, twelve public products, and scheduled/live/ended Product Listings in BYN.',
+    'Seeded Figma local demo: Opening curator=vex work=daliEstate1 owner=pixelp; vex aliceGlass1 is newest so Home.newWorks includes a vex-owned work; no listings/bids/orders.',
   );
 }
 

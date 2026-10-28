@@ -1,18 +1,32 @@
+import { z } from 'zod';
+
 import {
+  type AnalyticsFoundationQuery,
+  analyticsFoundationQuerySchema,
+  analyticsFoundationResponseSchema,
   adminAnalyticsOverviewSchema,
+  adminQueueQuerySchema,
+  adminHistoryQuerySchema,
+  adminHistoryResponseSchema,
+  adminModerationSummariesSchema,
+  adminSellerDetailSchema,
+  adminProductDetailSchema,
+  type AdminQueueQuery,
+  catalogTermSchema,
+  catalogTermWriteSchema,
+  catalogCategoryWriteSchema,
+  catalogProposalMapSchema,
+  catalogProposalRejectSchema,
+  categorySchema,
   adminAnalyticsQuerySchema,
-  adminCreateListingOrderResponseSchema,
-  adminEmergencyCancelRequestSchema,
-  adminListingsNeedingOrderResponseSchema,
+  adminCuratorSelectionRequestSchema,
+  adminCuratorSelectionResponseSchema,
   adminOkResponseSchema,
-  adminOrderCancellationRequestSchema,
-  adminOrderResponseSchema,
-  adminOrderReplacementRequestSchema,
   adminProductStatusUpdateRequestSchema,
-  adminRankedBidsResponseSchema,
   adminSellerStatusResponseSchema,
   adminSellerProfilesResponseSchema,
   adminProductsResponseSchema,
+  adminModerationListQuerySchema,
   adminSellerStatusUpdateRequestSchema,
   adminUserRevokeSessionsRequestSchema,
   adminUserStatusResponseSchema,
@@ -21,9 +35,7 @@ import {
   adminUsersLookupResponseSchema,
   productResponseSchema,
   type AdminAnalyticsQuery,
-  type AdminEmergencyCancelRequest,
-  type AdminOrderCancellationRequest,
-  type AdminOrderReplacementRequest,
+  type AdminModerationListQueryInput,
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
   type AdminUserRevokeSessionsRequest,
@@ -31,22 +43,162 @@ import {
   type AdminUsersLookupQuery,
 } from '@bidplace/contracts';
 
-import { requestJson, type RequestContext } from './request';
+import {
+  requestBlob,
+  requestJson,
+  signalRequestOptions,
+  type ReadCallOptions,
+  type RequestContext,
+} from './request';
+import { parseRequest } from './errors/parse-request';
+
+function moderationListQuery(query: AdminModerationListQueryInput) {
+  const parsed = adminModerationListQuerySchema.parse(query);
+  return {
+    limit: parsed.limit,
+    filter: parsed.filter,
+    search: parsed.search,
+    cursor: parsed.cursor,
+  };
+}
 
 export function createAdminClient(context: RequestContext) {
   return {
-    listSellerProfiles() {
+    listSellerSummaries(
+      query: Partial<AdminQueueQuery> = {},
+      options?: ReadCallOptions,
+    ) {
+      return requestJson(
+        context,
+        '/api/admin/seller-profiles/summary',
+        adminModerationSummariesSchema,
+        {
+          query: adminQueueQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
+    listProductSummaries(
+      query: Partial<AdminQueueQuery> = {},
+      options?: ReadCallOptions,
+    ) {
+      return requestJson(
+        context,
+        '/api/admin/products/summary',
+        adminModerationSummariesSchema,
+        {
+          query: adminQueueQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
+    getSellerDetail(id: string, options?: ReadCallOptions) {
+      return requestJson(
+        context,
+        `/api/admin/seller-profiles/${id}`,
+        adminSellerDetailSchema,
+        signalRequestOptions(options),
+      );
+    },
+    getProductDetail(id: string, options?: ReadCallOptions) {
+      return requestJson(
+        context,
+        `/api/admin/products/${id}`,
+        adminProductDetailSchema,
+        signalRequestOptions(options),
+      );
+    },
+    getSellerHistory(
+      id: string,
+      query: { limit?: number; cursor?: string } = {},
+      options?: ReadCallOptions,
+    ) {
+      return requestJson(
+        context,
+        `/api/admin/seller-profiles/${id}/history`,
+        adminHistoryResponseSchema,
+        {
+          query: adminHistoryQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
+    getProductHistory(
+      id: string,
+      query: { limit?: number; cursor?: string } = {},
+      options?: ReadCallOptions,
+    ) {
+      return requestJson(
+        context,
+        `/api/admin/products/${id}/history`,
+        adminHistoryResponseSchema,
+        {
+          query: adminHistoryQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
+    listSellerProfiles(
+      query: AdminModerationListQueryInput = {},
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         '/api/admin/seller-profiles',
         adminSellerProfilesResponseSchema,
+        {
+          query: moderationListQuery(query),
+          ...signalRequestOptions(options),
+        },
       );
     },
-    listProducts() {
+    listProducts(
+      query: AdminModerationListQueryInput = {},
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         '/api/admin/products',
         adminProductsResponseSchema,
+        {
+          query: moderationListQuery(query),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
+    getSellerRevisionPhoto(
+      profileId: string,
+      revisionId: string,
+      options?: ReadCallOptions,
+    ) {
+      return requestBlob(
+        context,
+        `/api/admin/seller-profiles/${profileId}/revisions/${revisionId}/photo`,
+        signalRequestOptions(options),
+      );
+    },
+    getAchievementImage(id: string, options?: ReadCallOptions) {
+      return requestBlob(context, `/api/author-achievements/${id}/image`, signalRequestOptions(options));
+    },
+    getProductImage(imageId: string, options?: ReadCallOptions) {
+      return requestBlob(
+        context,
+        `/api/images/${imageId}`,
+        signalRequestOptions(options),
+      );
+    },
+    getAnalyticsFoundation(
+      query: AnalyticsFoundationQuery,
+      options?: ReadCallOptions,
+    ) {
+      return requestJson(
+        context,
+        '/api/admin/analytics/foundation',
+        analyticsFoundationResponseSchema,
+        {
+          query: analyticsFoundationQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
       );
     },
     getAnalyticsOverview(query: AdminAnalyticsQuery = { period: '7d' }) {
@@ -73,7 +225,7 @@ export function createAdminClient(context: RequestContext) {
         adminSellerStatusResponseSchema,
         {
           method: 'PATCH',
-          body: adminSellerStatusUpdateRequestSchema.parse(input),
+          body: parseRequest(adminSellerStatusUpdateRequestSchema, input),
         },
       );
     },
@@ -84,26 +236,12 @@ export function createAdminClient(context: RequestContext) {
         productResponseSchema,
         {
           method: 'PATCH',
-          body: adminProductStatusUpdateRequestSchema.parse(input),
+          body: parseRequest(adminProductStatusUpdateRequestSchema, input),
         },
       );
     },
-    listRankedBids(listingId: string) {
-      return requestJson(
-        context,
-        `/api/admin/listings/${listingId}/bids`,
-        adminRankedBidsResponseSchema,
-      );
-    },
-    listListingsNeedingOrder() {
-      return requestJson(
-        context,
-        '/api/admin/listings/needs-order',
-        adminListingsNeedingOrderResponseSchema,
-      );
-    },
     lookupUsers(query: AdminUsersLookupQuery) {
-      const parsed = adminUsersLookupQuerySchema.parse(query);
+      const parsed = parseRequest(adminUsersLookupQuerySchema, query);
 
       return requestJson(
         context,
@@ -119,7 +257,7 @@ export function createAdminClient(context: RequestContext) {
         adminUserStatusResponseSchema,
         {
           method: 'PATCH',
-          body: adminUserStatusUpdateRequestSchema.parse(input),
+          body: parseRequest(adminUserStatusUpdateRequestSchema, input),
         },
       );
     },
@@ -130,52 +268,68 @@ export function createAdminClient(context: RequestContext) {
         adminUserStatusResponseSchema,
         {
           method: 'POST',
-          body: adminUserRevokeSessionsRequestSchema.parse(input),
+          body: parseRequest(adminUserRevokeSessionsRequestSchema, input),
         },
       );
     },
-    emergencyCancelListing(
-      listingId: string,
-      input: AdminEmergencyCancelRequest,
+    createCatalogTerm(input: { role: 'MATERIAL' | 'TECHNIQUE'; name: string }) {
+      return requestJson(
+        context,
+        '/api/admin/catalog/terms',
+        z.object({ term: catalogTermSchema }).strict(),
+        {
+          method: 'POST',
+          body: parseRequest(catalogTermWriteSchema, input),
+        },
+      );
+    },
+    createCatalogCategory(name: string) {
+      return requestJson(context, '/api/admin/categories', z.object({
+        category: categorySchema,
+      }).strict(), {
+        method: 'POST',
+        body: parseRequest(catalogCategoryWriteSchema, { name }),
+      });
+    },
+    mapCatalogProposal(proposalId: string, input: { categoryId?: string; termId?: string }) {
+      return requestJson(context, `/api/admin/catalog/proposals/${proposalId}/map`,
+        adminOkResponseSchema, {
+          method: 'POST',
+          body: parseRequest(catalogProposalMapSchema, input),
+        });
+    },
+    rejectCatalogProposal(proposalId: string, reason: string) {
+      return requestJson(context, `/api/admin/catalog/proposals/${proposalId}/reject`,
+        adminOkResponseSchema, {
+          method: 'POST',
+          body: parseRequest(catalogProposalRejectSchema, { reason }),
+        });
+    },
+    setCuratorSelection(
+      publicId: string,
+      curatorSlug: string,
+      note: string | null,
     ) {
       return requestJson(
         context,
-        `/api/admin/listings/${listingId}/emergency-cancel`,
+        '/api/admin/curator-selection',
+        adminCuratorSelectionResponseSchema,
+        {
+          method: 'PUT',
+          body: adminCuratorSelectionRequestSchema.parse({
+            publicId,
+            curatorSlug,
+            note,
+          }),
+        },
+      );
+    },
+    clearCuratorSelection() {
+      return requestJson(
+        context,
+        '/api/admin/curator-selection',
         adminOkResponseSchema,
-        {
-          method: 'POST',
-          body: adminEmergencyCancelRequestSchema.parse(input),
-        },
-      );
-    },
-    createOrderForEndedListing(listingId: string) {
-      return requestJson(
-        context,
-        `/api/admin/listings/${listingId}/create-order`,
-        adminCreateListingOrderResponseSchema,
-        { method: 'POST' },
-      );
-    },
-    cancelOrder(publicId: string, input: AdminOrderCancellationRequest) {
-      return requestJson(
-        context,
-        `/api/admin/orders/${publicId}/cancel`,
-        adminOrderResponseSchema,
-        {
-          method: 'POST',
-          body: adminOrderCancellationRequestSchema.parse(input),
-        },
-      );
-    },
-    replaceOrder(publicId: string, input: AdminOrderReplacementRequest) {
-      return requestJson(
-        context,
-        `/api/admin/orders/${publicId}/replacement`,
-        adminOrderResponseSchema,
-        {
-          method: 'POST',
-          body: adminOrderReplacementRequestSchema.parse(input),
-        },
+        { method: 'DELETE' },
       );
     },
   };

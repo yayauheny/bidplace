@@ -1,20 +1,46 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+/*
+ * Focus ring: the single source is the token color map (`focus` role in
+ * lightColorMap/blackColorMap). ThemeProvider mirrors the active value onto
+ * :root at runtime and sets data-bidplace-theme; the initial values below
+ * keep the ring correct before hydration. One role, no manual palette.
+ */
 :root {
-  --bidplace-focus: #2457e6;
+  --bidplace-focus: #121212;
+}
+
+:root[data-bidplace-theme='black'] {
+  --bidplace-focus: #ffffff;
+}
+
+/*
+ * expo-font registers one @font-face per weight family (Inter_600SemiBold…)
+ * without a font-weight descriptor, so every face is "normal" while styles
+ * request 400/500/600. WebKit then synthesizes bold on top of the real face
+ * file (+19 % ink, wider glyphs); Chromium reads the file's weight class and
+ * does not. The registered file is already the intended weight, so faux
+ * weight/style must never be added. No italic faces are used in the app.
+ */
+html {
+  font-synthesis: none;
 }
 
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible,
 [role='button']:focus-visible,
 [role='link']:focus-visible,
-[role='textbox']:focus-visible {
+[role='tab']:focus-visible,
+[role='textbox']:focus-visible,
+[role='checkbox']:focus-visible {
   outline: var(--bidplace-focus) solid 2px;
   outline-offset: 2px;
+}
+
+[data-figma-field='true']:focus,
+[data-figma-field='true']:focus-visible {
+  outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -25,4 +51,104 @@ textarea:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0ms !important;
   }
+}
+
+/*
+ * RN-web Views use overflow:hidden and often sit under a white SafeArea
+ * stacking context, so style.backdropFilter never samples page content.
+ * Glass surfaces that must sample the moving page are portaled to
+ * document.body. The glass root owns backdrop blur; its descendants
+ * are painted above that backdrop, including during opacity transitions.
+ */
+.figma-dock-layer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.figma-glass {
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: var(--figma-glass-radius);
+  pointer-events: auto;
+  filter: none;
+  box-shadow: none;
+  background: var(--figma-glass-background);
+  -webkit-backdrop-filter: blur(var(--figma-glass-blur));
+  backdrop-filter: blur(var(--figma-glass-blur));
+}
+
+.figma-glass-stroke {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: var(--figma-glass-stroke-width);
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    var(--figma-glass-border-start),
+    var(--figma-glass-border-end)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.figma-glass-content {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+  filter: none;
+  box-shadow: none;
+}
+
+.figma-dock-items {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--figma-dock-gap);
+  padding: var(--figma-dock-padding);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-interactive-hit]:hover {
+    background-color: #f7f7f7;
+  }
+
+  [data-cover-hit]:hover {
+    box-shadow: inset 0 0 0 2px #dedede;
+  }
+}
+
+[data-interactive-hit]:active {
+  background-color: #e8e8e8;
+}
+
+/* Text block controls stay reachable by keyboard and are always exposed on touch. */
+@media (hover: hover) and (pointer: fine) {
+  [data-editor-block='text'] [data-block-menu='true'] {
+    opacity: 0;
+    pointer-events: none;
+  }
+  [data-editor-block='text']:hover [data-block-menu='true'],
+  [data-editor-block='text']:focus-within [data-block-menu='true'],
+  [data-editor-block='text'] [data-block-menu-open='true'] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Inactive routes retain layout for Back, but cannot enlarge the active scrollport. */
+[inert][aria-hidden='true'] {
+  overflow: clip;
 }

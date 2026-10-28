@@ -100,4 +100,4 @@ Deal.by, 5element.by и Realt.by в исходном проходе не дал�
 - фактические cookies, processors, страны и сроки до составления data map.
 
 Эти вопросы передаются юристу через
-[`docs/legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
+[`docs/legal/00-FINAL-LEGAL-AUDIT.md`](../legal/00-FINAL-LEGAL-AUDIT.md).

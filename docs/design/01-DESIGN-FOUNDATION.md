@@ -5,9 +5,8 @@
 Статус: **Confirmed; protected**
 
 Этот документ меняется только по прямому решению основателя или назначенного
-дизайнера. Для текущего направления визуальная конкретика читается из
-`design/pen/bidplace-web-v2.pen`; файл Pen защищён от изменений во время
-разработки.
+дизайнера. Для текущего направления визуальная конкретика читается из live Figma
+`pAPQo6cADmG5XzVmBX76EE`.
 
 ## 1. Образ продукта
 
@@ -43,7 +42,7 @@ bidplace — не универсальная доска объявлений и 
 
 Нейтральные тёплые поверхности и спокойный контраст поддерживают изображения.
 Цвет действия и статуса используется семантически. Точные значения берутся из
-canonical Pen и затем зеркалируются в кодовые tokens.
+live Figma и затем зеркалируются в кодовые tokens.
 
 ### Transaction clarity
 
@@ -82,7 +81,7 @@ transition tokens. Никаких bounce, бесконечных эффекто�
 
 ## 3. Иерархия визуальных источников
 
-1. `design/pen/bidplace-web-v2.pen` — единственный источник точной композиции,
+1. Live Figma `pAPQo6cADmG5XzVmBX76EE` — единственный источник точной композиции,
    геометрии, type, color, radius, spacing и component anatomy.
 2. Founder-provided screenshots и локальные архивы Foundation/Gamma —
    утверждённые примеры interaction grammar, blur, atmosphere, media behavior
@@ -92,9 +91,9 @@ transition tokens. Никаких bounce, бесконечных эффекто�
 4. Текущий production code — источник работающего поведения и contracts, но не
    нового visual target.
 
-Если статический Pen не показывает hover, focus, open/close, sticky transition
+Если статичный Figma frame не показывает hover, focus, open/close, sticky transition
 или reduced-motion state, разработчик использует точную motion specification
-из `03-DESIGN-SYSTEM.md`; он не редактирует Pen и не импровизирует локально.
+из `03-DESIGN-SYSTEM.md`; он не редактирует Figma и не импровизирует локально.
 
 ## 4. Поведение важнее визуального сходства
 
@@ -112,7 +111,7 @@ transition tokens. Никаких bounce, бесконечных эффекто�
 
 ## 5. Responsive foundation
 
-Desktop frames в Pen — обязательный визуальный target, но не разрешение
+Desktop frames в Figma — обязательный визуальный target, но не разрешение
 уменьшить страницу пропорционально. Для tablet и mobile композиция выводится из
 той же иерархии:
 
@@ -140,8 +139,8 @@ Responsive states должны быть согласованы до статус
 
 ## 7. Запрещённые подмены
 
-- Изменять Pen, чтобы он совпал с текущим кодом.
-- Принимать runtime `designTokens` за замену Pen/design documentation.
+- Изменять Figma, чтобы он совпал с текущим кодом.
+- Принимать runtime `designTokens` за замену Figma/design documentation.
 - Добавлять fake content, fake bids, seller metrics или неподдержанные CTA.
 - Делать search/filter/dropdown визуально рабочими без честного contract state.
 - Использовать NFT, wallet, blockchain или marketplace semantics.

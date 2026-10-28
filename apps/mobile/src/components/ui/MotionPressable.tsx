@@ -3,6 +3,7 @@ import {
   useState,
   type ComponentProps,
   type ElementRef,
+  type ReactNode,
 } from 'react';
 import {
   Platform,
@@ -15,26 +16,31 @@ import {
 import { designTokens } from '@bidplace/design-tokens';
 
 import { useReducedMotion } from '../../lib/reduced-motion';
+import {
+  motionPressableFeedback,
+  type MotionPressableOpacityFeedback,
+  type MotionPressablePreset,
+} from './motion-pressable-feedback';
 
 export type MotionPressableState = PressableStateCallbackType & {
   focused: boolean;
   hovered: boolean;
 };
 
-type MotionPressableProps = Omit<ComponentProps<typeof Pressable>, 'style'> & {
+type MotionPressableProps = Omit<
+  ComponentProps<typeof Pressable>,
+  'style' | 'children'
+> & {
+  children?:
+    | ReactNode
+    | ((state: MotionPressableState) => ReactNode);
   interactionStyle?: (state: MotionPressableState) => StyleProp<ViewStyle>;
-  preset?: 'icon' | 'button' | 'card' | 'primaryAction';
+  preset?: MotionPressablePreset;
+  opacityFeedback?: MotionPressableOpacityFeedback;
   style?:
     | StyleProp<ViewStyle>
     | ((state: MotionPressableState) => StyleProp<ViewStyle>);
 };
-
-const pressedOpacity = {
-  icon: 0.6,
-  button: 0.92,
-  card: 0.96,
-  primaryAction: 0.9,
-} as const;
 
 export const MotionPressable = forwardRef<
   ElementRef<typeof Pressable>,
@@ -42,6 +48,7 @@ export const MotionPressable = forwardRef<
 >(function MotionPressable(
   {
     preset = 'button',
+    opacityFeedback = 'preset',
     disabled,
     interactionStyle,
     onBlur,
@@ -49,6 +56,7 @@ export const MotionPressable = forwardRef<
     onHoverIn,
     onHoverOut,
     style,
+    children,
     ...props
   },
   ref,
@@ -56,10 +64,15 @@ export const MotionPressable = forwardRef<
   const reducedMotion = useReducedMotion();
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const feedback = motionPressableFeedback(
+    preset,
+    reducedMotion,
+    opacityFeedback,
+  );
   const transitionStyle =
     Platform.OS === 'web'
       ? ({
-          transitionDuration: `${reducedMotion ? 0 : designTokens.motion.control}ms`,
+          transitionDuration: `${feedback.transitionDuration}ms`,
           transitionProperty:
             'background-color, border-color, opacity, transform',
           transitionTimingFunction: designTokens.motion.easing,
@@ -70,6 +83,12 @@ export const MotionPressable = forwardRef<
     <Pressable
       {...props}
       ref={ref}
+      children={
+        typeof children === 'function'
+          ? (pressState) =>
+              children({ ...pressState, focused, hovered })
+          : children
+      }
       disabled={disabled}
       onBlur={(event) => {
         setFocused(false);
@@ -87,22 +106,28 @@ export const MotionPressable = forwardRef<
         setHovered(false);
         onHoverOut?.(event);
       }}
-      style={(state) => [
-        typeof style === 'function'
-          ? style({ ...state, focused, hovered })
-          : style,
-        interactionStyle?.({ ...state, focused, hovered }),
-        transitionStyle,
-        {
-          opacity: disabled
-            ? designTokens.opacity.disabled
-            : reducedMotion
-              ? 1
+      style={(state) => {
+        const composed = [
+          typeof style === 'function'
+            ? style({ ...state, focused, hovered })
+            : style,
+          interactionStyle?.({ ...state, focused, hovered }),
+          transitionStyle,
+        ];
+        if (opacityFeedback === 'component') {
+          return composed;
+        }
+        return [
+          ...composed,
+          {
+            opacity: disabled
+              ? designTokens.opacity.disabled
               : state.pressed
-                ? pressedOpacity[preset]
+                ? feedback.pressedOpacity
                 : 1,
-        },
-      ]}
+          },
+        ];
+      }}
     />
   );
 });

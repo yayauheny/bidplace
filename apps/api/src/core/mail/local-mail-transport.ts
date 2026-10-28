@@ -1,12 +1,12 @@
 import { appendFile } from 'node:fs/promises';
 
-import { loadServerEnv, requiresProductionSecurity } from '../config';
+import { type ServerEnv, requiresProductionSecurity } from '../config';
 import type { MailMessage } from './mail-message';
 import { MailTransport } from './mail-transport';
 
 function extractOtpCode(text: string): string | undefined {
-  const match = text.match(/verification code is (\d{6})/);
-  return match?.[1];
+  const match = text.match(/verification code is (\d{6})|Код подтверждения почты bidplace: (\d{6})/);
+  return match?.[1] ?? match?.[2];
 }
 
 function extractPasswordResetToken(text: string): string | undefined {
@@ -23,8 +23,12 @@ function extractPasswordResetToken(text: string): string | undefined {
 }
 
 export class LocalMailTransport extends MailTransport {
+  constructor(private readonly env: ServerEnv) {
+    super();
+  }
+
   async send(message: MailMessage): Promise<void> {
-    const env = loadServerEnv();
+    const env = this.env;
 
     if (requiresProductionSecurity(env)) {
       throw new Error('Local mail transport cannot run in production');
@@ -40,7 +44,7 @@ export class LocalMailTransport extends MailTransport {
       text: message.text,
     };
 
-    if (message.subject.includes('verification')) {
+    if (message.subject.includes('verification') || message.subject.includes('Код подтверждения')) {
       const code = extractOtpCode(message.text);
       if (code) {
         payload.email = message.to;

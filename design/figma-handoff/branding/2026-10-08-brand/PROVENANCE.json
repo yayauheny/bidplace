@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "rawSource": {
+    "path": "source-logo-icon.svg",
+    "originalPath": "/Users/yayauheny/Downloads/Telegram Desktop/Логотип иконка.svg",
+    "sha256": "2c3cc0d68a28e7da44084f6d29a2763b4165c9826c037b6e91166a8acb8e675d",
+    "width": 256,
+    "height": 256,
+    "markFill": "#111111",
+    "backgroundFill": "#FFFFFF"
+  },
+  "derived": [
+    {
+      "path": "bidplace-mark.svg",
+      "sha256": "71ad6d0b77b7c6771e3401b7598277523d6326083707a1f9087e04ae96df1064",
+      "sourceNodesPath": "../../auth/2026-10-08-auth-fullscreen/screens/email/design/nodes.json",
+      "sourceNodeId": "4562:31593",
+      "sourceProperty": "fillGeometry",
+      "width": 30.35,
+      "height": 30.35,
+      "fill": "#121212",
+      "geometrySha256": "cbb5332cdee8e769aa202e23ad590f1a21b4f67d711dc690141012f83301b111",
+      "method": "Exact exported fillGeometry paths and winding rules wrapped in SVG; no redrawing or raster extraction"
+    },
+    {
+      "path": "bidplace-wordmark.svg",
+      "sha256": "a0109223f904b001cabdcbc16c12475435c13531a434bc6734d2557a10c4a222",
+      "sourceNodesPath": "../../auth/2026-10-08-auth-fullscreen/screens/email/design/nodes.json",
+      "sourceNodeId": "4562:31592",
+      "sourceProperty": "fillGeometry",
+      "width": 93,
+      "height": 22,
+      "fill": "#121212",
+      "geometrySha256": "72fc70206479e88c043131e47829edbef9d41b73b794d2b93a1fc89905e3ed12",
+      "method": "Exact exported fillGeometry paths and winding rules wrapped in SVG; no redrawing or raster extraction"
+    }
+  ],
+  "sourceDifference": "Standalone SVG has #111111 and a white rectangle; current auth capture uses #121212. Preserve raw source; auth derivatives follow capture exactly."
+}

@@ -1,9 +1,75 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ApiErrorCode } from '@bidplace/contracts';
 
+import {
+  syntheticProductionServerEnv,
+  syntheticServerEnv,
+} from '../core/config/synthetic-server-env';
 import { AuthController } from './auth.controller';
+
+const sessions = {
+  login: vi.fn(),
+  destroy: vi.fn().mockResolvedValue(undefined),
+};
 
 afterEach(() => {
   vi.unstubAllEnvs();
+});
+
+describe('AuthController nickname availability', () => {
+  it.each([2, 3, 20, 21])(
+    'checks only valid %i-character new nicknames',
+    async (length) => {
+      const authService = {
+        slugAvailability: vi.fn().mockResolvedValue({ available: true }),
+      };
+      const controller = new AuthController(
+        authService as never,
+        sessions as never,
+        {} as never,
+        syntheticServerEnv(),
+      );
+      const slug = 'a'.repeat(length);
+      if (length >= 3 && length <= 20) {
+        await expect(controller.slugAvailability(slug)).resolves.toEqual({
+          available: true,
+        });
+        expect(authService.slugAvailability).toHaveBeenCalledWith(slug);
+      } else {
+        await expect(controller.slugAvailability(slug)).rejects.toMatchObject({
+          apiCode: ApiErrorCode.VALIDATION_ERROR,
+          status: 400,
+        });
+        expect(authService.slugAvailability).not.toHaveBeenCalled();
+      }
+    },
+  );
+});
+
+describe('AuthController public legal reader', () => {
+  it('serves the current published documents without an authenticated user', () => {
+    const documents = {
+      version: 'portfolio-legal-2026-10-12',
+      documents: [
+        {
+          id: 'agreement',
+          title: 'Пользовательское соглашение',
+          version: 'portfolio-legal-2026-10-12',
+          markdown: '# Соглашение',
+        },
+      ],
+    };
+    const service = { getLegalDocuments: vi.fn(() => documents) };
+    const controller = new AuthController(
+      service as never,
+      sessions as never,
+      {} as never,
+      syntheticServerEnv(),
+    );
+
+    expect(controller.getLegalDocuments()).toEqual(documents);
+    expect(service.getLegalDocuments).toHaveBeenCalledOnce();
+  });
 });
 
 describe('AuthController logout', () => {
@@ -11,12 +77,19 @@ describe('AuthController logout', () => {
     const authService = {
       logout: vi.fn(),
     };
-    const controller = new AuthController(authService as never);
+    const controller = new AuthController(
+      authService as never,
+      sessions as never,
+      {} as never,
+      syntheticServerEnv(),
+    );
     const response = {
       clearCookie: vi.fn(),
     };
 
-    await expect(controller.logout(undefined, response)).resolves.toEqual({
+    await expect(
+      controller.logout(undefined, {} as never, response),
+    ).resolves.toEqual({
       ok: true,
     });
 
@@ -33,7 +106,12 @@ describe('AuthController logout', () => {
     const authService = {
       logout: vi.fn(),
     };
-    const controller = new AuthController(authService as never);
+    const controller = new AuthController(
+      authService as never,
+      sessions as never,
+      {} as never,
+      syntheticServerEnv(),
+    );
     const response = {
       clearCookie: vi.fn(),
     };
@@ -47,6 +125,7 @@ describe('AuthController logout', () => {
         iat: 1,
         exp: 2_000_000_000,
       },
+      {} as never,
       response,
     );
 
@@ -56,19 +135,24 @@ describe('AuthController logout', () => {
     expect(response.clearCookie).toHaveBeenCalledOnce();
   });
 
-  it('sets the secure cookie flag on the production profile', async () => {
-    vi.stubEnv('NODE_ENV', 'production');
-    vi.stubEnv('APP_ENV', 'production');
+  it('sets the secure cookie flag from the injected production profile', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('APP_ENV', 'local');
 
     const authService = {
       logout: vi.fn(),
     };
-    const controller = new AuthController(authService as never);
+    const controller = new AuthController(
+      authService as never,
+      sessions as never,
+      {} as never,
+      syntheticProductionServerEnv(),
+    );
     const response = {
       clearCookie: vi.fn(),
     };
 
-    await controller.logout(undefined, response);
+    await controller.logout(undefined, {} as never, response);
 
     expect(response.clearCookie).toHaveBeenCalledWith('bidplace_session', {
       httpOnly: true,

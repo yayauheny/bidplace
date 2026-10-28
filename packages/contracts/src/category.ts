@@ -8,6 +8,7 @@ export const categorySchema = z
     slug: slugSchema,
     name: z.string().trim().min(1),
     description: z.string().trim().min(1).nullable(),
+    active: z.boolean().default(true),
     createdAt: isoDateTimeSchema.optional(),
     updatedAt: isoDateTimeSchema.optional(),
   })

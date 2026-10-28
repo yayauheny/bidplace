@@ -1,13 +1,16 @@
 name: Verify
 
+# Draft PR: fast and automatic. Ready PR / release pushes / manual: full suite.
+# Explicit [build-only] push merge commits run production builds but skip tests and
+# Cloudflare verification. Regular pushes, PRs and manual runs are unchanged.
+# Feature branches are checked through pull_request only to avoid duplicate runs.
 on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   push:
     branches:
       - main
-      - master
-      - 'fix/**'
-      - 'feat/**'
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: verify-${{ github.workflow }}-${{ github.ref }}
@@ -27,6 +30,7 @@ jobs:
           POSTGRES_DB: bidplace_integration
         ports:
           - 5432:5432
+          - 55440:5432
         options: >-
           --health-cmd "pg_isready -U auction -d bidplace_integration"
           --health-interval 5s
@@ -37,7 +41,9 @@ jobs:
       NODE_ENV: test
       APP_ENV: local
       DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_integration?schema=public
-      JWT_SECRET: ci-verify-jwt-secret
+      AUTH_ABUSE_TEST_DATABASE_URL: postgresql://auction:auction@127.0.0.1:55440/bidplace_auth_abuse_test
+      SESSION_SECRET: ci-verify-jwt-secret
+      OTP_HASH_SECRET: synthetic-ci-otp-key-at-least-32-characters
       TEST_EMAIL_BYPASS: 'false'
 
     steps:
@@ -58,5 +64,115 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Create isolated auth abuse test database
+        run: docker exec "${{ job.services.postgres.id }}" createdb -U auction bidplace_auth_abuse_test
+
+      - name: Fast checks for draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        run: |
+          pnpm typecheck
+          pnpm lint
+          pnpm --filter @bidplace/config test
+          pnpm --filter @bidplace/contracts test
+          pnpm --filter @bidplace/api-client test
+          pnpm --filter @bidplace/mobile exec vitest run \
+            src/lib/media/prepare-image-upload.spec.ts \
+            src/errors/image-upload-error.spec.ts \
+            src/errors/error-policy.spec.ts \
+            src/features/sellers/seller-profile-submit.spec.ts \
+            src/features/sellers/seller-profile-logout.spec.ts \
+            src/features/sellers/product-draft-submit-lifecycle.spec.ts
+          pnpm --filter @bidplace/api exec vitest run \
+            src/images/image-policy.spec.ts \
+            src/core/media/media-pipeline.spec.ts \
+            src/images/images.service.spec.ts \
+            src/sellers/sellers.profile-upload-limit.spec.ts
+
+      - name: Legal registration regression tests for task-3 draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.head_ref == 'feat/portfolio-mvp-legal-ux'
+        run: |
+          pnpm --filter @bidplace/api exec vitest run \
+            src/auth/auth.service.spec.ts \
+            src/auth/auth.controller.spec.ts \
+            src/auth/legal-documents.spec.ts
+          pnpm --filter @bidplace/mobile exec vitest run \
+            src/features/auth/schemas.spec.ts \
+            src/features/auth/auth-dismissal.spec.ts \
+            src/features/auth/registration-consent.spec.ts \
+            src/features/auth/auth-form-submit.spec.ts
+
+      - name: Work editor regression tests for draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        run: |
+          pnpm --filter @bidplace/mobile exec vitest run \
+            src/features/sellers/product-catalog-term-sheet.spec.ts \
+            src/features/sellers/product-draft-form.spec.ts \
+            src/features/sellers/product-draft-fields.spec.ts \
+            src/features/sellers/product-draft-save-race.spec.ts \
+            src/features/sellers/product-draft-submit-lifecycle.spec.ts \
+            src/features/sellers/product-draft-route-guard.spec.ts \
+            src/features/sellers/use-product-story-editor.spec.ts \
+            src/components/shared/PrivateStoryImage.spec.ts
+          pnpm --filter @bidplace/mobile exec vitest run src/features/admin/AdminWorkCatalogProposals.spec.ts
+          pnpm --filter @bidplace/api exec vitest run src/images/images.service.spec.ts
+
+      - name: Auth regression tests for draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.head_ref == 'feature/web-auth'
+        run: pnpm --filter @bidplace/api exec vitest run --config vitest.integration.config.ts test/integration/auth-abuse.integration.spec.ts test/integration/auth-transport.integration.spec.ts test/integration/social-auth.integration.spec.ts
+
+      - name: Build workspace only (no tests)
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[build-only]')
+        run: pnpm build
+
       - name: Verify workspace
+        if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && !contains(github.event.head_commit.message, '[build-only]')
         run: pnpm verify
+
+      - name: Verify Cloudflare routing and configuration
+        if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && !contains(github.event.head_commit.message, '[build-only]')
+        run: pnpm cloudflare:check
+
+      - name: Build production static assets
+        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+        # Official Cloudflare Turnstile public test site key, verification build only.
+        # Release/deploy workflows must use the real site key for their target.
+        env:
+          TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+        run: pnpm build:web
+
+      - name: Verify production-like amd64 container
+        if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && !contains(github.event.head_commit.message, '[build-only]')
+        run: pnpm cloudflare:image:verify
+
+      - name: Verify web auth in Chromium and WebKit
+        if: github.event_name == 'pull_request' && github.head_ref == 'feature/web-auth'
+        env:
+          AUTH_BROWSER_SMOKE: '1'
+          INTEGRATION_DATABASE_URL: postgresql://auction:auction@127.0.0.1:55440/bidplace_integration?schema=public
+          EXPO_NO_DOTENV: '1'
+          EXPO_PUBLIC_API_URL: http://127.0.0.1:55442
+          EXPO_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+        run: |
+          pnpm --filter @bidplace/mobile exec playwright install --with-deps chromium webkit
+          cleanup() {
+            status=$?
+            trap - EXIT
+            for pid in ${expo_pid:-} ${test_pid:-}; do
+              if kill -0 -- "-$pid" 2>/dev/null; then
+                kill -TERM -- "-$pid"
+              fi
+            done
+            if [ "$status" -ne 0 ]; then
+              tail -100 /tmp/bidplace-auth-expo.log
+            fi
+            exit "$status"
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          setsid env NODE_ENV=development pnpm --filter @bidplace/mobile run web --offline --port 55441 > /tmp/bidplace-auth-expo.log 2>&1 &
+          expo_pid=$!
+          curl --fail --retry 30 --retry-delay 2 --retry-connrefused http://127.0.0.1:55441/ > /dev/null
+          setsid pnpm --filter @bidplace/api exec vitest run --config vitest.integration.config.ts test/integration/social-auth.integration.spec.ts &
+          test_pid=$!
+          wait "$test_pid"

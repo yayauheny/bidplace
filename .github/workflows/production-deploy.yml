@@ -8,6 +8,16 @@ on:
         required: false
         default: ''
         type: string
+      release_hold:
+        description: 'closed keeps /api unavailable. open follows nickname and version checks. keep preserves the current hold while updating the image.'
+        required: false
+        default: ''
+        type: string
+      keep_container:
+        description: 'Deploy the Worker release gate without replacing the current API image.'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -30,8 +40,8 @@ jobs:
 
       - name: Require the release branch
         run: |
-          if [ "$GITHUB_REF" != "refs/heads/feature/portfolio-mvp-release" ]; then
-            echo "Production deploy requires feature/portfolio-mvp-release"
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Production deploy requires main"
             exit 1
           fi
 
@@ -73,9 +83,39 @@ jobs:
         run: pnpm cloudflare:check
 
       - name: Build the production SPA
+        env:
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
         run: pnpm build:web
 
+      - name: Refuse an unsafe release combination
+        env:
+          CONFIRM_MIGRATION: ${{ inputs.confirm_migration }}
+          RELEASE_HOLD: ${{ inputs.release_hold }}
+          KEEP_CONTAINER: ${{ inputs.keep_container }}
+        run: |
+          if [ "$RELEASE_HOLD" != "closed" ] && [ "$RELEASE_HOLD" != "open" ] && [ "$RELEASE_HOLD" != "keep" ]; then
+            echo "release_hold must be closed, open, or keep." >&2
+            exit 1
+          fi
+          if [ "$KEEP_CONTAINER" = "true" ] && [ "$CONFIRM_MIGRATION" = "migrate-production" ]; then
+            echo "The preparatory Worker deploy cannot run the migration." >&2
+            exit 1
+          fi
+          if [ "$KEEP_CONTAINER" = "true" ] && [ "$RELEASE_HOLD" != "closed" ]; then
+            echo "Keeping the current API image requires release_hold closed." >&2
+            exit 1
+          fi
+          if [ "$RELEASE_HOLD" = "open" ] && [ "$CONFIRM_MIGRATION" = "migrate-production" ]; then
+            echo "Opening access cannot run in the same job as the migration." >&2
+            exit 1
+          fi
+          if [ "$RELEASE_HOLD" = "keep" ] && [ "$CONFIRM_MIGRATION" = "migrate-production" ]; then
+            echo "A later image update cannot run the slug migration." >&2
+            exit 1
+          fi
+
       - name: Verify the production image
+        if: inputs.keep_container != true && inputs.release_hold != 'open'
         run: pnpm cloudflare:image:verify
 
       - name: Reject an ambiguous migration confirmation
@@ -89,11 +129,20 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NEON_DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          OTP_HASH_SECRET: ${{ secrets.OTP_HASH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          TELEGRAM_CLIENT_ID: ${{ secrets.TELEGRAM_CLIENT_ID }}
+          TELEGRAM_CLIENT_SECRET: ${{ secrets.TELEGRAM_CLIENT_SECRET }}
+          TELEGRAM_REDIRECT_URI: ${{ secrets.TELEGRAM_REDIRECT_URI }}
           S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           CLOUDFLARE_CACHE_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
         run: |
           python3 - <<'PY'
           import os
@@ -103,15 +152,27 @@ jobs:
               "CLOUDFLARE_API_TOKEN",
               "DATABASE_URL",
               "NEON_DIRECT_URL",
-              "JWT_SECRET",
+              "SESSION_SECRET",
+              "OTP_HASH_SECRET",
               "S3_ACCESS_KEY_ID",
               "S3_SECRET_ACCESS_KEY",
               "SMTP_PASSWORD",
               "CLOUDFLARE_CACHE_TOKEN",
+              "TURNSTILE_SECRET_KEY",
+              "RELEASE_CONTROL",
           ]
           missing = [name for name in required if not os.environ.get(name, "").strip()]
           if missing:
               raise SystemExit("Missing production settings: " + ", ".join(missing))
+
+          for name in ("SESSION_SECRET", "OTP_HASH_SECRET"):
+              if len(os.environ[name]) < 32:
+                  raise SystemExit(f"{name} must be at least 32 characters")
+          for provider in ("GOOGLE", "TELEGRAM"):
+              names = [f"{provider}_{suffix}" for suffix in ("CLIENT_ID", "CLIENT_SECRET", "REDIRECT_URI")]
+              configured = [bool(os.environ.get(name, "").strip()) for name in names]
+              if any(configured) and not all(configured):
+                  raise SystemExit(f"{provider} configuration must be complete")
 
           def endpoint(hostname):
               label = hostname.split(".")[0]
@@ -144,6 +205,21 @@ jobs:
           print("production neondb endpoints accepted")
           PY
 
+      - name: Require a stopped API before migration
+        if: inputs.confirm_migration == 'migrate-production'
+        env:
+          RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --show-error --output /tmp/release-state.json --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${RELEASE_CONTROL}" \
+            https://bid.place/_release/state)
+          if [ "$code" != "200" ]; then
+            echo "Migration refused: the previous API is not confirmed stopped." >&2
+            exit 1
+          fi
+          node -e "const state = JSON.parse(require('fs').readFileSync('/tmp/release-state.json', 'utf8')); if (state.status !== 'stopped' && state.status !== 'stopped_with_code') { console.error('Migration refused: container state is not stopped.'); process.exit(1); }"
+
       - name: Migrate the production database
         if: inputs.confirm_migration == 'migrate-production'
         env:
@@ -158,12 +234,26 @@ jobs:
           SERVICE_RULES_CONTACT: ${{ vars.SERVICE_RULES_CONTACT }}
           SERVICE_RULES_TEXT: ${{ vars.SERVICE_RULES_TEXT }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          OTP_HASH_SECRET: ${{ secrets.OTP_HASH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          TELEGRAM_CLIENT_ID: ${{ secrets.TELEGRAM_CLIENT_ID }}
+          TELEGRAM_CLIENT_SECRET: ${{ secrets.TELEGRAM_CLIENT_SECRET }}
+          TELEGRAM_REDIRECT_URI: ${{ secrets.TELEGRAM_REDIRECT_URI }}
           S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           CLOUDFLARE_CACHE_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}
-          WORKERS_CI_BRANCH: feature/portfolio-mvp-release
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
+          NEON_DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
+          WORKERS_CI_BRANCH: main
+          RELEASE_HOLD: ${{ inputs.release_hold }}
+          KEEP_CONTAINER: ${{ inputs.keep_container }}
+          CONFIRM_MIGRATION: ${{ inputs.confirm_migration }}
         run: |
           set -euo pipefail
           umask 077
@@ -175,19 +265,39 @@ jobs:
           path = os.environ["SECRETS_FILE"]
           names = [
               "DATABASE_URL",
-              "JWT_SECRET",
+              "SESSION_SECRET",
+              "OTP_HASH_SECRET",
               "S3_ACCESS_KEY_ID",
               "S3_SECRET_ACCESS_KEY",
               "SMTP_PASSWORD",
               "CLOUDFLARE_CACHE_TOKEN",
+              "TURNSTILE_SECRET_KEY",
+              "RELEASE_CONTROL",
           ]
           missing = [name for name in names if not os.environ.get(name, "").strip()]
           if missing:
               raise SystemExit("Missing deployment secret names: " + ", ".join(missing))
           payload = {name: os.environ[name] for name in names}
+          for provider in ("GOOGLE", "TELEGRAM"):
+              optional = [provider + suffix for suffix in ("_CLIENT_ID", "_CLIENT_SECRET", "_REDIRECT_URI")]
+              configured = [name for name in optional if os.environ.get(name, "").strip()]
+              if configured and len(configured) != len(optional):
+                  raise SystemExit(provider + " configuration must be complete")
+              payload.update({name: os.environ[name] for name in configured})
           payload["SMTP_USERNAME"] = "api_token"
           with open(path, "w", encoding="utf-8") as handle:
               json.dump(payload, handle)
           os.chmod(path, 0o600)
           PY
-          node scripts/cloudflare/deploy.mjs production --secrets-file "$secrets_file"
+          args=(production --secrets-file "$secrets_file")
+          if [ "$RELEASE_HOLD" = "keep" ]; then
+            args+=(--keep-hold)
+          elif [ "$CONFIRM_MIGRATION" = "migrate-production" ] || [ "$RELEASE_HOLD" = "closed" ]; then
+            args+=(--release closed)
+          else
+            args+=(--release open)
+          fi
+          if [ "$KEEP_CONTAINER" = "true" ]; then
+            args+=(--keep-container)
+          fi
+          node scripts/cloudflare/deploy.mjs "${args[@]}"

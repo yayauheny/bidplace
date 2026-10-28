@@ -1,10 +1,6 @@
-import { useLocalSearchParams } from 'expo-router';
-
-import { SearchScreen } from '../../features/search/search-screen';
-
-export default function SearchRoute() {
-  const params = useLocalSearchParams<{ q?: string | string[] }>();
-  const query = Array.isArray(params.q) ? params.q[0] : params.q;
-
-  return <SearchScreen query={query?.trim() ?? ''} />;
+import { Redirect, useLocalSearchParams } from 'expo-router';
+import { legacyExploreHref } from '../../features/explore/explore-route';
+export default function LegacyRoute() {
+  const params = useLocalSearchParams();
+  return <Redirect href={legacyExploreHref('search', params)} />;
 }

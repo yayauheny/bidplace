@@ -1,10 +1,9 @@
+import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
-  publicSellerListResponseSchema,
-  publicSellerDetailResponseSchema,
+  ApiErrorCode,
   sellerProductDetailResponseSchema,
   sellerProductListResponseSchema,
-  type PublicSellerQuery,
-  type PublicSellerWorksQuery,
+  type PortfolioAuthorsQuery,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
   type PortfolioAchievementWriteRequest,
@@ -12,6 +11,7 @@ import {
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 import {
+  Inject,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -21,55 +21,123 @@ import { createHash } from 'node:crypto';
 
 import {
   isPrismaUniqueConstraintError,
+  prismaUniqueTargets,
   PrismaService,
   runReadCommittedTransaction,
 } from '../core/database';
 import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import {
+  productRevisionOwnerSelect,
   productSelect,
-  toContractProduct,
-  publicCatalogProductSelect,
+  selectionFromRevision,
   toCreationStepContract,
+  toContractProduct,
+  toOwnerContractProduct,
 } from '../products/products.mapper';
-import { ProductsService } from '../products/products.service';
+import { storyFromRows } from '../products/product-story';
 import {
-  publicCatalogProductWhere,
-  publicProductContentSql,
+  portfolioCatalogProductWhere,
+  publicAuthorCityWhere,
 } from '../products/public-visibility';
+import {
+  publicAuthorCte,
+  publicAuthorOrderBy,
+  type PublicAuthorPageRow,
+} from './sellers-catalog.query';
 import {
   publicSellerProfileSelect,
   sellerProfilePhotoSelect,
-  sellerProfileResponseSelect,
+  sellerProfileOwnerSelect,
+  toPortfolioAchievement,
   toPublicSellerProfile,
   toSellerProfileResponse,
 } from './seller-profile.mapper';
-import { lockSellerProfileRevisionRowForUpdate } from './seller-profile-revision-lock';
-import { canAuthorEditSellerProfileRevision } from './seller-profile-revision-state';
+import {
+  ensureEditableEditingRevision,
+  resolveEditingAchievementId,
+} from './ensure-editable-seller-profile-revision';
 
-export function countPublicSellerStatuses(
-  products: Array<{ listings: Array<{ status: string }> }>,
+function assertProfileRevisionReadyToSubmit(revision: {
+  slug: string;
+  fullName: string;
+  country: string;
+  shortDescription: string | null;
+  profilePhotoMimeType: string | null;
+  profilePhotoByteLength: number | null;
+  profilePhotoChecksum: string | null;
+  profilePhotoObjectKey: string | null;
+  directionCount: number;
+}) {
+  if (
+    !revision.slug ||
+    !revision.fullName ||
+    !revision.country ||
+    !revision.shortDescription ||
+    revision.directionCount < 1 ||
+    !revision.profilePhotoMimeType ||
+    !revision.profilePhotoByteLength ||
+    !revision.profilePhotoChecksum ||
+    !revision.profilePhotoObjectKey
+  ) {
+    throw new ConflictException('Author profile is missing required fields');
+  }
+}
+
+async function replaceProfileDirections(
+  tx: Prisma.TransactionClient,
+  revisionId: string,
+  categoryIds: readonly string[],
 ) {
-  const counts = { SCHEDULED: 0, LIVE: 0, ENDED: 0 };
-
-  for (const product of products) {
-    const status = product.listings[0]?.status;
-    if (status === 'SCHEDULED' || status === 'LIVE' || status === 'ENDED') {
-      counts[status] += 1;
+  if (new Set(categoryIds).size !== categoryIds.length) {
+    throw new ConflictException('Author directions must be unique');
+  }
+  const current = await tx.sellerProfileRevisionDirection.findMany({
+    where: { revisionId },
+    select: { categoryId: true },
+  });
+  const keptIds = new Set(current.map((item) => item.categoryId));
+  const additions = categoryIds.filter(
+    (categoryId) => !keptIds.has(categoryId),
+  );
+  if (additions.length > 0) {
+    const active = await tx.category.findMany({
+      where: { id: { in: additions }, active: true },
+      select: { id: true },
+    });
+    if (active.length !== additions.length) {
+      throw new ConflictException('Author direction is unknown or hidden');
     }
   }
-
-  return counts;
+  if (categoryIds.length > 0) {
+    const known = await tx.category.findMany({
+      where: { id: { in: [...categoryIds] } },
+      select: { id: true },
+    });
+    if (known.length !== categoryIds.length) {
+      throw new ConflictException('Author direction is unknown or hidden');
+    }
+  }
+  await tx.sellerProfileRevisionDirection.deleteMany({ where: { revisionId } });
+  if (categoryIds.length > 0) {
+    await tx.sellerProfileRevisionDirection.createMany({
+      data: categoryIds.map((categoryId, position) => ({
+        revisionId,
+        categoryId,
+        position,
+      })),
+    });
+  }
 }
 
 function publicProfileRevisionData(input: SellerProfileUpdateRequest) {
   return {
-    ...(input.slug !== undefined ? { slug: input.slug } : {}),
     ...(input.discipline !== undefined ? { discipline: input.discipline } : {}),
     ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
     ...(input.country !== undefined ? { country: input.country } : {}),
     ...(input.city !== undefined ? { city: input.city } : {}),
     ...(input.practice !== undefined ? { practice: input.practice } : {}),
+    ...(input.biography !== undefined ? { biography: input.biography } : {}),
     ...(input.socialLink !== undefined ? { socialLink: input.socialLink } : {}),
     ...(input.telegramUrl !== undefined
       ? { telegramUrl: input.telegramUrl }
@@ -78,92 +146,58 @@ function publicProfileRevisionData(input: SellerProfileUpdateRequest) {
       ? { instagramUrl: input.instagramUrl }
       : {}),
     ...(input.websiteUrl !== undefined ? { websiteUrl: input.websiteUrl } : {}),
+    ...(input.publicEmail !== undefined
+      ? { publicEmail: input.publicEmail }
+      : {}),
     ...(input.shortDescription !== undefined
       ? { shortDescription: input.shortDescription }
       : {}),
   };
 }
 
-type PublicSellerProductPageRow = { id: string };
-type PublicSellerCountRow = { total: number | bigint };
-type PublicSellerStatusRow = {
-  status: 'SCHEDULED' | 'LIVE' | 'ENDED';
-  count: number | bigint;
-};
-
-function publicSellerProductsCte(
-  slug: string,
-  status?: PublicSellerWorksQuery['status'],
-) {
-  const statusFilter = status
-    ? Prisma.sql`AND c."status" = CAST(${status} AS "ListingStatus")`
-    : Prisma.empty;
-
-  return Prisma.sql`WITH canonical AS (
-    SELECT DISTINCT ON (l."product_id")
-      l."product_id",
-      l."status",
-      l."current_price",
-      l."bid_count",
-      l."ends_at",
-      l."created_at" AS "listing_created_at"
-    FROM "listings" l
-    WHERE l."status" IN ('LIVE', 'SCHEDULED', 'ENDED')
-    ORDER BY
-      l."product_id",
-      CASE l."status"
-        WHEN 'LIVE' THEN 0
-        WHEN 'SCHEDULED' THEN 1
-        ELSE 2
-      END,
-      l."created_at" DESC,
-      l."id" DESC
-  ), filtered AS (
-    SELECT
-      p."id",
-      p."created_at",
-      c."status",
-      c."current_price",
-      c."bid_count",
-      c."ends_at"
-    FROM "products" p
-    INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
-    INNER JOIN canonical c ON c."product_id" = p."id"
-    WHERE p."status" = 'APPROVED'
-      AND sp."status" = 'APPROVED'
-      AND sp."slug" = ${slug}
-      AND ${publicProductContentSql}
-      ${statusFilter}
-  )`;
+function uniqueTargetNames(error: unknown): string[] {
+  return prismaUniqueTargets(error);
 }
 
-function publicSellerProductsOrderBy(sort: PublicSellerWorksQuery['sort']) {
-  switch (sort) {
-    case 'priceAsc':
-      return 'p."current_price" ASC, p."id" ASC';
-    case 'priceDesc':
-      return 'p."current_price" DESC, p."id" ASC';
-    case 'newest':
-      return 'p."created_at" DESC, p."id" ASC';
-    case 'oldest':
-      return 'p."created_at" ASC, p."id" ASC';
-    case 'activity':
-      return 'p."bid_count" DESC, p."created_at" DESC, p."id" ASC';
+function throwSellerProfileUniqueConflict(
+  error: unknown,
+  unknownMessage: string,
+): never {
+  const targets = uniqueTargetNames(error);
+  const slugTaken = targets.some((target) => /(^|_)slug($|_)/.test(target));
+  const profileExists = targets.some(
+    (target) => target === 'userId' || target.includes('user_id'),
+  );
+  if (slugTaken && !profileExists) {
+    throw new ConflictException({
+      code: ApiErrorCode.CONFLICT,
+      message: 'Seller profile slug is already taken',
+      details: { reason: 'slug_taken' },
+    });
   }
+  if (profileExists && !slugTaken) {
+    throw new ConflictException({
+      code: ApiErrorCode.CONFLICT,
+      message: 'Seller profile already exists',
+      details: { reason: 'profile_exists' },
+    });
+  }
+  throw new ConflictException(unknownMessage);
 }
 
 @Injectable()
 export class SellersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly products: ProductsService,
     private readonly imageStore: ImageStore,
+    @Inject(MediaLifecycleService)
+    private readonly media?: MediaLifecycleService,
   ) {}
 
   async getMine(userId: string) {
     const sellerProfile = await this.prisma.sellerProfile.findUnique({
       where: { userId },
-      select: sellerProfileResponseSelect,
+      select: sellerProfileOwnerSelect,
     });
 
     if (!sellerProfile) {
@@ -171,6 +205,42 @@ export class SellersService {
     }
 
     return toSellerProfileResponse(sellerProfile);
+  }
+
+  async listEditingAchievements(userId: string) {
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: {
+        editingRevision: {
+          select: {
+            achievements: {
+              orderBy: [
+                { occurredAt: { sort: 'desc', nulls: 'last' } },
+                { position: 'asc' },
+              ],
+              select: {
+                id: true,
+                occurredAt: true,
+                occurredAtPrecision: true,
+                body: true,
+                mimeType: true,
+                byteLength: true,
+                checksum: true,
+                objectKey: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+    return (
+      sellerProfile.editingRevision?.achievements.map((achievement) =>
+        toPortfolioAchievement(achievement),
+      ) ?? []
+    );
   }
 
   async getEditingRevision(userId: string) {
@@ -188,6 +258,29 @@ export class SellersService {
     return sellerProfile.editingRevision;
   }
 
+  private async preparePhoto(
+    userId: string,
+    photo: ValidatedImageUpload,
+    purpose: 'AUTHOR_PHOTO',
+  ) {
+    if (!this.media?.enabled) return { photo, asset: undefined };
+    if (!photo.source)
+      throw new ConflictException('Original upload bytes are required');
+    const asset = await this.media.stage(userId, purpose, photo.source);
+    const preview = await this.media.readPreview(asset.id);
+    if (!preview) throw new ConflictException('Prepared preview is missing');
+    return {
+      asset,
+      photo: {
+        ...photo,
+        buffer: Buffer.from(preview.bytes),
+        mimeType: 'image/webp' as const,
+        width: asset.preview.width,
+        height: asset.preview.height,
+      },
+    };
+  }
+
   async create(
     userId: string,
     input: SellerProfileCreateRequest,
@@ -198,83 +291,140 @@ export class SellersService {
     });
 
     if (existing) {
-      throw new ConflictException('Seller profile already exists');
+      throw new ConflictException({
+        code: ApiErrorCode.CONFLICT,
+        message: 'Seller profile already exists',
+        details: { reason: 'profile_exists' },
+      });
     }
+
+    const prepared = await this.preparePhoto(
+      userId,
+      profilePhoto,
+      'AUTHOR_PHOTO',
+    );
+    profilePhoto = prepared.photo;
 
     try {
       const sellerProfile = await this.prisma.$transaction(async (tx) => {
+        const account = await tx.user.findUnique({
+          where: { id: userId },
+          select: { slug: true },
+        });
+        if (!account?.slug) {
+          throw new ConflictException(
+            'Account nickname is required before an author profile',
+          );
+        }
+        const slug = account.slug;
         const created = await tx.sellerProfile.create({
           data: {
             userId,
-            slug: input.slug,
-            sellerType: input.sellerType,
-            ...(input.discipline ? { discipline: input.discipline } : {}),
+            slug,
+            sellerType: 'creator',
+            discipline: input.discipline ?? null,
             fullName: input.fullName,
             country: input.country,
             city: input.city ?? null,
             practice: input.practice ?? null,
-            socialLink: input.socialLink,
+            biography: input.biography ?? null,
+            socialLink: input.socialLink ?? null,
             telegramUrl: input.telegramUrl ?? null,
             instagramUrl: input.instagramUrl ?? null,
             websiteUrl: input.websiteUrl ?? null,
-            shortDescription: input.shortDescription,
-            handoffContactType: input.handoffContactType,
-            handoffContactValue: input.handoffContactValue,
-            handoffInitiator: input.handoffInitiator ?? 'BUYER_CONTACTS_SELLER',
+            publicEmail: input.publicEmail ?? null,
+            shortDescription: input.shortDescription ?? null,
+            status: 'DRAFT',
+            applicationStage: 'CONTACTS',
+            handoffContactType: null,
+            handoffContactValue: null,
+            handoffInitiator: null,
             profilePhotoMimeType: profilePhoto.mimeType,
             profilePhotoByteLength: profilePhoto.buffer.byteLength,
             profilePhotoChecksum: createHash('sha256')
               .update(profilePhoto.buffer)
               .digest('hex'),
             profilePhotoData: emptyImageBytes,
+            ...(prepared.asset
+              ? { profilePhotoAssetId: prepared.asset.id }
+              : {}),
           },
-          select: sellerProfileResponseSelect,
+          select: sellerProfileOwnerSelect,
         });
 
-        await this.imageStore.put(
-          imageKey.sellerPhoto(created.id),
-          {
-            bytes: profilePhoto.buffer,
-            mimeType: profilePhoto.mimeType,
-          },
-          tx,
-        );
+        if (prepared.asset) await this.media!.attach(tx, prepared.asset.id);
+        else
+          await this.imageStore.put(
+            imageKey.sellerPhoto(created.id),
+            {
+              bytes: profilePhoto.buffer,
+              mimeType: profilePhoto.mimeType,
+            },
+            tx,
+          );
         await tx.sellerProfile.update({
           where: { id: created.id },
-          data: { profilePhotoObjectKey: imageKey.sellerPhoto(created.id) },
+          data: {
+            profilePhotoObjectKey:
+              prepared.asset?.preview.objectKey ??
+              imageKey.sellerPhoto(created.id),
+          },
         });
 
         const revision = await tx.sellerProfileRevision.create({
           data: {
             sellerProfileId: created.id,
             version: 1,
-            status: 'PENDING_REVIEW',
-            slug: input.slug,
-            discipline: input.discipline ?? 'Автор',
+            status: 'DRAFT',
+            slug,
+            discipline: input.discipline ?? null,
             fullName: input.fullName,
             country: input.country,
             city: input.city ?? null,
             practice: input.practice ?? null,
-            socialLink: input.socialLink,
+            biography: input.biography ?? null,
+            socialLink: input.socialLink ?? null,
             telegramUrl: input.telegramUrl ?? null,
             instagramUrl: input.instagramUrl ?? null,
             websiteUrl: input.websiteUrl ?? null,
-            shortDescription: input.shortDescription,
-            submittedAt: new Date(),
+            publicEmail: input.publicEmail ?? null,
+            shortDescription: input.shortDescription ?? null,
+            profilePhotoMimeType: profilePhoto.mimeType,
+            profilePhotoByteLength: profilePhoto.buffer.byteLength,
+            profilePhotoChecksum: createHash('sha256')
+              .update(profilePhoto.buffer)
+              .digest('hex'),
+            profilePhotoObjectKey:
+              prepared.asset?.preview.objectKey ??
+              imageKey.sellerPhoto(created.id),
+            ...(prepared.asset
+              ? { profilePhotoAssetId: prepared.asset.id }
+              : {}),
           },
         });
         await tx.sellerProfile.update({
           where: { id: created.id },
           data: { editingRevisionId: revision.id },
         });
+        if (input.directionCategoryIds?.length) {
+          await replaceProfileDirections(
+            tx,
+            revision.id,
+            input.directionCategoryIds,
+          );
+        }
 
-        return created;
+        return tx.sellerProfile.findUniqueOrThrow({
+          where: { id: created.id },
+          select: sellerProfileOwnerSelect,
+        });
       });
 
       return toSellerProfileResponse(sellerProfile);
     } catch (error: unknown) {
       if (isPrismaUniqueConstraintError(error)) {
-        throw new ConflictException(
+        throwSellerProfileUniqueConflict(
+          error,
           'Seller profile already exists or slug is already taken',
         );
       }
@@ -302,11 +452,6 @@ export class SellersService {
     }
 
     if (current.status === 'APPROVED') {
-      if (profilePhoto) {
-        throw new ConflictException(
-          'Profile photo changes require a dedicated profile revision',
-        );
-      }
       if (
         input.sellerType !== undefined ||
         input.handoffContactType !== undefined ||
@@ -318,133 +463,131 @@ export class SellersService {
         );
       }
 
+      const prepared = profilePhoto
+        ? await this.preparePhoto(userId, profilePhoto, 'AUTHOR_PHOTO')
+        : undefined;
+      if (prepared) profilePhoto = prepared.photo;
       const sellerProfile = await runReadCommittedTransaction(
         this.prisma,
         async (tx) => {
-          const profile = await tx.sellerProfile.findUnique({
-            where: { id: current.id },
-            include: {
-              editingRevision: true,
-              publishedRevision: {
-                include: {
-                  achievements: { orderBy: { position: 'asc' } },
-                },
-              },
+          const editing = await ensureEditableEditingRevision(tx, userId);
+          if (this.media?.enabled)
+            await this.media.assertNotPending(tx, {
+              profileId: editing.profileId,
+            });
+          const profilePhotoData = profilePhoto
+            ? {
+                profilePhotoMimeType: profilePhoto.mimeType,
+                profilePhotoByteLength: profilePhoto.buffer.byteLength,
+                profilePhotoChecksum: createHash('sha256')
+                  .update(profilePhoto.buffer)
+                  .digest('hex'),
+                profilePhotoObjectKey:
+                  prepared?.asset?.preview.objectKey ??
+                  imageKey.sellerProfileRevision(editing.revisionId),
+                ...(prepared?.asset
+                  ? { profilePhotoAssetId: prepared.asset.id }
+                  : {}),
+              }
+            : {};
+          await tx.sellerProfileRevision.update({
+            where: { id: editing.revisionId },
+            data: {
+              ...publicProfileRevisionData(input),
+              ...profilePhotoData,
             },
           });
-          if (!profile?.publishedRevision) {
-            throw new ConflictException(
-              'Published profile revision is missing',
+          if (input.directionCategoryIds) {
+            await replaceProfileDirections(
+              tx,
+              editing.revisionId,
+              input.directionCategoryIds,
             );
           }
-          let revisionId = profile.editingRevisionId;
-          if (revisionId === profile.publishedRevisionId) {
-            const published = profile.publishedRevision;
-            const editing = await tx.sellerProfileRevision.create({
-              data: {
-                sellerProfileId: profile.id,
-                version: published.version + 1,
-                status: 'DRAFT',
-                slug: published.slug,
-                discipline: published.discipline,
-                fullName: published.fullName,
-                country: published.country,
-                city: published.city,
-                practice: published.practice,
-                socialLink: published.socialLink,
-                telegramUrl: published.telegramUrl,
-                instagramUrl: published.instagramUrl,
-                websiteUrl: published.websiteUrl,
-                shortDescription: published.shortDescription,
-                achievements: {
-                  create: published.achievements.map((achievement) => ({
-                    position: achievement.position,
-                    occurredAt: achievement.occurredAt,
-                    body: achievement.body,
-                    mimeType: achievement.mimeType,
-                    byteLength: achievement.byteLength,
-                    checksum: achievement.checksum,
-                    objectKey: achievement.objectKey,
-                  })),
-                },
-              },
-            });
-            revisionId = editing.id;
-            await tx.sellerProfile.update({
-              where: { id: profile.id },
-              data: { editingRevisionId: revisionId },
-            });
+          if (prepared?.asset) await this.media!.attach(tx, prepared.asset.id);
+          if (profilePhoto && !prepared?.asset) {
+            await this.imageStore.put(
+              imageKey.sellerProfileRevision(editing.revisionId),
+              { bytes: profilePhoto.buffer, mimeType: profilePhoto.mimeType },
+              tx,
+            );
           }
-          if (!revisionId) {
-            throw new ConflictException('Profile editing revision is missing');
-          }
-          const editing = await tx.sellerProfileRevision.findUniqueOrThrow({
-            where: { id: revisionId },
-            select: { status: true },
-          });
-          if (!canAuthorEditSellerProfileRevision(editing.status)) {
-            throw new ConflictException('Seller profile revision is locked');
-          }
-          await tx.sellerProfileRevision.update({
-            where: { id: revisionId },
-            data: publicProfileRevisionData(input),
-          });
           return tx.sellerProfile.findUniqueOrThrow({
-            where: { id: profile.id },
-            select: sellerProfileResponseSelect,
+            where: { id: editing.profileId },
+            select: sellerProfileOwnerSelect,
           });
         },
       );
       return toSellerProfileResponse(sellerProfile);
     }
 
-    if (current.status !== 'CHANGES_REQUESTED') {
+    if (
+      current.status !== 'DRAFT' &&
+      current.status !== 'CHANGES_REQUESTED' &&
+      current.status !== 'REJECTED'
+    ) {
       throw new ForbiddenException('Seller profile cannot be edited');
     }
 
+    const { directionCategoryIds: _directions, ...profileInput } = input;
+    void _directions;
     const data = Object.fromEntries(
-      Object.entries(input).filter(([, value]) => value !== undefined),
-    );
+      Object.entries(profileInput).filter(([, value]) => value !== undefined),
+    ) as Prisma.SellerProfileUncheckedUpdateInput;
 
-    if (profilePhoto) {
-      Object.assign(data, {
-        profilePhotoMimeType: profilePhoto.mimeType,
-        profilePhotoByteLength: profilePhoto.buffer.byteLength,
-        profilePhotoChecksum: createHash('sha256')
-          .update(profilePhoto.buffer)
-          .digest('hex'),
-      });
-    }
-
+    const prepared = profilePhoto
+      ? await this.preparePhoto(userId, profilePhoto, 'AUTHOR_PHOTO')
+      : undefined;
+    if (prepared) profilePhoto = prepared.photo;
     try {
-      if (profilePhoto) {
-        const sellerProfile = await this.prisma.$transaction(async (tx) => {
-          const updated = await tx.sellerProfile.update({
-            where: { id: current.id },
-            data,
-            select: sellerProfileResponseSelect,
+      const sellerProfile = await runReadCommittedTransaction(
+        this.prisma,
+        async (tx) => {
+          const editing = await ensureEditableEditingRevision(tx, userId);
+          const profilePhotoData = profilePhoto
+            ? {
+                profilePhotoMimeType: profilePhoto.mimeType,
+                profilePhotoByteLength: profilePhoto.buffer.byteLength,
+                profilePhotoChecksum: createHash('sha256')
+                  .update(profilePhoto.buffer)
+                  .digest('hex'),
+                profilePhotoObjectKey:
+                  prepared?.asset?.preview.objectKey ??
+                  imageKey.sellerPhoto(editing.profileId),
+                ...(prepared?.asset
+                  ? { profilePhotoAssetId: prepared.asset.id }
+                  : {}),
+              }
+            : {};
+          await tx.sellerProfile.update({
+            where: { id: editing.profileId },
+            data: { ...data, ...profilePhotoData },
           });
-
-          await this.imageStore.put(
-            imageKey.sellerPhoto(current.id),
-            {
-              bytes: profilePhoto.buffer,
-              mimeType: profilePhoto.mimeType,
-            },
-            tx,
-          );
-
-          return updated;
-        });
-
-        return toSellerProfileResponse(sellerProfile);
-      }
-
-      const sellerProfile = await this.prisma.sellerProfile.update({
-        where: { id: current.id },
-        data,
-        select: sellerProfileResponseSelect,
-      });
+          await tx.sellerProfileRevision.update({
+            where: { id: editing.revisionId },
+            data: { ...publicProfileRevisionData(input), ...profilePhotoData },
+          });
+          if (input.directionCategoryIds) {
+            await replaceProfileDirections(
+              tx,
+              editing.revisionId,
+              input.directionCategoryIds,
+            );
+          }
+          if (prepared?.asset) await this.media!.attach(tx, prepared.asset.id);
+          if (profilePhoto && !prepared?.asset) {
+            await this.imageStore.put(
+              imageKey.sellerPhoto(editing.profileId),
+              { bytes: profilePhoto.buffer, mimeType: profilePhoto.mimeType },
+              tx,
+            );
+          }
+          return tx.sellerProfile.findUniqueOrThrow({
+            where: { id: editing.profileId },
+            select: sellerProfileOwnerSelect,
+          });
+        },
+      );
 
       return toSellerProfileResponse(sellerProfile);
     } catch (error: unknown) {
@@ -454,7 +597,10 @@ export class SellersService {
         }
 
         if (error.code === 'P2002') {
-          throw new ConflictException('Seller profile slug is already taken');
+          throwSellerProfileUniqueConflict(
+            error,
+            'Seller profile could not be saved',
+          );
         }
       }
 
@@ -464,37 +610,82 @@ export class SellersService {
 
   async submitProfileRevision(userId: string) {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
-      const profile = await tx.sellerProfile.findUnique({
-        where: { userId },
+      const editing = await ensureEditableEditingRevision(tx, userId);
+      const profile = await tx.sellerProfile.findUniqueOrThrow({
+        where: { id: editing.profileId },
         include: { editingRevision: true },
       });
-      if (!profile?.editingRevision) {
-        throw new NotFoundException('Seller profile revision not found');
-      }
-      if (profile.status === 'SUSPENDED') {
-        throw new ForbiddenException('Seller profile is suspended');
-      }
       const revision = profile.editingRevision;
-      if (
-        !['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(revision.status)
-      ) {
-        throw new ConflictException(
-          'Seller profile revision cannot be submitted',
-        );
-      }
+      if (!revision)
+        throw new NotFoundException('Seller profile revision not found');
+      const directionCount = await tx.sellerProfileRevisionDirection.count({
+        where: { revisionId: revision.id },
+      });
+      assertProfileRevisionReadyToSubmit({ ...revision, directionCount });
       await tx.sellerProfileRevision.update({
         where: { id: revision.id },
         data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
       });
+      await tx.auditEvent.create({
+        data: {
+          actorUserId: userId,
+          targetType: 'SELLER_PROFILE',
+          targetId: profile.id,
+          action: 'SUBMITTED',
+          revisionId: revision.id,
+          oldStatus: revision.status,
+          newStatus: 'PENDING_REVIEW',
+        },
+      });
       if (profile.status !== 'APPROVED') {
         await tx.sellerProfile.update({
           where: { id: profile.id },
-          data: { status: 'PENDING_REVIEW' },
+          data: { status: 'PENDING_REVIEW', applicationStage: null },
         });
       }
       return tx.sellerProfile.findUniqueOrThrow({
         where: { id: profile.id },
-        select: sellerProfileResponseSelect,
+        select: sellerProfileOwnerSelect,
+      });
+    }).then(toSellerProfileResponse);
+  }
+
+  async advanceApplicationStage(userId: string) {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const editing = await ensureEditableEditingRevision(tx, userId);
+      const profile = await tx.sellerProfile.findUniqueOrThrow({
+        where: { id: editing.profileId },
+        include: { editingRevision: true },
+      });
+      if (profile.status !== 'DRAFT' || !profile.editingRevision) {
+        throw new ConflictException('Author onboarding is not active');
+      }
+      const stage = profile.applicationStage;
+      if (stage === 'CONTACTS') {
+        await tx.sellerProfile.update({
+          where: { id: profile.id },
+          data: { applicationStage: 'ABOUT' },
+        });
+      } else if (stage === 'ABOUT') {
+        const revision = profile.editingRevision;
+        const directionCount = await tx.sellerProfileRevisionDirection.count({
+          where: { revisionId: revision.id },
+        });
+        if (directionCount < 1 || !revision.shortDescription) {
+          throw new ConflictException(
+            'Author profile is missing required fields',
+          );
+        }
+        await tx.sellerProfile.update({
+          where: { id: profile.id },
+          data: { applicationStage: 'ACHIEVEMENTS' },
+        });
+      } else {
+        throw new ConflictException('Author onboarding cannot advance');
+      }
+      return tx.sellerProfile.findUniqueOrThrow({
+        where: { id: profile.id },
+        select: sellerProfileOwnerSelect,
       });
     }).then(toSellerProfileResponse);
   }
@@ -504,44 +695,145 @@ export class SellersService {
     input: PortfolioAchievementWriteRequest,
   ) {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
-      const revision = await this.editableRevision(tx, userId);
-      await lockSellerProfileRevisionRowForUpdate(tx, revision.id);
-      const position = await tx.sellerProfileRevisionAchievement.count({
-        where: { revisionId: revision.id },
+      const editing = await ensureEditableEditingRevision(tx, userId);
+      const last = await tx.sellerProfileRevisionAchievement.findFirst({
+        where: { revisionId: editing.revisionId },
+        select: { position: true },
+        orderBy: { position: 'desc' },
       });
+      const position = (last?.position ?? -1) + 1;
+      // Date.UTC treats years 1..99 as 1901..1999. Set the full year explicitly.
+      const occurredAt = new Date(0);
+      occurredAt.setUTCFullYear(
+        input.occurredDate.year,
+        input.occurredDate.month - 1,
+        input.occurredDate.day ?? 1,
+      );
       const achievement = await tx.sellerProfileRevisionAchievement.create({
         data: {
-          revisionId: revision.id,
+          revisionId: editing.revisionId,
           position,
-          occurredAt: input.occurredAt ? new Date(input.occurredAt) : null,
+          occurredAt,
+          occurredAtPrecision:
+            input.occurredDate.day === null ? 'MONTH' : 'DAY',
           body: input.body,
         },
       });
       return portfolioAchievementResponseSchema.parse({
         achievement: {
           id: achievement.id,
-          occurredAt: achievement.occurredAt?.toISOString() ?? null,
+          occurredDate: {
+            year: input.occurredDate.year,
+            month: input.occurredDate.month,
+            day: input.occurredDate.day,
+          },
           body: achievement.body,
+          image: null,
         },
       });
     });
   }
 
-  private async editableRevision(
-    tx: Parameters<Parameters<typeof runReadCommittedTransaction>[1]>[0],
-    userId: string,
-  ) {
-    const profile = await tx.sellerProfile.findUnique({
-      where: { userId },
-      include: { editingRevision: true },
+  async deleteAchievement(userId: string, achievementId: string) {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const editing = await ensureEditableEditingRevision(tx, userId);
+      const targetId = await resolveEditingAchievementId(
+        tx,
+        editing,
+        achievementId,
+      );
+      const achievement = await tx.sellerProfileRevisionAchievement.findFirst({
+        where: { id: targetId, revisionId: editing.revisionId },
+        select: { id: true },
+      });
+      if (!achievement) throw new NotFoundException('Achievement not found');
+
+      // Gaps are safe: new achievements append after the highest position.
+      await tx.sellerProfileRevisionAchievement.delete({
+        where: { id: achievement.id },
+      });
+      return { ok: true as const };
     });
-    if (!profile?.editingRevision) {
-      throw new NotFoundException('Seller profile revision not found');
+  }
+
+  async getEditingPhoto(userId: string) {
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: {
+        editingRevision: {
+          select: {
+            profilePhotoObjectKey: true,
+            profilePhotoAssetId: true,
+          },
+        },
+      },
+    });
+    if (!sellerProfile?.editingRevision?.profilePhotoObjectKey) {
+      throw new NotFoundException('Seller profile photo not found');
     }
-    if (!canAuthorEditSellerProfileRevision(profile.editingRevision.status)) {
-      throw new ConflictException('Seller profile revision is locked');
+    const stored =
+      sellerProfile.editingRevision.profilePhotoAssetId && this.media?.enabled
+        ? await this.media.readPreview(
+            sellerProfile.editingRevision.profilePhotoAssetId,
+          )
+        : await this.imageStore.get(
+            sellerProfile.editingRevision.profilePhotoObjectKey,
+          );
+    if (!stored) {
+      throw new NotFoundException('Seller profile photo not found');
     }
-    return profile.editingRevision;
+    return {
+      mimeType: stored.mimeType,
+      data: stored.bytes,
+    };
+  }
+
+  async getAchievementImage(
+    achievementId: string,
+    userId?: string,
+    role?: string,
+  ) {
+    const achievement =
+      await this.prisma.sellerProfileRevisionAchievement.findUnique({
+        where: { id: achievementId },
+        select: {
+          mimeType: true,
+          objectKey: true,
+          revisionId: true,
+          mediaAssetId: true,
+          revision: {
+            select: {
+              sellerProfile: {
+                select: {
+                  userId: true,
+                  status: true,
+                  publishedRevisionId: true,
+                  user: { select: { status: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+    if (!achievement?.mimeType || !achievement.objectKey) {
+      throw new NotFoundException('Achievement image not found');
+    }
+    const profile = achievement.revision.sellerProfile;
+    const isPublic =
+      profile.status === 'APPROVED' &&
+      profile.user.status === 'active' &&
+      profile.publishedRevisionId === achievement.revisionId;
+    if (profile.userId !== userId && role !== 'admin' && !isPublic) {
+      throw new NotFoundException('Achievement image not found');
+    }
+    const stored =
+      achievement.mediaAssetId && this.media?.enabled
+        ? await this.media.readPreview(achievement.mediaAssetId)
+        : await this.imageStore.get(achievement.objectKey);
+    if (!stored) {
+      throw new NotFoundException('Achievement image not found');
+    }
+    return { mimeType: stored.mimeType, data: stored.bytes, isPublic };
   }
 
   async listProducts(userId: string) {
@@ -570,6 +862,7 @@ export class SellersService {
       where: { id: productId, sellerProfile: { userId } },
       select: {
         ...productSelect,
+        editingRevision: { select: productRevisionOwnerSelect },
         creationIntro: true,
         creationSteps: {
           orderBy: { position: 'asc' },
@@ -589,6 +882,7 @@ export class SellersService {
     });
 
     if (!product) throw new NotFoundException('Product not found');
+    const story = storyFromRows(product.editingRevision);
 
     const latestReason = await this.prisma.auditEvent.findFirst({
       where: {
@@ -601,175 +895,141 @@ export class SellersService {
     });
 
     return sellerProductDetailResponseSchema.parse({
-      product: toContractProduct(product),
+      product: toOwnerContractProduct(product, product.editingRevision),
+      ...(product.mediaOperations[0]
+        ? { publication: product.mediaOperations[0] }
+        : {}),
+      editingRevision: product.editingRevision
+        ? {
+            id: product.editingRevision.id,
+            version: product.editingRevision.version,
+            status: product.editingRevision.status,
+            updatedAt: product.editingRevision.updatedAt.toISOString(),
+          }
+        : null,
       creationIntro: product.creationIntro ?? null,
       creationSteps: product.creationSteps.map(toCreationStepContract),
+      story,
+      selection: selectionFromRevision(product.editingRevision),
       lastModerationReason: latestReason?.reason ?? null,
     });
   }
 
-  async listPublic(
-    query: PublicSellerQuery,
+  async listPortfolioAuthors(
+    query: PortfolioAuthorsQuery,
     options: { requireCity?: boolean } = {},
   ) {
-    const searchWhere = query.q
-      ? {
-          OR: [
-            { fullName: { contains: query.q, mode: 'insensitive' as const } },
-            { slug: { contains: query.q, mode: 'insensitive' as const } },
-            {
-              shortDescription: {
-                contains: query.q,
-                mode: 'insensitive' as const,
-              },
-            },
-          ],
-        }
-      : {};
-    const where = {
-      status: 'APPROVED' as const,
-      ...(query.tag
-        ? {
-            discipline: {
-              contains: query.tag,
-              mode: 'insensitive' as const,
-            },
-          }
-        : {}),
-      ...(query.city
-        ? {
-            city: {
-              equals: query.city,
-              mode: 'insensitive' as const,
-            },
-          }
-        : options.requireCity
-          ? { city: { not: null } }
-          : {}),
-      ...searchWhere,
-    };
-    const [sellers, total] = await Promise.all([
-      this.prisma.sellerProfile.findMany({
-        where,
-        select: {
-          ...publicSellerProfileSelect,
-          products: {
-            where: publicCatalogProductWhere,
-            orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-            take: 1,
-            select: { createdAt: true },
-          },
-          _count: {
-            select: { products: { where: publicCatalogProductWhere } },
-          },
-        },
-      }),
-      this.prisma.sellerProfile.count({ where }),
-    ]);
-
-    const sortedSellers = [...sellers].sort((left, right) => {
-      if (query.sort === 'activity') {
-        const leftCreatedAt = left.products[0]?.createdAt.getTime() ?? 0;
-        const rightCreatedAt = right.products[0]?.createdAt.getTime() ?? 0;
-
-        return (
-          rightCreatedAt - leftCreatedAt ||
-          left.fullName.localeCompare(right.fullName) ||
-          left.id.localeCompare(right.id)
-        );
-      }
-
-      return (
-        left.fullName.localeCompare(right.fullName) ||
-        left.id.localeCompare(right.id)
-      );
-    });
-    const pagedSellers = sortedSellers.slice(
-      (query.page - 1) * query.limit,
-      query.page * query.limit,
+    const cte = publicAuthorCte(query, options);
+    const pageRows = await this.prisma.$queryRaw<PublicAuthorPageRow[]>(
+      Prisma.sql`${cte}
+        SELECT "id", COUNT(*) OVER()::int AS "total"
+        FROM filtered
+        ORDER BY ${Prisma.raw(publicAuthorOrderBy(query.sort))}
+        LIMIT ${query.limit}
+        OFFSET ${(query.page - 1) * query.limit}`,
     );
+    const total = pageRows.length
+      ? Number(pageRows[0]!.total)
+      : Number(
+          (
+            await this.prisma.$queryRaw<Array<{ total: number | bigint }>>(
+              Prisma.sql`${cte}
+                SELECT COUNT(*)::int AS "total"
+                FROM filtered`,
+            )
+          )[0]?.total ?? 0,
+        );
 
-    return publicSellerListResponseSchema.parse({
+    if (!pageRows.length) {
+      return {
+        sellers: [],
+        pagination: { page: query.page, limit: query.limit, total },
+      };
+    }
+
+    const sellers = await this.prisma.sellerProfile.findMany({
+      where: {
+        id: { in: pageRows.map((row) => row.id) },
+        status: 'APPROVED',
+        user: { status: 'active' },
+        ...(options.requireCity ? { city: publicAuthorCityWhere } : {}),
+      },
+      select: {
+        ...publicSellerProfileSelect,
+        _count: {
+          select: { products: { where: portfolioCatalogProductWhere } },
+        },
+      },
+    });
+    const sellersById = new Map(sellers.map((seller) => [seller.id, seller]));
+    const pagedSellers = pageRows
+      .map((row) => sellersById.get(row.id))
+      .filter((seller): seller is (typeof sellers)[number] => Boolean(seller));
+
+    return {
       sellers: pagedSellers.map((seller) => ({
         sellerProfile: toPublicSellerProfile(seller),
         workCount: seller._count.products,
       })),
-      pagination: { page: query.page, limit: query.limit, total },
-    });
+      pagination: {
+        page: query.page,
+        limit: query.limit,
+        total,
+      },
+    };
   }
 
-  async getPublic(
+  async listPublicFacets() {
+    const cte = publicAuthorCte({ page: 1, limit: 1, sort: 'added' });
+    const [cities, tags] = await Promise.all([
+      this.prisma.$queryRaw<Array<{ city: string | null }>>(
+        Prisma.sql`${cte}
+          SELECT DISTINCT "city"
+          FROM filtered`,
+      ),
+      this.prisma.$queryRaw<Array<{ tag: string }>>(
+        Prisma.sql`${cte}
+          SELECT DISTINCT direction."category_id"::text AS "tag"
+          FROM filtered
+          INNER JOIN "seller_profile_revision_directions" direction
+            ON direction."revision_id" = filtered."published_revision_id"`,
+      ),
+    ]);
+    return {
+      cities: cities.map((row) => row.city),
+      tags: tags.map((row) => row.tag),
+    };
+  }
+
+  async getApprovedPublicAuthor(
     slug: string,
-    query: PublicSellerWorksQuery = { page: 1, limit: 20, sort: 'activity' },
     options: { requireCity?: boolean } = {},
   ) {
     const sellerProfile = await this.prisma.sellerProfile.findFirst({
       where: {
-        slug,
         status: 'APPROVED',
-        ...(options.requireCity ? { city: { not: null } } : {}),
+        user: { status: 'active' },
+        OR: [{ user: { slug } }, { slug, user: { slug: null } }],
+        ...(options.requireCity ? { city: publicAuthorCityWhere } : {}),
       },
       select: publicSellerProfileSelect,
     });
-
-    if (!sellerProfile) {
-      throw new NotFoundException('Seller profile not found');
+    if (
+      !sellerProfile ||
+      (options.requireCity && !sellerProfile.city?.trim())
+    ) {
+      return null;
     }
-
-    const pageCte = publicSellerProductsCte(slug, query.status);
-    const countCte = publicSellerProductsCte(slug);
-    const [pageRows, totalRows, statusRows] = await Promise.all([
-      this.prisma.$queryRaw<PublicSellerProductPageRow[]>(
-        Prisma.sql`${pageCte}
-          SELECT p."id"
-          FROM filtered p
-          ORDER BY ${Prisma.raw(publicSellerProductsOrderBy(query.sort))}
-          LIMIT ${query.limit}
-          OFFSET ${(query.page - 1) * query.limit}`,
-      ),
-      this.prisma.$queryRaw<PublicSellerCountRow[]>(
-        Prisma.sql`${countCte} SELECT COUNT(*)::int AS "total" FROM filtered`,
-      ),
-      this.prisma.$queryRaw<PublicSellerStatusRow[]>(
-        Prisma.sql`${countCte}
-          SELECT "status", COUNT(*)::int AS "count"
-          FROM filtered
-          GROUP BY "status"`,
-      ),
-    ]);
-
-    const products = pageRows.length
-      ? await this.prisma.product.findMany({
-          where: { id: { in: pageRows.map((row) => row.id) } },
-          select: publicCatalogProductSelect,
-        })
-      : [];
-    const productsById = new Map(
-      products.map((product) => [product.id, product]),
-    );
-    const orderedProducts = pageRows
-      .map((row) => productsById.get(row.id))
-      .filter(
-        (product): product is (typeof products)[number] =>
-          product !== undefined,
-      );
-    const statusCounts = { SCHEDULED: 0, LIVE: 0, ENDED: 0 };
-    for (const row of statusRows) statusCounts[row.status] = Number(row.count);
-    const total = Number(totalRows[0]?.total ?? 0);
-
-    return publicSellerDetailResponseSchema.parse({
+    return {
       sellerProfile: toPublicSellerProfile(sellerProfile),
-      products: orderedProducts.map((product) =>
-        this.products.toPublicProduct(product),
-      ),
-      statusCounts,
-      pagination: { page: query.page, limit: query.limit, total },
-    });
+    };
   }
 
   async getPhoto(slug: string, userId?: string, role?: string) {
     const sellerProfile = await this.prisma.sellerProfile.findFirst({
-      where: { slug },
+      where: {
+        OR: [{ user: { slug } }, { slug, user: { slug: null } }],
+      },
       select: sellerProfilePhotoSelect,
     });
 
@@ -779,15 +1039,21 @@ export class SellersService {
 
     const isOwner = sellerProfile.userId === userId;
     const isAdmin = role === 'admin';
-    const isPublic = sellerProfile.status === 'APPROVED';
+    const isPublic =
+      sellerProfile.status === 'APPROVED' &&
+      sellerProfile.user.status === 'active';
 
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Seller profile not found');
     }
 
-    const stored = await this.imageStore.get(
-      imageKey.sellerPhoto(sellerProfile.id),
-    );
+    const stored =
+      sellerProfile.profilePhotoAssetId && this.media?.enabled
+        ? await this.media.readPreview(sellerProfile.profilePhotoAssetId)
+        : await this.imageStore.get(
+            sellerProfile.profilePhotoObjectKey ??
+              imageKey.sellerPhoto(sellerProfile.id),
+          );
 
     if (!stored) {
       throw new NotFoundException('Seller profile not found');
@@ -795,6 +1061,7 @@ export class SellersService {
 
     return {
       status: sellerProfile.status,
+      isPublic,
       profilePhotoMimeType: stored.mimeType,
       profilePhotoData: stored.bytes,
     };

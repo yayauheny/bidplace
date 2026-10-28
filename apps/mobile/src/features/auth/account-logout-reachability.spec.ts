@@ -1,0 +1,240 @@
+/**
+ * @vitest-environment jsdom
+ */
+import { act, createElement, type ReactNode } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { flush } from '../../testing/dom';
+
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+const harness = vi.hoisted(() => ({
+  logout: vi.fn<() => Promise<void>>(),
+  replace: vi.fn(),
+  push: vi.fn(),
+  requestEmailVerification: vi.fn(),
+  emailVerificationState: vi.fn(),
+  getMyProfile: vi.fn(),
+  listCabinetWorks: vi.fn(),
+  listSellerProfiles: vi.fn(),
+}));
+
+vi.mock('../../components/layout/PageScrollView', () => ({ PageScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children) }));
+
+vi.mock('react-native', () => ({
+  Platform: { OS: 'web' },
+  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  TextInput: () => createElement('input'),
+  Image: () => null,
+  ScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+}));
+
+vi.mock('expo-image', () => ({
+  Image: () => null,
+}));
+
+vi.mock('expo-router', () => ({
+  useRouter: () => ({
+    replace: harness.replace,
+    push: harness.push,
+  }),
+  useIsFocused: () => true,
+  usePathname: () => '/verify-email',
+  Link: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+}));
+
+vi.mock('../../providers/auth-provider', () => ({
+  useAuth: () => ({
+    isAuthenticated: true,
+    isAdmin: false,
+    logout: harness.logout,
+    refreshSession: vi.fn(),
+    user: {
+      id: 'user-a',
+      email: 'author@example.com',
+      emailVerifiedAt: '2026-09-27T00:00:00.000Z',
+      role: 'user',
+    },
+  }),
+}));
+
+vi.mock('../../providers/api-provider', () => ({
+  useApiClient: () => ({
+    sellers: { getMyProfile: harness.getMyProfile },
+    portfolio: { listCabinetWorks: harness.listCabinetWorks },
+    admin: { listSellerProfiles: harness.listSellerProfiles },
+    auth: {
+      requestEmailVerification: harness.requestEmailVerification,
+      verifyEmailVerification: vi.fn(),
+      emailVerificationState: harness.emailVerificationState,
+      changeUnverifiedEmail: vi.fn(),
+      me: vi.fn(),
+    },
+  }),
+}));
+
+vi.mock('../../components/layout', () => ({
+  AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  FormPageShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+}));
+
+vi.mock('../../components/shared/InfrastructurePageStatus', () => ({
+  InfrastructurePageStatus: ({ status }: { status: string }) =>
+    createElement('div', null, status),
+}));
+
+vi.mock('../../components/ui', () => {
+  function PressButton({
+    label,
+    onPress,
+    disabled,
+  }: {
+    label: string;
+    onPress?: () => void;
+    disabled?: boolean;
+  }) {
+    return createElement(
+      'button',
+      {
+        type: 'button',
+        disabled: Boolean(disabled),
+        onClick: () => {
+          if (!disabled) onPress?.();
+        },
+      },
+      label,
+    );
+  }
+
+  return {
+    AppDialog: ({ open, children }: { open: boolean; children?: ReactNode }) =>
+      (open ? createElement('div', { role: 'dialog' }, children) : null),
+    AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+    PrimaryButton: PressButton,
+    FormSection: ({ children }: { children?: ReactNode }) => createElement('section', null, children),
+    ImagePlaceholder: () => null,
+    PageHeader: ({ title }: { title: string }) => createElement('h1', null, title),
+    PageState: ({ title }: { title: string }) => createElement('p', null, title),
+        ResilientRemoteImage: () => null,
+    SecondaryButton: PressButton,
+    TextButton: PressButton,
+    TextField: () => createElement('input'),
+  };
+});
+
+import { authKeys } from '../../lib/query-cache';
+import { VerifyEmailForm } from './verify-email-form';
+import { AccountLogoutButton } from './AccountLogoutButton';
+import { AuthorCabinetScreen } from '../sellers/author-cabinet-screen';
+
+function seller(status: 'APPROVED' | 'SUSPENDED') {
+  return {
+    sellerProfile: {
+      id: '11111111-1111-4111-8111-111111111111',
+      status,
+      fullName: 'Author Name',
+      slug: 'author',
+    },
+    editingRevision: null,
+  };
+}
+
+function mount(node: ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  queryClient.setQueryData(authKeys.session, { id: 'user-a' });
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root: Root = createRoot(container);
+  act(() => {
+    root.render(createElement(QueryClientProvider, { client: queryClient }, node));
+  });
+  return {
+    container,
+    unmount() {
+      act(() => {
+        root.unmount();
+      });
+      container.remove();
+    },
+  };
+}
+
+async function until(container: HTMLElement, marker: string) {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    if (container.textContent?.includes(marker)) return;
+    await flush();
+  }
+  throw new Error(`Timed out waiting for ${marker}. Body: ${container.textContent}`);
+}
+
+afterEach(() => {
+  document.body.replaceChildren();
+  harness.logout.mockReset();
+  harness.replace.mockReset();
+  harness.push.mockReset();
+  harness.getMyProfile.mockReset();
+  harness.listCabinetWorks.mockReset();
+  harness.listSellerProfiles.mockReset();
+  harness.requestEmailVerification.mockReset();
+  harness.emailVerificationState.mockReset();
+});
+
+describe('account logout reachability', () => {
+  it('shows logout in the approved author cabinet', async () => {
+    harness.getMyProfile.mockResolvedValue(seller('APPROVED'));
+    harness.listCabinetWorks.mockResolvedValue({
+      works: [],
+      pagination: { page: 1, limit: 20, total: 0 },
+    });
+    const view = mount(createElement(AuthorCabinetScreen));
+    await until(view.container, 'Кабинет автора');
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(true);
+    view.unmount();
+  });
+
+  it('shows logout in the suspended author cabinet', async () => {
+    harness.getMyProfile.mockResolvedValue(seller('SUSPENDED'));
+    harness.listCabinetWorks.mockResolvedValue({
+      works: [],
+      pagination: { page: 1, limit: 20, total: 0 },
+    });
+    const view = mount(createElement(AuthorCabinetScreen));
+    await until(view.container, 'Профиль ограничен');
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(true);
+    view.unmount();
+  });
+
+  it('shows logout on the account destination used by the admin profile', async () => {
+    harness.listSellerProfiles.mockResolvedValue({ sellerProfiles: [] });
+    const view = mount(createElement(AccountLogoutButton));
+    await until(view.container, 'Выйти');
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(true);
+    view.unmount();
+  });
+
+  it('keeps logout off the email verification body', async () => {
+    harness.emailVerificationState.mockResolvedValue({
+      serverNow: '2026-10-10T08:00:00.000Z',
+      email: 'author@example.com',
+      verified: false,
+      sendStatus: 'none',
+      codeExpiresAt: null,
+      resendAvailableAt: null,
+      pausedUntil: null,
+      quotaResetsAt: null,
+    });
+    const view = mount(
+      createElement(VerifyEmailForm, { redirectTo: '/profile' }),
+    );
+    await until(view.container, 'Отправить код');
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(false);
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Завершить')).toBe(true);
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Отправить код')).toBe(true);
+    expect(harness.requestEmailVerification).not.toHaveBeenCalled();
+    view.unmount();
+  });
+});

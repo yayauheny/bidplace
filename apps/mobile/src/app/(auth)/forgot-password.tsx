@@ -9,9 +9,14 @@ export default function ForgotPasswordScreen() {
     redirectTo?: string | string[];
   }>();
 
+  const safeRedirect = getSafeRedirect(redirectTo);
   return (
-    <AuthViewport>
-      <ForgotPasswordForm redirectTo={getSafeRedirect(redirectTo)} />
+    <AuthViewport
+      title="Восстановление пароля"
+      tone="section"
+      redirectTo={safeRedirect}
+    >
+      <ForgotPasswordForm redirectTo={safeRedirect} />
     </AuthViewport>
   );
 }

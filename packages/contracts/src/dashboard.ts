@@ -1,8 +1,12 @@
 import { z } from 'zod';
+import { mediaDeliverySchema } from './media';
 
 import { categorySchema } from './category';
-import { listingSchema } from './listing';
+import { productStatusSchema } from './enums';
+import { isoDateTimeSchema, uuidSchema } from './primitives';
 import { creationStepSchema, productSchema } from './product';
+import { workSelectionViewSchema } from './catalog';
+import { storyResponseSchema } from './story';
 
 export const categoryListResponseSchema = z
   .object({
@@ -19,15 +23,21 @@ export const sellerProductListResponseSchema = z
 export const sellerProductDetailResponseSchema = z
   .object({
     product: productSchema,
+    publication: mediaDeliverySchema.optional(),
+    editingRevision: z
+      .object({
+        id: uuidSchema,
+        version: z.number().int().positive(),
+        status: productStatusSchema,
+        updatedAt: isoDateTimeSchema,
+      })
+      .strict()
+      .nullable(),
     creationIntro: z.string().trim().min(1).nullable(),
     creationSteps: z.array(creationStepSchema),
+    story: storyResponseSchema,
+    selection: workSelectionViewSchema,
     lastModerationReason: z.string().nullable(),
-  })
-  .strict();
-
-export const sellerListingListResponseSchema = z
-  .object({
-    listings: z.array(listingSchema),
   })
   .strict();
 
@@ -37,7 +47,4 @@ export type SellerProductListResponse = z.infer<
 >;
 export type SellerProductDetailResponse = z.infer<
   typeof sellerProductDetailResponseSchema
->;
-export type SellerListingListResponse = z.infer<
-  typeof sellerListingListResponseSchema
 >;

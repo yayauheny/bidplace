@@ -10,29 +10,22 @@ export function FormSection({
   description,
   children,
 }: {
-  title: string;
+  title?: string;
   description?: string;
   children: ReactNode;
 }) {
   return (
-    <View
-      style={{
-        gap: designTokens.space.x5,
-        borderRadius: designTokens.radius.panel,
-        borderWidth: 1,
-        borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surfaceWarm,
-        padding: designTokens.space.x6,
-      }}
-    >
-      <View style={{ gap: designTokens.space.x1 }}>
-        <AppText role="cardTitle">{title}</AppText>
-        {description ? (
-          <AppText role="bodySmall" tone="secondary">
-            {description}
-          </AppText>
-        ) : null}
-      </View>
+    <View style={{ gap: designTokens.space.sectionGap }}>
+      {title || description ? (
+        <View style={{ gap: designTokens.space.x2 }}>
+          {title ? <AppText role="screenTitle">{title}</AppText> : null}
+          {description ? (
+            <AppText role="bodySmall" tone="secondary">
+              {description}
+            </AppText>
+          ) : null}
+        </View>
+      ) : null}
       <View style={{ gap: designTokens.space.x4 }}>{children}</View>
     </View>
   );

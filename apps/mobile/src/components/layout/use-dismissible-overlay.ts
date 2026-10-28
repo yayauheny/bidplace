@@ -53,8 +53,7 @@ export function useDismissibleOverlay({
       }
     };
 
-    const closeOnFocusIn = (event: FocusEvent) => {
-      if (!closeOnFocusIn) return;
+    const onDocumentFocusIn = (event: FocusEvent) => {
       const surfaces = getSurfacesRef.current();
       const target = event.target;
       if (shouldCloseOnPointerDown(target, surfaces)) {
@@ -62,19 +61,18 @@ export function useDismissibleOverlay({
       }
     };
 
-    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('keydown', closeOnEscape, true);
     document.addEventListener('pointerdown', closeOnPointerDown);
     if (closeOnFocusIn) {
-      document.addEventListener('focusin', closeOnFocusIn);
+      document.addEventListener('focusin', onDocumentFocusIn);
     }
 
     return () => {
-      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('keydown', closeOnEscape, true);
       document.removeEventListener('pointerdown', closeOnPointerDown);
       if (closeOnFocusIn) {
-        document.removeEventListener('focusin', closeOnFocusIn);
+        document.removeEventListener('focusin', onDocumentFocusIn);
       }
     };
   }, [closeOnFocusIn, open]);
 }
-

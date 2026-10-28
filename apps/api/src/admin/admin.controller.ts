@@ -1,91 +1,81 @@
+import { SERVER_ENV, type ServerEnv } from '../core/config';
 import {
+  analyticsFoundationQuerySchema,
+  adminQueueQuerySchema,
+  adminHistoryQuerySchema,
   adminAnalyticsQuerySchema,
-  adminEmergencyCancelRequestSchema,
-  adminListingsNeedingOrderResponseSchema,
+  adminModerationListQuerySchema,
+  adminCuratorSelectionRequestSchema,
+  adminCuratorSelectionResponseSchema,
   adminOkResponseSchema,
-  adminOrderCancellationRequestSchema,
-  adminOrderReplacementRequestSchema,
   adminProductStatusUpdateRequestSchema,
-  adminProductsResponseSchema,
-  adminSellerProfilesResponseSchema,
   adminSellerStatusUpdateRequestSchema,
   adminUserRevokeSessionsRequestSchema,
   adminUserStatusResponseSchema,
   adminUserStatusUpdateRequestSchema,
   adminUsersLookupQuerySchema,
   adminUsersLookupResponseSchema,
+  catalogActiveSchema,
+  catalogCategoryWriteSchema,
+  catalogProposalMapSchema,
+  catalogProposalRejectSchema,
+  catalogRenameSchema,
+  catalogTermSchema,
+  catalogTermWriteSchema,
+  categorySchema,
 } from '@bidplace/contracts';
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Header,
+  Inject,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
-import { type Prisma } from '@bidplace/database';
 
-import { BearerAuthGuard, CurrentUser } from '../auth';
-import { PrismaService } from '../core/database';
-import { CommerceEnabledGuard } from '../core/commerce';
+import { SessionAuthGuard, CurrentUser } from '../auth';
+import { CatalogService } from '../catalog/catalog.service';
 import { Clock } from '../core/time';
 import { parseBody, parseQuery } from '../core/validation';
-import { OrdersService } from '../orders/orders.service';
-import {
-  productSelect,
-  toContractProduct,
-  toProductResponse,
-} from '../products/products.mapper';
-import {
-  sellerProfileResponseSelect,
-  toSellerProfileResponse,
-} from '../sellers/seller-profile.mapper';
+import { PortfolioService } from '../portfolio/portfolio.service';
+import { PRIVATE_IMAGE_CACHE_CONTROL } from '../images/image-policy';
+import { toSellerProfileResponse } from '../sellers/seller-profile.mapper';
 import { AdminGuard } from './admin.guard';
 import { AdminAnalyticsService } from './admin-analytics.service';
-import { AdminListingEmergencyService } from './admin-listing-emergency.service';
 import { AdminModerationService } from './admin-moderation.service';
 import { AdminUserService } from './admin-user.service';
 
-const adminProductSelect = {
-  ...productSelect,
-  creationIntro: true,
-  creationSteps: {
-    orderBy: { position: 'asc' },
-    select: {
-      id: true,
-      position: true,
-      title: true,
-      body: true,
-      mimeType: true,
-      byteLength: true,
-      checksum: true,
-      width: true,
-      height: true,
-    },
-  },
-  sellerProfile: { select: { slug: true, fullName: true, status: true } },
-  listings: {
-    where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-    select: { status: true },
-    orderBy: { createdAt: 'desc' },
-    take: 1,
-  },
-} satisfies Prisma.ProductSelect;
-
 @Controller('admin')
-@UseGuards(BearerAuthGuard, AdminGuard)
+@UseGuards(SessionAuthGuard, AdminGuard)
 export class AdminController {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly orders: OrdersService,
     private readonly moderation: AdminModerationService,
     private readonly analytics: AdminAnalyticsService,
     private readonly users: AdminUserService,
-    private readonly listingEmergency: AdminListingEmergencyService,
+    private readonly portfolio: PortfolioService,
+    private readonly catalog: CatalogService,
     private readonly clock: Clock,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
+
+  @Get('analytics/foundation')
+  @Header('Cache-Control', 'private, no-store')
+  analyticsFoundation(@Query() query: unknown) {
+    return this.analytics.buildFoundation(
+      parseQuery(analyticsFoundationQuerySchema, query),
+      this.clock.now(),
+      this.env.APP_ENV,
+      this.env.ANALYTICS_WEB_ENABLED,
+    );
+  }
 
   @Get('analytics/overview')
   async analyticsOverview(@Query() query: unknown) {
@@ -96,104 +86,91 @@ export class AdminController {
   }
 
   @Get('seller-profiles')
-  async listSellers() {
-    const sellerProfiles = await this.prisma.sellerProfile.findMany({
-      select: sellerProfileResponseSelect,
-      orderBy: { createdAt: 'asc' },
-    });
-    const ids = sellerProfiles.map(({ id }) => id);
-    const [liveSellerIds, auditEvents] = await Promise.all([
-      this.prisma.sellerProfile.findMany({
-        where: {
-          id: { in: ids },
-          products: {
-            some: {
-              listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
-            },
-          },
-        },
-        select: { id: true },
-      }),
-      this.prisma.auditEvent.findMany({
-        where: {
-          targetType: 'SELLER_PROFILE',
-          targetId: { in: ids },
-          reason: { not: null },
-        },
-        orderBy: { createdAt: 'desc' },
-        select: { targetId: true, reason: true },
-      }),
-    ]);
-    const liveIds = new Set(liveSellerIds.map(({ id }) => id));
-    const reasons = new Map<string, string>();
-    for (const event of auditEvents) {
-      if (event.reason && !reasons.has(event.targetId)) {
-        reasons.set(event.targetId, event.reason);
-      }
-    }
+  async listSellers(@Query() query: unknown) {
+    return this.moderation.listSellerProfiles(
+      parseQuery(adminModerationListQuerySchema, query),
+    );
+  }
 
-    return adminSellerProfilesResponseSchema.parse({
-      sellerProfiles: sellerProfiles.map((sellerProfile) => ({
-        ...toSellerProfileResponse(sellerProfile).sellerProfile,
-        lastModerationReason: reasons.get(sellerProfile.id) ?? null,
-        hasBlockingListing: liveIds.has(sellerProfile.id),
-      })),
-    });
+  @Get('seller-profiles/summary')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  sellerSummaries(@Query() query: unknown) {
+    return this.moderation.summaries(
+      'SELLER_PROFILE',
+      parseQuery(adminQueueQuerySchema, query),
+    );
+  }
+
+  @Get('products/summary')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  productSummaries(@Query() query: unknown) {
+    return this.moderation.summaries(
+      'PRODUCT',
+      parseQuery(adminQueueQuerySchema, query),
+    );
+  }
+
+  @Get('seller-profiles/:id')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  sellerDetail(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+    return this.moderation.sellerDetail(id);
+  }
+
+  @Get('products/:id')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  productDetail(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+    return this.moderation.productDetail(id);
+  }
+
+  @Get('seller-profiles/:id/history')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  sellerHistory(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Query() query: unknown,
+  ) {
+    return this.moderation.history(
+      'SELLER_PROFILE',
+      id,
+      parseQuery(adminHistoryQuerySchema, query),
+    );
+  }
+
+  @Get('products/:id/history')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  productHistory(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Query() query: unknown,
+  ) {
+    return this.moderation.history(
+      'PRODUCT',
+      id,
+      parseQuery(adminHistoryQuerySchema, query),
+    );
+  }
+
+  @Get('seller-profiles/:id/revisions/:revisionId/photo')
+  async sellerRevisionPhoto(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Param('revisionId', new ParseUUIDPipe({ version: '4' }))
+    revisionId: string,
+    @Res()
+    response: {
+      setHeader(name: string, value: string): void;
+      type(value: string): void;
+      send(value: Buffer): void;
+    },
+  ) {
+    const photo = await this.moderation.getSellerRevisionPhoto(id, revisionId);
+    response.setHeader('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL);
+    response.type(photo.mimeType);
+    response.send(Buffer.from(photo.bytes));
   }
 
   @Get('products')
-  async listProducts() {
-    const products = await this.prisma.product.findMany({
-      select: adminProductSelect,
-      orderBy: { createdAt: 'asc' },
-    });
-    const ids = products.map(({ id }) => id);
-    const auditEvents = await this.prisma.auditEvent.findMany({
-      where: {
-        targetType: 'PRODUCT',
-        targetId: { in: ids },
-        reason: { not: null },
-      },
-      orderBy: { createdAt: 'desc' },
-      select: { targetId: true, reason: true },
-    });
-    const reasons = new Map<string, string>();
-    for (const event of auditEvents) {
-      if (event.reason && !reasons.has(event.targetId)) {
-        reasons.set(event.targetId, event.reason);
-      }
-    }
-
-    return adminProductsResponseSchema.parse({
-      products: products.map((product) => {
-        const contractProduct = toContractProduct(product);
-
-        return {
-          ...contractProduct,
-          sellerProfile: product.sellerProfile,
-          creationIntro: product.creationIntro ?? null,
-          creationSteps: product.creationSteps.map((step) => ({
-            id: step.id,
-            position: step.position,
-            title: step.title,
-            body: step.body,
-            image:
-              step.mimeType && step.byteLength && step.checksum
-                ? {
-                    url: `/api/creation-steps/${step.id}/image`,
-                    mimeType: step.mimeType,
-                    byteLength: step.byteLength,
-                    checksum: step.checksum,
-                    width: step.width,
-                    height: step.height,
-                  }
-                : null,
-          })),
-          hasBlockingListing: product.listings.length > 0,
-          lastModerationReason: reasons.get(product.id) ?? null,
-        };
-      }),
-    });
+  async listProducts(@Query() query: unknown) {
+    return this.moderation.listProducts(
+      parseQuery(adminModerationListQuerySchema, query),
+    );
   }
 
   @Patch('seller-profiles/:id/status')
@@ -217,17 +194,10 @@ export class AdminController {
     @Param('id') id: string,
     @Body() body: unknown,
   ) {
-    const product = await this.moderation.updateProductStatus(
+    return this.moderation.updateProductStatusAndReadback(
       auth.sub,
       id,
       parseBody(adminProductStatusUpdateRequestSchema, body),
-    );
-
-    return toProductResponse(
-      await this.prisma.product.findUniqueOrThrow({
-        where: { id: product.id },
-        select: productSelect,
-      }),
     );
   }
 
@@ -269,79 +239,169 @@ export class AdminController {
     );
   }
 
-  @Get('listings/needs-order')
-  @UseGuards(CommerceEnabledGuard)
-  async listListingsNeedingOrder(@CurrentUser() auth: { role: string }) {
-    return adminListingsNeedingOrderResponseSchema.parse(
-      await this.orders.listEndedWithoutOrder(auth.role),
-    );
-  }
-
-  @Get('listings/:listingId/bids')
-  @UseGuards(CommerceEnabledGuard)
-  listRankedBids(
-    @CurrentUser() auth: { sub: string; role: string },
-    @Param('listingId') listingId: string,
-  ) {
-    return this.orders.listRankedBids(auth.sub, auth.role, listingId);
-  }
-
-  @Post('listings/:listingId/emergency-cancel')
-  @UseGuards(CommerceEnabledGuard)
-  async emergencyCancelListing(
+  @Put('curator-selection')
+  async setCuratorSelection(
     @CurrentUser() auth: { sub: string },
-    @Param('listingId') listingId: string,
     @Body() body: unknown,
   ) {
-    return adminOkResponseSchema.parse(
-      await this.listingEmergency.emergencyCancel(
+    const parsed = parseBody(adminCuratorSelectionRequestSchema, body);
+    return adminCuratorSelectionResponseSchema.parse(
+      await this.portfolio.setCuratorSelection(
+        parsed.publicId,
+        parsed.curatorSlug,
+        parsed.note,
         auth.sub,
-        listingId,
-        parseBody(adminEmergencyCancelRequestSchema, body),
       ),
     );
   }
 
-  @Post('listings/:listingId/create-order')
-  @UseGuards(CommerceEnabledGuard)
-  createOrderForEndedListing(
-    @CurrentUser() auth: { sub: string; role: string },
-    @Param('listingId') listingId: string,
-  ) {
-    return this.orders.createOrderForEndedListing(
-      auth.sub,
-      auth.role,
-      listingId,
+  @Delete('curator-selection')
+  async clearCuratorSelection() {
+    return adminOkResponseSchema.parse(
+      await this.portfolio.clearCuratorSelection(),
     );
   }
 
-  @Post('orders/:publicId/cancel')
-  @UseGuards(CommerceEnabledGuard)
-  cancelOrder(
-    @CurrentUser() auth: { sub: string; role: string },
-    @Param('publicId') publicId: string,
+  @Post('categories')
+  async createCategory(
+    @CurrentUser() auth: { sub: string },
     @Body() body: unknown,
   ) {
-    return this.orders.cancel(
+    const category = await this.catalog.createCategory(
       auth.sub,
-      auth.role,
-      publicId,
-      parseBody(adminOrderCancellationRequestSchema, body),
+      parseBody(catalogCategoryWriteSchema, body),
+    );
+    return {
+      category: categorySchema.parse({
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        description: category.description,
+        active: category.active,
+      }),
+    };
+  }
+
+  @Patch('categories/:id')
+  async renameCategory(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const category = await this.catalog.renameCategory(
+      auth.sub,
+      id,
+      parseBody(catalogRenameSchema, body).name,
+    );
+    return {
+      category: categorySchema.parse({
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        description: category.description,
+        active: category.active,
+      }),
+    };
+  }
+
+  @Patch('categories/:id/active')
+  async setCategoryActive(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const category = await this.catalog.setCategoryActive(
+      auth.sub,
+      id,
+      parseBody(catalogActiveSchema, body).active,
+    );
+    return {
+      category: categorySchema.parse({
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        description: category.description,
+        active: category.active,
+      }),
+    };
+  }
+
+  @Post('catalog/terms')
+  async createTerm(
+    @CurrentUser() auth: { sub: string },
+    @Body() body: unknown,
+  ) {
+    const term = await this.catalog.createTerm(
+      auth.sub,
+      parseBody(catalogTermWriteSchema, body),
+    );
+    return { term: toTerm(term) };
+  }
+
+  @Patch('catalog/terms/:id')
+  async renameTerm(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const term = await this.catalog.renameTerm(
+      auth.sub,
+      id,
+      parseBody(catalogRenameSchema, body).name,
+    );
+    return { term: toTerm(term) };
+  }
+
+  @Patch('catalog/terms/:id/active')
+  async setTermActive(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const term = await this.catalog.setTermActive(
+      auth.sub,
+      id,
+      parseBody(catalogActiveSchema, body).active,
+    );
+    return { term: toTerm(term) };
+  }
+
+  @Post('catalog/proposals/:id/map')
+  mapProposal(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    return this.moderation.mapCatalogProposal(
+      auth.sub,
+      id,
+      parseBody(catalogProposalMapSchema, body),
     );
   }
 
-  @Post('orders/:publicId/replacement')
-  @UseGuards(CommerceEnabledGuard)
-  replaceOrder(
-    @CurrentUser() auth: { sub: string; role: string },
-    @Param('publicId') publicId: string,
+  @Post('catalog/proposals/:id/reject')
+  rejectProposal(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: unknown,
   ) {
-    return this.orders.replace(
-      auth.sub,
-      auth.role,
-      publicId,
-      parseBody(adminOrderReplacementRequestSchema, body),
-    );
+    const parsed = parseBody(catalogProposalRejectSchema, body);
+    return this.moderation.rejectCatalogProposal(auth.sub, id, parsed.reason);
   }
+}
+
+function toTerm(term: {
+  id: string;
+  role: 'MATERIAL' | 'TECHNIQUE';
+  slug: string;
+  name: string;
+  active: boolean;
+}) {
+  return catalogTermSchema.parse({
+    id: term.id,
+    role: term.role,
+    slug: term.slug,
+    name: term.name,
+    active: term.active,
+  });
 }

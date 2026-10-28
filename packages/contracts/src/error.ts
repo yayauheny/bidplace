@@ -25,6 +25,19 @@ export const ApiErrorCode = {
   IDEMPOTENCY_KEY_REQUIRED: 'IDEMPOTENCY_KEY_REQUIRED',
   IDEMPOTENCY_CONFLICT: 'IDEMPOTENCY_CONFLICT',
   PASSWORD_RESET_INVALID: 'PASSWORD_RESET_INVALID',
+  TURNSTILE_REQUIRED: 'TURNSTILE_REQUIRED',
+  TURNSTILE_FAILED: 'TURNSTILE_FAILED',
+  TURNSTILE_UNAVAILABLE: 'TURNSTILE_UNAVAILABLE',
+  DISPOSABLE_EMAIL: 'DISPOSABLE_EMAIL',
+  MAIL_COOLDOWN: 'MAIL_COOLDOWN',
+  MAIL_QUOTA: 'MAIL_QUOTA',
+  MAIL_BUDGET: 'MAIL_BUDGET',
+  MAIL_REJECTED: 'MAIL_REJECTED',
+  EMAIL_LOGIN_REJECTED: 'EMAIL_LOGIN_REJECTED',
+  OTP_INVALID: 'OTP_INVALID',
+  OTP_EXPIRED: 'OTP_EXPIRED',
+  OTP_PAUSED: 'OTP_PAUSED',
+  LOGIN_PAUSED: 'LOGIN_PAUSED',
 } as const;
 
 export const apiErrorCodeSchema = z.enum([
@@ -47,6 +60,19 @@ export const apiErrorCodeSchema = z.enum([
   ApiErrorCode.IDEMPOTENCY_KEY_REQUIRED,
   ApiErrorCode.IDEMPOTENCY_CONFLICT,
   ApiErrorCode.PASSWORD_RESET_INVALID,
+  ApiErrorCode.TURNSTILE_REQUIRED,
+  ApiErrorCode.TURNSTILE_FAILED,
+  ApiErrorCode.TURNSTILE_UNAVAILABLE,
+  ApiErrorCode.DISPOSABLE_EMAIL,
+  ApiErrorCode.MAIL_COOLDOWN,
+  ApiErrorCode.MAIL_QUOTA,
+  ApiErrorCode.MAIL_BUDGET,
+  ApiErrorCode.MAIL_REJECTED,
+  ApiErrorCode.EMAIL_LOGIN_REJECTED,
+  ApiErrorCode.OTP_INVALID,
+  ApiErrorCode.OTP_EXPIRED,
+  ApiErrorCode.OTP_PAUSED,
+  ApiErrorCode.LOGIN_PAUSED,
 ]);
 
 export const validationErrorDetailsSchema = z
@@ -62,16 +88,23 @@ export const bidTooLowDetailsSchema = z
   })
   .strict();
 
+/**
+ * Public HTTP error contract. `code` is the stable client branch.
+ * `message` is diagnostic copy for logs, not UI copy.
+ */
 export const apiErrorResponseSchema = z
   .object({
     status: z.number().int().positive(),
     code: apiErrorCodeSchema,
     message: z.string().min(1),
     details: z.unknown().optional(),
+    requestId: z.string().min(1).optional(),
   })
   .strict();
 
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
-export type ValidationErrorDetails = z.infer<typeof validationErrorDetailsSchema>;
+export type ValidationErrorDetails = z.infer<
+  typeof validationErrorDetailsSchema
+>;
 export type BidTooLowDetails = z.infer<typeof bidTooLowDetailsSchema>;
 export type ApiErrorResponse = z.infer<typeof apiErrorResponseSchema>;

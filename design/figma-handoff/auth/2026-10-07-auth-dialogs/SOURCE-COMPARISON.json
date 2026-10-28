@@ -1,0 +1,889 @@
+{
+  "schemaVersion": 1,
+  "canonicalLibrary": "/Users/yayauheny/projects/bidplace-home-figma-completion/design/figma-handoff/portfolio-phone-v1",
+  "canonicalFilesSha256": {
+    "INDEX.md": "affdf1aa984ec202398b586b53f9d2a2b532120719d8c68726140252f22502d2",
+    "catalog.json": "a334a63f2dc8d69de6cab3c076582174402c4200b007b22edd7b2da8197e2957",
+    "screens/apply/apply__identity-abort__390x874__node-746-23037/nodes.json": "65bebde5ad68929d77602bede75ffa6e54333bda48e7e1d22f367a792058e723",
+    "screens/auth/auth__email-code__1123x1185__node-527-16955/nodes.json": "af1429962a0337bb2f6a3c954807378da330458ab120e2a268a0423913199e04",
+    "screens/auth/auth__login-password__1123x1286__node-527-16954/nodes.json": "fd7d46d55e9ef3ff5f578093f24022f0698649fbaf8ff13feb4450f1a21aaef6",
+    "screens/auth/auth__register-error__1123x1286__node-527-16956/nodes.json": "bb4fb2fa824e4eb143bbcded520c3436704ca239cc56b315aeed462372a6a63c"
+  },
+  "comparisons": [
+    {
+      "id": "login-password",
+      "rootNodeId": "526:14674",
+      "canonicalParent": "screens/auth/auth__login-password__1123x1286__node-527-16954",
+      "scope": "mapped visual roles; exporter metadata not interpreted as runtime change",
+      "differences": [
+        {
+          "role": "surface",
+          "nodeId": "526:14885",
+          "changes": {
+            "layout.gap": {
+              "before": 16,
+              "after": 14
+            },
+            "layout.padding": {
+              "before": {
+                "top": 12,
+                "right": 12,
+                "bottom": 20,
+                "left": 12
+              },
+              "after": {
+                "top": 8,
+                "right": 20,
+                "bottom": 20,
+                "left": 20
+              }
+            },
+            "style.cornerRadii": {
+              "before": {
+                "topLeft": 20,
+                "topRight": 20,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              },
+              "after": {
+                "topLeft": 32,
+                "topRight": 32,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              }
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:2932",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "handle",
+          "nodeId": "4425:2934",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:2937",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "email",
+          "nodeId": "526:14892",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "password",
+          "nodeId": "526:14894",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "forgotPassword",
+          "nodeId": "526:14895",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            }
+          }
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3033",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "registration",
+          "nodeId": "526:14897",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 48,
+              "after": 51
+            },
+            "layout.padding": {
+              "before": {
+                "top": 10,
+                "right": 16,
+                "bottom": 10,
+                "left": 16
+              },
+              "after": {
+                "top": 12,
+                "right": 16,
+                "bottom": 12,
+                "left": 16
+              }
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "separator",
+          "nodeId": "526:14898",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            }
+          }
+        },
+        {
+          "role": "telegram",
+          "nodeId": "526:14900",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 48,
+              "after": 51
+            },
+            "layout.padding": {
+              "before": {
+                "top": 10,
+                "right": 16,
+                "bottom": 10,
+                "left": 16
+              },
+              "after": {
+                "top": 12,
+                "right": 16,
+                "bottom": 12,
+                "left": 16
+              }
+            }
+          }
+        },
+        {
+          "role": "google",
+          "nodeId": "526:14901",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 48,
+              "after": 51
+            },
+            "layout.padding": {
+              "before": {
+                "top": 10,
+                "right": 16,
+                "bottom": 10,
+                "left": 16
+              },
+              "after": {
+                "top": 12,
+                "right": 16,
+                "bottom": 12,
+                "left": 16
+              }
+            }
+          }
+        },
+        {
+          "role": "legalText",
+          "nodeId": "526:14902",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "verify-email",
+      "rootNodeId": "526:14903",
+      "canonicalParent": "screens/auth/auth__email-code__1123x1185__node-527-16955",
+      "scope": "mapped visual roles; exporter metadata not interpreted as runtime change",
+      "differences": [
+        {
+          "role": "surface",
+          "nodeId": "526:15114",
+          "changes": {
+            "layout.height": {
+              "before": 320,
+              "after": 319
+            },
+            "layout.padding": {
+              "before": {
+                "top": 12,
+                "right": 12,
+                "bottom": 20,
+                "left": 12
+              },
+              "after": {
+                "top": 8,
+                "right": 20,
+                "bottom": 20,
+                "left": 20
+              }
+            },
+            "style.cornerRadii": {
+              "before": {
+                "topLeft": 20,
+                "topRight": 20,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              },
+              "after": {
+                "topLeft": 32,
+                "topRight": 32,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              }
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:3052",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:3058",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "description",
+          "nodeId": "558:16958",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "style.color": {
+              "before": "#2A2A2A",
+              "after": "#121212"
+            }
+          }
+        },
+        {
+          "role": "codeGroup",
+          "nodeId": "558:16980",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            }
+          }
+        },
+        {
+          "role": "codeCell1",
+          "nodeId": "526:15123",
+          "changes": {
+            "layout.width": {
+              "before": 51,
+              "after": 48.33
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderRadius": {
+              "before": 18,
+              "after": 12
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "codeCell2",
+          "nodeId": "558:16960",
+          "changes": {
+            "layout.width": {
+              "before": 51,
+              "after": 48.33
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderRadius": {
+              "before": 18,
+              "after": 12
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "codeCell3",
+          "nodeId": "558:16981",
+          "changes": {
+            "layout.width": {
+              "before": 51,
+              "after": 48.33
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderRadius": {
+              "before": 18,
+              "after": 12
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "codeCell4",
+          "nodeId": "558:16985",
+          "changes": {
+            "layout.width": {
+              "before": 51,
+              "after": 48.33
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderRadius": {
+              "before": 18,
+              "after": 12
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "codeCell5",
+          "nodeId": "558:16989",
+          "changes": {
+            "layout.width": {
+              "before": 51,
+              "after": 48.33
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderRadius": {
+              "before": 18,
+              "after": 12
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "codeCell6",
+          "nodeId": "558:16993",
+          "changes": {
+            "layout.width": {
+              "before": 51,
+              "after": 48.33
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderRadius": {
+              "before": 18,
+              "after": 12
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3117",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "resend",
+          "nodeId": "526:15125",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 48,
+              "after": 47
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "login-email-code-reference",
+      "rootNodeId": "527:16675",
+      "canonicalParent": "screens/auth/auth__email-code__1123x1185__node-527-16955",
+      "scope": "mapped visual roles; exporter metadata not interpreted as runtime change",
+      "differences": [
+        {
+          "role": "surface",
+          "nodeId": "527:16886",
+          "changes": {
+            "layout.height": {
+              "before": 404,
+              "after": 410
+            },
+            "layout.padding": {
+              "before": {
+                "top": 12,
+                "right": 12,
+                "bottom": 20,
+                "left": 12
+              },
+              "after": {
+                "top": 8,
+                "right": 20,
+                "bottom": 20,
+                "left": 20
+              }
+            },
+            "style.cornerRadii": {
+              "before": {
+                "topLeft": 20,
+                "topRight": 20,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              },
+              "after": {
+                "topLeft": 32,
+                "topRight": 32,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              }
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:3045",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:3050",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "email",
+          "nodeId": "527:16893",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3097",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "telegram",
+          "nodeId": "4425:3102",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "google",
+          "nodeId": "4425:3103",
+          "change": "new node in current capture"
+        }
+      ]
+    },
+    {
+      "id": "oauth-add-email-reference",
+      "rootNodeId": "526:15126",
+      "canonicalParent": "screens/auth/auth__register-error__1123x1286__node-527-16956",
+      "scope": "mapped visual roles; exporter metadata not interpreted as runtime change",
+      "differences": [
+        {
+          "role": "surface",
+          "nodeId": "526:15337",
+          "changes": {
+            "layout.padding": {
+              "before": {
+                "top": 12,
+                "right": 12,
+                "bottom": 20,
+                "left": 12
+              },
+              "after": {
+                "top": 8,
+                "right": 20,
+                "bottom": 20,
+                "left": 20
+              }
+            },
+            "style.cornerRadii": {
+              "before": {
+                "topLeft": 20,
+                "topRight": 20,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              },
+              "after": {
+                "topLeft": 32,
+                "topRight": 32,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              }
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:3038",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:3043",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "email",
+          "nodeId": "526:15344",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3062",
+          "change": "new node in current capture"
+        }
+      ]
+    },
+    {
+      "id": "register-password",
+      "rootNodeId": "526:15346",
+      "canonicalParent": "screens/auth/auth__register-error__1123x1286__node-527-16956",
+      "scope": "mapped visual roles; exporter metadata not interpreted as runtime change",
+      "differences": [
+        {
+          "role": "surface",
+          "nodeId": "526:15557",
+          "changes": {
+            "layout.height": {
+              "before": 444,
+              "after": 443
+            },
+            "layout.padding": {
+              "before": {
+                "top": 12,
+                "right": 12,
+                "bottom": 20,
+                "left": 12
+              },
+              "after": {
+                "top": 8,
+                "right": 20,
+                "bottom": 20,
+                "left": 20
+              }
+            },
+            "style.cornerRadii": {
+              "before": {
+                "topLeft": 20,
+                "topRight": 20,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              },
+              "after": {
+                "topLeft": 32,
+                "topRight": 32,
+                "bottomRight": 0,
+                "bottomLeft": 0
+              }
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:3014",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:3020",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "accountName",
+          "nodeId": "3467:15524",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "email",
+          "nodeId": "526:15566",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            },
+            "layout.height": {
+              "before": 52,
+              "after": 51
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "password",
+          "nodeId": "526:15567",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            }
+          }
+        },
+        {
+          "role": "passwordText",
+          "nodeId": "526:15568",
+          "changes": {
+            "layout.width": {
+              "before": 310,
+              "after": 294
+            }
+          }
+        },
+        {
+          "role": "confirmPassword",
+          "nodeId": "526:15571",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            }
+          }
+        },
+        {
+          "role": "confirmPasswordText",
+          "nodeId": "526:15572",
+          "changes": {
+            "layout.width": {
+              "before": 310,
+              "after": 294
+            }
+          }
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3028",
+          "change": "new node in current capture"
+        },
+        {
+          "role": "consentGroup",
+          "nodeId": "526:15576",
+          "changes": {
+            "layout.width": {
+              "before": 366,
+              "after": 350
+            }
+          }
+        },
+        {
+          "role": "consentControl",
+          "nodeId": "526:15577",
+          "changes": {
+            "style.backgroundColor": {
+              "before": "#2A2A2A",
+              "after": "#121212"
+            },
+            "style.borderColor": {
+              "before": "#2A2A2A",
+              "after": "#121212"
+            }
+          }
+        },
+        {
+          "role": "consentText",
+          "nodeId": "526:15580",
+          "changes": {
+            "layout.width": {
+              "before": 340,
+              "after": 324
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "confirm-exit",
+      "rootNodeId": "746:23037",
+      "canonicalParent": "screens/apply/apply__identity-abort__390x874__node-746-23037",
+      "scope": "mapped visual roles; exporter metadata not interpreted as runtime change",
+      "differences": [
+        {
+          "role": "surface",
+          "nodeId": "746:23093",
+          "changes": {
+            "layout.height": {
+              "before": 201,
+              "after": 200
+            }
+          }
+        },
+        {
+          "role": "content",
+          "nodeId": "746:23093",
+          "changes": {
+            "layout.height": {
+              "before": 201,
+              "after": 200
+            }
+          }
+        },
+        {
+          "role": "title",
+          "nodeId": "746:23095",
+          "changes": {
+            "style.color": {
+              "before": "#2A2A2A",
+              "after": "#121212"
+            }
+          }
+        },
+        {
+          "role": "description",
+          "nodeId": "746:23096",
+          "changes": {
+            "style.color": {
+              "before": "#2A2A2A",
+              "after": "#121212"
+            }
+          }
+        },
+        {
+          "role": "actions",
+          "nodeId": "746:23097",
+          "changes": {
+            "layout.height": {
+              "before": 56,
+              "after": 55
+            }
+          }
+        },
+        {
+          "role": "leave",
+          "nodeId": "746:23098",
+          "changes": {
+            "layout.height": {
+              "before": 56,
+              "after": 55
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            }
+          }
+        },
+        {
+          "role": "continue",
+          "nodeId": "746:23099",
+          "changes": {
+            "layout.height": {
+              "before": 56,
+              "after": 55
+            },
+            "style.backgroundColor": {
+              "before": "#292929",
+              "after": "#121212"
+            },
+            "style.borderWidth": {
+              "before": 1,
+              "after": 0.5
+            },
+            "style.borderColor": {
+              "before": "#2A2A2A",
+              "after": "#121212"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -6,13 +6,14 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import {
   AppText,
-  DestructiveButton,
   FormSection,
   PrimaryButton,
   SecondaryButton,
   TextField,
 } from '../../components/ui';
-import { getUserFacingErrorMessage } from '../../lib/errors';
+import { emailAddressSchema } from '@bidplace/contracts';
+
+import { getUserFacingErrorMessage, readFormFailure } from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
 
 type AdminUser = Awaited<
@@ -25,6 +26,8 @@ export function AdminUsersPanel() {
   const [reason, setReason] = useState('');
   const [user, setUser] = useState<AdminUser | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
@@ -41,6 +44,16 @@ export function AdminUsersPanel() {
     },
     onError: (error) => {
       setUser(null);
+      const failure = readFormFailure(error, ['email']);
+      if (failure.fields.email) {
+        setEmailError(failure.fields.email);
+        setLookupError(failure.formMessage);
+        return;
+      }
+      if (failure.disposition === 'form') {
+        setLookupError(failure.formMessage);
+        return;
+      }
       setLookupError(getUserFacingErrorMessage(error, 'Не удалось найти пользователя'));
     },
   });
@@ -59,7 +72,13 @@ export function AdminUsersPanel() {
     },
     onError: (error) => {
       setActionMessage(null);
-      setActionError(getUserFacingErrorMessage(error, 'Не удалось обновить статус'));
+      const failure = readFormFailure(error, ['reason']);
+      if (failure.fields.reason) setReasonError(failure.fields.reason);
+      setActionError(
+        failure.disposition === 'passthrough'
+          ? getUserFacingErrorMessage(error, 'Не удалось обновить статус')
+          : failure.formMessage,
+      );
     },
   });
 
@@ -72,7 +91,13 @@ export function AdminUsersPanel() {
     },
     onError: (error) => {
       setActionMessage(null);
-      setActionError(getUserFacingErrorMessage(error, 'Не удалось сбросить сессии'));
+      const failure = readFormFailure(error, ['reason']);
+      if (failure.fields.reason) setReasonError(failure.fields.reason);
+      setActionError(
+        failure.disposition === 'passthrough'
+          ? getUserFacingErrorMessage(error, 'Не удалось сбросить сессии')
+          : failure.formMessage,
+      );
     },
   });
 
@@ -89,15 +114,28 @@ export function AdminUsersPanel() {
         <TextField
           label="Email пользователя"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(value) => {
+            setEmailError(null);
+            setEmail(value);
+          }}
           placeholder="name@example.com"
           autoCapitalize="none"
           keyboardType="email-address"
+          error={emailError ?? undefined}
         />
         <PrimaryButton
           label="Найти"
           loading={lookup.isPending}
-          onPress={() => lookup.mutate()}
+          onPress={() => {
+            const parsed = emailAddressSchema.safeParse(email);
+            if (!parsed.success) {
+              setEmailError(parsed.error.issues[0]?.message ?? 'Введите корректный email');
+              setLookupError(null);
+              return;
+            }
+            setEmailError(null);
+            lookup.mutate();
+          }}
         />
         {lookupError ? (
           <AppText role="bodySmall" tone="danger">
@@ -112,11 +150,18 @@ export function AdminUsersPanel() {
             <TextField
               label="Причина действия"
               value={reason}
-              onChangeText={setReason}
+              onChangeText={(value) => {
+                setReasonError(null);
+                setReason(value);
+              }}
+              onBlur={() => {
+                if (!reason.trim()) setReasonError('Укажите причину');
+              }}
               placeholder="Кратко опишите инцидент"
+              error={reasonError ?? undefined}
             />
             {user.status === 'active' ? (
-              <DestructiveButton
+              <PrimaryButton
                 label="Заблокировать"
                 loading={updateStatus.isPending}
                 disabled={reasonMissing || pending}

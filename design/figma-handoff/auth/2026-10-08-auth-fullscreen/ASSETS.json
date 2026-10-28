@@ -1,0 +1,637 @@
+{
+  "schemaVersion": 1,
+  "captures": [
+    {
+      "id": "email",
+      "sourceAssets": [
+        {
+          "path": "assets/001-4547_23173.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23173",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/002-4547_23182.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23182",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/003-4547_23196.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23196",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/004-4547_23209.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23209",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/005-4547_23224.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "8843d25b445fac6b7354fda3cd53cbd8fcbca1d6aff40358942472ec312402a9",
+          "nodeId": "4547:23224",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/006-4547_23240.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 6399373,
+          "sha256": "2ebb49996a2f8457bffb4a38c08bbb47b26ad4bc7b5c8dbad3c23354bb8c64db",
+          "nodeId": "4547:23240",
+          "pixelDimensions": {
+            "width": 1560,
+            "height": 2080
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "assets/007-4547_23284.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23284",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/008-4547_23293.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23293",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/009-4547_23362.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 4642,
+          "sha256": "d55653f99701cdb978757dfb0d7df914fcc26d138129a89b0264bda4482f0137",
+          "nodeId": "4547:23362",
+          "pixelDimensions": {
+            "width": 717,
+            "height": 92
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "fallbacks/001-4547_23168.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 17996,
+          "sha256": "1e3e32d2b9b5b0b9f97ecce46ffec9b9ad97074b0a0864d5944a17d8670912bb",
+          "nodeId": "4547:23168",
+          "purpose": "rendered-fallback",
+          "fallbackVariant": "pixel",
+          "fallbackReasons": [
+            "context-dependent-effect"
+          ],
+          "pixelDimensions": {
+            "width": 390,
+            "height": 874
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "fallbacks/001-4547_23168.svg",
+          "role": "design-asset",
+          "mediaType": "image/svg+xml",
+          "size": 15511239,
+          "sha256": "88ca0160248055b5f4bf9c7026d1675e877cd1b58f4732f02b48fd856e5a958f",
+          "nodeId": "4547:23168",
+          "purpose": "rendered-fallback",
+          "fallbackVariant": "vector",
+          "fallbackReasons": [
+            "context-dependent-effect"
+          ],
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        }
+      ],
+      "brandAssets": {
+        "mark": "../../branding/2026-10-08-brand/bidplace-mark.svg",
+        "wordmark": "../../branding/2026-10-08-brand/bidplace-wordmark.svg"
+      }
+    },
+    {
+      "id": "nickname",
+      "sourceAssets": [
+        {
+          "path": "assets/001-4547_23932.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23932",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/002-4547_23941.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23941",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/003-4547_23955.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23955",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/004-4547_23968.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:23968",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/005-4547_23983.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "8843d25b445fac6b7354fda3cd53cbd8fcbca1d6aff40358942472ec312402a9",
+          "nodeId": "4547:23983",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/006-4547_23999.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 6399373,
+          "sha256": "2ebb49996a2f8457bffb4a38c08bbb47b26ad4bc7b5c8dbad3c23354bb8c64db",
+          "nodeId": "4547:23999",
+          "pixelDimensions": {
+            "width": 1560,
+            "height": 2080
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "assets/007-4547_24043.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24043",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/008-4547_24052.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24052",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/009-4547_24121.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 4645,
+          "sha256": "dab85d21768a2d900d15be8c88f07fd96e269c2ffff3e1f54fa3912466d2278d",
+          "nodeId": "4547:24121",
+          "pixelDimensions": {
+            "width": 717,
+            "height": 92
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "fallbacks/001-4547_23927.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 22736,
+          "sha256": "7888542315d26830887e329ec72e601220207553382f50d9e27192f0e7da65e5",
+          "nodeId": "4547:23927",
+          "purpose": "rendered-fallback",
+          "fallbackVariant": "pixel",
+          "fallbackReasons": [
+            "context-dependent-effect"
+          ],
+          "pixelDimensions": {
+            "width": 390,
+            "height": 874
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "fallbacks/001-4547_23927.svg",
+          "role": "design-asset",
+          "mediaType": "image/svg+xml",
+          "size": 15525226,
+          "sha256": "1b73a7fbc4463189117e6adef6ec6d598c3f5ea6c60149e3fa78947c54b07fe9",
+          "nodeId": "4547:23927",
+          "purpose": "rendered-fallback",
+          "fallbackVariant": "vector",
+          "fallbackReasons": [
+            "context-dependent-effect"
+          ],
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        }
+      ],
+      "brandAssets": {
+        "mark": "../../branding/2026-10-08-brand/bidplace-mark.svg",
+        "wordmark": "../../branding/2026-10-08-brand/bidplace-wordmark.svg"
+      }
+    },
+    {
+      "id": "create-password",
+      "sourceAssets": [
+        {
+          "path": "assets/001-4547_24222.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24222",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/002-4547_24231.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24231",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/003-4547_24245.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24245",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/004-4547_24258.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24258",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/005-4547_24273.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "8843d25b445fac6b7354fda3cd53cbd8fcbca1d6aff40358942472ec312402a9",
+          "nodeId": "4547:24273",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/006-4547_24289.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 6399373,
+          "sha256": "2ebb49996a2f8457bffb4a38c08bbb47b26ad4bc7b5c8dbad3c23354bb8c64db",
+          "nodeId": "4547:24289",
+          "pixelDimensions": {
+            "width": 1560,
+            "height": 2080
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "assets/007-4547_24333.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24333",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/008-4547_24342.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24342",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/009-4547_24411.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 4645,
+          "sha256": "dab85d21768a2d900d15be8c88f07fd96e269c2ffff3e1f54fa3912466d2278d",
+          "nodeId": "4547:24411",
+          "pixelDimensions": {
+            "width": 717,
+            "height": 92
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "fallbacks/001-4547_24217.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 16073,
+          "sha256": "d1a7b730304f9c9e3305b69cb2e05877ec21e223bae236fe038135a54192d348",
+          "nodeId": "4547:24217",
+          "purpose": "rendered-fallback",
+          "fallbackVariant": "pixel",
+          "fallbackReasons": [
+            "context-dependent-effect"
+          ],
+          "pixelDimensions": {
+            "width": 390,
+            "height": 874
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "fallbacks/001-4547_24217.svg",
+          "role": "design-asset",
+          "mediaType": "image/svg+xml",
+          "size": 15472114,
+          "sha256": "ce40790a80223736dbe52dd90724bb14cab7397c4e244366fe1e91c0678f0ae0",
+          "nodeId": "4547:24217",
+          "purpose": "rendered-fallback",
+          "fallbackVariant": "vector",
+          "fallbackReasons": [
+            "context-dependent-effect"
+          ],
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        }
+      ],
+      "brandAssets": {
+        "mark": "../../branding/2026-10-08-brand/bidplace-mark.svg",
+        "wordmark": "../../branding/2026-10-08-brand/bidplace-wordmark.svg"
+      }
+    },
+    {
+      "id": "verify-email",
+      "sourceAssets": [
+        {
+          "path": "assets/001-4547_24820.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24820",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/002-4547_24829.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24829",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/003-4547_24843.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24843",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/004-4547_24856.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24856",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/005-4547_24871.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "8843d25b445fac6b7354fda3cd53cbd8fcbca1d6aff40358942472ec312402a9",
+          "nodeId": "4547:24871",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/006-4547_24887.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 6399373,
+          "sha256": "2ebb49996a2f8457bffb4a38c08bbb47b26ad4bc7b5c8dbad3c23354bb8c64db",
+          "nodeId": "4547:24887",
+          "pixelDimensions": {
+            "width": 1560,
+            "height": 2080
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "assets/007-4547_24931.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24931",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/008-4547_24940.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 149,
+          "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+          "nodeId": "4547:24940",
+          "pixelDimensions": {
+            "width": 1,
+            "height": 1
+          },
+          "runtimeUse": "Do not use a 1×1 placeholder as an icon"
+        },
+        {
+          "path": "assets/009-4547_25009.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 4645,
+          "sha256": "dab85d21768a2d900d15be8c88f07fd96e269c2ffff3e1f54fa3912466d2278d",
+          "nodeId": "4547:25009",
+          "pixelDimensions": {
+            "width": 717,
+            "height": 92
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "fallbacks/001-4547_24815.png",
+          "role": "design-asset",
+          "mediaType": "image/png",
+          "size": 17922,
+          "sha256": "920e309ebb23fb710b9f10b4b1838e30588216d03c5fa869a9bc2d4ed1ed28cc",
+          "nodeId": "4547:24815",
+          "purpose": "rendered-fallback",
+          "fallbackVariant": "pixel",
+          "fallbackReasons": [
+            "context-dependent-effect"
+          ],
+          "pixelDimensions": {
+            "width": 390,
+            "height": 874
+          },
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        },
+        {
+          "path": "fallbacks/001-4547_24815.svg",
+          "role": "design-asset",
+          "mediaType": "image/svg+xml",
+          "size": 15508627,
+          "sha256": "6ec56e1bf6d6a54d4df1743d379f30c414b42c8e2a54c6f780c93a6275f6b953",
+          "nodeId": "4547:24815",
+          "purpose": "rendered-fallback",
+          "fallbackVariant": "vector",
+          "fallbackReasons": [
+            "context-dependent-effect"
+          ],
+          "runtimeUse": "Source only: unrelated sample artwork/chrome outside the auth surface"
+        }
+      ],
+      "brandAssets": {
+        "mark": "../../branding/2026-10-08-brand/bidplace-mark.svg",
+        "wordmark": "../../branding/2026-10-08-brand/bidplace-wordmark.svg"
+      }
+    }
+  ]
+}

@@ -1,21 +1,41 @@
 import type { PropsWithChildren } from 'react';
-import { Text, type TextProps } from 'react-native';
+import { Platform, Text, type TextProps, type TextStyle } from 'react-native';
 
-import { designTokens, type TextRole } from '@bidplace/design-tokens';
+import type { SemanticColorRole, TextRole } from '@bidplace/design-tokens';
+
+import { useAppTheme } from '../../providers/theme-provider';
+import { appTextRoleStyle } from './app-text-role-style';
 
 type AppTextProps = PropsWithChildren<Omit<TextProps, 'role'>> & {
   role?: TextRole;
-  tone?: 'default' | 'secondary' | 'muted' | 'accent' | 'danger' | 'success';
+  tone?:
+    | 'default'
+    | 'secondary'
+    | 'subdued'
+    | 'subtle'
+    | 'muted'
+    | 'accent'
+    | 'danger'
+    | 'success'
+    | 'strong';
 };
 
-const toneColors = {
-  default: designTokens.color.ink,
-  secondary: designTokens.color.textSecondary,
-  muted: designTokens.color.textMuted,
-  accent: designTokens.color.accentDark,
-  danger: designTokens.color.danger,
-  success: designTokens.color.success,
-} as const;
+// tone → semantic color role; the role resolves to a value per active theme
+// at render time, never from a module-level snapshot.
+const toneRoles: Record<
+  NonNullable<AppTextProps['tone']>,
+  SemanticColorRole
+> = {
+  default: 'ink',
+  strong: 'inkStrong',
+  secondary: 'textSecondary',
+  subdued: 'textSubdued',
+  subtle: 'textSubtle',
+  muted: 'textMuted',
+  accent: 'ink',
+  danger: 'danger',
+  success: 'success',
+};
 
 export function AppText({
   role = 'body',
@@ -23,14 +43,17 @@ export function AppText({
   style,
   ...props
 }: AppTextProps) {
+  const colors = useAppTheme();
   return (
     <Text
       {...props}
       style={[
-        designTokens.typography[role],
-        { color: toneColors[tone] },
+        appTextRoleStyle(role, Platform.OS) as TextStyle,
+        { color: colors[toneRoles[tone]] },
         style,
       ]}
     />
   );
 }
+
+export { appTextRoleStyle } from './app-text-role-style';

@@ -20,6 +20,11 @@ export function getApiUrl(): string {
   return url.origin;
 }
 
+export function getTurnstileSiteKey(): string | null {
+  const configured = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim();
+  return configured ? configured : null;
+}
+
 export function getApiAssetUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;
 

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  getPrismaUniqueConstraintTargets,
   isPrismaSerializableConflictError,
   isPrismaUniqueConstraintError,
+  prismaUniqueTargets,
 } from './prisma-error';
 
 describe('prisma error helpers', () => {
@@ -17,20 +17,11 @@ describe('prisma error helpers', () => {
     expect(isPrismaSerializableConflictError({ code: 'P2002' })).toBe(false);
   });
 
-  it('reads unique constraint targets', () => {
-    expect(
-      getPrismaUniqueConstraintTargets({
-        code: 'P2002',
-        meta: { target: ['public_id'] },
-      }),
-    ).toEqual(['public_id']);
-    expect(
-      getPrismaUniqueConstraintTargets({
-        code: 'P2002',
-        meta: { target: 'source_bid_id' },
-      }),
-    ).toEqual(['source_bid_id']);
-    expect(getPrismaUniqueConstraintTargets({ code: 'P2034' })).toEqual([]);
+  it('reads unique constraint targets without treating an unknown target as a field', () => {
+    expect(prismaUniqueTargets({ code: 'P2002', meta: { target: ['slug'] } })).toEqual(['slug']);
+    expect(prismaUniqueTargets({ code: 'P2002', meta: { target: 'user_id' } })).toEqual(['user_id']);
+    expect(prismaUniqueTargets({ code: 'P2002' })).toEqual([]);
+    expect(prismaUniqueTargets({ code: 'P2034', meta: { target: ['slug'] } })).toEqual([]);
   });
 
   it('returns false for non-prisma values', () => {

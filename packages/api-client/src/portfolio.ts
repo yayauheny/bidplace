@@ -3,54 +3,91 @@ import {
   portfolioAuthorsQuerySchema,
   portfolioAuthorsResponseSchema,
   portfolioAuthorApplicationResponseSchema,
+  portfolioCabinetWorksQuerySchema,
   portfolioCabinetWorksResponseSchema,
+  portfolioDiscoveryFacetsResponseSchema,
   portfolioHomeResponseSchema,
   portfolioWorkDetailResponseSchema,
   portfolioWorksQuerySchema,
   portfolioWorksResponseSchema,
+  portfolioAchievementResponseSchema,
+  portfolioAchievementWriteRequestSchema,
+  portfolioOkResponseSchema,
+  productResponseSchema,
+  type PortfolioAchievementWriteRequest,
   type PortfolioAuthorsQuery,
+  type PortfolioCabinetWorksQuery,
   type PortfolioWorksQuery,
 } from '@bidplace/contracts';
 
-import { requestJson, type RequestContext } from './request';
+import {
+  requestBlob,
+  requestJson,
+  signalRequestOptions,
+  type ReadCallOptions,
+  type RequestContext,
+} from './request';
+import { parseRequest } from './errors/parse-request';
 
 export function createPortfolioClient(context: RequestContext) {
   return {
-    home() {
+    home(options?: ReadCallOptions) {
       return requestJson(
         context,
         '/api/portfolio/home',
         portfolioHomeResponseSchema,
+        signalRequestOptions(options),
       );
     },
-    listWorks(query?: Partial<PortfolioWorksQuery>) {
+    listWorks(query?: Partial<PortfolioWorksQuery>, options?: ReadCallOptions) {
       return requestJson(context, '/api/works', portfolioWorksResponseSchema, {
         query: portfolioWorksQuerySchema.parse(query ?? {}),
+        ...signalRequestOptions(options),
       });
     },
-    getWork(publicId: string) {
+    getWork(publicId: string, options?: ReadCallOptions) {
       return requestJson(
         context,
         `/api/works/${publicId}`,
         portfolioWorkDetailResponseSchema,
+        signalRequestOptions(options),
       );
     },
-    listAuthors(query?: Partial<PortfolioAuthorsQuery>) {
+    facets(options?: ReadCallOptions) {
+      return requestJson(
+        context,
+        '/api/portfolio/facets',
+        portfolioDiscoveryFacetsResponseSchema,
+        signalRequestOptions(options),
+      );
+    },
+    listAuthors(
+      query?: Partial<PortfolioAuthorsQuery>,
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         '/api/authors',
         portfolioAuthorsResponseSchema,
         {
           query: portfolioAuthorsQuerySchema.parse(query ?? {}),
+          ...signalRequestOptions(options),
         },
       );
     },
-    getAuthor(slug: string, query?: Partial<PortfolioWorksQuery>) {
+    getAuthor(
+      slug: string,
+      query?: Partial<PortfolioWorksQuery>,
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         `/api/authors/${slug}`,
         portfolioAuthorDetailResponseSchema,
-        { query: portfolioWorksQuerySchema.parse(query ?? {}) },
+        {
+          query: portfolioWorksQuerySchema.parse(query ?? {}),
+          ...signalRequestOptions(options),
+        },
       );
     },
     getAuthorApplication() {
@@ -60,6 +97,9 @@ export function createPortfolioClient(context: RequestContext) {
         portfolioAuthorApplicationResponseSchema,
       );
     },
+    getAuthorApplicationPhoto() {
+      return requestBlob(context, '/api/author/application/photo');
+    },
     submitAuthorApplication() {
       return requestJson(
         context,
@@ -68,11 +108,55 @@ export function createPortfolioClient(context: RequestContext) {
         { method: 'POST' },
       );
     },
-    listCabinetWorks() {
+    advanceAuthorApplication() {
+      return requestJson(
+        context,
+        '/api/author/application/advance',
+        portfolioAuthorApplicationResponseSchema,
+        { method: 'POST' },
+      );
+    },
+    addAuthorAchievement(input: PortfolioAchievementWriteRequest) {
+      return requestJson(
+        context,
+        '/api/author/application/achievements',
+        portfolioAchievementResponseSchema,
+        {
+          method: 'POST',
+          body: parseRequest(portfolioAchievementWriteRequestSchema, input),
+        },
+      );
+    },
+    deleteAuthorAchievement(id: string) {
+      return requestJson(
+        context,
+        `/api/author/application/achievements/${id}`,
+        portfolioOkResponseSchema,
+        { method: 'DELETE' },
+      );
+    },
+    listCabinetWorks(query?: Partial<PortfolioCabinetWorksQuery>) {
       return requestJson(
         context,
         '/api/author/cabinet/works',
         portfolioCabinetWorksResponseSchema,
+        { query: portfolioCabinetWorksQuerySchema.parse(query ?? {}) },
+      );
+    },
+    hideWork(id: string) {
+      return requestJson(
+        context,
+        `/api/products/${id}/hide`,
+        productResponseSchema,
+        { method: 'POST' },
+      );
+    },
+    unhideWork(id: string) {
+      return requestJson(
+        context,
+        `/api/products/${id}/unhide`,
+        productResponseSchema,
+        { method: 'POST' },
       );
     },
   };

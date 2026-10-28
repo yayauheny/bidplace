@@ -1,9 +1,18 @@
 export type SafeRedirect = `/${string}`;
+type SearchParams = Record<string, string | string[] | undefined>;
 
 const DEFAULT_REDIRECT: SafeRedirect = '/';
 const INTERNAL_ORIGIN = 'https://bidplace.local';
 
-const AUTH_PATHS = new Set(['/login', '/register', '/forgot-password', '/reset-password']);
+const AUTH_PATHS = new Set([
+  '/email-login',
+  '/auth/complete',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+]);
 
 export function getSafeRedirect(
   rawParam: string | string[] | null | undefined,
@@ -33,4 +42,45 @@ export function getSafeRedirect(
   } catch {
     return DEFAULT_REDIRECT;
   }
+}
+
+export function getProtectedRedirect(
+  pathname: string,
+  params: SearchParams,
+  dynamicParamNames: readonly string[],
+): SafeRedirect {
+  const dynamicParams = new Set(dynamicParamNames);
+  const search = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (dynamicParams.has(key) || value === undefined) {
+      continue;
+    }
+
+    for (const item of Array.isArray(value) ? value : [value]) {
+      search.append(key, item);
+    }
+  }
+
+  const serializedSearch = search.toString();
+  const suffix = serializedSearch ? `?${serializedSearch}` : '';
+  return getSafeRedirect(`${pathname}${suffix}`);
+}
+
+/**
+ * Current-location redirect for "come back after auth" links: keeps the
+ * pathname and non-dynamic query params; dynamic path segments ([slug])
+ * are not duplicated into the query string.
+ */
+export function getRouteSearchRedirect(
+  pathname: string,
+  segments: readonly (string | undefined)[],
+  params: SearchParams,
+): SafeRedirect {
+  const dynamicParamNames = segments.flatMap((segment) => {
+    if (typeof segment !== 'string') return [];
+    const match = /^\[\.\.\.(.+)\]$|^\[(.+)\]$/.exec(segment);
+    return match ? [match[1] ?? match[2]!] : [];
+  });
+  return getProtectedRedirect(pathname, params, dynamicParamNames);
 }

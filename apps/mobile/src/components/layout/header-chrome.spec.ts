@@ -1,56 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { legalDocumentIdSchema } from '@bidplace/contracts';
+import { footerLegalLinks, footerSupportLinks } from './footer-links';
+import { describe, expect, it } from 'vitest';
 
 import {
-  canShowDesktopCreateListing,
-  getHeaderSearchPlaceholder,
   getMobileCreateHref,
-  getDiscoveryLabel,
-  isAuthorsRoute,
-  logoutAndGoHome,
+  getProfileHref,
+  hasDesktopNavigation,
 } from './header-chrome';
-import type { SellerStatus } from '@bidplace/contracts';
 
 describe('header-chrome', () => {
-  it('detects authors routes', () => {
-    expect(isAuthorsRoute('/authors')).toBe(true);
-    expect(isAuthorsRoute('/authors/abc')).toBe(true);
-    expect(isAuthorsRoute('/works')).toBe(false);
-    expect(isAuthorsRoute('/')).toBe(false);
-  });
-
-  it('computes discovery label', () => {
-    expect(getDiscoveryLabel('/authors')).toBe('Авторы');
-    expect(getDiscoveryLabel('/works')).toBe('Аукционы');
-  });
-
-  it('computes search placeholder for header chrome', () => {
-    expect(getHeaderSearchPlaceholder('/works')).toBe(
-      'Найти работу или автора',
-    );
-    expect(getHeaderSearchPlaceholder('/authors/some')).toBe(
-      'Найти работу или автора',
-    );
-    expect(getHeaderSearchPlaceholder('/')).toBe('Найти предмет или автора');
-  });
-
-  it('controls desktop create button visibility', () => {
-    expect(
-      canShowDesktopCreateListing({ isAdmin: true, sellerStatus: 'APPROVED' }),
-    ).toBe(false);
-    expect(
-      canShowDesktopCreateListing({
-        isAdmin: false,
-        sellerStatus: 'APPROVED',
-      }),
-    ).toBe(true);
-    expect(
-      canShowDesktopCreateListing({
-        isAdmin: false,
-        sellerStatus: 'PENDING_REVIEW' as SellerStatus,
-      }),
-    ).toBe(false);
-  });
-
   it('computes mobile create href (login vs profile)', () => {
     const loginHref = getMobileCreateHref({
       isAuthenticated: false,
@@ -76,17 +34,67 @@ describe('header-chrome', () => {
     expect(
       getMobileCreateHref({
         isAuthenticated: true,
-        sellerStatus: 'REJECTED' as SellerStatus,
+        sellerStatus: 'REJECTED',
       }),
     ).toBe('/profile');
   });
-
-  it('logs out then replaces home', async () => {
-    const logout = vi.fn().mockResolvedValue(undefined);
-    const replace = vi.fn();
-    await logoutAndGoHome({ logout }, { replace });
-    expect(logout).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith('/');
-  });
 });
 
+describe('shared public navigation', () => {
+  it.each([
+    ['web', 1023, true, false],
+    ['web', 1024, true, true],
+    ['web', 1800, true, true],
+    ['ios', 1366, true, false],
+    ['web', 1440, false, false],
+  ] as const)(
+    'selects desktop chrome for %s at %ipx, public=%s',
+    (platform, width, publicRoute, expected) => {
+      expect(hasDesktopNavigation(platform, width, publicRoute)).toBe(expected);
+    },
+  );
+
+  it.each([
+    { status: null, destination: '/profile' },
+    { status: 'PENDING_REVIEW', destination: '/profile' },
+    { status: 'APPROVED', destination: '/products/new' },
+  ] as const)('keeps author onboarding separate from creation for $status', ({ status, destination }) => {
+    expect(getMobileCreateHref({ isAuthenticated: true, sellerStatus: status, returnPath: '/works' })).toBe(destination);
+    expect(getMobileCreateHref({ isAuthenticated: true, sellerStatus: null, returnPath: '/profile' })).toBe('/profile');
+    expect(getProfileHref({ isAdmin: false, isAuthenticated: true, returnPath: '/works' })).toBe('/account');
+  });
+
+  it('preserves the requested destination for guest onboarding and returns admins to their cabinet', () => {
+    expect(getMobileCreateHref({ isAuthenticated: false, sellerStatus: null, returnPath: '/profile' })).toEqual({ pathname: '/login', params: { redirectTo: '/profile' } });
+    expect(getMobileCreateHref({ isAuthenticated: false, sellerStatus: null, returnPath: '/works' })).toEqual({ pathname: '/login', params: { redirectTo: '/works' } });
+    expect(getProfileHref({ isAdmin: true, isAuthenticated: true, returnPath: '/works' })).toBe('/account');
+  });
+
+  it.each([
+    [false, false, '/', '/login'],
+    [
+      false,
+      false,
+      '/seller/vex',
+      { pathname: '/login', params: { redirectTo: '/seller/vex' } },
+    ],
+    [false, true, '/works', '/account'],
+    [true, true, '/works', '/account'],
+  ] as const)(
+    'preserves profile destination for admin=%s authenticated=%s',
+    (isAdmin, isAuthenticated, returnPath, expected) => {
+      expect(getProfileHref({ isAdmin, isAuthenticated, returnPath })).toEqual(
+        expected,
+      );
+    },
+  );
+});
+
+describe('footer legal destinations', () => {
+  it('keeps all existing MVP documents reachable without commerce placeholders', () => {
+    const ids = [...footerLegalLinks, ...footerSupportLinks].map((item) =>
+      item.href.replace('/legal/', ''),
+    );
+    expect(new Set(ids)).toEqual(new Set(legalDocumentIdSchema.options));
+  });
+});

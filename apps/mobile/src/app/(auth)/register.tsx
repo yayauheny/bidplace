@@ -6,9 +6,20 @@ export default function RegisterScreen() {
   const { redirectTo } = useLocalSearchParams<{
     redirectTo?: string | string[];
   }>();
+  const safeRedirect = getSafeRedirect(redirectTo);
   return (
-    <AuthViewport>
-      <RegisterForm redirectTo={getSafeRedirect(redirectTo)} />
+    <AuthViewport
+      title="Регистрация"
+      tone="section"
+      presentation="screen"
+      redirectTo={safeRedirect}
+      protectEnteredData
+      exit={{
+        title: 'Прервать регистрацию',
+        description: 'Аккаунт не создаётся, пока регистрация не завершена.',
+      }}
+    >
+      <RegisterForm redirectTo={safeRedirect} />
     </AuthViewport>
   );
 }

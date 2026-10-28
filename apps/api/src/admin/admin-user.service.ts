@@ -1,8 +1,10 @@
+import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
   type AdminUserRevokeSessionsRequest,
   type AdminUserStatusUpdateRequest,
 } from '@bidplace/contracts';
 import {
+  Inject,
   ForbiddenException,
   Injectable,
   Logger,
@@ -41,7 +43,11 @@ function assertIncidentTargetAllowed(
 export class AdminUserService {
   private readonly logger = new Logger(AdminUserService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(MediaLifecycleService)
+    private readonly media?: MediaLifecycleService,
+  ) {}
 
   async lookupByEmail(email: string) {
     const normalizedEmail = normalizeEmail(email);
@@ -64,59 +70,76 @@ export class AdminUserService {
     userId: string,
     input: AdminUserStatusUpdateRequest,
   ) {
-    return runSerializableTransaction(this.prisma, async (tx) => {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          displayName: true,
-          role: true,
-          status: true,
-        },
-      });
+    let profileId: string | undefined;
+    const updatedUser = await runSerializableTransaction(
+      this.prisma,
+      async (tx) => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            role: true,
+            status: true,
+          },
+        });
 
-      if (!user) {
-        this.logger.warn('Admin user status target was not found');
-        throw new NotFoundException('User not found');
-      }
+        if (!user) {
+          this.logger.warn('Admin user status target was not found');
+          throw new NotFoundException('User not found');
+        }
 
-      assertIncidentTargetAllowed(adminUserId, user, 'status');
+        assertIncidentTargetAllowed(adminUserId, user, 'status');
 
-      if (user.status === input.status) {
-        return user;
-      }
+        if (user.status === input.status) {
+          return user;
+        }
 
-      const updated = await tx.user.update({
-        where: { id: userId },
-        data: {
-          status: input.status,
-          ...(input.status === 'banned'
-            ? { sessionVersion: { increment: 1 } }
-            : {}),
-        },
-        select: {
-          id: true,
-          email: true,
-          displayName: true,
-          role: true,
-          status: true,
-        },
-      });
+        if (input.status === 'banned' && this.media?.enabled) {
+          const profile = await tx.sellerProfile.findUnique({
+            where: { userId },
+            select: { id: true },
+          });
+          if (profile) {
+            profileId = profile.id;
+            await this.media.enqueueRevoke(tx, { profileId: profile.id });
+          }
+        }
+        const updated = await tx.user.update({
+          where: { id: userId },
+          data: {
+            status: input.status,
+            ...(input.status === 'banned'
+              ? { sessionVersion: { increment: 1 } }
+              : {}),
+          },
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            role: true,
+            status: true,
+          },
+        });
 
-      await tx.auditEvent.create({
-        data: {
-          actorUserId: adminUserId,
-          targetType: 'USER',
-          targetId: user.id,
-          oldStatus: user.status,
-          newStatus: input.status,
-          reason: input.reason,
-        },
-      });
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: adminUserId,
+            targetType: 'USER',
+            targetId: user.id,
+            oldStatus: user.status,
+            newStatus: input.status,
+            reason: input.reason,
+          },
+        });
 
-      return updated;
-    });
+        return updated;
+      },
+    );
+    if (profileId && this.media?.enabled)
+      await this.media.deliverOutstanding({ profileId }, 'REVOKE');
+    return updatedUser;
   }
 
   async revokeSessions(

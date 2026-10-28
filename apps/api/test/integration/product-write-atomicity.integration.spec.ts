@@ -1,14 +1,17 @@
 import { randomUUID } from 'node:crypto';
+import sharp from 'sharp';
 
 import { Prisma, type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { PostgresImageStore } from '../../src/core/image-store';
 import { PublicIdService } from '../../src/core/public-id';
 import { AdminModerationService } from '../../src/admin/admin-moderation.service';
+import { SharpImageProcessor } from '../../src/core/media/media-pipeline';
 import { ImagesService } from '../../src/images/images.service';
-import { ListingsService } from '../../src/listings/listings.service';
 import { ProductsService } from '../../src/products/products.service';
+import { SellersService } from '../../src/sellers/sellers.service';
 import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
@@ -92,7 +95,11 @@ async function createSubmitReadyProduct(
     },
   });
   const category = await prisma.category.create({
-    data: { slug: `write-race-${suffix}`, name: 'Write race' },
+    data: {
+      slug: `write-race-${suffix}`,
+      name: 'Write race',
+      normalizedName: normalizeCatalogName('Write race'),
+    },
   });
   const sellerProfile = await prisma.sellerProfile.create({
     data: {
@@ -100,7 +107,9 @@ async function createSubmitReadyProduct(
       slug: `write-race-${suffix}`,
       sellerType: 'creator',
       fullName: 'Owner',
+      discipline: 'Ceramics',
       country: 'BY',
+      city: 'Minsk',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: png.byteLength,
       profilePhotoChecksum: '0'.repeat(64),
@@ -188,9 +197,9 @@ function createServices() {
   const imageStore = new PostgresImageStore(prisma as never);
   return {
     products: new ProductsService(prisma as never, new PublicIdService()),
-    images: new ImagesService(prisma as never, imageStore),
-    listings: new ListingsService(prisma as never),
+    images: new ImagesService(prisma as never, imageStore, undefined, new SharpImageProcessor()),
     admin: new AdminModerationService(prisma as never),
+    sellers: new SellersService(prisma as never, imageStore),
   };
 }
 
@@ -216,6 +225,78 @@ async function holdProductAndMutate(
 }
 
 describe('Product write atomicity against PostgreSQL', () => {
+  it('replays concurrent legacy uploads without duplicates and rejects changed bytes', async () => {
+    const { owner, product } = await createSubmitReadyProduct();
+    const { images } = createServices();
+    const input = await sharp(png).withExif({ IFD0: { Artist: 'Private author' } }).png().toBuffer();
+    const file = { buffer: input, mimetype: 'image/png' };
+    const before = await prisma.productImage.count({ where: { productId: product.id } });
+    await Promise.all([images.add(owner.id, product.id, [file], 'same-upload'), images.add(owner.id, product.id, [file], 'same-upload')]);
+    await images.add(owner.id, product.id, [file], 'same-upload');
+    const stored = await prisma.productImage.findFirstOrThrow({ where: { productId: product.id, uploadIdentity: { not: null } } });
+    const bytes = await new PostgresImageStore(prisma as never).get(stored.objectKey!);
+    expect((await sharp(Buffer.from(bytes!.bytes)).metadata()).exif).toBeUndefined();
+    expect(await prisma.productImage.count({ where: { productId: product.id } })).toBe(before + 1);
+    await expect(images.add(owner.id, product.id, [{ ...file, buffer: Buffer.concat([png, Buffer.from('changed')]) }], 'same-upload')).rejects.toThrow('different content');
+    const nextRevision = await prisma.productRevision.create({ data: { productId: product.id, version: 2, title: 'Next', story: 'Next', status: 'DRAFT' } });
+    await prisma.product.update({ where: { id: product.id }, data: { editingRevisionId: nextRevision.id } });
+    await expect(images.add(owner.id, product.id, [file], 'same-upload')).rejects.toThrow('earlier revision');
+  });
+
+  it('keeps the editing revision canonical from draft save through approval', async () => {
+    const { owner, product } = await createSubmitReadyProduct();
+    const { products, admin, sellers } = createServices();
+    const adminUser = await prisma.user.create({
+      data: {
+        email: `admin.${randomUUID()}@write-race.test`,
+        passwordHash: 'test',
+        displayName: 'Admin',
+        role: 'admin',
+      },
+    });
+
+    await products.update(owner.id, product.id, {
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+    });
+    expect(
+      (await sellers.getProduct(owner.id, product.id)).product,
+    ).toMatchObject({
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+    });
+
+    await products.submit(owner.id, product.id);
+    const submitted = await prisma.productRevision.findUniqueOrThrow({
+      where: { id: product.editingRevisionId! },
+      select: { id: true, title: true, story: true, status: true, updatedAt: true },
+    });
+    expect({
+      title: submitted.title,
+      story: submitted.story,
+      status: submitted.status,
+    }).toEqual({
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+      status: 'PENDING_REVIEW',
+    });
+
+    await admin.updateProductStatus(adminUser.id, product.id, {
+      status: 'APPROVED',
+      target: {
+        kind: 'revision',
+        id: submitted.id,
+        updatedAt: submitted.updatedAt.toISOString(),
+      },
+    });
+    expect(
+      (await products.getPortfolio(product.publicId)).product,
+    ).toMatchObject({
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+    });
+  });
+
   it('keeps a late field write from mutating a Product after submit wins the row', async () => {
     const { owner, product } = await createSubmitReadyProduct();
     const { products } = createServices();
@@ -269,9 +350,7 @@ describe('Product write atomicity against PostgreSQL', () => {
       where: { productId: product.id },
       select: { id: true, byteLength: true },
     });
-    expect(remaining).toEqual([
-      { id: imageId, byteLength: png.byteLength },
-    ]);
+    expect(remaining).toEqual([{ id: imageId, byteLength: png.byteLength }]);
   });
 
   it('does not persist a late image upload after submit and leaves no orphaned bytes', async () => {
@@ -331,14 +410,8 @@ describe('Product write atomicity against PostgreSQL', () => {
     );
 
     const storyPromise = products.replaceCreationStory(owner.id, product.id, {
-      intro: 'Late story',
-      steps: [
-        {
-          id: product.creationSteps[0]!.id,
-          title: 'Changed',
-          body: 'Should not persist',
-        },
-      ],
+      storyToken: 0,
+      blocks: [{ type: 'PARAGRAPH', text: 'Late story' }],
     });
     await waitThenRelease(release);
 
@@ -358,6 +431,7 @@ describe('Product write atomicity against PostgreSQL', () => {
     expect(step.title).toBe('Sketch');
     expect(step.body).toBe('First step');
     expect(persisted.creationIntro).toBeNull();
+    expect(await prisma.productRevisionStoryBlock.count({ where: { revision: { productId: product.id } } })).toBe(0);
   });
 
   it('lets a rejected Product stay editable and resubmit on the same id', async () => {
@@ -496,14 +570,21 @@ describe('Product write atomicity against PostgreSQL', () => {
     await expect(removePromise).resolves.toEqual({ ok: true });
     await finished;
 
-    const remaining = await prisma.productImage.findMany({
-      where: { productId: product.id },
+    const remaining = await prisma.productRevisionImage.findMany({
+      where: { revisionId: product.editingRevisionId },
       orderBy: { position: 'asc' },
-      select: { id: true, position: true },
+      select: { imageId: true, position: true },
     });
     expect(remaining.map((row) => row.position)).toEqual([0, 1]);
-    expect(remaining.map((row) => row.id)).not.toContain(product.images[0]!.id);
-    expect(remaining.some((row) => row.id === second.id)).toBe(true);
+    expect(remaining.map((row) => row.imageId)).not.toContain(product.images[0]!.id);
+    expect(remaining.some((row) => row.imageId === second.id)).toBe(true);
+    const stored = await prisma.productImage.findMany({
+      where: { productId: product.id },
+      select: { id: true },
+    });
+    expect(stored.map((row) => row.id).sort()).toEqual(
+      remaining.map((row) => row.imageId).sort(),
+    );
   });
 
   it('rejects reorder after a concurrent add changes the locked image set', async () => {
@@ -539,121 +620,20 @@ describe('Product write atomicity against PostgreSQL', () => {
     );
     await waitThenRelease(release);
 
-    await expect(reorderPromise).rejects.toThrow(
-      'Image order must include every Product image exactly once',
-    );
+    await expect(reorderPromise).rejects.toMatchObject({
+      status: 409,
+      message: 'Product images changed while saving order',
+    });
     await finished;
 
-    const remaining = await prisma.productImage.findMany({
-      where: { productId: product.id },
+    const remaining = await prisma.productRevisionImage.findMany({
+      where: { revisionId: product.editingRevisionId },
       orderBy: { position: 'asc' },
-      select: { id: true, position: true },
+      select: { imageId: true, position: true },
     });
     expect(remaining.map((row) => row.position)).toEqual([0, 1]);
-    expect(remaining.some((row) => row.id === product.images[0]!.id)).toBe(
+    expect(remaining.some((row) => row.imageId === product.images[0]!.id)).toBe(
       true,
     );
-  });
-
-  it('keeps ListingsService schedule from winning after the Product leaves APPROVED under the row lock', async () => {
-    const { owner, product } = await createSubmitReadyProduct('APPROVED');
-    const startsAt = new Date(Date.now() + 60 * 60 * 1000);
-    const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const listing = await prisma.listing.create({
-      data: {
-        productId: product.id,
-        startsAt,
-        originalEndsAt: endsAt,
-        endsAt,
-        currentPrice: new Prisma.Decimal(10),
-        auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
-      },
-    });
-    const { listings } = createServices();
-    const { release, finished } = await holdProductAndMutate(
-      product.id,
-      async (tx) => {
-        await tx.product.update({
-          where: { id: product.id },
-          data: { status: 'CHANGES_REQUESTED' },
-        });
-      },
-    );
-
-    const schedulePromise = listings.transition(
-      owner.id,
-      listing.id,
-      'SCHEDULE',
-    );
-    await waitThenRelease(release);
-
-    await expect(schedulePromise).rejects.toThrow('Product must be approved');
-    await finished;
-
-    expect(
-      (
-        await prisma.listing.findUniqueOrThrow({
-          where: { id: listing.id },
-          select: { status: true },
-        })
-      ).status,
-    ).toBe('DRAFT');
-  });
-
-  it('serializes listing schedule against admin changes-requested on the Product row', async () => {
-    const { owner, product } = await createSubmitReadyProduct();
-    await prisma.product.update({
-      where: { id: product.id },
-      data: { status: 'APPROVED' },
-    });
-    const admin = await prisma.user.create({
-      data: {
-        email: `admin.${randomUUID().replace(/-/g, '').slice(0, 8)}@write-race.test`,
-        passwordHash: 'test',
-        displayName: 'Admin',
-        role: 'admin',
-      },
-    });
-    const startsAt = new Date(Date.now() + 60 * 60 * 1000);
-    const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const listing = await prisma.listing.create({
-      data: {
-        productId: product.id,
-        startsAt,
-        originalEndsAt: endsAt,
-        endsAt,
-        currentPrice: new Prisma.Decimal(10),
-        auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
-      },
-    });
-    const { listings, admin: adminModeration } = createServices();
-
-    const results = await Promise.allSettled([
-      listings.transition(owner.id, listing.id, 'SCHEDULE'),
-      adminModeration.updateProductStatus(admin.id, product.id, {
-        status: 'CHANGES_REQUESTED',
-        reason: 'Need edits',
-      }),
-    ]);
-
-    const persisted = await prisma.product.findUniqueOrThrow({
-      where: { id: product.id },
-      select: {
-        status: true,
-        listings: { select: { id: true, status: true } },
-      },
-    });
-    const scheduled = persisted.listings.filter(
-      (row) => row.status === 'SCHEDULED' || row.status === 'LIVE',
-    );
-
-    if (persisted.status === 'APPROVED') {
-      expect(results[0]?.status).toBe('fulfilled');
-      expect(scheduled).toHaveLength(1);
-    } else {
-      expect(persisted.status).toBe('CHANGES_REQUESTED');
-      expect(scheduled).toHaveLength(0);
-      expect(results[0]?.status).toBe('rejected');
-    }
   });
 });

@@ -5,8 +5,9 @@ import {
   Get,
   Param,
   Patch,
+  ParseUUIDPipe,
   Post,
-  Query,
+  Req,
   Res,
   UploadedFiles,
   UseGuards,
@@ -15,21 +16,28 @@ import {
 import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
-  publicSellerQuerySchema,
-  publicSellerWorksQuerySchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
 } from '@bidplace/contracts';
 
-import { BearerAuthGuard, CurrentUser, OptionalBearerAuthGuard } from '../auth';
-import { parseBody } from '../core/validation';
+import {
+  SessionAuthGuard,
+  CurrentUser,
+  OptionalSessionAuthGuard,
+  VerifiedEmailGuard,
+} from '../auth';
+import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import {
   getImageCacheControl,
   productImageUploadLimits,
-  supportedImageMimeTypes,
+  acceptSupportedUploadMimeType,
   type RawImageUpload,
   validateProductImageUploads,
 } from '../images/image-policy';
+import {
+  parseSellerProfileWriteBody,
+  type ContentTypeRequest,
+} from './seller-profile-write-body';
 import { SellersService } from './sellers.service';
 
 @Controller()
@@ -37,13 +45,19 @@ export class SellersController {
   constructor(private readonly sellers: SellersService) {}
 
   @Get('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   getMine(@CurrentUser() auth: { sub: string }) {
     return this.sellers.getMine(auth.sub);
   }
 
   @Post('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:profile-photo-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
@@ -51,11 +65,12 @@ export class SellersController {
         files: 1,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async create(
     @CurrentUser() auth: { sub: string },
+    @Req() request: ContentTypeRequest,
     @Body() body: unknown,
     @UploadedFiles() files: RawImageUpload[] = [],
   ) {
@@ -67,13 +82,23 @@ export class SellersController {
 
     return this.sellers.create(
       auth.sub,
-      parseBody(sellerProfileCreateRequestSchema, body),
+      parseSellerProfileWriteBody(
+        sellerProfileCreateRequestSchema,
+        body,
+        request,
+      ),
       validatedFiles[0]!,
     );
   }
 
   @Patch('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:profile-photo-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
@@ -81,54 +106,43 @@ export class SellersController {
         files: 1,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async update(
     @CurrentUser() auth: { sub: string },
+    @Req() request: ContentTypeRequest,
     @Body() body: unknown,
     @UploadedFiles() files: RawImageUpload[] = [],
   ) {
     return this.sellers.update(
       auth.sub,
-      parseBody(sellerProfileUpdateRequestSchema, body),
+      parseSellerProfileWriteBody(
+        sellerProfileUpdateRequestSchema,
+        body,
+        request,
+      ),
       files.length ? (await validateProductImageUploads(files))[0] : undefined,
     );
   }
 
-  @Post('seller/profile/submit')
-  @UseGuards(BearerAuthGuard)
-  submitProfileRevision(@CurrentUser() auth: { sub: string }) {
-    return this.sellers.submitProfileRevision(auth.sub);
-  }
-
   @Get('seller/products')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   listProducts(@CurrentUser() auth: { sub: string }) {
     return this.sellers.listProducts(auth.sub);
   }
 
   @Get('seller/products/:id')
-  @UseGuards(BearerAuthGuard)
-  getProduct(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+  @UseGuards(SessionAuthGuard)
+  getProduct(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     return this.sellers.getProduct(auth.sub, id);
   }
 
-  @Get('sellers')
-  listPublic(@Query() query: unknown) {
-    return this.sellers.listPublic(parseBody(publicSellerQuerySchema, query));
-  }
-
-  @Get('sellers/:slug/detail')
-  getPublic(@Param('slug') slug: string, @Query() query: unknown) {
-    return this.sellers.getPublic(
-      slug,
-      parseBody(publicSellerWorksQuerySchema, query),
-    );
-  }
-
   @Get('sellers/:slug/photo')
-  @UseGuards(OptionalBearerAuthGuard)
+  @UseGuards(OptionalSessionAuthGuard)
   async getPhoto(
     @Param('slug') slug: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,
@@ -143,7 +157,7 @@ export class SellersController {
     response.setHeader(
       'Cache-Control',
       getImageCacheControl({
-        isPublic: photo.status === 'APPROVED',
+        isPublic: photo.isPublic,
         kind: 'seller-photo',
       }),
     );

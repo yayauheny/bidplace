@@ -8,7 +8,10 @@ export default function ResetPasswordScreen() {
   const resolvedToken = Array.isArray(token) ? token[0] : token ?? null;
 
   return (
-    <AuthViewport>
+    <AuthViewport
+      title="Новый пароль"
+      tone="section"
+    >
       <ResetPasswordForm token={resolvedToken} />
     </AuthViewport>
   );

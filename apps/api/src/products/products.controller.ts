@@ -1,22 +1,19 @@
 import {
   Body,
   Controller,
-  Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   productWriteRequestSchema,
-  creationStepOrderRequestSchema,
-  creationStoryWriteRequestSchema,
-  publicDiscoveryQuerySchema,
+  storyWriteRequestSchema,
 } from '@bidplace/contracts';
 
-import { BearerAuthGuard, CurrentUser } from '../auth';
+import { SessionAuthGuard, CurrentUser, VerifiedEmailGuard } from '../auth';
 import { parseBody } from '../core/validation';
 import { ProductsService } from './products.service';
 
@@ -24,20 +21,8 @@ import { ProductsService } from './products.service';
 export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 
-  @Get()
-  list(@Query() query: unknown) {
-    return this.products.listPublic(
-      parseBody(publicDiscoveryQuerySchema, query),
-    );
-  }
-
-  @Get(':publicId')
-  get(@Param('publicId') publicId: string) {
-    return this.products.getPublic(publicId);
-  }
-
   @Post()
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   create(@CurrentUser() auth: { sub: string }, @Body() body: unknown) {
     return this.products.create(
       auth.sub,
@@ -46,16 +31,37 @@ export class ProductsController {
   }
 
   @Post(':id/submit')
-  @UseGuards(BearerAuthGuard)
-  submit(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
+  submit(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     return this.products.submit(auth.sub, id);
   }
 
+  @Post(':id/hide')
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
+  hide(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.products.hide(auth.sub, id);
+  }
+
+  @Post(':id/unhide')
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
+  unhide(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.products.unhide(auth.sub, id);
+  }
+
   @Patch(':id')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   update(
     @CurrentUser() auth: { sub: string },
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: unknown,
   ) {
     return this.products.update(
@@ -66,30 +72,16 @@ export class ProductsController {
   }
 
   @Put(':id/creation')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   replaceCreation(
     @CurrentUser() auth: { sub: string },
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: unknown,
   ) {
     return this.products.replaceCreationStory(
       auth.sub,
       id,
-      parseBody(creationStoryWriteRequestSchema, body),
-    );
-  }
-
-  @Patch(':id/creation/order')
-  @UseGuards(BearerAuthGuard)
-  reorderCreation(
-    @CurrentUser() auth: { sub: string },
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
-    return this.products.reorderCreationSteps(
-      auth.sub,
-      id,
-      parseBody(creationStepOrderRequestSchema, body).stepIds,
+      parseBody(storyWriteRequestSchema, body),
     );
   }
 }

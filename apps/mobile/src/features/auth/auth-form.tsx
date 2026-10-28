@@ -1,18 +1,69 @@
-import { Link, useRouter, type Href } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import {
+  Link,
+  useIsFocused,
+  useNavigation,
+  useRouter,
+  type Href,
+} from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
+import { isAuthDialog } from '../../components/layout/auth-viewport-layout';
 import {
-  AppText,
-  PrimaryButton,
-  TextButton,
-  TextField,
-} from '../../components/ui';
+  ApiErrorCode,
+  newAccountSlugSchema,
+  type User,
+  type LegalDocumentId,
+  type LegalDocumentsResponse,
+} from '@bidplace/contracts';
+import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { MotionPressable } from '../../components/ui/MotionPressable';
+import { AuthConsentCheckbox } from './auth-consent-checkbox';
+import { AuthPasswordField } from './auth-password-field';
+import { AuthCodeField } from './auth-code-field';
+import { createOperationKey } from './recovery-operation';
+import { registerSubmission } from './auth-dismissal';
+import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
+import { ProviderButtons } from './provider-buttons';
+import {
+  AuthLegalText,
+  RegistrationLegalText,
+  registrationConsentLabel,
+} from './auth-legal-text';
+import { LegalDocumentViewer } from './legal-document-viewer';
 import { useAnalytics } from '../../providers/analytics-provider';
-import { useAuth } from '../../providers/auth-provider';
-import { getUserFacingErrorMessage } from '../../lib/errors';
+import { useAppTheme } from '../../providers/theme-provider';
+import { useApiClient } from '../../providers/api-provider';
+import {
+  registerSessionChangeIsOwn,
+  useAuth,
+} from '../../providers/auth-provider';
+import {
+  useSlugAvailability,
+  visibleSlugAvailability,
+} from './use-slug-availability';
+import { ApiClientError } from '@bidplace/api-client';
+import type { NicknameSuggestions } from './nickname-suggestion-generator';
+import { nicknameSuggestionGenerator } from './unique-names-generator-adapter';
+
+import {
+  applyFormFailure,
+  authRequestMessage,
+  AUTH_TURNSTILE_REQUIRED_COPY,
+  AUTH_TURNSTILE_UNAVAILABLE_COPY,
+  getUserFacingErrorMessage,
+  readFormFailure,
+} from '../../errors';
+import {
+  authKeys,
+  currentAuthEpoch,
+  readAuthEpoch,
+} from '../../lib/query-cache';
+import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import {
   loginFormSchema,
   registerFormSchema,
@@ -20,25 +71,348 @@ import {
   type RegisterFormValues,
 } from './schemas';
 import type { SafeRedirect } from './auth-redirect';
-import { AuthCard } from './auth-card';
+import {
+  TurnstileWidget,
+  type TurnstileAvailability,
+} from './turnstile-widget';
+
+const registrationConfirmationFields = [
+  'agreementAccepted',
+  'privacyAcknowledged',
+  'dataConsentGiven',
+  'age18Confirmed',
+] as const;
+
+function aborted(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    error.name === 'AbortError'
+  );
+}
+
+type LoginSuccessReceipt = {
+  userId: string;
+  epochId: number;
+  controller: AbortController;
+};
+
+function loginValuesMatch(
+  held: { email: string; password: string } | null,
+  email: string,
+  password: string,
+): boolean {
+  return held !== null && held.email === email && held.password === password;
+}
+
+/** Closed dialog roots are empty views. Keep them out of parent gap measurement. */
+const dialogHostStyle: ViewStyle = {
+  position: 'absolute',
+  width: 0,
+  height: 0,
+};
 type AuthFormProps = { redirectTo?: SafeRedirect };
 export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
+  const { width } = useWindowDimensions();
+  const desktop = isAuthDialog(width);
+  const actionSize = desktop ? 'authDialog' : 'auth';
+  const palette = useAppTheme();
   const auth = useAuth();
+  const api = useApiClient();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const focused = useIsFocused();
+  const navigation = useNavigation();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [challengeEmail, setChallengeEmail] = useState<string | null>(null);
+  const [proof, setProof] = useState<string | null>(null);
+  const [proofAvailability, setProofAvailability] =
+    useState<TurnstileAvailability>('ready');
+  const [widgetGeneration, setWidgetGeneration] = useState(0);
+  const transport = useRef<AbortController | null>(null);
+  const loginReceipt = useRef<LoginSuccessReceipt | null>(null);
+  const submitting = useRef(false);
+  const mounted = useRef(true);
+  const focusedRef = useRef(focused);
+  const privateCacheEpoch = usePrivateCacheEpoch(queryClient);
+  const [legalOpen, setLegalOpen] = useState<LegalDocumentId | null>(null);
+  const [loginLegal, setLoginLegal] = useState<LegalDocumentsResponse | null>(
+    null,
+  );
+  const [legalError, setLegalError] = useState<string | null>(null);
+  const [legalPending, setLegalPending] = useState(false);
+  const legalTransport = useRef<AbortController | null>(null);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: { email: '', password: '' },
   });
-  const submit = form.handleSubmit(async (values) => {
+  const emailValue = form.watch('email');
+  const passwordValue = form.watch('password');
+  const normalizedEmail = emailValue.trim().toLowerCase();
+  const challenge =
+    challengeEmail !== null && challengeEmail === normalizedEmail;
+  const submittedValues = useRef<{ email: string; password: string } | null>(
+    null,
+  );
+  const onProof = useCallback((token: string | null) => setProof(token), []);
+  const onProofAvailability = useCallback(
+    (availability: TurnstileAvailability) => {
+      setProofAvailability(availability);
+    },
+    [],
+  );
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      transport.current?.abort();
+      legalTransport.current?.abort();
+    };
+  }, []);
+  useEffect(() => {
+    focusedRef.current = focused;
+    if (!focused) transport.current?.abort();
+  }, [focused]);
+  useEffect(() => {
+    return navigation.addListener('blur', () => {
+      focusedRef.current = false;
+      transport.current?.abort();
+    });
+  }, [navigation]);
+  useEffect(() => {
+    const current = submittedValues.current;
+    if (!current || !transport.current) return;
+    if (current.email !== emailValue || current.password !== passwordValue)
+      transport.current.abort();
+  }, [emailValue, passwordValue]);
+  useEffect(() => {
+    if (challengeEmail === null || normalizedEmail === challengeEmail) return;
+    setChallengeEmail(null);
+    setProof(null);
     setSubmitError(null);
+    setWidgetGeneration((generation) => generation + 1);
+  }, [challengeEmail, normalizedEmail]);
+  const complete = useAuthSheetComplete();
+  useAuthSheetGuard({
+    dirty: Boolean(emailValue || passwordValue),
+    busy: form.formState.isSubmitting,
+  });
+  const dropLoginReceipt = useCallback((controller?: AbortController) => {
+    const receipt = loginReceipt.current;
+    if (controller && receipt?.controller !== controller) return;
+    loginReceipt.current = null;
+    if (transport.current === receipt?.controller) {
+      transport.current = null;
+      submittedValues.current = null;
+    }
+  }, []);
+  const admitLoginReceipt = useCallback(
+    (receipt: LoginSuccessReceipt) => {
+      const { controller } = receipt;
+      if (
+        controller.signal.aborted ||
+        !mounted.current ||
+        !focusedRef.current
+      ) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      if (transport.current !== controller) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      if (
+        !loginValuesMatch(submittedValues.current, emailValue, passwordValue)
+      ) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      const epoch = readAuthEpoch(queryClient);
+      const installed = queryClient.getQueryData<User | null>(authKeys.session);
+      if (
+        epoch.id !== receipt.epochId ||
+        !epoch.writesOpen ||
+        installed?.id !== receipt.userId
+      ) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      loginReceipt.current = receipt;
+    },
+    [dropLoginReceipt, emailValue, passwordValue, queryClient],
+  );
+  useEffect(() => {
+    const receipt = loginReceipt.current;
+    if (!receipt) return;
+    const { controller } = receipt;
+    if (controller.signal.aborted || !mounted.current || !focusedRef.current) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    if (transport.current !== controller) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    if (!loginValuesMatch(submittedValues.current, emailValue, passwordValue)) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    const epoch = readAuthEpoch(queryClient);
+    if (epoch.id !== receipt.epochId || !epoch.writesOpen) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    const installed = queryClient.getQueryData<User | null>(authKeys.session);
+    if (installed?.id !== receipt.userId) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    if (!auth.isAuthenticated || auth.user?.id !== receipt.userId) return;
+    if (form.formState.isSubmitting) return;
+    loginReceipt.current = null;
+    transport.current = null;
+    submittedValues.current = null;
+    if (complete) complete(redirectTo);
+    else router.replace(redirectTo as Href);
+  }, [
+    auth.isAuthenticated,
+    auth.user?.id,
+    complete,
+    dropLoginReceipt,
+    emailValue,
+    form.formState.isSubmitting,
+    passwordValue,
+    privateCacheEpoch,
+    queryClient,
+    redirectTo,
+    router,
+  ]);
+  const openLoginLegal = (id: LegalDocumentId) => {
+    setLegalOpen(id);
+    if (loginLegal || legalTransport.current) return;
+    setLegalError(null);
+    setLegalPending(true);
+    const controller = new AbortController();
+    legalTransport.current = controller;
+    void api.auth
+      .getLegalDocuments({ signal: controller.signal })
+      .then((documents) => {
+        if (!controller.signal.aborted && mounted.current)
+          setLoginLegal(documents);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted && mounted.current) {
+          setLegalError('Юридические документы пока не опубликованы.');
+        }
+      })
+      .finally(() => {
+        if (legalTransport.current === controller)
+          legalTransport.current = null;
+        if (!controller.signal.aborted && mounted.current)
+          setLegalPending(false);
+      });
+  };
+  const openPolicy = () => openLoginLegal('privacy');
+  const openRules = () => openLoginLegal('agreement');
+  const submitLogin = form.handleSubmit(async (values) => {
+    if (challenge && proofAvailability === 'unavailable') {
+      setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
+      return;
+    }
+    if (challenge && !proof) {
+      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
+      return;
+    }
+    setSubmitError(null);
+    dropLoginReceipt();
+    transport.current?.abort();
+    const controller = new AbortController();
+    transport.current = controller;
+    submittedValues.current = {
+      email: values.email,
+      password: values.password,
+    };
+    const token = proof;
+    if (challenge) {
+      setProof(null);
+      setWidgetGeneration((generation) => generation + 1);
+    }
     try {
-      await auth.login(values);
-      router.replace(redirectTo as Href);
+      const response = await auth.login(
+        {
+          email: values.email,
+          password: values.password,
+          ...(token ? { turnstileToken: token } : {}),
+        },
+        { signal: controller.signal },
+      );
+      const installed = queryClient.getQueryData<User | null>(authKeys.session);
+      const epoch = readAuthEpoch(queryClient);
+      const sameValues = loginValuesMatch(
+        submittedValues.current,
+        emailValue,
+        passwordValue,
+      );
+      if (
+        controller.signal.aborted ||
+        !mounted.current ||
+        !focusedRef.current ||
+        transport.current !== controller ||
+        installed?.id !== response.user.id ||
+        !epoch.writesOpen ||
+        !sameValues
+      ) {
+        return;
+      }
+      admitLoginReceipt({
+        userId: response.user.id,
+        epochId: epoch.id,
+        controller,
+      });
     } catch (error) {
-      setSubmitError(getUserFacingErrorMessage(error, 'Не удалось войти'));
+      if (controller.signal.aborted || aborted(error)) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      const message = authRequestMessage(error);
+      if (
+        error instanceof ApiClientError &&
+        error.code === ApiErrorCode.TURNSTILE_REQUIRED &&
+        mounted.current &&
+        focusedRef.current &&
+        transport.current === controller
+      ) {
+        setChallengeEmail(values.email.trim().toLowerCase());
+      }
+      if (message) {
+        setSubmitError(message);
+        return;
+      }
+      const failure = readFormFailure(error, ['email', 'password']);
+      if (failure.disposition === 'passthrough') {
+        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось войти'));
+        return;
+      }
+      applyFormFailure(form, failure, ['email', 'password']);
+      setSubmitError(failure.formMessage);
+    } finally {
+      if (
+        transport.current === controller &&
+        loginReceipt.current?.controller !== controller
+      ) {
+        transport.current = null;
+        submittedValues.current = null;
+      }
     }
   });
+  const submit = () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    void Promise.resolve(submitLogin()).finally(() => {
+      submitting.current = false;
+    });
+  };
   if (!auth.ready)
     return (
       <AppText role="bodySmall" tone="secondary">
@@ -47,51 +421,93 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     );
   if (auth.isAuthenticated)
     return (
-      <AuthCard title="Вы уже вошли" description="Перейдите к следующему шагу.">
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="bodySmall">Перейдите к следующему шагу.</AppText>
         <PrimaryButton
           label="Перейти дальше"
-          onPress={() => router.replace(redirectTo as Href)}
+          size={actionSize}
+          width="full"
+          onPress={() => {
+            if (complete) complete(redirectTo);
+            else router.replace(redirectTo as Href);
+          }}
         />
-      </AuthCard>
+      </View>
     );
   return (
-    <AuthCard
-      title="Вход"
-      description="Войдите или создайте аккаунт, чтобы продолжить работу с аукционами."
+    <View
+      style={{
+        gap: desktop
+          ? designTokens.auth.dialogSectionGap
+          : designTokens.auth.loginGap,
+      }}
     >
-      <View style={{ gap: designTokens.space.x3 }}>
+      <View style={{ gap: designTokens.auth.loginFormGap }}>
         <Controller
           control={form.control}
           name="email"
           render={({ field }) => (
             <TextField
-              label="Email"
+              ref={field.ref}
+              metrics="auth"
+              label="Электронная почта"
               value={field.value ?? ''}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="name@example.com"
+              placeholder="Электронная почта"
               autoComplete="email"
               keyboardType="email-address"
               error={form.formState.errors.email?.message}
             />
           )}
         />
-        <Controller
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <TextField
-              label="Пароль"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              secureTextEntry
-              error={form.formState.errors.password?.message}
-            />
-          )}
-        />
+        <View style={{ gap: designTokens.auth.titleGap }}>
+          <Controller
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <AuthPasswordField
+                label="Пароль"
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
+                autoComplete="current-password"
+                metrics="authPassword"
+                error={form.formState.errors.password?.message}
+                onSubmitEditing={() => void submit()}
+              />
+            )}
+          />
+          <Link
+            href={{
+              pathname: '/forgot-password',
+              params: redirectTo !== '/' ? { redirectTo } : undefined,
+            }}
+            asChild
+          >
+            <MotionPressable
+              accessibilityRole="link"
+              accessibilityLabel="Забыли пароль?"
+              onPress={() => undefined}
+              style={{ alignSelf: 'flex-end' }}
+            >
+              <AppText
+                role="fieldError"
+                style={{ color: palette.textSubdued, fontSize: 12 }}
+              >
+                Забыли пароль?
+              </AppText>
+            </MotionPressable>
+          </Link>
+        </View>
+        {challenge ? (
+          <TurnstileWidget
+            key={widgetGeneration}
+            action="login"
+            onToken={onProof}
+            onAvailability={onProofAvailability}
+          />
+        ) : null}
         {submitError ? (
           <AppText
             role="bodySmall"
@@ -103,44 +519,370 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         ) : null}
         <PrimaryButton
           label="Войти"
+          size={actionSize}
+          width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
-        <Link
-          href={{
-            pathname: '/forgot-password',
-            params: redirectTo !== '/' ? { redirectTo } : undefined,
-          }}
-          asChild
-        >
-          <TextButton label="Забыли пароль?" onPress={() => undefined} />
-        </Link>
-        <Link
+        <FigmaButton
+          label="Войти по коду из письма"
+          variant="outline"
+          size={actionSize}
+          width="full"
+          href={{ pathname: '/email-login', params: { redirectTo } }}
+        />
+        <FigmaButton
+          label="Регистрация"
+          variant="ghost"
+          size={actionSize}
+          width="full"
           href={{
             pathname: '/register',
             params: redirectTo !== '/' ? { redirectTo } : undefined,
           }}
-          asChild
-        >
-          <TextButton
-            label="Нет аккаунта? Создать аккаунт"
-            onPress={() => undefined}
-          />
-        </Link>
+        />
       </View>
-    </AuthCard>
+      {!desktop ? (
+        <AppText
+          role="authOr"
+          style={{ textAlign: 'center', color: palette.textSubdued }}
+        >
+          или
+        </AppText>
+      ) : null}
+      <ProviderButtons returnPath={redirectTo} size={actionSize} />
+      <AuthLegalText
+        variant="login"
+        textAlign="center"
+        onOpenPolicy={openPolicy}
+        onOpenRules={openRules}
+      />
+      {legalError ? (
+        <AppText
+          role="bodySmall"
+          tone="danger"
+          accessibilityLiveRegion="polite"
+        >
+          {legalError}
+        </AppText>
+      ) : null}
+      <View pointerEvents="box-none" style={dialogHostStyle}>
+        <LegalDocumentViewer
+          selected={legalOpen}
+          documents={loginLegal}
+          loading={legalPending}
+          onClose={() => setLegalOpen(null)}
+        />
+      </View>
+    </View>
   );
 }
+type RegistrationStep = 'email' | 'nickname' | 'password' | 'proof';
+
+const registrationCopy: Record<
+  RegistrationStep,
+  { title: string; caption: string }
+> = {
+  email: {
+    title: 'Введите вашу почту',
+    caption: 'Зарегистрируйтесь или войдите',
+  },
+  nickname: {
+    title: 'Выберите имя пользователя',
+    caption: 'Можете выбрать свой никнейм или предложенный',
+  },
+  password: {
+    title: 'Создайте пароль',
+    caption: 'Пусть он будет надежный',
+  },
+  proof: {
+    title: 'Подтвердите почту',
+    caption: 'Введите шестизначный код из письма',
+  },
+};
+
+function nicknameAvailabilityError(error: unknown) {
+  if (error instanceof ApiClientError && error.kind === 'rate_limited') {
+    return 'Слишком много проверок. Подождите и попробуйте снова.';
+  }
+  if (
+    error instanceof ApiClientError &&
+    (error.kind === 'network' ||
+      error.kind === 'server' ||
+      error.kind === 'unexpected_response')
+  ) {
+    return 'Не удалось проверить никнейм. Проверьте соединение и повторите.';
+  }
+  return 'Не удалось проверить никнейм. Попробуйте ещё раз.';
+}
+
+function NicknameSuggestionList({
+  suggestions,
+  onSelect,
+}: {
+  suggestions: NicknameSuggestions;
+  onSelect: (suggestion: string) => void;
+}) {
+  const palette = useAppTheme();
+  return (
+    <View
+      nativeID="nickname-suggestions"
+      style={{ gap: designTokens.space.x2, width: '100%' }}
+    >
+      <AppText
+        role="metadata"
+        style={{
+          color: palette.fieldLabel,
+          textAlign: 'center',
+          ...designTokens.typography.authSuggestionLabel,
+        }}
+      >
+        Предложения:
+      </AppText>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: designTokens.space.x1,
+        }}
+      >
+        {suggestions.map((suggestion) => (
+          <FigmaButton
+            key={suggestion}
+            label={suggestion}
+            accessibilityHint="Заполнить поле никнейма"
+            variant="outline"
+            size="suggestion"
+            onPress={() => onSelect(suggestion)}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
+  const palette = useAppTheme();
   const auth = useAuth();
+  const api = useApiClient();
   const analytics = useAnalytics();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const authEpoch = usePrivateCacheEpoch(queryClient);
+  const [step, setStep] = useState<RegistrationStep>('email');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const trackedRegistrationStart = useRef(false);
+  const openedAuthenticated = useRef<boolean | null>(null);
+  const sessionOperation = useRef(0);
+  const nicknameAdvancePending = useRef(false);
+  const nicknameAdvanceOperation = useRef(0);
+  const seenAuthEpoch = useRef(authEpoch);
+  const mounted = useRef(true);
+  const completed = useRef(false);
+  const registrationReceipt = useRef<{
+    user: User;
+    operation: number;
+    epoch: number;
+    controller: AbortController;
+  } | null>(null);
+  const registerTransport = useRef<AbortController | null>(null);
+  const registerSnapshot = useRef<string | null>(null);
+  const registerSubmitting = useRef(false);
+  const emailProved = useRef(false);
+  const [registrationCode, setRegistrationCode] = useState('');
+  const [resendAvailableAt, setResendAvailableAt] = useState(0);
+  const [proofNow, setProofNow] = useState(Date.now());
+  const [resendingCode, setResendingCode] = useState(false);
+  const [proof, setProof] = useState<string | null>(null);
+  const [proofAvailability, setProofAvailability] =
+    useState<TurnstileAvailability>('ready');
+  const [widgetGeneration, setWidgetGeneration] = useState(0);
+  const onProof = useCallback((token: string | null) => setProof(token), []);
+  const onProofAvailability = useCallback(
+    (availability: TurnstileAvailability) => {
+      setProofAvailability(availability);
+    },
+    [],
+  );
+  const focused = useIsFocused();
+  const navigation = useNavigation();
+  const focusedRef = useRef(focused);
+  const wasFocused = useRef(focused);
+  const [legalDocuments, setLegalDocuments] =
+    useState<LegalDocumentsResponse | null>(null);
+  const [registrationLegalPending, setRegistrationLegalPending] =
+    useState(false);
+  const [registrationLegalOpen, setRegistrationLegalOpen] =
+    useState<LegalDocumentId | null>(null);
+  const legalRequest = useRef(0);
+  const registrationLegalTransport = useRef<AbortController | null>(null);
+  const [suggestions, setSuggestions] = useState<NicknameSuggestions>(() =>
+    nicknameSuggestionGenerator.generate(),
+  );
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
-    defaultValues: { email: '', password: '', phone: '', displayName: '' },
+    defaultValues: {
+      email: '',
+      slug: '',
+      password: '',
+      confirmPassword: '',
+      agreementAccepted: false,
+      privacyAcknowledged: false,
+      dataConsentGiven: false,
+      age18Confirmed: false,
+    },
   });
+  const watched = form.watch();
+  useEffect(() => {
+    if (step !== 'proof') return;
+    const timer = setInterval(() => setProofNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [step]);
+  const registrationValuesSnapshot = JSON.stringify(watched);
+  const {
+    check: checkSlugAvailability,
+    invalidate: invalidateSlugAvailability,
+    result: slugAvailabilityResult,
+  } = useSlugAvailability();
+  const slugAvailability = visibleSlugAvailability(
+    watched.slug,
+    slugAvailabilityResult,
+  );
+  const complete = useAuthSheetComplete();
+  const sessionUser = () =>
+    queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+  const routeOwns = (operation: number) =>
+    mounted.current &&
+    focusedRef.current &&
+    sessionOperation.current === operation;
+  const anonymousOwns = (operation: number, epoch: number) =>
+    routeOwns(operation) &&
+    (sessionUser()?.id ?? null) === null &&
+    currentAuthEpoch(queryClient) === epoch;
+  const finishRegistration = useCallback(
+    (user: User, operation?: number) => {
+      if (!mounted.current || !focusedRef.current || completed.current) return;
+      if (operation !== undefined && sessionOperation.current !== operation)
+        return;
+      completed.current = true;
+      const next = user.emailVerifiedAt
+        ? redirectTo
+        : (`/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as SafeRedirect);
+      if (complete) complete(next);
+      else router.replace(next as Href);
+    },
+    [complete, redirectTo, router],
+  );
+  useEffect(() => {
+    const receipt = registrationReceipt.current;
+    if (!receipt) return;
+    const epoch = readAuthEpoch(queryClient);
+    if (
+      receipt.controller.signal.aborted ||
+      !mounted.current ||
+      !focusedRef.current ||
+      sessionOperation.current !== receipt.operation ||
+      epoch.id !== receipt.epoch ||
+      !epoch.writesOpen ||
+      queryClient.getQueryData<User | null>(authKeys.session)?.id !==
+        receipt.user.id
+    ) {
+      registrationReceipt.current = null;
+      return;
+    }
+    if (
+      !auth.isAuthenticated ||
+      auth.user?.id !== receipt.user.id ||
+      form.formState.isSubmitting
+    )
+      return;
+    registrationReceipt.current = null;
+    finishRegistration(receipt.user, receipt.operation);
+  }, [
+    auth.isAuthenticated,
+    auth.user?.id,
+    authEpoch,
+    form.formState.isSubmitting,
+    finishRegistration,
+    queryClient,
+  ]);
+
+  useAuthSheetGuard({
+    dirty: Boolean(
+      watched.slug ||
+      watched.email ||
+      watched.password ||
+      watched.confirmPassword ||
+      watched.agreementAccepted ||
+      watched.privacyAcknowledged ||
+      watched.dataConsentGiven ||
+      watched.age18Confirmed,
+    ),
+    busy: form.formState.isSubmitting,
+  });
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      registerTransport.current?.abort();
+      registrationLegalTransport.current?.abort();
+    };
+  }, []);
+  useEffect(() => {
+    if (
+      registerSnapshot.current &&
+      registerTransport.current &&
+      registrationValuesSnapshot !== registerSnapshot.current
+    ) {
+      registerTransport.current.abort();
+    }
+  }, [registrationValuesSnapshot]);
+  useEffect(() => {
+    const markBlurred = () => {
+      focusedRef.current = false;
+      registerTransport.current?.abort();
+      sessionOperation.current += 1;
+      nicknameAdvanceOperation.current += 1;
+      nicknameAdvancePending.current = false;
+      invalidateSlugAvailability();
+    };
+    const markFocused = () => {
+      focusedRef.current = true;
+    };
+    const unblur = navigation.addListener('blur', markBlurred);
+    const unfocus = navigation.addListener('focus', markFocused);
+    return () => {
+      unblur();
+      unfocus();
+    };
+  }, [invalidateSlugAvailability, navigation]);
+  useEffect(() => {
+    if (wasFocused.current && !focused) {
+      focusedRef.current = false;
+      registerTransport.current?.abort();
+      sessionOperation.current += 1;
+      nicknameAdvanceOperation.current += 1;
+      nicknameAdvancePending.current = false;
+      invalidateSlugAvailability();
+    }
+    if (focused) focusedRef.current = true;
+    wasFocused.current = focused;
+  }, [focused, invalidateSlugAvailability]);
+  useEffect(() => {
+    if (seenAuthEpoch.current === authEpoch) return;
+    seenAuthEpoch.current = authEpoch;
+    if (registerSessionChangeIsOwn(queryClient, authEpoch)) return;
+    sessionOperation.current += 1;
+    nicknameAdvanceOperation.current += 1;
+    nicknameAdvancePending.current = false;
+    invalidateSlugAvailability();
+    setRegistrationLegalOpen(null);
+    // Guest bootstrap can rotate the epoch before any registration attempt.
+    if (mounted.current && Object.values(form.getValues()).some(Boolean)) {
+      setSubmitError('Сессия изменилась. Повторите регистрацию.');
+    }
+  }, [authEpoch, form, invalidateSlugAvailability, queryClient]);
 
   useEffect(() => {
     if (trackedRegistrationStart.current) {
@@ -150,129 +892,547 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     analytics.track('registration_started', {});
   }, [analytics]);
 
-  const submit = form.handleSubmit(async (values) => {
+  const loadRegistrationLegal = () => {
+    const request = ++legalRequest.current;
+    registrationLegalTransport.current?.abort();
+    const controller = new AbortController();
+    registrationLegalTransport.current = controller;
+    setLegalDocuments(null);
+    setRegistrationLegalPending(true);
+    void api.auth
+      .getLegalDocuments({ signal: controller.signal })
+      .then((documents) => {
+        if (
+          !mounted.current ||
+          controller.signal.aborted ||
+          request !== legalRequest.current
+        )
+          return;
+        setLegalDocuments(documents);
+        setRegistrationLegalPending(false);
+      })
+      .catch(() => {
+        if (
+          !mounted.current ||
+          controller.signal.aborted ||
+          request !== legalRequest.current
+        )
+          return;
+        setLegalDocuments(null);
+        setRegistrationLegalPending(false);
+      })
+      .finally(() => {
+        if (registrationLegalTransport.current === controller)
+          registrationLegalTransport.current = null;
+      });
+  };
+  const openRegistrationLegal = (id: LegalDocumentId) => {
+    setRegistrationLegalOpen(id);
+    if (!legalDocuments && !registrationLegalTransport.current)
+      loadRegistrationLegal();
+  };
+
+  const submitRegistration = form.handleSubmit(async (values) => {
     setSubmitError(null);
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
+    if (!anonymousOwns(operation, epoch)) return;
+    if (step === 'password' && !emailProved.current && proofAvailability === 'unavailable') {
+      setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
+      return;
+    }
+    if (step === 'password' && !emailProved.current && !proof) {
+      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
+      return;
+    }
+    registerTransport.current?.abort();
+    const controller = new AbortController();
+    registerTransport.current = controller;
+    registerSnapshot.current = JSON.stringify(form.getValues());
+    const token = proof;
+    if (step === 'password' && !emailProved.current) {
+      setProof(null);
+      setWidgetGeneration((generation) => generation + 1);
+    }
     try {
-      const response = await auth.register(values);
-      analytics.identify(response.user.id, { claimAcquisition: true });
-      router.replace(redirectTo as Href);
-    } catch (error) {
-      setSubmitError(
-        getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'),
+      if (step === 'password' && !emailProved.current) {
+        const result = await api.auth.requestRegistrationEmail(
+          {
+            email: values.email,
+            turnstileToken: token!,
+            idempotencyKey: createOperationKey(),
+          },
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted || !routeOwns(operation)) return;
+        setResendAvailableAt(
+          Date.now() + Date.parse(result.resendAvailableAt) - Date.parse(result.serverNow),
+        );
+        setStep('proof');
+        return;
+      }
+      if (step === 'proof' && !emailProved.current) {
+        await api.auth.verifyRegistrationEmail(
+          { code: registrationCode, idempotencyKey: createOperationKey() },
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted || !routeOwns(operation)) return;
+        emailProved.current = true;
+      }
+      const response = await auth.register(
+        registerSubmission(values),
+        { signal: controller.signal },
       );
+      if (controller.signal.aborted || !routeOwns(operation)) return;
+      if ((sessionUser()?.id ?? null) !== response.user.id) {
+        setSubmitError('Сессия изменилась. Повторите регистрацию.');
+        return;
+      }
+      analytics.identify(response.user.id, { claimAcquisition: true });
+      registrationReceipt.current = {
+        user: response.user,
+        operation,
+        epoch: currentAuthEpoch(queryClient),
+        controller,
+      };
+    } catch (error) {
+      if (controller.signal.aborted || aborted(error)) return;
+      if (!anonymousOwns(operation, epoch)) return;
+      const message = authRequestMessage(error);
+      if (message) {
+        setSubmitError(message);
+        return;
+      }
+      const failure = readFormFailure(error, [
+        'email',
+        'slug',
+        'password',
+      ]);
+      if (failure.disposition === 'passthrough') {
+        setSubmitError(
+          getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'),
+        );
+        return;
+      }
+      applyFormFailure(form, failure, ['email', 'slug', 'password']);
+      if (failure.fields.slug) {
+        nicknameAdvanceOperation.current += 1;
+        nicknameAdvancePending.current = false;
+        invalidateSlugAvailability();
+        setStep('nickname');
+      }
+      if (failure.fields.email) setStep('email');
+      setSubmitError(failure.formMessage);
+    } finally {
+      if (registerTransport.current === controller) {
+        registerTransport.current = null;
+        registerSnapshot.current = null;
+      }
     }
   });
+  const resendRegistrationCode = async () => {
+    if (resendingCode || proofNow < resendAvailableAt) return;
+    if (!proof) {
+      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
+      return;
+    }
+    const token = proof;
+    setProof(null);
+    setWidgetGeneration((generation) => generation + 1);
+    setResendingCode(true);
+    setSubmitError(null);
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
+    try {
+      const result = await api.auth.requestRegistrationEmail({
+        email: form.getValues('email'),
+        turnstileToken: token,
+        idempotencyKey: createOperationKey(),
+      });
+      if (!anonymousOwns(operation, epoch)) return;
+      setResendAvailableAt(
+        Date.now() + Date.parse(result.resendAvailableAt) - Date.parse(result.serverNow),
+      );
+    } catch (error) {
+      if (anonymousOwns(operation, epoch))
+        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось отправить код'));
+    } finally {
+      setResendingCode(false);
+    }
+  };
+  const submit = () => {
+    if (registerSubmitting.current) return;
+    registerSubmitting.current = true;
+    void Promise.resolve(submitRegistration()).finally(() => {
+      registerSubmitting.current = false;
+    });
+  };
+  const registrationConsentsReady = registrationConfirmationFields.every(
+    (key) => watched[key],
+  );
+  const goNext = async () => {
+    if (!mounted.current || !focusedRef.current) return;
+    setSubmitError(null);
+    if (step === 'email') {
+      if (!registrationConsentsReady) return;
+      const emailOk = await form.trigger('email');
+      if (!emailOk) return;
+      setStep('nickname');
+      return;
+    }
+    if (step === 'nickname') {
+      if (nicknameAdvancePending.current) return;
+      const advanceOperation = nicknameAdvanceOperation.current + 1;
+      nicknameAdvanceOperation.current = advanceOperation;
+      nicknameAdvancePending.current = true;
+      try {
+        const slugOk = await form.trigger('slug');
+        if (nicknameAdvanceOperation.current !== advanceOperation) return;
+        if (!slugOk) {
+          invalidateSlugAvailability();
+          return;
+        }
+        const parsed = newAccountSlugSchema.safeParse(form.getValues('slug'));
+        if (!parsed.success) return;
+        const requested = parsed.data;
+        const routeOperation = sessionOperation.current;
+        const epoch = currentAuthEpoch(queryClient);
+        if (!anonymousOwns(routeOperation, epoch)) return;
+        const availability = await checkSlugAvailability(requested);
+        if (
+          nicknameAdvanceOperation.current !== advanceOperation ||
+          !availability ||
+          !anonymousOwns(routeOperation, epoch)
+        )
+          return;
+        const current = newAccountSlugSchema.safeParse(form.getValues('slug'));
+        if (!current.success || current.data !== requested) return;
+        if (availability.status === 'available') {
+          form.clearErrors('slug');
+          setStep('password');
+          return;
+        }
+        if (availability.status === 'taken') {
+          form.clearErrors('slug');
+          setSuggestions((currentSuggestions) =>
+            nicknameSuggestionGenerator.generate(currentSuggestions),
+          );
+        }
+      } finally {
+        if (nicknameAdvanceOperation.current === advanceOperation) {
+          nicknameAdvancePending.current = false;
+        }
+      }
+      return;
+    }
+    if (step === 'proof' && registrationCode.length !== 6) return;
+    if (registerSubmitting.current) return;
+    await submit();
+  };
+  if (auth.ready && openedAuthenticated.current === null) {
+    openedAuthenticated.current = auth.isAuthenticated;
+  }
   if (!auth.ready)
     return (
       <AppText role="bodySmall" tone="secondary">
         Подготавливаем форму…
       </AppText>
     );
-  if (auth.isAuthenticated)
+  const visitor = auth.user;
+  if (openedAuthenticated.current && auth.isAuthenticated && visitor)
     return (
-      <AuthCard title="Вы уже вошли" description="Перейдите к следующему шагу.">
+      <View style={{ gap: designTokens.auth.screenGap }}>
+        <AppText role="bodySmall">Перейдите к следующему шагу.</AppText>
         <PrimaryButton
-          label="Перейти дальше"
-          onPress={() => router.replace(redirectTo as Href)}
+          label="Дальше"
+          size="auth"
+          width="full"
+          onPress={() => finishRegistration(visitor)}
         />
-      </AuthCard>
-    );
-  return (
-    <AuthCard
-      title="Регистрация"
-      description="Создайте аккаунт, чтобы участвовать в торгах и при необходимости подать заявку продавца."
-    >
-      <View style={{ gap: designTokens.space.x3 }}>
-        <Controller
-          control={form.control}
-          name="displayName"
-          render={({ field }) => (
-            <TextField
-              label="Имя"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="Иван Иванов"
-              autoComplete="name"
-              error={form.formState.errors.displayName?.message}
-            />
-          )}
-        />
-        <Controller
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <TextField
-              label="Email"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="name@example.com"
-              autoComplete="email"
-              keyboardType="email-address"
-              error={form.formState.errors.email?.message}
-            />
-          )}
-        />
-        <Controller
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <TextField
-              label="Телефон"
-              value={field.value ?? ''}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="+375..."
-              autoComplete="tel"
-              keyboardType="phone-pad"
-              error={form.formState.errors.phone?.message}
-            />
-          )}
-        />
-        <Controller
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <TextField
-              label="Пароль"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="••••••••"
-              autoComplete="new-password"
-              secureTextEntry
-              error={form.formState.errors.password?.message}
-            />
-          )}
-        />
-        {submitError ? (
-          <AppText
-            role="bodySmall"
-            tone="danger"
-            accessibilityLiveRegion="polite"
-          >
-            {submitError}
-          </AppText>
-        ) : null}
-        <PrimaryButton
-          label="Создать аккаунт"
-          loading={form.formState.isSubmitting}
-          onPress={submit}
-        />
-        <Link
-          href={{
-            pathname: '/login',
-            params: redirectTo !== '/' ? { redirectTo } : undefined,
-          }}
-          asChild
-        >
-          <TextButton
-            label="Уже есть аккаунт? Войти"
-            onPress={() => undefined}
-          />
-        </Link>
       </View>
-    </AuthCard>
+    );
+  const copy = registrationCopy[step];
+  const nicknameStatus =
+    step === 'nickname' && slugAvailability
+      ? slugAvailability.status === 'checking'
+        ? {
+            color: palette.textSubdued,
+            text: 'Проверяем никнейм…',
+          }
+        : slugAvailability.status === 'available'
+          ? {
+              color: palette.usernameAvailable,
+              text: `@${slugAvailability.slug} доступен`,
+            }
+          : slugAvailability.status === 'taken'
+            ? {
+                color: palette.usernameTaken,
+                text: `@${slugAvailability.slug} недоступен`,
+              }
+            : {
+                color: palette.usernameTaken,
+                text: nicknameAvailabilityError(slugAvailability.error),
+              }
+      : null;
+  const nextAction = (
+    <PrimaryButton
+      label={step === 'proof' ? 'Подтвердить и зарегистрироваться' : 'Дальше'}
+      size="auth"
+      width="full"
+      loading={
+        form.formState.isSubmitting || slugAvailability?.status === 'checking'
+      }
+      disabled={
+        (step === 'email' && !registrationConsentsReady) ||
+        (step === 'proof' && registrationCode.length !== 6)
+      }
+      accessibilityHint={
+        step === 'email' && !registrationConsentsReady
+          ? 'Подтвердите документы и возраст 18+.'
+          : undefined
+      }
+      onPress={() => void goNext()}
+    />
+  );
+  const submitFeedback = submitError ? (
+    <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+      {submitError}
+    </AppText>
+  ) : null;
+  return (
+    <View style={{ gap: designTokens.auth.screenGap, width: '100%' }}>
+      <View style={{ gap: designTokens.auth.titleGap }}>
+        <AppText
+          role="sectionTitle"
+          style={{
+            textAlign: 'center',
+            color: palette.fieldValue,
+            ...designTokens.typography.authScreenTitle,
+          }}
+        >
+          {copy.title}
+        </AppText>
+        <AppText
+          role="bodySmall"
+          style={{
+            textAlign: 'center',
+            color: palette.textSubdued,
+            ...designTokens.typography.authCaption,
+            letterSpacing: 0,
+          }}
+        >
+          {copy.caption}
+        </AppText>
+        {step === 'nickname' ? (
+          <View
+            nativeID="nickname-status-slot"
+            style={{
+              // Reserve exactly one authStatus line so an appearing status
+              // doesn't shift the field/button; minHeight still lets long
+              // errors wrap and grow the area.
+              minHeight: designTokens.typography.authStatus.lineHeight,
+              width: '100%',
+              alignItems: 'center',
+            }}
+          >
+            {nicknameStatus ? (
+              <AppText
+                nativeID="nickname-availability-status"
+                role="authStatus"
+                accessibilityLiveRegion="polite"
+                style={{
+                  color: nicknameStatus.color,
+                  textAlign: 'center',
+                }}
+              >
+                {nicknameStatus.text}
+              </AppText>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
+      {step === 'nickname' ? (
+        <View style={{ gap: designTokens.space.x6, width: '100%' }}>
+          <View style={{ gap: designTokens.auth.formGap, width: '100%' }}>
+            <Controller
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <TextField
+                  ref={field.ref}
+                  label="Никнейм"
+                  icon="at-sign"
+                  iconColor={palette.fieldIcon}
+                  value={field.value}
+                  onChangeText={(value) => {
+                    nicknameAdvanceOperation.current += 1;
+                    nicknameAdvancePending.current = false;
+                    invalidateSlugAvailability();
+                    field.onChange(value.replace(/^@+/, ''));
+                  }}
+                  onBlur={field.onBlur}
+                  placeholder="Никнейм"
+                  autoCapitalize="none"
+                  autoComplete="username"
+                  error={form.formState.errors.slug?.message}
+                />
+              )}
+            />
+            {submitFeedback}
+            {nextAction}
+          </View>
+          <NicknameSuggestionList
+            suggestions={suggestions}
+            onSelect={(suggestion) => {
+              nicknameAdvanceOperation.current += 1;
+              nicknameAdvancePending.current = false;
+              invalidateSlugAvailability();
+              form.clearErrors('slug');
+              form.setValue('slug', suggestion, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+            }}
+          />
+        </View>
+      ) : (
+        <View style={{ gap: designTokens.auth.formGap, width: '100%' }}>
+          {step === 'email' ? (
+            <Controller
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <TextField
+                  ref={field.ref}
+                  label="Электронная почта"
+                  value={field.value}
+                  onChangeText={(value) => {
+                    emailProved.current = false;
+                    setRegistrationCode('');
+                    field.onChange(value);
+                  }}
+                  onBlur={field.onBlur}
+                  placeholder="example@gmail.com"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  error={form.formState.errors.email?.message}
+                />
+              )}
+            />
+          ) : null}
+          {step === 'password' ? (
+            <>
+              <Controller
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <AuthPasswordField
+                    label="Введите пароль"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    onBlur={field.onBlur}
+                    autoComplete="new-password"
+                    metrics="authScreenPassword"
+                    editable={!form.formState.isSubmitting}
+                    error={form.formState.errors.password?.message}
+                  />
+                )}
+              />
+              <Controller
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <AuthPasswordField
+                    label="Подтвердите пароль"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    onBlur={field.onBlur}
+                    autoComplete="new-password"
+                    metrics="authScreenPassword"
+                    editable={!form.formState.isSubmitting}
+                    error={form.formState.errors.confirmPassword?.message}
+                  />
+                )}
+              />
+              <TurnstileWidget
+                key={widgetGeneration}
+                action="register"
+                onToken={onProof}
+                onAvailability={onProofAvailability}
+              />
+            </>
+          ) : null}
+          {step === 'proof' ? (
+            <>
+              <AppText role="bodySmall">Код отправлен на {watched.email}.</AppText>
+              <AuthCodeField
+                value={registrationCode}
+                onChangeText={setRegistrationCode}
+                editable={!form.formState.isSubmitting}
+              />
+              <TurnstileWidget
+                key={widgetGeneration}
+                action="register"
+                onToken={onProof}
+                onAvailability={onProofAvailability}
+              />
+              <TextButton
+                label={proofNow < resendAvailableAt
+                  ? `Отправить код снова через ${Math.ceil((resendAvailableAt - proofNow) / 1000)} с`
+                  : 'Отправить код снова'}
+                disabled={resendingCode || proofNow < resendAvailableAt || proofAvailability === 'unavailable'}
+                onPress={() => void resendRegistrationCode()}
+              />
+              <TextButton
+                label="Изменить почту"
+                onPress={() => {
+                  emailProved.current = false;
+                  setRegistrationCode('');
+                  setStep('email');
+                }}
+              />
+            </>
+          ) : null}
+          {submitFeedback}
+          {nextAction}
+          {step === 'email' ? (
+            <View style={{ gap: designTokens.space.x3 }}>
+              <AuthConsentCheckbox
+                checked={registrationConfirmationFields.every(
+                  (key) => watched[key],
+                )}
+                label={registrationConsentLabel}
+                onChange={(checked) => {
+                  for (const key of registrationConfirmationFields) {
+                    form.setValue(key, checked, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  }
+                }}
+                error={
+                  registrationConfirmationFields.some(
+                    (key) => form.formState.errors[key],
+                  )
+                    ? 'Подтвердите документы и возраст 18+.'
+                    : undefined
+                }
+              >
+                <RegistrationLegalText onOpenDocument={openRegistrationLegal} />
+              </AuthConsentCheckbox>
+            </View>
+          ) : null}
+          <View pointerEvents="box-none" style={dialogHostStyle}>
+            <LegalDocumentViewer
+              selected={registrationLegalOpen}
+              documents={legalDocuments}
+              loading={registrationLegalPending}
+              onClose={() => setRegistrationLegalOpen(null)}
+            />
+          </View>
+        </View>
+      )}
+    </View>
   );
 }

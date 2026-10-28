@@ -1,11 +1,9 @@
-import { Image } from 'expo-image';
 import { Link } from 'expo-router';
+import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { BidplaceMark } from '../branding/BidplaceBrand';
 import { MotionPressable } from '../ui';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const brandLogo = require('../../../assets/branding/bidplace-logo.png');
 
 export function BrandLogo() {
   return (
@@ -23,11 +21,9 @@ export function BrandLogo() {
           justifyContent: 'center',
         }}
       >
-        <Image
-          source={brandLogo}
-          contentFit="contain"
-          style={{ width: 38, height: 30 }}
-        />
+        <View pointerEvents="none">
+          <BidplaceMark />
+        </View>
       </MotionPressable>
     </Link>
   );

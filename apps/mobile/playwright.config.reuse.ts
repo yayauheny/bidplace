@@ -10,8 +10,14 @@ const databaseUrl =
 
 export default defineConfig({
   testDir: './e2e',
+  // Auth-abuse browser cases are owned by playwright.auth-abuse.config.ts.
+  testIgnore: '**/auth-abuse.spec.ts',
   globalTimeout: 12 * 60_000,
   workers: 1,
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'webkit', use: { browserName: 'webkit' } },
+  ],
   use: {
     baseURL: webBaseURL,
     trace: 'retain-on-failure',
@@ -20,7 +26,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        'node apps/mobile/e2e/prepare.mjs && corepack pnpm --filter @bidplace/api... build && node apps/api/dist/main.js',
+        'corepack pnpm --filter @bidplace/database generate && corepack pnpm --filter @bidplace/api... build && node apps/mobile/e2e/prepare.mjs && node apps/api/dist/main.js',
       cwd: '../..',
       url: `${apiBaseURL}/api/health`,
       reuseExistingServer: true,
@@ -32,16 +38,22 @@ export default defineConfig({
         TRUST_PROXY: 'true',
         DATABASE_URL: databaseUrl,
         E2E_DATABASE_URL: databaseUrl,
-        JWT_SECRET: 'e2e-jwt-secret',
+        SESSION_SECRET: 'e2e-jwt-secret',
         TEST_EMAIL_FILE: 'apps/mobile/e2e/.email.jsonl',
+        TURNSTILE_VERIFIER: 'test',
+        TURNSTILE_HOSTNAME: 'localhost',
       },
     },
     {
-      command: `corepack pnpm --filter @bidplace/mobile exec expo start --web --clear --port ${webPort}`,
+      command: `corepack pnpm --filter @bidplace/mobile run build:api-client && corepack pnpm --filter @bidplace/design-tokens build && corepack pnpm --filter @bidplace/mobile exec expo start --web --clear --port ${webPort}`,
       cwd: '../..',
       url: webBaseURL,
       reuseExistingServer: true,
-      env: { EXPO_PUBLIC_API_URL: apiBaseURL },
+      env: {
+        EXPO_NO_DOTENV: '1',
+        EXPO_PUBLIC_API_URL: apiBaseURL,
+        EXPO_PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
+      },
     },
   ],
 });

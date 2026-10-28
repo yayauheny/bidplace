@@ -1,0 +1,86 @@
+import { useEffect, useRef, useState } from 'react';
+import { Image } from 'expo-image';
+import { View, type ImageStyle } from 'react-native';
+
+import { AppText, SecondaryButton } from '../ui';
+import { useApiClient } from '../../providers/api-provider';
+
+/**
+ * Preview a private Work Story asset using the authenticated API client.
+ * Never put bearer credentials in a public image URL.
+ */
+export function PrivateStoryImage({
+  productId,
+  mediaAssetId,
+  galleryImageId,
+  authEpoch,
+  label,
+  style,
+}: {
+  productId: string;
+  mediaAssetId: string;
+  galleryImageId?: string;
+  authEpoch: number;
+  label: string;
+  style: ImageStyle;
+}) {
+  const api = useApiClient();
+  const apiRef = useRef(api);
+  apiRef.current = api;
+  const [retry, setRetry] = useState(0);
+  const mediaKey = `${authEpoch}:${productId}:${mediaAssetId}:${galleryImageId ?? ''}:${retry}`;
+  const [view, setView] = useState<{ key: string; uri: string | null; failed: boolean }>({
+    key: '',
+    uri: null,
+    failed: false,
+  });
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+    const controller = new AbortController();
+    setView({ key: mediaKey, uri: null, failed: false });
+    const options = { signal: controller.signal };
+    const load = galleryImageId
+      ? apiRef.current.images.getImage(galleryImageId, options)
+      : apiRef.current.images.getStoryImage(productId, mediaAssetId, options);
+    void load.then((image) => {
+      if (!active) return;
+      objectUrl = URL.createObjectURL(image);
+      setView({ key: mediaKey, uri: objectUrl, failed: false });
+    }).catch(() => {
+      if (active) setView({ key: mediaKey, uri: null, failed: true });
+    });
+    return () => {
+      active = false;
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [mediaKey, galleryImageId, productId, mediaAssetId]);
+
+  if (view.key !== mediaKey || !view.uri || view.failed) {
+    const failed = view.key === mediaKey && view.failed;
+    return (
+      <View style={[style, { justifyContent: 'center', alignItems: 'center' }]}>
+        <AppText role="bodySmall" tone={failed ? 'danger' : 'secondary'}>
+          {failed ? 'Фото истории недоступно' : 'Загрузка фото'}
+        </AppText>
+        {failed ? (
+          <SecondaryButton label="Повторить загрузку фото" onPress={() => setRetry((value) => value + 1)} />
+        ) : null}
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri: view.uri }}
+      accessibilityLabel={label}
+      contentFit="cover"
+      style={style}
+      onError={() => setView((current) =>
+        current.key === mediaKey ? { ...current, failed: true } : current,
+      )}
+    />
+  );
+}

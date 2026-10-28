@@ -1,0 +1,240 @@
+{
+  "period": "7d",
+  "from": "2026-08-13T15:00:00.000Z",
+  "to": "2026-08-20T15:00:00.000Z",
+  "overview": {
+    "users": {
+      "value": 6,
+      "definition": "Total User count all time",
+      "source": "postgresql"
+    },
+    "newUsers": {
+      "value": 3,
+      "definition": "Users created in period",
+      "source": "postgresql"
+    },
+    "activeUsers": {
+      "value": 2,
+      "definition": "Distinct User.id that emitted product analytics events in period",
+      "source": "analytics"
+    },
+    "creators": {
+      "value": 5,
+      "definition": "Total SellerProfile count all time",
+      "source": "postgresql"
+    },
+    "publishedWorks": {
+      "value": 4,
+      "definition": "Approved Products with a published revision",
+      "source": "postgresql"
+    }
+  },
+  "acquisition": {
+    "bySource": [
+      {
+        "source": "instagram",
+        "visitors": 3,
+        "signups": 1
+      },
+      {
+        "source": "direct",
+        "visitors": 2,
+        "signups": 1
+      },
+      {
+        "source": "newsletter",
+        "visitors": 1,
+        "signups": 0
+      }
+    ],
+    "visitorToSignupRate": 0.3333333333333333
+  },
+  "audience": {
+    "listingViewed": {
+      "value": 6,
+      "definition": "listing_viewed analytics events in period",
+      "source": "analytics"
+    }
+  },
+  "sellerFunnel": {
+    "registeredUsers": {
+      "value": 3,
+      "definition": "New users in period",
+      "source": "postgresql"
+    },
+    "sellerProfiles": {
+      "value": 2,
+      "definition": "SellerProfile created in period",
+      "source": "postgresql"
+    },
+    "productsCreated": {
+      "value": 3,
+      "definition": "Product created in period",
+      "source": "postgresql"
+    },
+    "productsApproved": {
+      "value": 1,
+      "definition": "AuditEvent PRODUCT newStatus APPROVED in period",
+      "source": "postgresql"
+    }
+  },
+  "growth": [
+    {
+      "date": "2026-08-13",
+      "newUsers": 1,
+      "listingViews": 2,
+      "newSellers": 0,
+      "newWorks": 1
+    },
+    {
+      "date": "2026-08-14",
+      "newUsers": 1,
+      "listingViews": 0,
+      "newSellers": 0,
+      "newWorks": 0
+    },
+    {
+      "date": "2026-08-15",
+      "newUsers": 0,
+      "listingViews": 1,
+      "newSellers": 1,
+      "newWorks": 0
+    },
+    {
+      "date": "2026-08-16",
+      "newUsers": 0,
+      "listingViews": 2,
+      "newSellers": 0,
+      "newWorks": 1
+    },
+    {
+      "date": "2026-08-17",
+      "newUsers": 0,
+      "listingViews": 0,
+      "newSellers": 0,
+      "newWorks": 0
+    },
+    {
+      "date": "2026-08-18",
+      "newUsers": 0,
+      "listingViews": 0,
+      "newSellers": 0,
+      "newWorks": 0
+    },
+    {
+      "date": "2026-08-19",
+      "newUsers": 0,
+      "listingViews": 0,
+      "newSellers": 1,
+      "newWorks": 0
+    },
+    {
+      "date": "2026-08-20",
+      "newUsers": 1,
+      "listingViews": 1,
+      "newSellers": 0,
+      "newWorks": 0
+    }
+  ],
+  "recent": {
+    "users": [
+      {
+        "id": "a6666666-6666-4666-8666-666666666666",
+        "displayName": "After User",
+        "createdAt": "2026-08-20T15:00:00.001Z"
+      },
+      {
+        "id": "a5555555-5555-4555-8555-555555555555",
+        "displayName": "End User",
+        "createdAt": "2026-08-20T15:00:00.000Z"
+      },
+      {
+        "id": "a4444444-4444-4444-8444-444444444444",
+        "displayName": "Midnight User",
+        "createdAt": "2026-08-14T00:00:00.000Z"
+      },
+      {
+        "id": "a3333333-3333-4333-8333-333333333333",
+        "displayName": "First User",
+        "createdAt": "2026-08-13T15:00:00.000Z"
+      },
+      {
+        "id": "a2222222-2222-4222-8222-222222222222",
+        "displayName": "Before User",
+        "createdAt": "2026-08-13T14:59:59.999Z"
+      },
+      {
+        "id": "a1111111-1111-4111-8111-111111111111",
+        "displayName": "Old User",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+      }
+    ],
+    "creators": [
+      {
+        "id": "b1111111-1111-4111-8111-111111111111",
+        "fullName": "Recent Author",
+        "slug": "recent-author",
+        "status": "APPROVED",
+        "createdAt": "2026-08-19T12:00:00.000Z"
+      },
+      {
+        "id": "b2222222-2222-4222-8222-222222222222",
+        "fullName": "Mid Author",
+        "slug": "mid-author",
+        "status": "APPROVED",
+        "createdAt": "2026-08-15T10:00:00.000Z"
+      },
+      {
+        "id": "b4444444-4444-4444-8444-444444444444",
+        "fullName": "Boundary Author",
+        "slug": "boundary-author",
+        "status": "PENDING_REVIEW",
+        "createdAt": "2026-08-10T00:00:00.000Z"
+      },
+      {
+        "id": "b3333333-3333-4333-8333-333333333333",
+        "fullName": "Stuck Author",
+        "slug": "stuck-author",
+        "status": "PENDING_REVIEW",
+        "createdAt": "2026-07-01T00:00:00.000Z"
+      },
+      {
+        "id": "b5555555-5555-4555-8555-555555555555",
+        "fullName": "Old Author",
+        "slug": "old-author",
+        "status": "APPROVED",
+        "createdAt": "2026-01-02T00:00:00.000Z"
+      }
+    ],
+    "works": [
+      {
+        "id": "c1111111-1111-4111-8111-111111111111",
+        "publicId": "inperiod0000001",
+        "title": "In Period",
+        "publishedAt": "2026-08-16T08:00:00.000Z"
+      },
+      {
+        "id": "c3333333-3333-4333-8333-333333333333",
+        "publicId": "boundary0000001",
+        "title": "Boundary Work",
+        "publishedAt": "2026-08-13T15:00:00.000Z"
+      },
+      {
+        "id": "c4444444-4444-4444-8444-444444444444",
+        "publicId": "beforework00001",
+        "title": "Before Work",
+        "publishedAt": "2026-08-13T14:59:59.999Z"
+      },
+      {
+        "id": "c2222222-2222-4222-8222-222222222222",
+        "publicId": "oldwork00000001",
+        "title": "Old Work",
+        "publishedAt": "2026-01-03T00:00:00.000Z"
+      }
+    ]
+  },
+  "attention": {
+    "stuckProducts": 1,
+    "stuckSellers": 1
+  }
+}

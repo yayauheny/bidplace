@@ -16,7 +16,10 @@ describe('RateLimitGuard', () => {
         resourceParam: 'auctionId',
       }),
     } satisfies Pick<Reflector, 'getAllAndOverride'>;
-    const guard = new RateLimitGuard(reflector, new RateLimitService());
+    const guard = new RateLimitGuard(
+      reflector,
+      new RateLimitService({ maxBuckets: 10, cleanupIntervalMs: 1_000 }),
+    );
     const createContext = () =>
       ({
         getHandler: () => null,

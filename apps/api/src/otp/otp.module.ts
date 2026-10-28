@@ -11,5 +11,6 @@ import { OtpService } from './otp.service';
   imports: [AuthModule, DatabaseModule, MailModule, RateLimitModule],
   controllers: [OtpController],
   providers: [OtpService],
+  exports: [OtpService],
 })
 export class OtpModule {}

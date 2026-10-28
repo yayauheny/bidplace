@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "archiveName": "Иконки_кнопок.figmacapture.zip",
+  "archiveSha256": "adb509639ed5886d2510b597ed6466399fad907a0edb8ee5f3523584d2c6cd67",
+  "capturedAt": "2026-10-08T19:37:59.761Z",
+  "rootId": "297:5598",
+  "imported": [
+    {
+      "path": "design/nodes.json",
+      "sha256": "9f43caca80da4e11407e0402e3a84ac1b21b9c0813e031ca4a4e7aaf1d71e9a3",
+      "size": 279883
+    },
+    {
+      "path": "fallbacks/001-297_5598.png",
+      "sha256": "383b74b0d28f91bfffe00263be9811b5d47a3d2cbc83511609cb12f6142f8c5b",
+      "size": 6277
+    },
+    {
+      "path": "fallbacks/001-297_5598.svg",
+      "sha256": "0ac6a3705c32b2b1146fabda6b4dbdae2199fdfcb4cc679d4c10d55cfe3d12ff",
+      "size": 21550
+    },
+    {
+      "path": "fidelity/coverage.json",
+      "sha256": "1d986fa98881cbbda6ada5772c8e8ff3267a53be4a9c8b855d7e813c1bbe6771",
+      "size": 529
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "fe930f6702785f8e8fe796baaa9be96aba6af457beed95252eca31a1a503c328",
+      "size": 3743
+    },
+    {
+      "path": "mcp/figma-locator.json",
+      "sha256": "93d79f34dae49e1f19118f6f214e1c2f39893950bd820e897e0b6eb2d6eaedf9",
+      "size": 31985
+    },
+    {
+      "path": "references/001-297_5598.png",
+      "sha256": "383b74b0d28f91bfffe00263be9811b5d47a3d2cbc83511609cb12f6142f8c5b",
+      "size": 6277
+    }
+  ],
+  "intentionallyOmitted": [
+    {
+      "path": "prompt.md",
+      "sha256": "ef59c5b8f283ab32bf38fbf5a08be2b3b9837670ba27e574ee95c07095ed4fb9",
+      "size": 111187,
+      "reason": "Generated exporter prompt is not an instruction"
+    }
+  ]
+}

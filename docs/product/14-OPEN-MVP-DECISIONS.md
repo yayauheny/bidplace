@@ -1,34 +1,32 @@
-# bidplace — открытые решения первого portfolio MVP
+# bidplace — открытые решения portfolio MVP
 
-Дата: 2026-09-08
-Статус: продуктовых развилок, блокирующих contract, нет
-Решения: `DEC-082`–`DEC-084`
+Сверено: 2026-10-23. Portfolio-only граница не менялась. Текущая работа и
+непроверенные gates находятся в [active backlog](../launch/README.md)
+и [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 
-Первый MVP зафиксирован как публичное портфолио автора без commerce. Прежние D01–D03
-по offer, non-payment/second chance и handoff не потеряны: они перенесены в
-[`15-POST-MVP-BACKLOG.md`](15-POST-MVP-BACKLOG.md) и
-[`99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
-Они не блокируют portfolio launch.
+## Первая заявка: прежний вопрос больше не текущий blocker
 
-## Что ещё требует внешнего ответа
+Сентябрьское разночтение immediate-submit vs draft не описывает текущий код:
+`SellersService.create` создаёт `DRAFT`, RFC §8 требует сохранять незавершённую
+заявку; четырёхэтапный flow и проверки представлены в
+[design status](../design/04-DESIGN-STATUS.md) и
+истории реализации.
+Эта документационная сверка не создаёт нового founder decision и не заменяет
+device/visual acceptance. Не запрашивать прежний выбор заново только по старому
+checkpoint; при новом конфликте указать конкретный код и действующий контракт.
 
-Это не продуктовые решения основателя:
+## Оставшиеся внешние вопросы
 
-- юрист Беларуси подтверждает registration/data basis, author content license,
-  retention, cookies, moderation/rightsholder procedure и фактических processors;
-- команда выбирает реальные hosting/object-storage/email providers и составляет data
-  inventory;
-- implementation review определяет точную migration для Work revisions и object
-  storage, не меняя RFC;
-- read-only Figma handoff должен быть versioned перед UI implementation.
+- [Final legal audit](../legal/00-FINAL-LEGAL-AUDIT.md) владеет вопросом об
+  основании текущей персональной аналитики, publication facts и controls.
+  Закрытые юридические вопросы не открывать заново.
+- Cloudflare/R2/SMTP/Neon уже выбраны; публичные provider/country/backup facts,
+  live acceptance и rollout — ops/release gates, а не новый выбор архитектуры.
+- Механики offer/non-payment/second chance/handoff и продаж остаются в
+  [post-MVP плане](15-POST-MVP-BACKLOG.md) и его
+  execution backlog.
+  Они не блокируют portfolio launch.
 
-Актуальные вопросы юристу находятся в
-[`../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
-Технические варианты находятся в
-[`../audits/01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
-
-## Правило открытия новой развилки
-
-Добавлять сюда только вопрос, который реально меняет первый portfolio flow, schema,
-permissions или public data. Commerce-вопросы остаются во втором backlog до решения
-начать соответствующую волну.
+Новый вопрос добавлять только при реальном изменении portfolio flow, schema,
+permissions или public data. Незакрытый план удаления Work по DEC-123 остаётся
+в active backlog; его технические/permission варианты требуют review перед кодом.

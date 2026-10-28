@@ -1,4 +1,4 @@
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,14 +6,19 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { ApiErrorCode } from '@bidplace/contracts';
 
-import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
-import { getErrorCode, getUserFacingErrorMessage } from '../../lib/errors';
-import { useApiClient } from '../../providers/api-provider';
-import { AuthCard } from './auth-card';
+import { AppText, PrimaryButton } from '../../components/ui';
+import { FigmaButton } from '../../components/figma/FigmaButton';
 import {
-  resetPasswordFormSchema,
-  type ResetPasswordFormValues,
-} from './schemas';
+  applyFormFailure,
+  getErrorCode,
+  getUserFacingErrorMessage,
+  readFormFailure,
+} from '../../errors';
+import { useApiClient } from '../../providers/api-provider';
+import { AuthPasswordField } from './auth-password-field';
+import { useAuthSheetGuard } from './auth-sheet-context';
+import { resetPasswordFormSchema, type ResetPasswordFormValues } from './schemas';
+import { RESET_PASSWORD_SUCCESS_DESCRIPTION } from '../../lib/portfolio-copy';
 
 export function ResetPasswordForm({ token }: { token: string | null }) {
   const api = useApiClient();
@@ -24,17 +29,26 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     resolver: zodResolver(resetPasswordFormSchema),
     defaultValues: { password: '', confirmPassword: '' },
   });
+  const watched = form.watch();
+  useAuthSheetGuard({
+    dirty: Boolean(watched.password || watched.confirmPassword) && !submitted,
+    busy: form.formState.isSubmitting,
+  });
 
   if (!token?.trim()) {
     return (
-      <AuthCard
-        title="Ссылка недействительна"
-        description="Откройте ссылку из письма или запросите восстановление пароля заново."
-      >
-        <Link href="/forgot-password" asChild>
-          <TextButton label="Запросить новую ссылку" onPress={() => undefined} />
-        </Link>
-      </AuthCard>
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="bodySmall">
+          Откройте ссылку из письма или запросите восстановление пароля заново.
+        </AppText>
+        <FigmaButton
+          label="Запросить новую ссылку"
+          variant="ghost"
+          size="auth"
+          width="full"
+          href="/forgot-password"
+        />
+      </View>
     );
   }
 
@@ -53,41 +67,45 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         return;
       }
 
-      setSubmitError(
-        getUserFacingErrorMessage(error, 'Не удалось обновить пароль'),
-      );
+      const failure = readFormFailure(error, ['password']);
+      if (failure.disposition === 'passthrough') {
+        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось обновить пароль'));
+        return;
+      }
+      applyFormFailure(form, failure, ['password', 'confirmPassword']);
+      setSubmitError(failure.formMessage);
     }
   });
 
   if (submitted) {
     return (
-      <AuthCard
-        title="Пароль обновлён"
-        description="Войдите с новым паролем, чтобы продолжить работу с аукционами."
-      >
-        <PrimaryButton label="Перейти ко входу" onPress={() => router.replace('/login')} />
-      </AuthCard>
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="sectionTitle">Пароль обновлён</AppText>
+        <AppText role="bodySmall">{RESET_PASSWORD_SUCCESS_DESCRIPTION}</AppText>
+        <PrimaryButton
+          label="Перейти ко входу"
+          size="auth"
+          width="full"
+          onPress={() => router.replace('/login')}
+        />
+      </View>
     );
   }
 
   return (
-    <AuthCard
-      title="Новый пароль"
-      description="Придумайте новый пароль для входа в аккаунт."
-    >
-      <View style={{ gap: designTokens.space.x3 }}>
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="bodySmall">Придумайте новый пароль для входа в аккаунт.</AppText>
         <Controller
           control={form.control}
           name="password"
           render={({ field }) => (
-            <TextField
+            <AuthPasswordField
               label="Новый пароль"
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="••••••••"
               autoComplete="new-password"
-              secureTextEntry
+              metrics="authPassword"
               error={form.formState.errors.password?.message}
             />
           )}
@@ -96,14 +114,13 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
           control={form.control}
           name="confirmPassword"
           render={({ field }) => (
-            <TextField
+            <AuthPasswordField
               label="Подтверждение пароля"
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="••••••••"
               autoComplete="new-password"
-              secureTextEntry
+              metrics="authPassword"
               error={form.formState.errors.confirmPassword?.message}
             />
           )}
@@ -115,13 +132,18 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         ) : null}
         <PrimaryButton
           label="Сохранить пароль"
+          size="auth"
+          width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
-        <Link href="/forgot-password" asChild>
-          <TextButton label="Запросить новую ссылку" onPress={() => undefined} />
-        </Link>
+        <FigmaButton
+          label="Запросить новую ссылку"
+          variant="ghost"
+          size="auth"
+          width="full"
+          href="/forgot-password"
+        />
       </View>
-    </AuthCard>
   );
 }

@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { portfolioWorkDetailResponseSchema } from '@bidplace/contracts';
 import type { PrismaClient } from '@bidplace/database';
 
 import {
@@ -18,6 +19,7 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
+import { productModerationRequest } from './admin-status-request';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -193,9 +195,11 @@ describe('rejected Product recovery over HTTP and PostgreSQL', () => {
         .status,
     ).toBe(404);
     expect(
-      (await clients.admin.patch(`/products/${rejected.id}`, {
-        title: 'Admin rewrite',
-      })).status,
+      (
+        await clients.admin.patch(`/products/${rejected.id}`, {
+          title: 'Admin rewrite',
+        })
+      ).status,
     ).toBe(403);
     expect(
       (
@@ -223,16 +227,15 @@ describe('rejected Product recovery over HTTP and PostgreSQL', () => {
     expect(await prisma.product.count()).toBe(productCountBefore);
     expect(await prisma.listing.count()).toBe(listingCountBefore);
 
-    const startsAt = new Date(Date.now() + 3_600_000);
     expect(
       (
         await clients.approved.post(`/products/${rejected.id}/listings`, {
-          startsAt: startsAt.toISOString(),
-          endsAt: new Date(startsAt.getTime() + 3_600_000).toISOString(),
+          startsAt: new Date(Date.now() + 3_600_000).toISOString(),
+          endsAt: new Date(Date.now() + 7_200_000).toISOString(),
           startPrice: 10,
         })
       ).status,
-    ).toBe(409);
+    ).toBe(404);
 
     const submitResponse = await clients.approved.post(
       `/products/${rejected.id}/submit`,
@@ -298,6 +301,29 @@ describe('rejected Product recovery over HTTP and PostgreSQL', () => {
     expect(reloadedBody.lastModerationReason).toBe(
       'Provenance could not be confirmed',
     );
+
+    expect(
+      await prisma.productRevision.findUniqueOrThrow({
+        where: { productId_version: { productId: rejected.id, version: 1 } },
+        select: { title: true, status: true },
+      }),
+    ).toEqual({
+      title: 'Corrected recovery work',
+      status: 'PENDING_REVIEW',
+    });
+
+    const approval = await clients.admin.patch(
+      `/admin/products/${rejected.id}/status`,
+      await productModerationRequest(prisma, rejected.id, 'APPROVED'),
+    );
+    expect(approval.status).toBe(200);
+
+    const publicWork = await clients.guest.get(`/works/${rejected.publicId}`);
+    expect(publicWork.status).toBe(200);
+    const publicWorkBody = portfolioWorkDetailResponseSchema.parse(
+      await publicWork.json(),
+    );
+    expect(publicWorkBody.work.title).toBe('Corrected recovery work');
   });
 
   it('revokes rejected Product writes when the seller is no longer approved', async () => {

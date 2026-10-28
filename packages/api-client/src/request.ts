@@ -1,5 +1,6 @@
-import { type ZodType } from 'zod';
+import { type ZodType, type z } from 'zod';
 
+import { rethrowIfAbort } from './errors/abort';
 import {
   createNetworkError,
   createUnexpectedResponseError,
@@ -10,7 +11,6 @@ type FetchLike = typeof fetch;
 
 export type ApiClientOptions = {
   baseUrl: string;
-  getAccessToken?: () => string | null | undefined;
   fetchImpl?: FetchLike;
   credentials?: RequestCredentials;
 };
@@ -29,11 +29,21 @@ export type RequestOptions = {
   >;
   headers?: HeadersInit;
   asFormData?: boolean;
+  signal?: AbortSignal;
 };
+
+export type ReadCallOptions = {
+  signal?: AbortSignal;
+};
+
+export function signalRequestOptions(
+  options?: ReadCallOptions,
+): { signal: AbortSignal } | Record<string, never> {
+  return options?.signal ? { signal: options.signal } : {};
+}
 
 export type RequestContext = {
   baseUrl: string;
-  getAccessToken?: () => string | null | undefined;
   fetchImpl: FetchLike;
   credentials?: RequestCredentials;
 };
@@ -42,9 +52,41 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/+$/, '');
 }
 
-function normalizeQuery(
+function requestUrl(
+  context: RequestContext,
+  path: string,
   query?: RequestOptions['query'],
 ): string {
+  const url = new URL(`${context.baseUrl}${path}`);
+  const queryString = normalizeQuery(query);
+
+  if (queryString) {
+    url.search = queryString.slice(1);
+  }
+
+  return url.toString();
+}
+
+function requestHeaders(headersInit?: HeadersInit): Headers {
+  const headers = new Headers(headersInit);
+
+  return headers;
+}
+
+async function fetchApi(
+  context: RequestContext,
+  url: string,
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    return await context.fetchImpl(url, init);
+  } catch (cause) {
+    rethrowIfAbort(cause);
+    throw createNetworkError(cause);
+  }
+}
+
+function normalizeQuery(query?: RequestOptions['query']): string {
   if (!query) {
     return '';
   }
@@ -71,35 +113,18 @@ export function createRequestContext(
   return {
     baseUrl: normalizeBaseUrl(options.baseUrl),
     fetchImpl: (input, init) => fetchImpl(input, init),
-    ...(options.getAccessToken
-      ? { getAccessToken: options.getAccessToken }
-      : {}),
-    ...(options.credentials ? { credentials: options.credentials } : {}),
+    credentials: options.credentials ?? 'include',
   };
 }
 
-export async function requestJson<T>(
+export async function requestJson<TSchema extends ZodType>(
   context: RequestContext,
   path: string,
-  schema: ZodType<T>,
+  schema: TSchema,
   options: RequestOptions = {},
-): Promise<T> {
-  const url = new URL(`${context.baseUrl}${path}`);
-  const queryString = normalizeQuery(options.query);
-
-  if (queryString) {
-    url.search = queryString.slice(1);
-  }
-
-  const headers = new Headers(options.headers);
-
-  if (context.getAccessToken) {
-    const accessToken = context.getAccessToken();
-
-    if (accessToken) {
-      headers.set('Authorization', `Bearer ${accessToken}`);
-    }
-  }
+): Promise<z.output<TSchema>> {
+  const url = requestUrl(context, path, options.query);
+  const headers = requestHeaders(options.headers);
 
   let body: BodyInit | undefined;
 
@@ -129,7 +154,10 @@ export async function requestJson<T>(
           continue;
         }
 
-        formData.append(key, String(value));
+        formData.append(
+          key,
+          typeof value === 'object' ? JSON.stringify(value) : String(value),
+        );
       }
 
       body = formData;
@@ -139,10 +167,17 @@ export async function requestJson<T>(
     }
   }
 
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(options.method ?? 'GET'))
+    headers.set('X-Bidplace-Request', '1');
+
   const init: RequestInit = {
     method: options.method ?? 'GET',
     headers,
   };
+
+  if (options.signal) {
+    init.signal = options.signal;
+  }
 
   if (context.credentials) {
     init.credentials = context.credentials;
@@ -152,13 +187,7 @@ export async function requestJson<T>(
     init.body = body;
   }
 
-  let response: Response;
-
-  try {
-    response = await context.fetchImpl(url.toString(), init);
-  } catch {
-    throw createNetworkError();
-  }
+  const response = await fetchApi(context, url, init);
 
   if (!response.ok) {
     await throwApiClientResponseError(response);
@@ -172,8 +201,47 @@ export async function requestJson<T>(
 
   try {
     const payload = (await response.json()) as unknown;
-    return schema.parse(payload);
-  } catch {
+    return schema.parse(payload) as z.output<TSchema>;
+  } catch (cause) {
+    rethrowIfAbort(cause);
+    throw createUnexpectedResponseError(response.status, cause);
+  }
+}
+
+export async function requestBlob(
+  context: RequestContext,
+  path: string,
+  options: RequestOptions = {},
+): Promise<Blob> {
+  const url = requestUrl(context, path, options.query);
+  const headers = requestHeaders(options.headers);
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(options.method ?? 'GET'))
+    headers.set('X-Bidplace-Request', '1');
+
+  const init: RequestInit = {
+    method: options.method ?? 'GET',
+    headers,
+  };
+
+  if (options.signal) {
+    init.signal = options.signal;
+  }
+
+  if (context.credentials) {
+    init.credentials = context.credentials;
+  }
+
+  const response = await fetchApi(context, url, init);
+
+  if (!response.ok) {
+    await throwApiClientResponseError(response);
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (!contentType.startsWith('image/')) {
     throw createUnexpectedResponseError(response.status);
   }
+
+  return response.blob();
 }

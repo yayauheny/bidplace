@@ -1,3 +1,4 @@
+import { newAccountSlugSchema, passwordSchema } from '@bidplace/contracts';
 import { z } from 'zod';
 
 const emailField = z
@@ -14,11 +15,19 @@ export const loginFormSchema = z
 export const registerFormSchema = z
   .object({
     email: emailField,
-    password: z.string({ required_error: 'Введите пароль' }).min(8, 'Пароль должен содержать не менее 8 символов'),
-    phone: z.string().trim().min(1).nullable().optional(),
-    displayName: z.string({ required_error: 'Введите имя' }).trim().min(1, 'Введите имя'),
+    password: passwordSchema,
+    confirmPassword: z.string({ required_error: 'Подтвердите пароль' }).min(1, 'Подтвердите пароль'),
+    slug: newAccountSlugSchema,
+    agreementAccepted: z.boolean().refine(Boolean, 'Примите пользовательское соглашение'),
+    privacyAcknowledged: z.boolean().refine(Boolean, 'Подтвердите ознакомление с политикой'),
+    dataConsentGiven: z.boolean().refine(Boolean, 'Дайте согласие на обработку данных'),
+    age18Confirmed: z.boolean().refine(Boolean, 'Подтвердите, что вам исполнилось 18 лет'),
   })
-  .strict();
+  .strict()
+  .refine((values) => values.password === values.confirmPassword, {
+    message: 'Пароли не совпадают',
+    path: ['confirmPassword'],
+  });
 
 export type LoginFormValues = z.infer<typeof loginFormSchema>;
 export type RegisterFormValues = z.infer<typeof registerFormSchema>;
@@ -31,9 +40,7 @@ export const forgotPasswordFormSchema = z
 
 export const resetPasswordFormSchema = z
   .object({
-    password: z
-      .string({ required_error: 'Введите пароль' })
-      .min(8, 'Пароль должен содержать не менее 8 символов'),
+    password: passwordSchema,
     confirmPassword: z
       .string({ required_error: 'Подтвердите пароль' })
       .min(1, 'Подтвердите пароль'),

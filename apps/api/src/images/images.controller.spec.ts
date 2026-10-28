@@ -35,7 +35,7 @@ describe('ImagesController binary response', () => {
     const controller = new ImagesController(images as never);
     const response = responseMock();
 
-    await controller.get('image-id', undefined, response);
+    await controller.get('image-id', undefined, undefined, response);
 
     expect(response.statusCode).toBe(200);
     expect(response.type).toHaveBeenCalledWith('image/png');
@@ -61,6 +61,7 @@ describe('ImagesController binary response', () => {
     await controller.get(
       'image-id',
       { sub: 'owner-id', role: 'user' },
+      undefined,
       response,
     );
 
@@ -110,12 +111,13 @@ describe('ImagesController binary response', () => {
     const controller = new ImagesController(images as never);
 
     await expect(
-      controller.get('private-image', undefined, responseMock()),
+      controller.get('private-image', undefined, undefined, responseMock()),
     ).rejects.toThrow(NotFoundException);
     expect(images.get).toHaveBeenCalledWith(
       'private-image',
       undefined,
       undefined,
+      false,
     );
   });
 });

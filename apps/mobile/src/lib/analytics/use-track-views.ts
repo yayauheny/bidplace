@@ -2,14 +2,13 @@ import { useEffect } from 'react';
 
 import { useAnalytics } from '../../providers/analytics-provider';
 
-export function useTrackListingView(input: {
+export function useTrackWorkView(input: {
   productPublicId: string;
-  listingId?: string;
   sellerProfileId?: string;
   enabled: boolean;
 }): void {
   const analytics = useAnalytics();
-  const { productPublicId, listingId, sellerProfileId, enabled } = input;
+  const { productPublicId, sellerProfileId, enabled } = input;
 
   useEffect(() => {
     if (!enabled) {
@@ -18,10 +17,9 @@ export function useTrackListingView(input: {
 
     analytics.track('listing_viewed', {
       productPublicId,
-      ...(listingId ? { listingId } : {}),
       ...(sellerProfileId ? { sellerProfileId } : {}),
     });
-  }, [analytics, enabled, listingId, productPublicId, sellerProfileId]);
+  }, [analytics, enabled, productPublicId, sellerProfileId]);
 }
 
 export function useTrackSellerView(input: {

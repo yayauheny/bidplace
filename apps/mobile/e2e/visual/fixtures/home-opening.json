@@ -1,0 +1,67 @@
+{
+  "curatorSelection": {
+    "curator": {
+      "id": "20000000-0000-4000-8000-000000000043",
+      "slug": "vex",
+      "fullName": "Илья Васильев",
+      "country": "Беларусь",
+      "city": "Минск",
+      "discipline": "Художник",
+      "practice": null,
+      "biography": null,
+      "profilePhotoUrl": "/api/sellers/vex/photo",
+      "telegramUrl": null,
+      "instagramUrl": null,
+      "websiteUrl": null,
+      "shortDescription": "Ищу логику в абсурде.\nСтираю грань между реальностью и сном",
+      "achievements": [],
+      "sharePath": "/authors/vex"
+    },
+    "work": {
+      "id": "20000000-0000-4000-8000-000000000040",
+      "publicId": "daliEstate1",
+      "title": "Salvador Dalí Estate & Fundació Gala Сальвадор Дали",
+      "story": null,
+      "categoryId": "20000000-0000-4000-8000-000000000042",
+      "technique": null,
+      "materials": null,
+      "dimensions": null,
+      "year": 2024,
+      "uniqueness": null,
+      "images": [
+        {
+          "id": "20000000-0000-4000-8000-000000000041",
+          "position": 0,
+          "url": "/api/images/20000000-0000-4000-8000-000000000041",
+          "mimeType": "image/png",
+          "byteLength": 1,
+          "checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "width": 1050,
+          "height": 1400
+        }
+      ],
+      "publishedAt": "2026-09-01T00:00:00.000Z",
+      "sharePath": "/works/daliEstate1",
+      "author": {
+        "id": "20000000-0000-4000-8000-000000000044",
+        "slug": "pixelp",
+        "fullName": "Павел Пиксель",
+        "country": "Беларусь",
+        "city": "Минск",
+        "discipline": "Художник",
+        "practice": null,
+        "biography": null,
+        "profilePhotoUrl": "/api/sellers/pixelp/photo",
+        "telegramUrl": null,
+        "instagramUrl": null,
+        "websiteUrl": null,
+        "shortDescription": "Соединяю классические мотивы с современным цветом.",
+        "achievements": [],
+        "sharePath": "/authors/pixelp"
+      }
+    },
+    "note": "Тот случай, когда безупречная техника встречается с сильной идеей. Переосмысляет эстетику прошлого, создавая миры, где стирается грань реальности. Наша главная визуальная находка этой недели."
+  },
+  "newWorks": [],
+  "newAuthors": []
+}

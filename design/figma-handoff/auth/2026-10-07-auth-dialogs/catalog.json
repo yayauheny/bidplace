@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "library": "auth-dialogs-2026-10-07",
+  "authority": "founder-provided-versioned-captures; scoped override only",
+  "sourceLibraryCommit": "d9fb5c2",
+  "targetViewport": {
+    "width": 390,
+    "height": 874
+  },
+  "captures": [
+    {
+      "id": "login-password",
+      "path": "screens/login-password",
+      "rootNodeId": "526:14674",
+      "surfaceNodeId": "526:14885",
+      "scope": "active",
+      "sourceArchive": "Создать_аккаунт___зарегистрироваться.figmacapture.zip",
+      "sourceArchiveSha256": "037eb7ed01ae6cc20e25a10afc52557ee4ccb454a6d376008889b7aec2f8557d",
+      "capturedAt": "2026-10-07T07:00:20.757Z",
+      "canonicalParentPath": "screens/auth/auth__login-password__1123x1286__node-527-16954",
+      "nodesPath": "screens/login-password/design/nodes.json",
+      "referencePath": "screens/login-password/references/001-526_14674.png",
+      "googleIconComponentId": "521:10365",
+      "googleIconFrameId": "521:10368",
+      "googleIconVectorId": "521:10381",
+      "googleIconSvgPath": "../../2026-10-09-auth-button-icons/screens/button-icons/assets/google-521-10381.svg"
+    },
+    {
+      "id": "verify-email",
+      "path": "screens/verify-email",
+      "rootNodeId": "526:14903",
+      "surfaceNodeId": "526:15114",
+      "scope": "active-adapted-copy",
+      "sourceArchive": "Подтвердить_код.figmacapture.zip",
+      "sourceArchiveSha256": "9a96c40edd728bcc6363481998fdd2a5378b0066cd15970132e8987bcd4f9997",
+      "capturedAt": "2026-10-07T07:05:06.688Z",
+      "canonicalParentPath": "screens/auth/auth__email-code__1123x1185__node-527-16955",
+      "nodesPath": "screens/verify-email/design/nodes.json",
+      "referencePath": "screens/verify-email/references/001-526_14903.png"
+    },
+    {
+      "id": "login-email-code-reference",
+      "path": "screens/login-email-code-reference",
+      "rootNodeId": "527:16675",
+      "surfaceNodeId": "527:16886",
+      "scope": "reference-only-passwordless-excluded",
+      "sourceArchive": "Создать_аккаунт___зарегистрироваться1.figmacapture.zip",
+      "sourceArchiveSha256": "5d9ec82656f675bf237a8845805c9403d9043e0b33ce583cc55f7c8078545b42",
+      "capturedAt": "2026-10-07T07:03:52.056Z",
+      "canonicalParentPath": "screens/auth/auth__email-code__1123x1185__node-527-16955",
+      "nodesPath": "screens/login-email-code-reference/design/nodes.json",
+      "referencePath": "screens/login-email-code-reference/references/001-527_16675.png"
+    },
+    {
+      "id": "oauth-add-email-reference",
+      "path": "screens/oauth-add-email-reference",
+      "rootNodeId": "526:15126",
+      "surfaceNodeId": "526:15337",
+      "scope": "reference-only-oauth-excluded",
+      "sourceArchive": "Шаг_дозапроса_Email_(если_OAuth_его_не_передал).figmacapture.zip",
+      "sourceArchiveSha256": "3e30d204ea01e5af1f13d762ee396d2f5c3b86263e63d71b4c8cafac6dca2f49",
+      "capturedAt": "2026-10-07T07:02:43.830Z",
+      "canonicalParentPath": "screens/auth/auth__register-error__1123x1286__node-527-16956",
+      "nodesPath": "screens/oauth-add-email-reference/design/nodes.json",
+      "referencePath": "screens/oauth-add-email-reference/references/001-526_15126.png"
+    },
+    {
+      "id": "register-password",
+      "path": "screens/register-password",
+      "rootNodeId": "526:15346",
+      "surfaceNodeId": "526:15557",
+      "scope": "active-with-contract-differences",
+      "sourceArchive": "Создать_с_паролем.figmacapture.zip",
+      "sourceArchiveSha256": "d6b98ce7037f03978b8c291a8db6ba586558727558a69266e934084e18dadf68",
+      "capturedAt": "2026-10-07T07:01:23.432Z",
+      "canonicalParentPath": "screens/auth/auth__register-error__1123x1286__node-527-16956",
+      "nodesPath": "screens/register-password/design/nodes.json",
+      "referencePath": "screens/register-password/references/001-526_15346.png"
+    },
+    {
+      "id": "confirm-exit",
+      "path": "screens/confirm-exit",
+      "rootNodeId": "746:23037",
+      "surfaceNodeId": "746:23093",
+      "scope": "active-component-adapted-copy",
+      "sourceArchive": "Стать_автором_заполнение_профиля_прервать регистрацию.figmacapture.zip",
+      "sourceArchiveSha256": "66f683dce4df9f1eee3621d33f2823169a273a4630a75ae595c08f819a3c8aad",
+      "capturedAt": "2026-10-07T07:09:59.086Z",
+      "canonicalParentPath": "screens/apply/apply__identity-abort__390x874__node-746-23037",
+      "nodesPath": "screens/confirm-exit/design/nodes.json",
+      "referencePath": "screens/confirm-exit/references/001-746_23037.png"
+    }
+  ]
+}

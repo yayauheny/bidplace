@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -5,30 +9,34 @@ import {
   resolveCorsOrigin,
   resolveServerEnvFilePath,
 } from './env';
-import { ENV_PROFILE_ERROR } from './env-profile';
+import { ENV_PROFILE_ERROR, requiresProductionSecurity } from './env-profile';
 
 afterEach(() => {
   vi.unstubAllEnvs();
 });
 
 const DATABASE_URL = 'postgres://user:pass@localhost:5432/bidplace';
-const LOCAL_JWT_SECRET = 'secret';
-const PRODUCTION_JWT_SECRET = 'test-only-production-jwt-secret-32';
+const LOCAL_SESSION_SECRET = 'secret';
+const PRODUCTION_SESSION_SECRET = 'test-only-production-jwt-secret-32';
 
 const localEnv = {
   DATABASE_URL,
-  JWT_SECRET: LOCAL_JWT_SECRET,
+  SESSION_SECRET: LOCAL_SESSION_SECRET,
+  OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
 } as const;
 
 const productionSecurityEnv = {
   DATABASE_URL,
-  JWT_SECRET: PRODUCTION_JWT_SECRET,
+  SESSION_SECRET: PRODUCTION_SESSION_SECRET,
+  OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
   SMTP_HOST: 'smtp.example.com',
   SMTP_PORT: '465',
   SMTP_SECURE: 'true',
   SMTP_AUTH_MODE: 'none',
   SMTP_FROM: 'no-reply@example.com',
   PASSWORD_RESET_URL_BASE: 'http://localhost:8081',
+  TURNSTILE_SECRET_KEY: 'synthetic-turnstile-secret',
+  TURNSTILE_HOSTNAME: 'localhost',
   SERVICE_RULES_OWNER: 'Bidplace',
   SERVICE_RULES_CONTACT: 'support@example.com',
   SERVICE_RULES_TEXT: 'Rules text',
@@ -37,6 +45,10 @@ const productionSecurityEnv = {
   S3_ENDPOINT: 'http://minio.local',
   S3_REGION: 'us-east-1',
   S3_BUCKET: 'bidplace-media',
+  S3_PUBLIC_BUCKET: 'bidplace-public',
+  MEDIA_PUBLIC_BASE_URL: 'https://media.example.com',
+  CLOUDFLARE_ZONE_ID: 'a'.repeat(32),
+  CLOUDFLARE_CACHE_TOKEN: 'test',
   S3_ACCESS_KEY_ID: 'test-access-key',
   S3_SECRET_ACCESS_KEY: 'test-secret-key',
 } as const;
@@ -78,21 +90,6 @@ describe('resolveServerEnvFilePath', () => {
 });
 
 describe('NODE_ENV × APP_ENV matrix', () => {
-  it('defaults COMMERCE_ENABLED to false', () => {
-    stubMissingEnvFile();
-
-    expect(loadServerEnv(localEnv).COMMERCE_ENABLED).toBe(false);
-  });
-
-  it('accepts an explicit COMMERCE_ENABLED opt-in', () => {
-    stubMissingEnvFile();
-
-    expect(
-      loadServerEnv({ ...localEnv, COMMERCE_ENABLED: 'true' })
-        .COMMERCE_ENABLED,
-    ).toBe(true);
-  });
-
   it('defaults media storage to the legacy provider outside production', () => {
     stubMissingEnvFile();
 
@@ -212,6 +209,21 @@ describe('NODE_ENV × APP_ENV matrix', () => {
     ).toThrow('MEDIA_STORAGE_PROVIDER=s3 is required in production');
   });
 
+  it('fails closed when production S3 configuration is incomplete', () => {
+    stubMissingEnvFile();
+
+    expect(() =>
+      loadServerEnv({
+        ...productionSecurityEnv,
+        NODE_ENV: 'production',
+        APP_ENV: 'production',
+        S3_SECRET_ACCESS_KEY: '',
+      }),
+    ).toThrow(
+      'S3_SECRET_ACCESS_KEY is required when MEDIA_STORAGE_PROVIDER=s3',
+    );
+  });
+
   it('rejects production builds without required SMTP config', () => {
     stubMissingEnvFile();
 
@@ -220,7 +232,8 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         NODE_ENV: 'production',
         APP_ENV: 'production',
         DATABASE_URL,
-        JWT_SECRET: PRODUCTION_JWT_SECRET,
+        SESSION_SECRET: PRODUCTION_SESSION_SECRET,
+        OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
         SMTP_PORT: '465',
         SMTP_SECURE: 'true',
         SMTP_FROM: 'no-reply@example.com',
@@ -241,7 +254,8 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         NODE_ENV: 'production',
         APP_ENV: 'production',
         DATABASE_URL,
-        JWT_SECRET: PRODUCTION_JWT_SECRET,
+        SESSION_SECRET: PRODUCTION_SESSION_SECRET,
+        OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
         SMTP_HOST: 'smtp.example.com',
         SMTP_PORT: '587',
         SMTP_SECURE: 'false',
@@ -265,16 +279,16 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         ...productionSecurityEnv,
         NODE_ENV: 'production',
         APP_ENV: 'production',
-        JWT_SECRET: shortSecret,
+        SESSION_SECRET: shortSecret,
       }),
-    ).toThrow(ENV_PROFILE_ERROR.jwtSecretTooShortInProduction);
+    ).toThrow(ENV_PROFILE_ERROR.sessionSecretTooShortInProduction);
 
     try {
       loadServerEnv({
         ...productionSecurityEnv,
         NODE_ENV: 'production',
         APP_ENV: 'production',
-        JWT_SECRET: shortSecret,
+        SESSION_SECRET: shortSecret,
       });
     } catch (error) {
       expect(String(error)).not.toContain(shortSecret);
@@ -351,7 +365,8 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         NODE_ENV: 'development',
         APP_ENV: 'local',
         DATABASE_URL,
-        JWT_SECRET: LOCAL_JWT_SECRET,
+        SESSION_SECRET: LOCAL_SESSION_SECRET,
+        OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
         SMTP_HOST: 'mailpit',
         SMTP_PORT: '1025',
         SMTP_SECURE: 'false',
@@ -427,4 +442,189 @@ describe('ANALYTICS_INGEST_ENABLED', () => {
       }).ANALYTICS_INGEST_ENABLED,
     ).toBe(false);
   });
+});
+
+const syntheticDirectories: string[] = [];
+
+afterEach(() => {
+  for (const directory of syntheticDirectories.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+function writeSyntheticServerEnv(contents: string): string {
+  const directory = mkdtempSync(join(tmpdir(), 'bidplace-server-env-'));
+  syntheticDirectories.push(directory);
+  const filePath = join(directory, 'synthetic.env');
+  writeFileSync(filePath, contents);
+  return filePath;
+}
+
+function loadSyntheticServerEnv(
+  contents: string,
+  env: NodeJS.ProcessEnv = {},
+): ReturnType<typeof loadServerEnv> {
+  const before = new Set(Object.keys(process.env));
+  vi.stubEnv('BIDPLACE_ENV_FILE', writeSyntheticServerEnv(contents));
+
+  try {
+    return loadServerEnv({
+      OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
+      ...env,
+    });
+  } finally {
+    for (const key of Object.keys(process.env)) {
+      if (!before.has(key)) {
+        delete process.env[key];
+      }
+    }
+  }
+}
+
+const syntheticDatabaseUrl =
+  'postgresql://synthetic:synthetic@127.0.0.1:5432/synthetic';
+const shortJwtSecret = 'synthetic-short-jwt';
+
+const productionProfileLines = [
+  'NODE_ENV=production',
+  'APP_ENV=production',
+  `DATABASE_URL=${syntheticDatabaseUrl}`,
+  'SESSION_SECRET=synthetic-production-jwt-secret-32',
+  'SMTP_HOST=smtp.example.com',
+  'SMTP_PORT=465',
+  'SMTP_SECURE=true',
+  'SMTP_AUTH_MODE=none',
+  'SMTP_FROM=no-reply@example.com',
+  'PASSWORD_RESET_URL_BASE=http://localhost:8081',
+  'TURNSTILE_SECRET_KEY=synthetic-turnstile-secret',
+  'TURNSTILE_HOSTNAME=localhost',
+  'SERVICE_RULES_OWNER=Bidplace',
+  'SERVICE_RULES_CONTACT=support@example.com',
+  'SERVICE_RULES_TEXT=Rules text',
+  'TEST_EMAIL_BYPASS=false',
+  'MEDIA_STORAGE_PROVIDER=s3',
+  'S3_ENDPOINT=http://127.0.0.1:9000',
+  'S3_REGION=us-east-1',
+  'S3_BUCKET=synthetic-media',
+  'S3_PUBLIC_BUCKET=synthetic-public',
+  'MEDIA_PUBLIC_BASE_URL=https://media.example.com',
+  `CLOUDFLARE_ZONE_ID=${'a'.repeat(32)}`,
+  'CLOUDFLARE_CACHE_TOKEN=test',
+  'S3_ACCESS_KEY_ID=synthetic-access-key',
+  'S3_SECRET_ACCESS_KEY=synthetic-secret-key',
+];
+
+describe('leading env-file BOM', () => {
+  it('rejects production NODE_ENV when APP_ENV is absent', () => {
+    const contents = [
+      'NODE_ENV=production',
+      `DATABASE_URL=${syntheticDatabaseUrl}`,
+      `SESSION_SECRET=${shortJwtSecret}`,
+    ].join('\n');
+
+    expect(() => loadSyntheticServerEnv(contents)).toThrow(
+      ENV_PROFILE_ERROR.productionNodeForbidsLocalApp,
+    );
+    expect(() => loadSyntheticServerEnv(`\uFEFF${contents}`)).toThrow(
+      ENV_PROFILE_ERROR.productionNodeForbidsLocalApp,
+    );
+  });
+
+  it('rejects production APP_ENV when NODE_ENV is absent', () => {
+    const contents = [
+      'APP_ENV=production',
+      `DATABASE_URL=${syntheticDatabaseUrl}`,
+      `SESSION_SECRET=${shortJwtSecret}`,
+    ].join('\n');
+
+    expect(() => loadSyntheticServerEnv(contents)).toThrow(
+      ENV_PROFILE_ERROR.productionAppRequiresProductionNode,
+    );
+    expect(() => loadSyntheticServerEnv(`\uFEFF${contents}`)).toThrow(
+      ENV_PROFILE_ERROR.productionAppRequiresProductionNode,
+    );
+  });
+
+  it('keeps a complete production profile when the file starts with a BOM', () => {
+    const env = loadSyntheticServerEnv(
+      `\uFEFF${productionProfileLines.join('\n')}`,
+    );
+
+    expect(env.NODE_ENV).toBe('production');
+    expect(env.APP_ENV).toBe('production');
+    expect(requiresProductionSecurity(env)).toBe(true);
+    expect(Object.isFrozen(env)).toBe(true);
+  });
+
+  it('lets the explicit env override a BOM-prefixed production file', () => {
+    const env = loadSyntheticServerEnv(
+      [
+        '\uFEFFNODE_ENV=production',
+        `DATABASE_URL=${syntheticDatabaseUrl}`,
+        `SESSION_SECRET=${shortJwtSecret}`,
+      ].join('\n'),
+      {
+        NODE_ENV: 'test',
+        APP_ENV: 'local',
+        DATABASE_URL: syntheticDatabaseUrl,
+        SESSION_SECRET: shortJwtSecret,
+      },
+    );
+
+    expect(env.NODE_ENV).toBe('test');
+    expect(env.APP_ENV).toBe('local');
+    expect(requiresProductionSecurity(env)).toBe(false);
+  });
+});
+
+describe('public media deployment configuration', () => {
+  it.each([
+    'S3_PUBLIC_BUCKET',
+    'MEDIA_PUBLIC_BASE_URL',
+    'CLOUDFLARE_ZONE_ID',
+    'CLOUDFLARE_CACHE_TOKEN',
+  ] as const)('requires %s in production', (key) => {
+    stubMissingEnvFile();
+    expect(() =>
+      loadServerEnv({
+        ...productionSecurityEnv,
+        NODE_ENV: 'production',
+        APP_ENV: 'production',
+        [key]: undefined,
+      }),
+    ).toThrow(key);
+  });
+  it('rejects shared private/public buckets and development public domains', () => {
+    stubMissingEnvFile();
+    expect(() =>
+      loadServerEnv({
+        ...productionSecurityEnv,
+        S3_PUBLIC_BUCKET: productionSecurityEnv.S3_BUCKET,
+      }),
+    ).toThrow('must differ');
+    expect(() =>
+      loadServerEnv({
+        ...productionSecurityEnv,
+        MEDIA_PUBLIC_BASE_URL: 'https://example.r2.dev',
+      }),
+    ).toThrow('custom-domain');
+  });
+});
+
+describe('ANALYTICS_WEB_ENABLED', () => {
+  it.each([undefined, 'false', 'true'])(
+    'requires explicit true for the new collection boundary: %s',
+    (flag) => {
+      stubMissingEnvFile();
+      const settings = {
+        ...localEnv,
+        NODE_ENV: 'test',
+        APP_ENV: 'local',
+        ...(flag ? { ANALYTICS_WEB_ENABLED: flag } : {}),
+      };
+      expect(loadServerEnv(settings).ANALYTICS_WEB_ENABLED).toBe(
+        flag === 'true',
+      );
+    },
+  );
 });

@@ -7,6 +7,7 @@ import { ApiProvider } from './api-provider';
 import { AuthProvider } from './auth-provider';
 import { QueryProvider } from './query-provider';
 import { ThemeProvider } from './theme-provider';
+import { SheetBackdropProvider } from '../components/ui/sheet-backdrop';
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
@@ -14,11 +15,15 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <SafeAreaProvider>
         <ApiProvider>
           <ThemeProvider>
-            <QueryProvider>
-              <AuthProvider>
-                <AnalyticsProvider>{children}</AnalyticsProvider>
-              </AuthProvider>
-            </QueryProvider>
+            <SheetBackdropProvider>
+              <QueryProvider>
+                <AuthProvider>
+                  <AnalyticsProvider>
+                    {children}
+                  </AnalyticsProvider>
+                </AuthProvider>
+              </QueryProvider>
+            </SheetBackdropProvider>
           </ThemeProvider>
         </ApiProvider>
       </SafeAreaProvider>

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "library": "auth-fullscreen-2026-10-08",
+  "authority": "founder-supplied current registration visual source; DEC-105 semantics retained",
+  "targetViewport": {
+    "width": 390,
+    "height": 874
+  },
+  "captures": [
+    {
+      "id": "email",
+      "path": "screens/email",
+      "rootNodeId": "4547:23168",
+      "surfaceNodeId": "4547:23379",
+      "markSlotNodeId": "4562:31590",
+      "markNodeId": "4562:31593",
+      "wordmarkNodeId": "4562:31592",
+      "sourceArchive": "Создать_с_паролем_кнопки.figmacapture.zip",
+      "sourceArchiveSha256": "46721a83703515d1cf5b119da1c53309699efae65185abe1577afd965ec28cdc",
+      "capturedAt": "2026-10-08T19:40:25.807Z",
+      "supersedesArchive": "Создать_с_паролем_бидплейс_лого.figmacapture.zip",
+      "nodesPath": "screens/email/design/nodes.json",
+      "referencePath": "screens/email/references/001-4547_23168.png"
+    },
+    {
+      "id": "nickname",
+      "path": "screens/nickname",
+      "rootNodeId": "4547:23927",
+      "surfaceNodeId": "4547:24138",
+      "markSlotNodeId": "4562:31610",
+      "markNodeId": "4562:31612",
+      "wordmarkNodeId": "4562:31613",
+      "sourceArchive": "Создать_с_паролем_бидплейс_лого_юзернейм.figmacapture.zip",
+      "sourceArchiveSha256": "f51015fb8d040f3e5dacd08996b75c027fe207deeb2162849ea6fa5d6999996e",
+      "capturedAt": "2026-10-08T11:28:16.574Z",
+      "nodesPath": "screens/nickname/design/nodes.json",
+      "referencePath": "screens/nickname/references/001-4547_23927.png"
+    },
+    {
+      "id": "create-password",
+      "path": "screens/create-password",
+      "rootNodeId": "4547:24217",
+      "surfaceNodeId": "4547:24428",
+      "markSlotNodeId": "4562:31615",
+      "markNodeId": "4562:31617",
+      "wordmarkNodeId": "4562:31618",
+      "sourceArchive": "Создать_с_паролем_бидплейс_лого_пароль.figmacapture.zip",
+      "sourceArchiveSha256": "26fa6feab66c4d4f1902acc8458260cdddcb22da6e8ff8a99e5f2f86d5b8f76f",
+      "capturedAt": "2026-10-08T11:29:46.420Z",
+      "nodesPath": "screens/create-password/design/nodes.json",
+      "referencePath": "screens/create-password/references/001-4547_24217.png"
+    },
+    {
+      "id": "verify-email",
+      "path": "screens/verify-email",
+      "rootNodeId": "4547:24815",
+      "surfaceNodeId": "4547:25026",
+      "markSlotNodeId": "4562:31620",
+      "markNodeId": "4562:31622",
+      "wordmarkNodeId": "4562:31623",
+      "sourceArchive": "Создать_с_паролем_бидплейс_лого_код_почта.figmacapture.zip",
+      "sourceArchiveSha256": "a4ee358073dd30936ce6726533371fa9d168264589663bc937b81d0df1e9dc79",
+      "capturedAt": "2026-10-08T11:31:46.613Z",
+      "nodesPath": "screens/verify-email/design/nodes.json",
+      "referencePath": "screens/verify-email/references/001-4547_24815.png"
+    }
+  ]
+}

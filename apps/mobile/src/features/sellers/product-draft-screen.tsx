@@ -1,49 +1,77 @@
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import { View } from 'react-native';
+import { useRef, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
+import { FormProvider, useForm } from 'react-hook-form';
 
+import type { SellerProductDetailResponse, User } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { FormPageShell } from '../../components/layout';
+import { AppShell, FormPageShell } from '../../components/layout';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import {
+  combineInfrastructurePageStatus,
+  infrastructurePageFetchStatus,
+} from '../../components/shared/infrastructure-page-status';
 import {
   AppDialog,
   AppText,
-  DestructiveButton,
-  FormSection,
   PageState,
   PrimaryButton,
   SecondaryButton,
+  TextButton,
 } from '../../components/ui';
-import { presentEnum, productStatusLabels } from '../../lib/presentation';
-import { useApiClient } from '../../providers/api-provider';
 import {
-  canOpenProductWizardStep,
-  createProductWizardDraft,
-  createProductWizardHref,
-  parseProductWizardStepParam,
-  productWizardStep,
-  resolveProductWizardStep,
-  shouldRewriteProductWizardStepParam,
-  type ProductWizardStepParam,
-} from './product-draft-wizard';
+  getUserFacingErrorMessage,
+  isNotFoundError,
+  readFormFailure,
+} from '../../errors';
+import { useApiClient } from '../../providers/api-provider';
+import { canWritePrivateCache, authKeys } from '../../lib/query-cache';
+import {
+  FORM_DRAFT_PREFIX,
+  clearFormDraft,
+  clearFormDraftsByPrefix,
+  formDraftKey,
+  readFormDraft,
+  writeFormDraft,
+} from '../../lib/local-form-draft';
+import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
+import { ownerWorkQueryKeys } from './owner-work-query';
+import { useLocalFormRestore } from './local-form-restore';
 import { ProductDraftAboutStep } from './product-draft-about';
-import { ProductDraftCreationStep } from './product-draft-creation';
+import { ProductDraftWriteGuard } from './product-draft-fields';
+import {
+  emptyProductDraftFormValues,
+  productDraftFieldsSchema,
+  productDraftFormSchema,
+  productToDraftFormValues,
+} from './product-draft-form';
 import { ProductDraftImagesStep } from './product-draft-images';
 import { ProductDraftReviewStep } from './product-draft-review';
 import {
   canOwnerEditProduct,
+  isNewerModerationDecision,
   ownerModerationReasonNotice,
   ownerProductSubmitLabel,
 } from './product-draft-state';
-
-type DraftCreationStep = {
-  id?: string;
-  title: string;
-  body: string;
-  imageUrl?: string | null;
-};
+import { ProductDraftStoryStep } from './product-draft-story';
+import { ProductDraftScreenChrome } from './product-draft-screen-chrome';
+import { useProductDraftData } from './product-draft-data';
+import { useProductDraftSaveSession } from './product-draft-save';
+import { useProductDraftBrowserHistoryGuard } from './product-draft-browser-guard';
+import { PhotoEditor } from './photo-editor';
+import { useProductDraftImageActions } from './product-draft-image-actions';
+import { useProductDraftNavigation } from './product-draft-navigation';
+import { storyLocalDraftSchema } from './story-local-draft';
+import {
+  useProductStoryEditor,
+  type ProductStoryEditor,
+} from './use-product-story-editor';
+import {
+  canOpenProductWizardStep,
+  productWizardStep,
+  type ProductWizardStepParam,
+} from './product-draft-wizard';
 
 export function ProductDraftScreen({
   productId,
@@ -55,639 +83,616 @@ export function ProductDraftScreen({
   stepParam?: ProductWizardStepParam;
 }) {
   const api = useApiClient();
-  const router = useRouter();
   const queryClient = useQueryClient();
-  const categories = useQuery({
-    queryKey: ['products', 'categories'],
-    queryFn: () => api.categories.list(),
+  const authEpoch = usePrivateCacheEpoch(queryClient);
+  const storyEditorSlot = useRef<ProductStoryEditor | null>(null);
+  const retireGuardSlot = useRef<() => Promise<void>>(async () => undefined);
+  const form = useForm({
+    defaultValues: emptyProductDraftFormValues,
+    resolver: zodResolver(productDraftFormSchema),
+    mode: 'onChange',
+    shouldUnregister: false,
   });
-  const productDetail = useQuery({
-    queryKey: ['seller', 'product', productId],
-    queryFn: () => api.sellers.getProduct(productId!),
-    enabled: Boolean(productId),
-  });
-  const existingProduct = productDetail.data?.product;
-  const [initializedProductId, setInitializedProductId] = useState<
-    string | null
-  >(null);
-  const [categoryId, setCategoryId] = useState('');
-  const [title, setTitle] = useState('');
-  const [story, setStory] = useState('');
-  const [technique, setTechnique] = useState('');
-  const [materials, setMaterials] = useState('');
-  const [dimensions, setDimensions] = useState('');
-  const [weight, setWeight] = useState('');
-  const [year, setYear] = useState('');
-  const [condition, setCondition] = useState('');
-  const [uniqueness, setUniqueness] = useState('');
-  const [provenance, setProvenance] = useState('');
-  const [city, setCity] = useState('');
-  const [packaging, setPackaging] = useState('');
-  const [deliveryInfo, setDeliveryInfo] = useState('');
-  const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
-    null,
-  );
-  const [creationIntro, setCreationIntro] = useState('');
-  const [creationSteps, setCreationSteps] = useState<DraftCreationStep[]>([]);
-  const [creationStorySaved, setCreationStorySaved] = useState(true);
-  const [imageSelectionError, setImageSelectionError] = useState<string | null>(
-    null,
-  );
-  const [creationImageSelectionError, setCreationImageSelectionError] =
-    useState<string | null>(null);
-  const [stepOneAttempted, setStepOneAttempted] = useState(false);
-  const [creationAttempted, setCreationAttempted] = useState(false);
-  const [wizardSubmitted, setWizardSubmitted] = useState(false);
-  const isCreationFlow = flow === 'creation' || !productId;
-  const wizardDraft = createProductWizardDraft(existingProduct ?? null);
-  const requestedStep = parseProductWizardStepParam(stepParam);
-  const wizardStep = resolveProductWizardStep(requestedStep, wizardDraft);
 
-  useEffect(() => {
-    if (!productId || !isCreationFlow || productDetail.isLoading) return;
-    if (!existingProduct) return;
-    const resolvedStep = resolveProductWizardStep(requestedStep, wizardDraft);
-    if (!shouldRewriteProductWizardStepParam(stepParam, resolvedStep)) return;
-    router.setParams({ flow: 'creation', step: String(resolvedStep) });
-  }, [
+  const data = useProductDraftData({
+    api,
+    queryClient,
     productId,
-    isCreationFlow,
-    productDetail.isLoading,
-    existingProduct,
-    requestedStep,
-    stepParam,
-    wizardDraft.hasProduct,
-    wizardDraft.imageCount,
-    router,
-  ]);
-
-  useEffect(() => {
-    if (!existingProduct || initializedProductId === existingProduct.id) return;
-    setInitializedProductId(existingProduct.id);
-    setCategoryId(existingProduct.categoryId ?? '');
-    setTitle(existingProduct.title ?? '');
-    setStory(existingProduct.story ?? '');
-    setTechnique(existingProduct.technique ?? '');
-    setMaterials(existingProduct.materials ?? '');
-    setDimensions(existingProduct.dimensions ?? '');
-    setWeight(existingProduct.weight ?? '');
-    setYear(existingProduct.year?.toString() ?? '');
-    setCondition(existingProduct.condition ?? '');
-    setUniqueness(existingProduct.uniqueness ?? '');
-    setProvenance(existingProduct.provenance ?? '');
-    setCity(existingProduct.city ?? '');
-    setPackaging(existingProduct.packaging ?? '');
-    setDeliveryInfo(existingProduct.deliveryInfo ?? '');
-    setCreationIntro(productDetail.data?.creationIntro ?? '');
-    const persistedSteps = productDetail.data?.creationSteps ?? [];
-    setCreationSteps(
-      persistedSteps.length > 0
-        ? persistedSteps.map((step) => ({
-            id: step.id,
-            title: step.title,
-            body: step.body,
-            imageUrl: step.image?.url ?? null,
-          }))
-        : [],
-    );
-    setCreationStorySaved(true);
-  }, [existingProduct, initializedProductId, productDetail.data]);
-
-  const input = () => ({
-    categoryId: categoryId || undefined,
-    title: title || undefined,
-    story: story || undefined,
-    technique: technique || null,
-    materials: materials || null,
-    dimensions: dimensions || null,
-    weight: weight || null,
-    year: parsedYear,
-    condition: condition || undefined,
-    uniqueness: uniqueness || undefined,
-    provenance: provenance || undefined,
-    city: city || undefined,
-    packaging: packaging || undefined,
-    deliveryInfo: deliveryInfo || undefined,
+    authEpoch,
+    form,
   });
-  const save = useMutation({
-    mutationFn: () =>
-      existingProduct
-        ? api.products.update(existingProduct.id, input())
-        : api.products.create(input()),
-    onSuccess: ({ product }) => {
-      const productQueryId = existingProduct?.id ?? product.id;
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
-      void queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', productQueryId],
-      });
-      if (!existingProduct) {
-        router.replace(
-          createProductWizardHref(product.id, productWizardStep.images),
+  const { productDetail, existingProduct, editorStatus, storyNeedsDraft } =
+    data;
+  const [copiedRecovery, setCopiedRecovery] = useState<string | null>(null);
+  const [recoveryManualVisible, setRecoveryManualVisible] = useState(false);
+  const [discardPhotosOperation, setDiscardPhotosOperation] = useState<
+    number | null
+  >(null);
+
+  // Read the installed session (not an auth context) so the owner specs can
+  // mount the screen with only a query cache, like the rest of the save flow.
+  const accountId = canWritePrivateCache(queryClient, authEpoch)
+    ? (queryClient.getQueryData<User | null>(authKeys.session)?.id ?? null)
+    : null;
+
+  const session = useProductDraftSaveSession({
+    api,
+    queryClient,
+    form,
+    productId,
+    authEpoch,
+    storyEditorSlot,
+    retireGuardSlot,
+    onSavedProduct: (product) => {
+      data.notePersisted(product);
+      if (!productId) {
+        restore.noteEntityCreated(product.id, product.updatedAt);
+        migrateStoryDraft(accountId, product.id);
+      }
+    },
+    onSubmittedProduct: (product, isCurrent) => {
+      if (isCurrent()) restore.clearDraft();
+      if (accountId) {
+        // Submit retires every story draft of this product — the current
+        // revision's active copy, older revision copies and recovery copies
+        // share the product key prefix.
+        clearFormDraftsByPrefix(
+          `${FORM_DRAFT_PREFIX}${accountId}:product-story:${product.id}`,
         );
-        return;
       }
-      if (isCreationFlow) {
-        router.setParams({
-          flow: 'creation',
-          step: String(productWizardStep.images),
-        });
-      }
+      return data.noteSubmitted(product, isCurrent);
     },
   });
-  const submit = useMutation({
-    mutationFn: (id: string) => api.products.submit(id),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
-        queryClient.invalidateQueries({
-          queryKey: ['seller', 'product', existingProduct?.id],
-        }),
-      ]);
-      setWizardSubmitted(true);
-    },
+
+  const restore = useLocalFormRestore({
+    form,
+    accountId,
+    scope: 'product-draft',
+    entityId: session.persistedProductId() ?? 'new',
+    baseToken: existingProduct
+      ? (productDetail.data?.editingRevision?.updatedAt ??
+        existingProduct.updatedAt)
+      : null,
+    serverValues: existingProduct
+      ? productToDraftFormValues(existingProduct, productDetail.data?.selection)
+      : null,
+    fields: productDraftFieldsSchema,
+    queryClient,
+    canWrite: () => canWritePrivateCache(queryClient, authEpoch),
   });
-  const replaceCreation = useMutation({
-    mutationFn: () =>
-      api.products.replaceCreation(existingProduct!.id, {
-        intro: creationIntro.trim() || null,
-        steps: creationSteps.map((step) => ({
-          ...(step.id ? { id: step.id } : {}),
-          title: step.title.trim(),
-          body: step.body.trim(),
-        })),
-      }),
-    onSuccess: ({ creation }) => {
-      setCreationSteps(
-        creation.steps.map((step) => ({
-          id: step.id,
-          title: step.title,
-          body: step.body,
-          imageUrl: step.image?.url ?? null,
-        })),
-      );
-      setCreationAttempted(false);
-      setCreationStorySaved(true);
-    },
-  });
-  const uploadCreationStepImage = useMutation({
-    mutationFn: ({ stepId, image }: { stepId: string; image: Blob }) =>
-      api.images.addCreationStepImage(existingProduct!.id, stepId, image),
-    onSuccess: (_result, variables) => {
-      setCreationImageSelectionError(null);
-      setCreationSteps((current) =>
-        current.map((step) =>
-          step.id === variables.stepId
-            ? {
-                ...step,
-                imageUrl: `/api/creation-steps/${variables.stepId}/image`,
-              }
-            : step,
-        ),
+
+  const storyEditor = useProductStoryEditor({
+    api,
+    productId,
+    revisionId: productDetail.data?.editingRevision?.id,
+    // The snapshot's owner revision, from the same response: the hook must
+    // never present another revision's snapshot as this revision's baseline.
+    storyRevisionId: productDetail.data?.editingRevision?.id,
+    authEpoch,
+    accountId,
+    queryClient,
+    canChange: () => !session.transitionLock.current,
+    story: productDetail.data?.story,
+    onSaved: (savedStory) => {
+      if (!productId || !canWritePrivateCache(queryClient, authEpoch)) return;
+      queryClient.setQueryData<SellerProductDetailResponse>(
+        ownerWorkQueryKeys.detail(productId),
+        (current) =>
+          current &&
+          current.editingRevision?.id ===
+            productDetail.data?.editingRevision?.id
+            ? { ...current, story: savedStory }
+            : current,
       );
     },
   });
-  const upload = useMutation({
-    mutationFn: (images: Blob[]) => api.images.add(existingProduct!.id, images),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', existingProduct?.id],
-      }),
+  storyEditorSlot.current = storyEditor;
+
+  const imageActions = useProductDraftImageActions({
+    api,
+    queryClient,
+    authEpoch,
+    existingProduct,
+    editorStatus,
+    session,
+    storyEditor,
   });
-  const removeImage = useMutation({
-    mutationFn: (imageId: string) =>
-      api.images.remove(existingProduct!.id, imageId),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', existingProduct?.id],
-      }),
+
+  const uploadUnfinished =
+    imageActions.photoCards.some((file) => file.status !== 'done') ||
+    !imageActions.photoOrderConfirmed;
+  const uploadBusy =
+    imageActions.choosingImages ||
+    imageActions.upload.isPending ||
+    imageActions.photosBusy;
+
+  const browserGuard = useProductDraftBrowserHistoryGuard({
+    uploadPending: uploadBusy,
+    isDirty: form.formState.isDirty,
+    storyDirty: storyEditor.dirty,
+    storyPending: (storyEditor.saving || storyEditor.uploading),
+    draftEffectivelyClean: () =>
+      !form.formState.isDirty && storyEditor.isEffectivelyClean(),
+    productId,
+    session,
   });
-  const reorderImages = useMutation({
-    mutationFn: (imageIds: string[]) =>
-      api.images.reorder(existingProduct!.id, imageIds),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', existingProduct?.id],
-      }),
+  retireGuardSlot.current = browserGuard.retireBrowserGuard;
+
+  const isCreationFlow = flow === 'creation' || !productId;
+
+  const wizardNavigation = useProductDraftNavigation({
+    uploadBusy,
+    uploadUnfinished,
+    productId,
+    stepParam,
+    isCreationFlow,
+    existingProduct,
+    productDetailLoading: productDetail.isLoading,
+    form,
+    storyEditor,
+    session,
+    retireGuard: () => retireGuardSlot.current(),
   });
-  const chooseImages = async () => {
-    if (!existingProduct) return;
-    setImageSelectionError(null);
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        selectionLimit: 10,
-        quality: 1,
-      });
-      if (result.canceled) return;
-      const images = await Promise.all(
-        result.assets.map(async (asset) => {
-          const response = await fetch(asset.uri);
-          if (!response.ok) throw new Error('Selected image could not be read');
-          return response.blob();
-        }),
-      );
-      upload.mutate(images);
-    } catch {
-      setImageSelectionError(
-        'Не удалось прочитать выбранные изображения. Выберите файлы ещё раз.',
-      );
-    }
+  const { wizardDraft, wizardStep, stepOneAttempted } = wizardNavigation;
+
+  const categoriesStatus = infrastructurePageFetchStatus(data.categories);
+  const productFetchStatus = productId
+    ? infrastructurePageFetchStatus(productDetail)
+    : 'ready';
+  const pageStatus = combineInfrastructurePageStatus(
+    productId ? [categoriesStatus, productFetchStatus] : [categoriesStatus],
+  );
+  const retryDraftPage = () => {
+    void data.categories.refetch();
+    void productDetail.refetch();
   };
 
-  if (categories.isLoading || (productId && productDetail.isLoading))
-    return (
-      <FormPageShell>
-        <PageState title="Загружаем предмет…" loading />
-      </FormPageShell>
-    );
   if (
-    categories.isError ||
-    !categories.data ||
-    (productId && (!productDetail.data || !existingProduct))
-  )
+    productId &&
+    isNotFoundError(productDetail.error) &&
+    pageStatus !== 'loading'
+  ) {
     return (
-      <FormPageShell>
-        <AppText role="sectionTitle">Не удалось загрузить предмет</AppText>
-        <SecondaryButton
-          label="Повторить"
-          onPress={() => {
-            void categories.refetch();
-            void productDetail.refetch();
-          }}
-        />
+      <FormPageShell hideDock>
+        <PageState title="Предмет не найден" />
       </FormPageShell>
     );
+  }
 
-  const editable = canOwnerEditProduct(existingProduct?.status);
-  const productStatus = existingProduct?.status;
+  if (
+    pageStatus !== 'ready' ||
+    !data.categories.data ||
+    (productId &&
+      (productDetail.isError || !productDetail.data || !existingProduct))
+  ) {
+    return (
+      <AppShell>
+        <InfrastructurePageStatus
+          status={pageStatus === 'loading' ? 'loading' : 'error'}
+          onRetry={retryDraftPage}
+        />
+      </AppShell>
+    );
+  }
+
+  const moderationReopened = Boolean(
+    data.submittedRevision &&
+    productDetail.data?.editingRevision &&
+    isNewerModerationDecision(
+      data.submittedRevision,
+      productDetail.data.editingRevision,
+    ),
+  );
+  const editable =
+    canOwnerEditProduct(existingProduct?.status, data.editingRevisionStatus) &&
+    (!data.moderationHold || moderationReopened);
   const moderationNotice = ownerModerationReasonNotice(
-    productStatus,
+    editorStatus,
     productDetail.data?.lastModerationReason,
   );
-  const submitLabel = ownerProductSubmitLabel(productStatus);
-  const reorder = (imageId: string, direction: -1 | 1) => {
-    if (!existingProduct) return;
-    const ids = existingProduct.images.map((image) => image.id);
-    const index = ids.indexOf(imageId);
-    [ids[index], ids[index + direction]] = [ids[index + direction], ids[index]];
-    reorderImages.mutate(ids);
-  };
-  const updateCreationStep = (
-    index: number,
-    field: keyof DraftCreationStep,
-    value: string,
-  ) => {
-    setCreationStorySaved(false);
-    setCreationSteps((current) =>
-      current.map((step, stepIndex) =>
-        stepIndex === index ? { ...step, [field]: value } : step,
-      ),
+  const submitLabel = ownerProductSubmitLabel(editorStatus);
+  const storyWizardView =
+    isCreationFlow && wizardStep === productWizardStep.story;
+
+  if (imageActions.editingPhoto?.source) {
+    const card = imageActions.editingPhoto;
+    return (
+      <PhotoEditor
+        input={card.prepared?.input ?? card.source!}
+        confirmed={card.edit}
+        position={imageActions.photoCards.findIndex(
+          (photo) => photo.id === card.id,
+        )}
+        count={imageActions.photoCards.length}
+        pending={imageActions.choosingImages}
+        error={imageActions.imageSelectionError}
+        onConfirm={(edit) => void imageActions.confirmPhotoEdit(edit)}
+        onCancel={imageActions.closePhotoEdit}
+      />
     );
-  };
-  const parsedYear = year.trim() ? Number(year) : null;
-  const stepOneErrors = {
-    categoryId: categoryId ? undefined : 'Выберите категорию',
-    title: title.trim() ? undefined : 'Введите название',
-    story: story.trim() ? undefined : 'Добавьте описание работы',
-    year:
-      parsedYear === null ||
-      (Number.isInteger(parsedYear) && parsedYear >= 0 && parsedYear <= 9999)
-        ? undefined
-        : 'Введите год числом от 0 до 9999',
-    uniqueness: uniqueness.trim()
-      ? undefined
-      : 'Укажите уникальность или тираж',
-    provenance: provenance.trim() ? undefined : 'Укажите происхождение',
-    city: city.trim() ? undefined : 'Укажите город',
-    deliveryInfo: deliveryInfo.trim()
-      ? undefined
-      : 'Опишите передачу или доставку',
-  };
-  const canSaveStepOne = Object.values(stepOneErrors).every(
-    (error) => error === undefined,
-  );
-  const canSaveCreation = creationSteps.every(
-    (step) => step.title.trim().length > 0 && step.body.trim().length > 0,
-  );
-  const moveToWizardStep = (step: number) => {
-    if (!existingProduct) return;
-    if (!canOpenProductWizardStep(step, wizardDraft)) return;
-    if (step === wizardStep) return;
-    router.setParams({ flow: 'creation', step: String(step) });
-  };
-  const chooseCreationStepImage = async (stepId: string) => {
-    setCreationImageSelectionError(null);
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: false,
-        quality: 1,
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const response = await fetch(result.assets[0].uri);
-      if (!response.ok)
-        throw new Error('Selected process image could not be read');
-      const image = await response.blob();
-      uploadCreationStepImage.mutate({ stepId, image });
-    } catch {
-      setCreationImageSelectionError(
-        'Не удалось прочитать фотографию этапа. Выберите файл ещё раз.',
-      );
-    }
-  };
+  }
 
   return (
-    <FormPageShell>
-      {isCreationFlow ? (
-        <FormSection
-          title={wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'}
-          description={
-            wizardSubmitted
-              ? 'Черновик отправлен на модерацию. Дальше команда проверит его содержание и изображения.'
-              : 'Заполните предмет по шагам, сохраните промежуточные изменения и проверьте публикацию перед отправкой.'
+    <FormProvider {...form}>
+      <ProductDraftWriteGuard guard={session.transitionLock}>
+        <FormPageShell
+          hideDock
+          variant={isCreationFlow ? 'creation' : 'default'}
+          contentGap={
+            storyWizardView ? designTokens.space.x3 : undefined
+          }
+          bottomAction={
+            isCreationFlow && wizardStep === productWizardStep.images ? (
+              <PrimaryButton
+                label={
+                  uploadBusy
+                    ? 'Продолжить'
+                    : uploadUnfinished
+                      ? imageActions.photoCards.some(
+                          (card) => card.status === 'local',
+                        )
+                        ? `Загрузить ${imageActions.photoCards.filter((card) => card.status === 'local').length} фото`
+                        : imageActions.photoCards.some(
+                              (card) => card.status === 'error',
+                            )
+                          ? 'Продолжить'
+                          : 'Сохранить порядок'
+                      : 'Продолжить'
+                }
+                width="block"
+                size="creationAction"
+                disabled={
+                  uploadBusy ||
+                  session.inputsLocked ||
+                  (imageActions.photoCards.some(
+                    (card) => card.status === 'error',
+                  ) &&
+                    !imageActions.photoCards.some(
+                      (card) => card.status === 'local',
+                    )) ||
+                  (!uploadUnfinished &&
+                    !canOpenProductWizardStep(
+                      productWizardStep.story,
+                      wizardDraft,
+                      false,
+                    ))
+                }
+                onPress={() =>
+                  uploadUnfinished
+                    ? void imageActions.startUpload()
+                    : void wizardNavigation.moveToWizardStep(
+                        productWizardStep.story,
+                      )
+                }
+              />
+            ) : undefined
           }
         >
-          <View
-            accessibilityRole="tablist"
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: designTokens.space.x2,
+          <ProductDraftScreenChrome
+            isCreationFlow={isCreationFlow}
+            storyWizardView={storyWizardView}
+            wizardSubmitted={data.wizardSubmitted}
+            wizardStep={wizardStep}
+            hasExistingProduct={Boolean(existingProduct)}
+            canOpenStep={(step) =>
+              !uploadBusy &&
+              canOpenProductWizardStep(step, wizardDraft, uploadUnfinished)
+            }
+            onStepPress={(step) => void wizardNavigation.moveToWizardStep(step)}
+            storyBarDisabled={
+              (storyEditor.saving || storyEditor.uploading) || session.inputsLocked || uploadBusy
+            }
+            closeLabel={
+              form.formState.isDirty || storyEditor.dirty
+                ? 'Сохранить и закрыть'
+                : 'Закрыть'
+            }
+            closeLoading={session.save.isPending || (storyEditor.saving || storyEditor.uploading)}
+            closeDisabled={
+              session.submit.isPending ||
+              (storyEditor.saving || storyEditor.uploading) ||
+              session.inputsLocked
+            }
+            onClose={() => {
+              if (!uploadBusy && uploadUnfinished)
+                setDiscardPhotosOperation(session.snapshotOperation());
+              else void wizardNavigation.saveAndClose();
             }}
-          >
-            {['О работе', 'Изображения', 'История создания', 'Проверка'].map(
-              (label, index) => {
-                const step = index + 1;
-                return (
-                  <SecondaryButton
-                    key={label}
-                    label={`${step}. ${label}`}
-                    disabled={
-                      wizardSubmitted ||
-                      !canOpenProductWizardStep(step, wizardDraft)
-                    }
-                    onPress={() => moveToWizardStep(step)}
-                  />
-                );
-              },
-            )}
-          </View>
-          {existingProduct ? (
-            <AppText role="metadata" tone="secondary">
-              Шаг {wizardStep} из 4 ·{' '}
-              {existingProduct.title ?? 'Без названия'}
+            delivery={productDetail.data?.publication}
+            moderationNotice={moderationNotice}
+            editorStatus={editorStatus}
+            onRefreshStatus={() => void productDetail.refetch()}
+            editable={editable}
+            submitLabel={submitLabel}
+            submitPending={session.submit.isPending}
+            submitDisabled={
+              existingProduct
+                ? existingProduct.images.length < 1 ||
+                  session.save.isPending ||
+                  uploadBusy ||
+                  uploadUnfinished ||
+                  session.inputsLocked
+                : false
+            }
+            onSubmit={() => void session.submitCurrentForm()}
+            submitErrorVisible={Boolean(session.submit.isError)}
+            lockedVisible={
+              Boolean(existingProduct) && !editable && !isCreationFlow
+            }
+          />
+
+          {restore.storageError || storyEditor.storageError ? (
+            <AppText role="bodySmall" tone="danger">
+              {restore.storageError ?? storyEditor.storageError}
             </AppText>
           ) : null}
-        </FormSection>
-      ) : null}
-      <View style={{ gap: designTokens.space.x2 }}>
-        <AppText role="screenTitle">
-          {existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
-        </AppText>
-        <AppText role="bodySmall" tone="secondary">
-          Черновик можно сохранить неполным. Для модерации нужны обязательные
-          поля и хотя бы одно изображение.
-        </AppText>
-        <AppText role="bodySmall" tone="secondary">
-          Автором предмета публично будет указан ваш профиль продавца.
-        </AppText>
-      </View>
+          {storyEditor.recoveryText ? (
+            // The recovered copy of another revision's draft cannot be
+            // applied automatically; copying it out is the honest action.
+            // The copied status belongs to one payload only: a new recovered
+            // text must not keep claiming it is already copied.
+            <TextButton
+              label={
+                copiedRecovery === storyEditor.recoveryText
+                  ? 'Скопировано'
+                  : 'Скопировать сохранённый текст'
+              }
+              onPress={() => {
+                const text = storyEditor.recoveryText!;
+                const clipboard = navigator.clipboard;
+                if (!clipboard?.writeText) {
+                  setRecoveryManualVisible(true);
+                  return;
+                }
+                void clipboard.writeText(text).then(
+                  () => setCopiedRecovery(text),
+                  () => setRecoveryManualVisible(true),
+                );
+              }}
+            />
+          ) : null}
 
-      {moderationNotice ? (
-        <FormSection title={moderationNotice.title}>
-          <AppText role="bodySmall" tone="danger">
-            {moderationNotice.body}
-          </AppText>
-        </FormSection>
-      ) : null}
-
-      {existingProduct && !isCreationFlow ? (
-        <FormSection title="Статус предмета">
-          <AppText
-            role="bodySmall"
-            tone={
-              productStatus === 'APPROVED'
-                ? 'success'
-                : productStatus === 'CHANGES_REQUESTED' ||
-                    productStatus === 'REJECTED'
-                  ? 'danger'
-                  : 'secondary'
-            }
-          >
-            {productStatus
-              ? presentEnum(
-                  productStatus,
-                  productStatusLabels,
-                  'Неизвестный статус предмета',
-                )
-              : null}
-          </AppText>
-          <SecondaryButton
-            label="Обновить"
-            onPress={() => void productDetail.refetch()}
-          />
-          {productStatus === 'APPROVED' ? (
-            <PrimaryButton
-              label="Создать аукцион"
-              onPress={() =>
-                router.push({
-                  pathname: '/(seller)/listings/new',
-                  params: { productId: existingProduct.id },
-                })
+          {!isCreationFlow || wizardStep === productWizardStep.about ? (
+            <ProductDraftAboutStep
+              isCreationFlow={isCreationFlow}
+              wizardStep={wizardStep}
+              editable={editable && !session.inputsLocked}
+              categories={data.categories.data.categories}
+              selection={productDetail.data?.selection}
+              onCatalogOpen={data.setCatalogOpenRole}
+              catalog={{
+                MATERIAL: {
+                  terms: data.materialsCatalog.data?.terms ?? [],
+                  loading: data.materialsCatalog.isPending,
+                  error: data.materialsCatalog.isError,
+                  onRetry: () => void data.materialsCatalog.refetch(),
+                },
+                TECHNIQUE: {
+                  terms: data.techniquesCatalog.data?.terms ?? [],
+                  loading: data.techniquesCatalog.isPending,
+                  error: data.techniquesCatalog.isError,
+                  onRetry: () => void data.techniquesCatalog.refetch(),
+                },
+              }}
+              stepOneAttempted={stepOneAttempted}
+              saveIsPending={session.save.isPending}
+              saveIsError={session.save.isError && !session.formAlert}
+              saveMessage={session.formAlert}
+              onSavePress={() => void wizardNavigation.saveAbout()}
+              wizardCanOpenImages={canOpenProductWizardStep(
+                productWizardStep.images,
+                wizardDraft,
+              )}
+              onContinueToImages={() =>
+                void wizardNavigation.moveToWizardStep(productWizardStep.images)
               }
             />
           ) : null}
-          {productStatus !== 'APPROVED' && editable ? (
-            <PrimaryButton
-              label={submitLabel}
-              loading={submit.isPending}
-              disabled={existingProduct.images.length < 1}
-              onPress={() => submit.mutate(existingProduct.id)}
+
+          {existingProduct &&
+          (!isCreationFlow || wizardStep === productWizardStep.images) ? (
+            <ProductDraftImagesStep
+              images={existingProduct.images}
+              productStatus={editorStatus}
+              editable={editable && !session.inputsLocked}
+              isCreationFlow={isCreationFlow}
+              wizardStep={wizardStep}
+              reorderPending={imageActions.reorderImages.isPending}
+              removePending={imageActions.removeImage.isPending}
+              uploadPending={uploadBusy || imageActions.removeImage.isPending}
+              photoCards={imageActions.photoCards}
+              photoOrderError={imageActions.photoOrderError}
+              photoPreparationError={imageActions.photoPreparationError}
+              photoOperationPending={
+                imageActions.photosBusy || imageActions.upload.isPending
+              }
+              photoOrderConfirmed={imageActions.photoOrderConfirmed}
+              onEditPhoto={(id) => void imageActions.editPhoto(id)}
+              onPhotoLoadState={imageActions.photoLoadState}
+              onMovePhotoTo={imageActions.movePhotoTo}
+              onStartUpload={() => void imageActions.startUpload()}
+              onRemovePhoto={(id) => void imageActions.removePhoto(id)}
+              uploadError={imageActions.upload.isError}
+              uploadMessage={
+                imageActions.upload.error
+                  ? (readFormFailure(imageActions.upload.error, [])
+                      .formMessage ??
+                    getUserFacingErrorMessage(
+                      imageActions.upload.error,
+                      'Не удалось загрузить изображения.',
+                    ))
+                  : null
+              }
+              imageSelectionError={imageActions.imageSelectionError}
+              removeOrReorderError={
+                imageActions.removeImage.isError ||
+                imageActions.reorderImages.isError
+              }
+              onRetryUpload={(id?: string) => imageActions.retryUpload(id)}
+              onCancelUpload={imageActions.cancelUpload}
+              onChooseImages={() => void imageActions.chooseImages()}
+              onMoveImage={imageActions.reorder}
+              onDeleteImage={(imageId) =>
+                imageActions.setImagePendingDelete(imageId)
+              }
             />
           ) : null}
-          {productStatus !== 'APPROVED' && existingProduct.images.length < 1 ? (
-            <AppText role="bodySmall" tone="danger">
-              Добавьте хотя бы одно изображение перед отправкой.
-            </AppText>
+
+          {existingProduct &&
+          (!isCreationFlow || wizardStep === productWizardStep.story) ? (
+            <ProductDraftStoryStep
+              productId={existingProduct.id}
+              authEpoch={authEpoch}
+              isCreationFlow={isCreationFlow}
+              images={existingProduct.images}
+              blocks={storyEditor.blocks}
+              storyNeedsDraft={storyNeedsDraft}
+              onStartDraft={
+                editable
+                  ? () => void session.persistCurrentForm('ordinary')
+                  : undefined
+              }
+              editable={editable && !session.inputsLocked && !storyNeedsDraft}
+              savePending={storyEditor.saving || session.save.isPending}
+              uploading={storyEditor.uploading}
+              saveError={storyEditor.error}
+              retryUpload={storyEditor.retryUpload}
+              canAddText={storyEditor.canAddText}
+              canAddImage={storyEditor.canAddImage}
+              onAddText={storyEditor.addText}
+              onEditText={storyEditor.editText}
+              onEditAlt={storyEditor.editAlt}
+              onRemove={storyEditor.remove}
+              onMove={storyEditor.move}
+              onChooseImage={() => void imageActions.chooseStoryImage()}
+              onRetryUpload={() => void storyEditor.addImage()}
+              onSaveAndContinue={() =>
+                void wizardNavigation.saveStoryAndContinue()
+              }
+            />
           ) : null}
-        </FormSection>
-      ) : null}
 
-      {existingProduct && !editable && !isCreationFlow ? (
-        <AppText role="bodySmall" tone="danger">
-          Предмет уже нельзя редактировать или изменять его изображения.
-        </AppText>
-      ) : null}
+          {isCreationFlow &&
+          wizardStep === productWizardStep.review &&
+          existingProduct ? (
+            <ProductDraftReviewStep
+              categories={data.categories.data.categories}
+              selection={productDetail.data?.selection}
+              catalog={{
+                materialTerms: data.materialsCatalog.data?.terms ?? [],
+                techniqueTerms: data.techniquesCatalog.data?.terms ?? [],
+              }}
+              productId={existingProduct.id}
+              authEpoch={authEpoch}
+              images={existingProduct.images}
+              blocks={storyEditor.blocks}
+              editable={editable && !session.inputsLocked}
+              submitLabel={submitLabel}
+              wizardSubmitted={data.wizardSubmitted}
+              submitPending={
+                session.submit.isPending ||
+                session.save.isPending ||
+                (storyEditor.saving || storyEditor.uploading)
+              }
+              submitError={session.submit.isError}
+              onSubmitPress={() => void session.submitCurrentForm()}
+              onBackToStory={() =>
+                void wizardNavigation.moveToWizardStep(productWizardStep.story)
+              }
+            />
+          ) : null}
 
-      {!isCreationFlow || wizardStep === productWizardStep.about ? (
-        <ProductDraftAboutStep
-          isCreationFlow={isCreationFlow}
-          wizardStep={wizardStep}
-          editable={editable}
-          categories={categories.data.categories}
-          categoryId={categoryId}
-          onChangeCategoryId={setCategoryId}
-          technique={technique}
-          onChangeTechnique={setTechnique}
-          materials={materials}
-          onChangeMaterials={setMaterials}
-          dimensions={dimensions}
-          onChangeDimensions={setDimensions}
-          weight={weight}
-          onChangeWeight={setWeight}
-          year={year}
-          onChangeYear={setYear}
-          city={city}
-          onChangeCity={setCity}
-          packaging={packaging}
-          onChangePackaging={setPackaging}
-          deliveryInfo={deliveryInfo}
-          onChangeDeliveryInfo={setDeliveryInfo}
-          title={title}
-          onChangeTitle={setTitle}
-          story={story}
-          onChangeStory={setStory}
-          uniqueness={uniqueness}
-          onChangeUniqueness={setUniqueness}
-          condition={condition}
-          provenance={provenance}
-          onChangeProvenance={setProvenance}
-          stepOneAttempted={stepOneAttempted}
-          stepOneErrors={stepOneErrors}
-          canSaveStepOne={canSaveStepOne}
-          saveIsPending={save.isPending}
-          saveIsError={save.isError}
-          onSavePress={() => {
-            if (isCreationFlow) {
-              setStepOneAttempted(true);
-              if (!canSaveStepOne) return;
+          <AppDialog
+            open={recoveryManualVisible}
+            title="Автоматическое копирование недоступно"
+            description="Выделите и скопируйте сохранённый текст вручную."
+            onClose={() => setRecoveryManualVisible(false)}
+          >
+            <AppText role="bodySmall" selectable>
+              {storyEditor.recoveryText}
+            </AppText>
+            <SecondaryButton
+              label="Закрыть"
+              onPress={() => setRecoveryManualVisible(false)}
+            />
+          </AppDialog>
+
+          <AppDialog
+            open={
+              discardPhotosOperation !== null &&
+              session.isCurrentOperation(discardPhotosOperation)
             }
-            save.mutate();
-          }}
-          wizardCanOpenImages={canOpenProductWizardStep(
-            productWizardStep.images,
-            wizardDraft,
-          )}
-          onContinueToImages={() =>
-            moveToWizardStep(productWizardStep.images)
-          }
-        />
-      ) : null}
+            title="Отбросить локальные изменения фото?"
+            description="Принятые сервером фотографии сохранятся. Незагруженные файлы и локальные правки будут удалены."
+            onClose={() => setDiscardPhotosOperation(null)}
+          >
+            {imageActions.imageSelectionError ? (
+              <AppText role="bodySmall" tone="danger" accessibilityRole="alert">
+                {imageActions.imageSelectionError}
+              </AppText>
+            ) : null}
+            <PrimaryButton
+              label="Отбросить изменения"
+              onPress={() => {
+                const operation = discardPhotosOperation;
+                if (
+                  operation === null ||
+                  !session.isCurrentOperation(operation)
+                )
+                  return;
+                void imageActions.cancelUpload().then((discarded) => {
+                  if (!discarded || !session.isCurrentOperation(operation))
+                    return;
+                  setDiscardPhotosOperation(null);
+                  void wizardNavigation.saveAndClose();
+                });
+              }}
+            />
+            <SecondaryButton
+              label="Продолжить редактирование"
+              onPress={() => setDiscardPhotosOperation(null)}
+            />
+          </AppDialog>
 
-      {existingProduct && (!isCreationFlow || wizardStep === productWizardStep.images) ? (
-        <ProductDraftImagesStep
-          images={existingProduct.images}
-          productStatus={productStatus}
-          editable={editable}
-          isCreationFlow={isCreationFlow}
-          wizardStep={wizardStep}
-          wizardCanOpenCreation={canOpenProductWizardStep(
-            productWizardStep.creation,
-            wizardDraft,
-          )}
-          reorderPending={reorderImages.isPending}
-          removePending={removeImage.isPending}
-          uploadPending={upload.isPending}
-          uploadError={upload.isError}
-          imageSelectionError={imageSelectionError}
-          removeOrReorderError={removeImage.isError || reorderImages.isError}
-          onChooseImages={() => void chooseImages()}
-          onMoveImage={reorder}
-          onDeleteImage={(imageId) => setImagePendingDelete(imageId)}
-          onBackToAbout={() => moveToWizardStep(productWizardStep.about)}
-          onContinueToCreation={() =>
-            moveToWizardStep(productWizardStep.creation)
-          }
-        />
-      ) : null}
-
-      {isCreationFlow &&
-      wizardStep === productWizardStep.creation &&
-      existingProduct ? (
-        <ProductDraftCreationStep
-          editable={editable}
-          creationIntro={creationIntro}
-          onChangeCreationIntro={(value) => {
-            setCreationIntro(value);
-            setCreationStorySaved(false);
-          }}
-          creationSteps={creationSteps}
-          creationAttempted={creationAttempted}
-          updateCreationStep={updateCreationStep}
-          onDeleteCreationStep={(index) => {
-            setCreationStorySaved(false);
-            setCreationSteps((current) =>
-              current.filter((_item, stepIndex) => stepIndex !== index),
-            );
-          }}
-          onAddCreationStep={() => {
-            setCreationStorySaved(false);
-            setCreationSteps((current) => [...current, { title: '', body: '' }]);
-          }}
-          replaceCreationPending={replaceCreation.isPending}
-          replaceCreationError={replaceCreation.isError}
-          creationStorySaved={creationStorySaved}
-          onSaveCreationPress={() => {
-            setCreationAttempted(true);
-            if (!canSaveCreation) return;
-            replaceCreation.mutate();
-          }}
-          uploadCreationStepImagePending={uploadCreationStepImage.isPending}
-          uploadCreationStepImageError={uploadCreationStepImage.isError}
-          creationImageSelectionError={creationImageSelectionError}
-          onChooseCreationStepImage={(stepId) => {
-            void chooseCreationStepImage(stepId);
-          }}
-          onBackToImages={() => moveToWizardStep(productWizardStep.images)}
-          onContinueToReview={() =>
-            moveToWizardStep(productWizardStep.review)
-          }
-        />
-      ) : null}
-
-      {isCreationFlow &&
-      wizardStep === productWizardStep.review &&
-      existingProduct ? (
-        <ProductDraftReviewStep
-          editable={editable}
-          existingProductTitle={existingProduct.title}
-          existingProductImagesLength={existingProduct.images.length}
-          creationSteps={creationSteps}
-          submitLabel={submitLabel}
-          wizardSubmitted={wizardSubmitted}
-          submitPending={submit.isPending}
-          onSubmitPress={() => submit.mutate(existingProduct.id)}
-          onBackToCreation={() =>
-            moveToWizardStep(productWizardStep.creation)
-          }
-        />
-      ) : null}
-
-      <AppDialog
-        open={imagePendingDelete !== null}
-        title="Удалить изображение?"
-        description="Изображение будет удалено из предмета. Это действие нельзя отменить."
-        onClose={() => setImagePendingDelete(null)}
-      >
-        <DestructiveButton
-          label="Удалить изображение"
-          loading={removeImage.isPending}
-          onPress={() => {
-            if (imagePendingDelete)
-              removeImage.mutate(imagePendingDelete, {
-                onSuccess: () => setImagePendingDelete(null),
-              });
-          }}
-        />
-        <SecondaryButton
-          label="Отмена"
-          disabled={removeImage.isPending}
-          onPress={() => setImagePendingDelete(null)}
-        />
-      </AppDialog>
-    </FormPageShell>
+          <AppDialog
+            open={imageActions.imagePendingDelete !== null}
+            title="Удалить изображение?"
+            description="Изображение будет удалено из предмета. Это действие нельзя отменить."
+            onClose={() => imageActions.setImagePendingDelete(null)}
+          >
+            <PrimaryButton
+              label="Удалить изображение"
+              loading={
+                imageActions.deleteConfirmLocked ||
+                imageActions.removeImage.isPending
+              }
+              onPress={() => void imageActions.confirmImageDelete()}
+            />
+            <SecondaryButton
+              label="Отмена"
+              disabled={
+                imageActions.deleteConfirmLocked ||
+                imageActions.removeImage.isPending
+              }
+              onPress={() => imageActions.setImagePendingDelete(null)}
+            />
+          </AppDialog>
+        </FormPageShell>
+      </ProductDraftWriteGuard>
+    </FormProvider>
   );
 }
 
- 
+/** After the first create the story draft moves from the "new" key to the product id. */
+function migrateStoryDraft(accountId: string | null, productId: string) {
+  if (!accountId) return;
+  const previousKey = formDraftKey(accountId, 'product-story', 'new');
+  const stored = readFormDraft(previousKey, storyLocalDraftSchema);
+  if (!stored) return;
+  // The old "new" copy goes away only when the migrated copy landed.
+  const written = writeFormDraft(
+    formDraftKey(accountId, 'product-story', productId),
+    stored,
+  );
+  if (written === 'ok') clearFormDraft(previousKey);
+}

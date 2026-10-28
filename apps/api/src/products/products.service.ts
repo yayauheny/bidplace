@@ -1,14 +1,16 @@
+import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
-  creationStoryResponseSchema,
-  type CreationStoryWriteRequest,
-  publicProductDetailResponseSchema,
-  productListResponseSchema,
-  type PublicDiscoveryQuery,
+  productResponseSchema,
+  type PortfolioWorksQuery,
+  isEditableProductStatus,
+  type ProductStatus,
   type ProductWriteRequest,
   type SellerStatus,
+  type StoryWriteRequest,
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 import {
+  Inject,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -18,38 +20,76 @@ import {
 import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
 import {
-  productImageMetadataSelect,
+  portfolioCatalogProductSelect,
+  productRevisionOwnerSelect,
   productSelect,
-  publicCatalogProductSelect,
-  toContractProduct,
-  toCreationStepContract,
+  toImageContracts,
+  toOwnerContractProduct,
   toProductResponse,
+  projectedCatalogLabel,
+  toRevisionGalleryImages,
+  type PortfolioCatalogProductRecord,
 } from './products.mapper';
 import {
-  publicCatalogCte,
-  publicCatalogOrderBy,
+  portfolioCatalogCte,
+  portfolioCatalogOrderBy,
   type PublicCatalogPageRow,
+  type PublicWorkFacetRow,
 } from './products-catalog.query';
 import { missingProductApprovalFields } from './product-requirements';
+import {
+  copyRevisionStory,
+  readStory,
+  replaceProductStory,
+} from './product-story';
+import { assertSelectableCategory, syncWorkSelection } from './work-selection';
 import {
   assertProductWritable,
   lockProductRowForUpdate,
   productWriteGuardSelect,
   writableProductWhere,
 } from './product-write-guard';
-import { publicDirectProductWhere } from './public-visibility';
-import { assertProductRevisionTransition } from './product-revision-state';
-import { assertApprovedSeller } from '../sellers/seller-capability';
 import {
-  publicSellerProfileSelect,
-  toPublicSellerProfile,
-} from '../sellers/seller-profile.mapper';
+  portfolioCatalogProductWhere,
+  portfolioDirectProductWhere,
+} from './public-visibility';
+import {
+  assertProductRevisionTransition,
+  canAuthorEditRevision,
+} from './product-revision-state';
+import { assertApprovedSeller } from '../sellers/seller-capability';
+import { toPublicSellerProfile } from '../sellers/seller-profile.mapper';
+
+async function readOwnerProductResponse(
+  tx: Prisma.TransactionClient,
+  productId: string,
+  revisionId: string,
+) {
+  const [product, editingRevision] = await Promise.all([
+    tx.product.findUniqueOrThrow({
+      where: { id: productId },
+      select: productSelect,
+    }),
+    tx.productRevision.findUniqueOrThrow({
+      where: { id: revisionId },
+      select: productRevisionOwnerSelect,
+    }),
+  ]);
+  return productResponseSchema.parse({
+    product: toOwnerContractProduct(product, editingRevision),
+    ...(product.mediaOperations?.[0]
+      ? { publication: product.mediaOperations[0] }
+      : {}),
+  });
+}
 
 @Injectable()
 export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly publicIds: PublicIdService,
+    @Inject(MediaLifecycleService)
+    private readonly media?: MediaLifecycleService,
   ) {}
 
   async create(userId: string, input: ProductWriteRequest) {
@@ -63,11 +103,12 @@ export class ProductsService {
     }
 
     assertApprovedSeller(seller.status as SellerStatus);
-    return this.createWithPublicId(seller.id, input);
+    return this.createWithPublicId(seller.id, userId, input);
   }
 
   private async createWithPublicId(
     sellerProfileId: string,
+    authorUserId: string,
     input: ProductWriteRequest,
   ) {
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -78,8 +119,6 @@ export class ProductsService {
           categoryId: input.categoryId ?? null,
           title: input.title ?? null,
           story: input.story ?? null,
-          technique: input.technique ?? null,
-          materials: input.materials ?? null,
           dimensions: input.dimensions ?? null,
           weight: input.weight ?? null,
           year: input.year ?? null,
@@ -94,6 +133,9 @@ export class ProductsService {
         };
 
         const product = await this.prisma.$transaction(async (tx) => {
+          if (input.categoryId) {
+            await assertSelectableCategory(tx, input.categoryId, null);
+          }
           const created = await tx.product.create({ data });
           const revision = await tx.productRevision.create({
             data: {
@@ -103,8 +145,6 @@ export class ProductsService {
               categoryId: data.categoryId ?? null,
               title: data.title ?? null,
               story: data.story ?? null,
-              technique: data.technique ?? null,
-              materials: data.materials ?? null,
               dimensions: data.dimensions ?? null,
               weight: data.weight ?? null,
               year: data.year ?? null,
@@ -117,15 +157,15 @@ export class ProductsService {
               creationIntro: data.creationIntro ?? null,
             },
           });
-
-          return tx.product.update({
+          await syncWorkSelection(tx, revision.id, authorUserId, input, null);
+          await tx.product.update({
             where: { id: created.id },
             data: { editingRevisionId: revision.id },
-            select: productSelect,
           });
+          return readOwnerProductResponse(tx, created.id, revision.id);
         });
 
-        return toProductResponse(product);
+        return product;
       } catch (error) {
         if (
           !(
@@ -158,14 +198,6 @@ export class ProductsService {
     if (input.story !== undefined) {
       data.story = input.story;
       revisionData.story = input.story;
-    }
-    if (input.technique !== undefined) {
-      data.technique = input.technique;
-      revisionData.technique = input.technique;
-    }
-    if (input.materials !== undefined) {
-      data.materials = input.materials;
-      revisionData.materials = input.materials;
     }
     if (input.dimensions !== undefined) {
       data.dimensions = input.dimensions;
@@ -228,6 +260,9 @@ export class ProductsService {
           throw new ForbiddenException('Product is not owned by user');
         }
         assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+        if (product.listings.length > 0) {
+          throw new ConflictException('Product is locked by an active Listing');
+        }
         let editingRevisionId = product.editingRevisionId;
         if (product.editingRevisionId === product.publishedRevisionId) {
           const published = await tx.productRevision.findUniqueOrThrow({
@@ -259,51 +294,109 @@ export class ProductsService {
                   data: published.images.map((image) => ({
                     imageId: image.imageId,
                     position: image.position,
+                    crop: image.crop ?? Prisma.DbNull,
                   })),
                 },
               },
             },
           });
+          await copyRevisionStory(tx, published.id, editing.id);
           editingRevisionId = editing.id;
           await tx.product.update({
             where: { id: product.id },
             data: { editingRevisionId },
           });
+        } else {
+          const editingRevision = await tx.productRevision.findUniqueOrThrow({
+            where: { id: editingRevisionId },
+            select: { status: true },
+          });
+          if (!canAuthorEditRevision(editingRevision.status)) {
+            throw new ConflictException('Product revision cannot be edited');
+          }
         }
 
-        await tx.productRevision.update({
+        const priorRevision = await tx.productRevision.findUniqueOrThrow({
           where: { id: editingRevisionId },
-          data: revisionData,
+          select: { categoryId: true },
         });
-        const updated = await tx.product.findUniqueOrThrow({
-          where: { id },
-          select: productSelect,
-        });
-        return toProductResponse(updated);
+        if (input.categoryId) {
+          await assertSelectableCategory(
+            tx,
+            input.categoryId,
+            priorRevision.categoryId,
+          );
+        }
+        if (Object.keys(revisionData).length > 0) {
+          await tx.productRevision.update({
+            where: { id: editingRevisionId },
+            data: revisionData,
+          });
+        }
+        await syncWorkSelection(
+          tx,
+          editingRevisionId,
+          userId,
+          input,
+          priorRevision.categoryId,
+        );
+        return readOwnerProductResponse(tx, id, editingRevisionId);
       }
       assertProductWritable(product, userId, 'edit');
-
-      const written = await tx.product.updateMany({
-        where: { id, ...writableProductWhere },
-        data,
+      if (!product.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
+      const priorRevision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: product.editingRevisionId },
+        select: { categoryId: true },
       });
-      if (written.count !== 1) {
-        assertProductWritable(
-          await tx.product.findUnique({
-            where: { id },
-            select: productWriteGuardSelect,
-          }),
-          userId,
-          'edit',
+      if (input.categoryId) {
+        await assertSelectableCategory(
+          tx,
+          input.categoryId,
+          priorRevision.categoryId,
         );
-        throw new ConflictException('Product cannot be edited');
+      }
+      const editingRevision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: product.editingRevisionId },
+        select: { status: true },
+      });
+      if (!canAuthorEditRevision(editingRevision.status)) {
+        throw new ConflictException('Product revision cannot be edited');
       }
 
-      const updated = await tx.product.findUniqueOrThrow({
-        where: { id },
-        select: productSelect,
-      });
-      return toProductResponse(updated);
+      if (Object.keys(data).length > 0) {
+        const written = await tx.product.updateMany({
+          where: { id, ...writableProductWhere },
+          data,
+        });
+        if (written.count !== 1) {
+          assertProductWritable(
+            await tx.product.findUnique({
+              where: { id },
+              select: productWriteGuardSelect,
+            }),
+            userId,
+            'edit',
+          );
+          throw new ConflictException('Product cannot be edited');
+        }
+      }
+
+      if (Object.keys(revisionData).length > 0) {
+        await tx.productRevision.update({
+          where: { id: product.editingRevisionId },
+          data: revisionData,
+        });
+      }
+      await syncWorkSelection(
+        tx,
+        product.editingRevisionId,
+        userId,
+        input,
+        priorRevision.categoryId,
+      );
+      return readOwnerProductResponse(tx, id, product.editingRevisionId);
     });
   }
 
@@ -315,6 +408,7 @@ export class ProductsService {
         select: {
           ...productWriteGuardSelect,
           editingRevisionId: true,
+          editingRevision: { select: { status: true } },
           publishedRevisionId: true,
           title: true,
           story: true,
@@ -330,6 +424,28 @@ export class ProductsService {
       });
 
       if (
+        current?.editingRevisionId &&
+        current.editingRevision?.status === 'PENDING_REVIEW'
+      ) {
+        if (current.sellerProfile.userId !== userId)
+          throw new ForbiddenException('Product is not owned by user');
+        assertApprovedSeller(current.sellerProfile.status as SellerStatus);
+        if (current.listings.length > 0)
+          throw new ConflictException('Product is locked by an active Listing');
+        const revision = await tx.productRevision.findUniqueOrThrow({
+          where: { id: current.editingRevisionId },
+          select: productRevisionOwnerSelect,
+        });
+        const product = await tx.product.findUniqueOrThrow({
+          where: { id },
+          select: productSelect,
+        });
+        return productResponseSchema.parse({
+          product: toOwnerContractProduct(product, revision),
+        });
+      }
+
+      if (
         current &&
         (current.status === 'APPROVED' || current.status === 'ARCHIVED') &&
         current.publishedRevisionId &&
@@ -340,6 +456,9 @@ export class ProductsService {
           throw new ForbiddenException('Product is not owned by user');
         }
         assertApprovedSeller(current.sellerProfile.status as SellerStatus);
+        if (current.listings.length > 0) {
+          throw new ConflictException('Product is locked by an active Listing');
+        }
 
         const editingRevision = await tx.productRevision.findUniqueOrThrow({
           where: { id: current.editingRevisionId },
@@ -378,26 +497,56 @@ export class ProductsService {
           where: { id: current.editingRevisionId },
           data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
         });
-        const updated = await tx.product.findUniqueOrThrow({
-          where: { id },
-          select: productSelect,
-        });
+        const [updated, submittedRevision] = await Promise.all([
+          tx.product.findUniqueOrThrow({
+            where: { id },
+            select: productSelect,
+          }),
+          tx.productRevision.findUniqueOrThrow({
+            where: { id: current.editingRevisionId },
+            select: productRevisionOwnerSelect,
+          }),
+        ]);
         await tx.auditEvent.create({
           data: {
             actorUserId: userId,
             targetType: 'PRODUCT',
             targetId: updated.id,
             oldStatus: editingRevision.status,
+            action: 'SUBMITTED',
+            revisionId: current.editingRevisionId,
             newStatus: 'PENDING_REVIEW',
             reason: null,
           },
         });
-        return toProductResponse(updated);
+        return productResponseSchema.parse({
+          product: toOwnerContractProduct(updated, submittedRevision),
+        });
       }
 
       assertProductWritable(current, userId, 'submit');
 
-      const missingFields = missingProductApprovalFields(current);
+      if (!current.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
+      const editingRevision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: current.editingRevisionId },
+        select: {
+          status: true,
+          title: true,
+          categoryId: true,
+          images: { select: { imageId: true }, take: 1 },
+        },
+      });
+      assertProductRevisionTransition(
+        'author',
+        editingRevision.status,
+        'PENDING_REVIEW',
+      );
+      const missingFields = missingProductApprovalFields({
+        ...editingRevision,
+        images: editingRevision.images.map(({ imageId }) => ({ id: imageId })),
+      });
       if (missingFields.length > 0) {
         throw new ConflictException(
           `Product is missing required fields: ${missingFields.join(', ')}`,
@@ -411,18 +560,21 @@ export class ProductsService {
       if (moved.count !== 1) {
         throw new ConflictException('Product cannot be submitted for review');
       }
-      if (!current.editingRevisionId) {
-        throw new ConflictException('Product editing revision is missing');
-      }
       await tx.productRevision.update({
         where: { id: current.editingRevisionId },
         data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
       });
 
-      const updated = await tx.product.findUniqueOrThrow({
-        where: { id },
-        select: productSelect,
-      });
+      const [updated, submittedRevision] = await Promise.all([
+        tx.product.findUniqueOrThrow({
+          where: { id },
+          select: productSelect,
+        }),
+        tx.productRevision.findUniqueOrThrow({
+          where: { id: current.editingRevisionId },
+          select: productRevisionOwnerSelect,
+        }),
+      ]);
 
       await tx.auditEvent.create({
         data: {
@@ -430,202 +582,266 @@ export class ProductsService {
           targetType: 'PRODUCT',
           targetId: updated.id,
           oldStatus: current.status,
+          action: 'SUBMITTED',
+          revisionId: current.editingRevisionId,
           newStatus: 'PENDING_REVIEW',
           reason: null,
         },
       });
 
-      return toProductResponse(updated);
+      return productResponseSchema.parse({
+        product: toOwnerContractProduct(updated, submittedRevision),
+      });
     });
+  }
+
+  async hide(userId: string, id: string) {
+    return this.setAuthorVisibility(userId, id, 'ARCHIVED');
+  }
+
+  async unhide(userId: string, id: string) {
+    return this.setAuthorVisibility(userId, id, 'APPROVED');
+  }
+
+  private async setAuthorVisibility(
+    userId: string,
+    id: string,
+    nextStatus: 'APPROVED' | 'ARCHIVED',
+  ) {
+    let deliveryId: string | undefined;
+    const response = await runReadCommittedTransaction(
+      this.prisma,
+      async (tx) => {
+        await lockProductRowForUpdate(tx, id);
+        const product = await tx.product.findUnique({
+          where: { id },
+          select: {
+            ...productWriteGuardSelect,
+            publishedRevisionId: true,
+          },
+        });
+        if (!product) {
+          throw new NotFoundException('Product not found');
+        }
+        if (product.sellerProfile.userId !== userId) {
+          throw new ForbiddenException('Product is not owned by user');
+        }
+        assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+        assertProductRevisionTransition(
+          'author',
+          product.status as ProductStatus,
+          nextStatus,
+        );
+        if (product.publishedRevisionId == null) {
+          throw new ConflictException('Product has no published revision');
+        }
+        if (nextStatus === 'ARCHIVED' && product.listings.length > 0) {
+          throw new ConflictException(
+            'Work cannot be hidden while a scheduled or live listing exists',
+          );
+        }
+
+        if (this.media?.enabled) {
+          if (nextStatus === 'ARCHIVED')
+            await this.media.enqueueRevoke(tx, { productId: id });
+          else {
+            const revision = await tx.productRevision.findUniqueOrThrow({
+              where: { id: product.publishedRevisionId },
+            });
+            const operation = await this.media.enqueuePublication(
+              tx,
+              { productId: id },
+              revision,
+              product.publishedRevisionId,
+              userId,
+              true,
+            );
+            deliveryId = operation.id;
+            return toProductResponse(
+              await tx.product.findUniqueOrThrow({
+                where: { id },
+                select: productSelect,
+              }),
+            );
+          }
+        }
+        await tx.product.update({
+          where: { id },
+          data: { status: nextStatus },
+        });
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: userId,
+            targetType: 'PRODUCT',
+            targetId: id,
+            action: 'DECISION',
+            revisionId: product.publishedRevisionId,
+            oldStatus: product.status,
+            newStatus: nextStatus,
+            reason: null,
+          },
+        });
+        if (nextStatus === 'APPROVED') {
+          await tx.auditEvent.create({
+            data: {
+              actorUserId: userId,
+              targetType: 'PRODUCT',
+              targetId: id,
+              action: 'PUBLICATION_COMPLETED',
+              revisionId: product.publishedRevisionId,
+              oldStatus: product.status,
+              newStatus: 'APPROVED',
+            },
+          });
+        }
+
+        const updated = await tx.product.findUniqueOrThrow({
+          where: { id },
+          select: productSelect,
+        });
+        return toProductResponse(updated);
+      },
+    );
+    if (this.media?.enabled) {
+      try {
+        if (deliveryId) await this.media.deliver(deliveryId);
+      } finally {
+        await this.media.deliverOutstanding({ productId: id }, 'REVOKE');
+      }
+      if (deliveryId)
+        return toProductResponse(
+          await this.prisma.product.findUniqueOrThrow({
+            where: { id },
+            select: productSelect,
+          }),
+        );
+    }
+    return response;
   }
 
   async replaceCreationStory(
     userId: string,
     productId: string,
-    input: CreationStoryWriteRequest,
+    input: StoryWriteRequest,
   ) {
-    const incomingIds = input.steps.flatMap((step) =>
-      step.id ? [step.id] : [],
-    );
-    if (new Set(incomingIds).size !== incomingIds.length) {
-      throw new ConflictException('Creation steps must be unique');
-    }
-
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       await lockProductRowForUpdate(tx, productId);
       const product = await tx.product.findUnique({
         where: { id: productId },
-        select: productWriteGuardSelect,
+        select: {
+          ...productWriteGuardSelect,
+          editingRevisionId: true,
+          publishedRevisionId: true,
+        },
       });
-      assertProductWritable(product, userId, 'creation-story');
-
-      const existing = await tx.productCreationStep.findMany({
-        where: { productId },
-        select: { id: true },
-      });
-      const existingIds = new Set(existing.map((step) => step.id));
-      if (incomingIds.some((id) => !existingIds.has(id))) {
-        throw new NotFoundException('Creation step not found');
+      if (!product) throw new NotFoundException('Product not found');
+      if (product.sellerProfile.userId !== userId) {
+        throw new ForbiddenException('Product is not owned by user');
       }
-
-      const introWritten = await tx.product.updateMany({
-        where: { id: product.id, ...writableProductWhere },
-        data: { creationIntro: input.intro },
-      });
-      if (introWritten.count !== 1) {
+      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+      if (product.listings.length > 0) {
+        throw new ConflictException('Product is locked by an active Listing');
+      }
+      if (!product.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
+      const editingPublishedRevision =
+        product.publishedRevisionId === product.editingRevisionId;
+      const separateDraftOfPublishedWork =
+        !editingPublishedRevision &&
+        (product.status === 'APPROVED' || product.status === 'ARCHIVED');
+      if (
+        editingPublishedRevision ||
+        (!separateDraftOfPublishedWork &&
+          !isEditableProductStatus(product.status as ProductStatus))
+      ) {
         throw new ForbiddenException('Product creation story is locked');
       }
-      await tx.productCreationStep.deleteMany({
-        where: { productId, id: { notIn: incomingIds } },
+      const revision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: product.editingRevisionId },
+        select: { status: true },
       });
-      await tx.productCreationStep.updateMany({
-        where: { productId },
-        data: { position: { increment: 1000 } },
-      });
-      for (const [position, step] of input.steps.entries()) {
-        if (step.id) {
-          await tx.productCreationStep.update({
-            where: { id: step.id },
-            data: { position, title: step.title, body: step.body },
-          });
-        } else {
-          await tx.productCreationStep.create({
-            data: { productId, position, title: step.title, body: step.body },
-          });
-        }
+      if (!canAuthorEditRevision(revision.status)) {
+        throw new ConflictException('Product revision cannot be edited');
       }
-
-      const steps = await tx.productCreationStep.findMany({
-        where: { productId },
-        orderBy: { position: 'asc' },
-        select: {
-          id: true,
-          position: true,
-          title: true,
-          body: true,
-          mimeType: true,
-          byteLength: true,
-          checksum: true,
-          width: true,
-          height: true,
-        },
-      });
-      return creationStoryResponseSchema.parse({
-        creation: {
-          intro: input.intro,
-          steps: steps.map(toCreationStepContract),
-        },
+      return replaceProductStory(tx, {
+        media: this.media,
+        userId,
+        productId,
+        revisionId: product.editingRevisionId,
+        request: input,
       });
     });
   }
 
-  async reorderCreationSteps(
-    userId: string,
-    productId: string,
-    stepIds: string[],
-  ) {
-    return runReadCommittedTransaction(this.prisma, async (tx) => {
-      await lockProductRowForUpdate(tx, productId);
-      const product = await tx.product.findUnique({
-        where: { id: productId },
-        select: productWriteGuardSelect,
-      });
-      assertProductWritable(product, userId, 'creation-story');
-
-      const steps = await tx.productCreationStep.findMany({
-        where: { productId },
-        select: { id: true },
-      });
-      const knownIds = new Set(steps.map((step) => step.id));
-      if (
-        stepIds.length !== knownIds.size ||
-        new Set(stepIds).size !== stepIds.length ||
-        stepIds.some((id) => !knownIds.has(id))
-      ) {
-        throw new ConflictException(
-          'Creation step order must include every step exactly once',
-        );
-      }
-      await tx.productCreationStep.updateMany({
-        where: { productId },
-        data: { position: { increment: 1000 } },
-      });
-      await Promise.all(
-        stepIds.map((id, position) =>
-          tx.productCreationStep.update({ where: { id }, data: { position } }),
-        ),
-      );
-      return { ok: true as const };
+  async getPublishedStory(publicId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { publicId, ...portfolioDirectProductWhere },
+      select: { publishedRevisionId: true },
     });
+    if (!product?.publishedRevisionId) {
+      throw new NotFoundException('Work not found');
+    }
+    return readStory(this.prisma, product.publishedRevisionId);
   }
 
-  async getPublic(publicId: string) {
+  async getPortfolio(publicId: string) {
     const product = await this.prisma.product.findFirst({
       where: {
         publicId,
-        ...publicDirectProductWhere,
+        ...portfolioDirectProductWhere,
       },
-      include: {
-        sellerProfile: {
-          select: publicSellerProfileSelect,
-        },
-        images: {
-          orderBy: { position: 'asc' },
-          select: productImageMetadataSelect,
-        },
-        creationSteps: {
-          orderBy: { position: 'asc' },
-          select: {
-            id: true,
-            position: true,
-            title: true,
-            body: true,
-            mimeType: true,
-            byteLength: true,
-            checksum: true,
-            width: true,
-            height: true,
-          },
-        },
-      },
+      select: portfolioCatalogProductSelect,
     });
-
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException('Work not found');
     }
-
-    const projection = this.toPublicProduct(product);
-    return publicProductDetailResponseSchema.parse({
-      ...projection,
-      creationIntro: product.creationIntro ?? null,
-      creationSteps: product.creationSteps.map((step) => ({
-        id: step.id,
-        position: step.position,
-        title: step.title,
-        body: step.body,
-        image:
-          step.mimeType && step.byteLength && step.checksum
-            ? {
-                url: `/api/creation-steps/${step.id}/image`,
-                mimeType: step.mimeType,
-                byteLength: step.byteLength,
-                checksum: step.checksum,
-                width: step.width,
-                height: step.height,
-              }
-            : null,
-      })),
-      minimumNextBid: null,
-    });
+    const item = this.toPortfolioItem(product);
+    if (!item) {
+      throw new NotFoundException('Work not found');
+    }
+    return item;
   }
 
-  async listPublic(query: PublicDiscoveryQuery) {
-    const cte = publicCatalogCte(query);
+  async listPortfolio(query: PortfolioWorksQuery) {
+    const { products, pagination } = await this.loadPortfolioCatalogPage(query);
+    return {
+      items: products.flatMap((product) => {
+        const item = this.toPortfolioItem(product);
+        return item ? [item] : [];
+      }),
+      pagination,
+    };
+  }
+
+  async listPortfolioMaterialFacets() {
+    const cte = portfolioCatalogCte({
+      page: 1,
+      limit: 1,
+      sort: 'newest',
+    });
+    const rows = await this.prisma.$queryRaw<PublicWorkFacetRow[]>(
+      Prisma.sql`${cte}
+        SELECT DISTINCT term."name" AS "materials"
+        FROM filtered
+        INNER JOIN "products" catalog_product ON catalog_product."id" = filtered."id"
+        INNER JOIN "product_revision_terms" selected_term
+          ON selected_term."revision_id" = catalog_product."published_revision_id"
+        INNER JOIN "catalog_terms" term
+          ON term."id" = selected_term."term_id"
+          AND term."role" = 'MATERIAL'
+        WHERE NULLIF(BTRIM(term."name"), '') IS NOT NULL`,
+    );
+    return rows.map((row) => row.materials);
+  }
+
+  private async loadPortfolioCatalogPage(query: PortfolioWorksQuery) {
+    const cte = portfolioCatalogCte(query);
     const pageRows = await this.prisma.$queryRaw<PublicCatalogPageRow[]>(
       Prisma.sql`${cte}
         SELECT "id", COUNT(*) OVER()::int AS "total"
         FROM filtered p
-        ORDER BY ${Prisma.raw(publicCatalogOrderBy(query.sort))}
+        ORDER BY ${Prisma.raw(portfolioCatalogOrderBy(query.sort))}
         LIMIT ${query.limit}
         OFFSET ${(query.page - 1) * query.limit}`,
     );
@@ -643,16 +859,18 @@ export class ProductsService {
         );
 
     if (!pageRows.length) {
-      return productListResponseSchema.parse({
-        products: [],
+      return {
+        products: [] as PortfolioCatalogProductRecord[],
         pagination: { page: query.page, limit: query.limit, total },
-        facets: await this.discoveryFacets(query),
-      });
+      };
     }
 
     const products = await this.prisma.product.findMany({
-      where: { id: { in: pageRows.map((row) => row.id) } },
-      select: publicCatalogProductSelect,
+      where: {
+        id: { in: pageRows.map((row) => row.id) },
+        ...portfolioCatalogProductWhere,
+      },
+      select: portfolioCatalogProductSelect,
     });
     const productsById = new Map(
       products.map((product) => [product.id, product]),
@@ -660,133 +878,51 @@ export class ProductsService {
     const pagedProducts = pageRows
       .map((row) => productsById.get(row.id))
       .filter(
-        (product): product is (typeof products)[number] =>
+        (product): product is PortfolioCatalogProductRecord =>
           product !== undefined,
       );
 
-    return productListResponseSchema.parse({
-      products: pagedProducts.map((product) => this.toPublicProduct(product)),
+    return {
+      products: pagedProducts,
       pagination: { page: query.page, limit: query.limit, total },
-      facets: await this.discoveryFacets(query),
-    });
-  }
-
-  private async discoveryFacets(query: PublicDiscoveryQuery) {
-    const facetQuery = { ...query, status: undefined };
-    const cte = publicCatalogCte(facetQuery);
-    const [categoryRows, authorRows, materialRows, uniquenessRows] =
-      await Promise.all([
-        this.prisma.$queryRaw<
-          Array<{ id: string; name: string; count: number | bigint }>
-        >(
-          Prisma.sql`${cte}
-          SELECT c."id", c."name", COUNT(*)::int AS "count"
-          FROM filtered f
-          INNER JOIN "categories" c ON c."id" = f."category_id"
-          GROUP BY c."id", c."name"
-          ORDER BY c."name" ASC`,
-        ),
-        this.prisma.$queryRaw<
-          Array<{ slug: string; name: string; count: number | bigint }>
-        >(
-          Prisma.sql`${cte}
-          SELECT sp."slug", sp."full_name" AS "name", COUNT(*)::int AS "count"
-          FROM filtered f
-          INNER JOIN "seller_profiles" sp ON sp."id" = f."seller_profile_id"
-          GROUP BY sp."slug", sp."full_name"
-          ORDER BY sp."full_name" ASC`,
-        ),
-        this.prisma.$queryRaw<Array<{ materials: string }>>(
-          Prisma.sql`${cte}
-          SELECT DISTINCT f."materials"
-          FROM filtered f
-          WHERE f."materials" IS NOT NULL
-          ORDER BY f."materials" ASC`,
-        ),
-        this.prisma.$queryRaw<Array<{ uniqueness: string }>>(
-          Prisma.sql`${cte}
-          SELECT DISTINCT f."uniqueness"
-          FROM filtered f
-          WHERE f."uniqueness" IS NOT NULL
-          ORDER BY f."uniqueness" ASC`,
-        ),
-      ]);
-    return {
-      statusCounts: { SCHEDULED: 0, LIVE: 0, ENDED: 0 },
-      categories: categoryRows.map((row) => ({
-        ...row,
-        count: Number(row.count),
-      })),
-      authors: authorRows.map((row) => ({
-        ...row,
-        count: Number(row.count),
-      })),
-      materials: materialRows.map((row) => row.materials),
-      uniquenesses: uniquenessRows.map((row) => row.uniqueness),
     };
   }
 
-  toPublicProduct(
-    product: Awaited<ReturnType<PrismaService['product']['findFirst']>> &
-      object,
-  ) {
-    const record = product as typeof product & {
-      sellerProfile: {
-        id: string;
-        slug: string;
-        sellerType: 'creator' | 'influencer';
-        discipline: string;
-        fullName: string;
-        country: string;
-        city: string | null;
-        practice: string | null;
-        socialLink: string;
-        telegramUrl: string | null;
-        instagramUrl: string | null;
-        websiteUrl: string | null;
-        shortDescription: string;
-      };
-      images: Array<{
-        id: string;
-        position: number;
-        mimeType: string;
-        byteLength: number;
-        checksum: string;
-        width: number | null;
-        height: number | null;
-      }>;
-    };
-    const publicProduct = toContractProduct({
-      id: record.id,
-      publicId: record.publicId,
-      sellerProfileId: record.sellerProfileId,
-      categoryId: record.categoryId,
-      title: record.title,
-      story: record.story,
-      technique: record.technique,
-      materials: record.materials,
-      dimensions: record.dimensions,
-      weight: record.weight,
-      year: record.year,
-      condition: record.condition,
-      uniqueness: record.uniqueness,
-      provenance: record.provenance,
-      city: record.city,
-      packaging: record.packaging,
-      deliveryInfo: record.deliveryInfo,
-      publishedAt: record.publishedAt,
-      status: record.status,
-      editingRevisionId: record.editingRevisionId,
-      publishedRevisionId: record.publishedRevisionId,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-      images: record.images,
-    });
+  toPortfolioItem(product: PortfolioCatalogProductRecord) {
+    const published = product.publishedRevision;
+    const images = toRevisionGalleryImages(published);
+    if (
+      !published?.title ||
+      !published.categoryId ||
+      !product.publishedAt ||
+      !images ||
+      images.length === 0
+    ) {
+      return null;
+    }
 
     return {
-      product: publicProduct,
-      sellerProfile: toPublicSellerProfile(record.sellerProfile),
-      listing: null,
+      product: {
+        id: product.id,
+        publicId: product.publicId,
+        title: published.title,
+        story: published.story,
+        categoryId: published.categoryId,
+        technique: projectedCatalogLabel(published.terms, 'TECHNIQUE'),
+        materials: projectedCatalogLabel(published.terms, 'MATERIAL'),
+        dimensions: published.dimensions,
+        year: published.year,
+        uniqueness: published.uniqueness?.trim() || null,
+        images: toImageContracts(images, 'public'),
+        publishedAt: product.publishedAt.toISOString(),
+        materialTermIds: (published.terms ?? [])
+          .filter((item) => item.term.role === 'MATERIAL')
+          .map((item) => item.termId),
+        techniqueTermIds: (published.terms ?? [])
+          .filter((item) => item.term.role === 'TECHNIQUE')
+          .map((item) => item.termId),
+      },
+      sellerProfile: toPublicSellerProfile(product.sellerProfile),
     };
   }
 }

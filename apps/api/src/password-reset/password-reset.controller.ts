@@ -5,12 +5,10 @@ import {
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 
+import { readClientIpContext, type ClientIpRequest } from '../auth-abuse/client-ip';
 import { parseBody } from '../core/validation';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
-import {
-  PasswordResetService,
-  type PasswordResetRequestContext,
-} from './password-reset.service';
+import { PasswordResetService } from './password-reset.service';
 
 const okResponseSchema = z.object({ ok: z.literal(true) });
 
@@ -28,12 +26,14 @@ export class PasswordResetController {
   @Post('forgot')
   async forgot(
     @Body() body: unknown,
-    @Req() request: PasswordResetRequestContext,
+    @Req() request: ClientIpRequest,
   ) {
-    await this.passwordReset.requestReset(
-      parseBody(forgotPasswordRequestSchema, body).email,
-      request,
-    );
+    const parsed = parseBody(forgotPasswordRequestSchema, body);
+    await this.passwordReset.requestReset(parsed.email, {
+      ...readClientIpContext(request),
+      turnstileToken: parsed.turnstileToken,
+      idempotencyKey: parsed.idempotencyKey,
+    });
 
     return okResponseSchema.parse({ ok: true as const });
   }
@@ -48,10 +48,10 @@ export class PasswordResetController {
   @Post('reset')
   async reset(
     @Body() body: unknown,
-    @Req() request: PasswordResetRequestContext,
+    @Req() request: ClientIpRequest,
   ) {
     const input = parseBody(resetPasswordRequestSchema, body);
-    await this.passwordReset.resetPassword(input.token, input.password, request);
+    await this.passwordReset.resetPassword(input.token, input.password, readClientIpContext(request));
 
     return okResponseSchema.parse({ ok: true as const });
   }
