@@ -12,6 +12,7 @@ import {
 
 import {
   workImageMaxInputBytes,
+  WORK_PHOTO_LIMITS,
   type ProductStatus,
   type Product,
   type WorkPhotoResult,
@@ -56,12 +57,6 @@ async function prepareGalleryPhoto(input: ImageUploadInput, edit: PhotoEdit) {
     throw error;
   }
 }
-
-export type UploadImageState = {
-  key: string;
-  uri: string;
-  status: 'local' | 'queued' | 'preparing' | 'uploading' | 'done' | 'error';
-};
 
 type SelectedWorkImages = {
   images: readonly ImageUploadInput[];
@@ -699,7 +694,7 @@ export function useProductDraftImageActions({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
-        selectionLimit: Math.max(1, 10 - currentPhotos().cards.length),
+        selectionLimit: Math.max(1, WORK_PHOTO_LIMITS.maxPhotos - currentPhotos().cards.length),
         quality: 1,
       });
       if (!stillOwnsImages() || result.canceled || !result.assets.length)
@@ -742,7 +737,7 @@ export function useProductDraftImageActions({
     setChoosingImages(true);
     try {
       for (const source of inputs) {
-        if (currentPhotos().cards.length >= 10) break;
+        if (currentPhotos().cards.length >= WORK_PHOTO_LIMITS.maxPhotos) break;
         let selectionError: unknown;
         try {
           await readImageUpload(source, workImageMaxInputBytes);
@@ -1308,11 +1303,6 @@ export function useProductDraftImageActions({
 
   return {
     upload,
-    uploadFiles: photoState.data.cards.map((card) => ({
-      key: card.id,
-      uri: card.uri,
-      status: card.status,
-    })),
     photoCards: photoState.data.cards,
     photoLoadState,
     photosBusy: photoState.data.busy || choosingImages,

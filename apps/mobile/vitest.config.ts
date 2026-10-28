@@ -59,7 +59,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     setupFiles: ['./vitest/worklets.ts'],
-    include: ['src/**/*.spec.ts'],
+    include: ['src/**/*.spec.{ts,tsx}'],
     server: {
       deps: {
         inline: [/@rn-primitives\//],

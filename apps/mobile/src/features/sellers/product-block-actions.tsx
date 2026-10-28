@@ -101,12 +101,10 @@ export function ProductBlockActions({
   onMove,
   onDelete,
   details,
-  presentation = 'menu',
+  variant,
   open: controlledOpen,
   onOpenChange,
-  menuVisible = true,
-  triggerFrame,
-  triggerStrokeWidthPx,
+  active = true,
   blockKey,
 }: {
   children: ReactNode;
@@ -118,15 +116,10 @@ export function ProductBlockActions({
   onMove: (direction: -1 | 1) => void;
   onDelete: () => void;
   details?: ReactNode;
-  presentation?: 'menu' | 'mediaTile';
+  variant: 'story' | 'tile';
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Story shows ⋮ only on the selected block. Photo tiles stay visible. */
-  menuVisible?: boolean;
-  /** Real square hit box for the story ⋮. Photo tiles keep the default frame. */
-  triggerFrame?: number;
-  /** Story ⋮ only. Photo tiles keep the icon-button default. */
-  triggerStrokeWidthPx?: number;
+  active?: boolean;
   blockKey?: string;
 }) {
   const [localOpen, setLocalOpen] = useState(false);
@@ -200,7 +193,7 @@ export function ProductBlockActions({
     >
       <View style={{ position: 'relative', overflow: 'visible' }}>
         {children}
-        {editable && presentation === 'mediaTile' ? (
+        {editable && variant === 'tile' ? (
           <View
             style={{
               position: 'absolute',
@@ -223,7 +216,7 @@ export function ProductBlockActions({
             />
           </View>
         ) : null}
-        {editable && menuVisible ? (
+        {editable && active ? (
           <View
             ref={menu}
             onTouchStart={(event) => event.stopPropagation()}
@@ -252,10 +245,7 @@ export function ProductBlockActions({
               disabled={disabled}
               expanded={open}
               onPress={() => setOpen(!open)}
-              {...(triggerFrame != null ? { frame: triggerFrame } : {})}
-              {...(triggerStrokeWidthPx != null
-                ? { strokeWidthPx: triggerStrokeWidthPx }
-                : {})}
+              {...(variant === 'story' ? { frame: designTokens.size.touch, strokeWidthPx: designTokens.stroke.icon } : {})}
             />
             {open ? (
               <View
@@ -287,7 +277,7 @@ export function ProductBlockActions({
                     backgroundColor: palette.surfaceMuted,
                   }}
                 >
-                  {presentation === 'menu' ? (
+                  {variant === 'story' ? (
                     <FigmaIconButton
                       frame={designTokens.size.touch}
                       label="Удалить"

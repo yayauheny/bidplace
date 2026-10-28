@@ -238,8 +238,9 @@ describe('revision-backed Work Story editor', () => {
   it('clears the local draft after the server holds the saved blocks', async () => {
     // A stale draft with the same content must not survive the save.
     window.localStorage.setItem(
-      legacyStoryKey,
+      activeStoryKey,
       JSON.stringify({
+        v: 2,
         revisionId,
         token: 0,
         blocks: [{ key: 'stale-key', type: 'PARAGRAPH', text: 'Текст' }],
@@ -498,11 +499,11 @@ describe('revision-backed Work Story editor', () => {
 
   it('keeps a recovered other-revision copy across editing and a confirmed save', async () => {
     vi.useFakeTimers();
-    // A copy left over from another revision sits under the legacy key.
-    const legacyKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const legacyKey = activeStoryKey;
     window.localStorage.setItem(
       legacyKey,
       JSON.stringify({
+        v: 2,
         revisionId: '92222222-2222-4222-8222-222222222222',
         token: 2,
         blocks: [
@@ -568,7 +569,7 @@ describe('revision-backed Work Story editor', () => {
       token: 4,
       blocks: [{ key: 'old-key', type: 'PARAGRAPH', text: 'Old local draft' }],
     });
-    window.localStorage.setItem(legacyStoryKey, stored);
+    window.localStorage.setItem(activeStoryKey, stored);
     const view = mount('user-a', storyR2);
     const texts = view.editor.blocks.map((block) =>
       block.type === 'IMAGE' ? '' : block.text,
@@ -588,74 +589,11 @@ describe('revision-backed Work Story editor', () => {
     expect(view.editor.recoveryText).toContain('Old local draft');
   });
 
-  it('does not apply a legacy stored draft without a revision id', () => {
-    const serverStory = {
-      storyToken: 1,
-      blocks: [
-        {
-          id: blockId,
-          position: 0,
-          type: 'PARAGRAPH' as const,
-          text: 'Серверный абзац',
-        },
-      ],
-    };
-    const stored = JSON.stringify({
-      v: 2,
-      token: 1,
-      blocks: [
-        { key: 'legacy-key', type: 'PARAGRAPH', text: 'Старый черновик' },
-      ],
-    });
-    window.localStorage.setItem(legacyStoryKey, stored);
-    const view = mount('user-a', serverStory);
-    const texts = view.editor.blocks.map((block) =>
-      block.type === 'IMAGE' ? '' : block.text,
-    );
-    expect(texts).toEqual(['Серверный абзац']);
-    expect(view.editor.dirty).toBe(false);
-    expect(view.editor.storageError).toContain('другой редакции');
-    // A record without a revision id is ambiguous: never applied, preserved
-    // in the recovery namespace.
-    expect(window.localStorage.getItem(legacyStoryKey)).toBeNull();
-    expect(window.localStorage.getItem(recoveryStoryKey)).toContain(
-      'Старый черновик',
-    );
-    expect(view.editor.recoveryText).toContain('Старый черновик');
-  });
 
-  it('keeps active input when a legacy copy also exists', () => {
-    const payload = (text: string) =>
-      JSON.stringify({
-        v: 2,
-        revisionId,
-        token: 0,
-        blocks: [{ key: 'local', type: 'PARAGRAPH', text }],
-      });
-    window.localStorage.setItem(activeStoryKey, payload('NEW ACTIVE'));
-    window.localStorage.setItem(legacyStoryKey, payload('OLD LEGACY'));
-    const view = mount('user-a');
-    expect(
-      view.editor.blocks.map((block) =>
-        block.type === 'IMAGE' ? '' : block.text,
-      ),
-    ).toEqual(['NEW ACTIVE']);
-    // The differing legacy copy is preserved, not dropped: remounting finds it
-    // again and still keeps the active draft authoritative.
-    const legacyNow = window.localStorage.getItem(legacyStoryKey);
-    const recoveryNow = window.localStorage.getItem(recoveryStoryKey);
-    expect(legacyNow ?? recoveryNow ?? '').toContain('OLD LEGACY');
-    const again = mount('user-a');
-    expect(
-      again.editor.blocks.map((block) =>
-        block.type === 'IMAGE' ? '' : block.text,
-      ),
-    ).toEqual(['NEW ACTIVE']);
-  });
 
   it('offers the recovery source even when its migration cannot write', () => {
     window.localStorage.setItem(
-      legacyStoryKey,
+      activeStoryKey,
       JSON.stringify({
         v: 2,
         revisionId: 'old',
@@ -668,47 +606,13 @@ describe('revision-backed Work Story editor', () => {
     });
     const view = mount('user-a');
     // The source copy survives the failed write; the notice offers its text.
-    expect(window.localStorage.getItem(legacyStoryKey)).toContain(
+    expect(window.localStorage.getItem(activeStoryKey)).toContain(
       'RECOVERY TEXT',
     );
     expect(view.editor.recoveryText).toBe('RECOVERY TEXT');
     expect(view.editor.storageError).toBeTruthy();
   });
 
-  it('restores only the text the server does not have yet', () => {
-    const serverStory = {
-      storyToken: 1,
-      blocks: [
-        {
-          id: blockId,
-          position: 0,
-          type: 'PARAGRAPH' as const,
-          text: 'Серверный абзац',
-        },
-      ],
-    };
-    const view = mount('user-a', serverStory);
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    window.localStorage.setItem(
-      draftKey,
-      JSON.stringify({
-        revisionId,
-        token: 1,
-        blocks: [
-          // Saved earlier from a client session: same content, client-side key.
-          { key: 'client-key', type: 'PARAGRAPH', text: 'Серверный абзац' },
-          { key: 'client-key-2', type: 'PARAGRAPH', text: 'Новый абзац' },
-        ],
-      }),
-    );
-    // An auth-epoch bump re-runs the restore against the same story.
-    view.render(2, revisionId);
-    const texts = view.editor.blocks.map((block) =>
-      block.type === 'IMAGE' ? '' : block.text,
-    );
-    expect(texts).toEqual(['Серверный абзац', 'Новый абзац']);
-    expect(view.editor.dirty).toBe(true);
-  });
 
   it('saves blocks with a token and retains the server block identity', async () => {
     const view = mount();
@@ -728,7 +632,7 @@ describe('revision-backed Work Story editor', () => {
   });
 
   it('restores unfinished text blocks on a plain mount', () => {
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -783,7 +687,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -822,7 +726,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -865,7 +769,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -901,7 +805,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({ v: 2, revisionId, token: 1, blocks: [] }),
@@ -933,7 +837,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({

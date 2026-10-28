@@ -22,7 +22,7 @@ export type WorkPhotoCard = {
   prepared?: { input: ImageUploadInput; blob: Blob; dispose: () => void };
   kind: 'add' | 'replace' | 'crop' | 'saved';
   operationKey: string;
-  status: 'local' | 'queued' | 'preparing' | 'uploading' | 'done' | 'error';
+  status: 'local' | 'preparing' | 'uploading' | 'done' | 'error';
   error?: unknown;
   retryable?: boolean;
   uncertain?: boolean;

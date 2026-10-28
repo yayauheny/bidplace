@@ -43,7 +43,7 @@ describe('private Work Story preview', () => {
         root.render(createElement(PrivateStoryImage, {
           productId: 'work-id',
           mediaAssetId: 'asset-id',
-          sessionEpoch: 1,
+          authEpoch: 1,
           label: 'Фото',
           style: { width: 120, height: 90 },
         }));

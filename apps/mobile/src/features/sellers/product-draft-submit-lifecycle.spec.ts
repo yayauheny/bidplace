@@ -1647,7 +1647,7 @@ describe('product draft submit lifecycle', () => {
       expect(selected).toBeDefined();
       expect(harness.addImages).not.toHaveBeenCalled();
       expect(read).not.toHaveBeenCalled();
-      expect(view.actions.uploadFiles).toEqual([]);
+      expect(view.actions.photoCards).toEqual([]);
       const selection = selected!;
       await act(async () => {
         const start = view.actions.startUpload(selection);
@@ -2363,6 +2363,7 @@ describe('photo status transitions', () => {
     const container = document.createElement('div');
     const root = createRoot(container);
     const props: ProductDraftImagesStepProps = {
+      photoCards: [],
       images: [],
       productStatus: 'DRAFT',
       editable: true,

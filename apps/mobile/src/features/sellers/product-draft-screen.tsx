@@ -62,9 +62,9 @@ import { useProductDraftBrowserHistoryGuard } from './product-draft-browser-guar
 import { PhotoEditor } from './photo-editor';
 import { useProductDraftImageActions } from './product-draft-image-actions';
 import { useProductDraftNavigation } from './product-draft-navigation';
+import { storyLocalDraftSchema } from './story-local-draft';
 import {
   useProductStoryEditor,
-  storyLocalDraftSchema,
   type ProductStoryEditor,
 } from './use-product-story-editor';
 import {
@@ -199,7 +199,7 @@ export function ProductDraftScreen({
   });
 
   const uploadUnfinished =
-    imageActions.uploadFiles.some((file) => file.status !== 'done') ||
+    imageActions.photoCards.some((file) => file.status !== 'done') ||
     !imageActions.photoOrderConfirmed;
   const uploadBusy =
     imageActions.choosingImages ||
@@ -500,7 +500,6 @@ export function ProductDraftScreen({
               reorderPending={imageActions.reorderImages.isPending}
               removePending={imageActions.removeImage.isPending}
               uploadPending={uploadBusy || imageActions.removeImage.isPending}
-              uploadFiles={imageActions.uploadFiles}
               photoCards={imageActions.photoCards}
               photoOrderError={imageActions.photoOrderError}
               photoPreparationError={imageActions.photoPreparationError}
@@ -543,7 +542,7 @@ export function ProductDraftScreen({
           (!isCreationFlow || wizardStep === productWizardStep.story) ? (
             <ProductDraftStoryStep
               productId={existingProduct.id}
-              sessionEpoch={authEpoch}
+              authEpoch={authEpoch}
               isCreationFlow={isCreationFlow}
               images={existingProduct.images}
               blocks={storyEditor.blocks}
@@ -558,6 +557,8 @@ export function ProductDraftScreen({
               uploading={storyEditor.uploading}
               saveError={storyEditor.error}
               retryUpload={storyEditor.retryUpload}
+              canAddText={storyEditor.canAddText}
+              canAddImage={storyEditor.canAddImage}
               onAddText={storyEditor.addText}
               onEditText={storyEditor.editText}
               onEditAlt={storyEditor.editAlt}
@@ -582,7 +583,7 @@ export function ProductDraftScreen({
                 techniqueTerms: data.techniquesCatalog.data?.terms ?? [],
               }}
               productId={existingProduct.id}
-              sessionEpoch={authEpoch}
+              authEpoch={authEpoch}
               images={existingProduct.images}
               blocks={storyEditor.blocks}
               editable={editable && !session.inputsLocked}
