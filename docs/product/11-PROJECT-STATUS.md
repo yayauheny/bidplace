@@ -30,7 +30,8 @@ releases only its hold. After cleanup, the second reference, `READY`, and the
 stored bytes remain. Production cleanup was not changed: the defect did not
 reproduce. `ec860de9` deletes a rejected encoding through `deleteGeneratedImage`
 when the result is too large or cannot be read; the source file and an accepted
-URI stay. `b4af2da2` types that spy.
+URI stay. `b4af2da2` types that spy. Verify on `9252cee8` rejected the unused
+parameter; `8b578f2d` uses the spy argument.
 
 Addressed checks: API image unit 34/34, api-client images 4/4, mobile
 prepare/editor/submit 131/131, integration `work-media-http` and

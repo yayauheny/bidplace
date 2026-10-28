@@ -559,7 +559,8 @@ staging и после блокировки Product. Повтор для друг
 `ec860de9` удаляет отклонённый результат `prepareImageUpload` через существующий
 `deleteGeneratedImage`: превышение размера и ошибка чтения. Исходный файл и
 успешно возвращённый URI сохраняются. `b4af2da2` задаёт тип этого spy; до него
-typecheck mobile падал на пустом кортеже вызовов.
+typecheck mobile падал на пустом кортеже вызовов. Verify на `9252cee8` затем
+отклонил неиспользованный параметр; `8b578f2d` использует аргумент spy.
 
 Адресные проверки: API images 34/34, api-client images 4/4, mobile
 prepare/editor/submit 131/131, интеграция `work-media-http` и
