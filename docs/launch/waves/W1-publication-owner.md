@@ -65,6 +65,17 @@
 
 ## Бэкенд
 
+### Task 0: Тесты API под проверкой типов
+
+**Files:** Modify: `apps/api/tsconfig.json` (или отдельный `tsconfig.spec.json`,
+подключённый в `typecheck`), `apps/api/.eslintrc.cjs`.
+
+- [ ] Сейчас `**/*.spec.ts` и `test/**` исключены из `typecheck`, а `src/**/*.spec.ts`
+  — из ESLint, хотя Vitest их запускает: тест с ошибкой типов проходит проверки.
+  Включить оба; найденные ошибки исправить в тестах, не подавлять. Если их
+  больше ~50 — `Ruling:` и отдельный коммит до Task 1. Коммит
+  `chore: typecheck and lint api tests`.
+
 ### Task 1: Модуль переходов `product-publication.ts`
 
 **Files:**

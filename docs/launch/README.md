@@ -139,7 +139,7 @@ Premium и лимиты лотов, ПК-версию по макету, нат�
 Ваши решения до W4:
 
 - дизайн экранов F1–F10 до W4 и F11 (карточки и чек) до W5 ([DESIGN-BRIEF.md](DESIGN-BRIEF.md) §13);
-- вопросы C1–C6 ([COMMERCE.md](COMMERCE.md) §14), иначе берутся значения по умолчанию;
+- вопросы C1–C9 ([COMMERCE.md](COMMERCE.md) §14), иначе берутся значения по умолчанию;
 - частота Cron: каждую минуту (контейнер не засыпает, итоги аукциона ≤ 1 мин) или раз в 5 минут
   (дешевле, итоги ≤ 5 мин) ([W2](waves/W2-scheduler.md)).
 
@@ -161,6 +161,9 @@ CDN. Подробно — [AFTER-WAVES.md](AFTER-WAVES.md) и
 
 Главные: этот файл, [COMMERCE.md](COMMERCE.md), файлы волн, `AGENTS.md`,
 [AGENT-MAP](../AGENT-MAP.md), продуктовые владельцы в `docs/product/`.
+Все открытые вопросы к вам — [14-OPEN-MVP-DECISIONS](../product/14-OPEN-MVP-DECISIONS.md);
+дежурство и инциденты — [OPERATIONS.md](OPERATIONS.md); техдолг и что из него в
+какой волне — [TECH-DEBT.md](TECH-DEBT.md).
 Устаревшие планы, аудиты и архив удалены 2026-10-28; любой файл восстанавливается
 командой `git show 036d2cc4:<путь>`.
 

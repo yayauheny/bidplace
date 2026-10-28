@@ -84,7 +84,18 @@
    не удалять.
 5. Auth-abuse в e2e (613 строк) — один браузерный тест; интеграция остаётся.
 6. Playwright-конфиги: объединить те, что отличаются только портом/набором
-   файлов, если скрипты CI не ломаются (`Ruling:` по каждому).
+   файлов, если скрипты CI не ломаются (`Ruling:` по каждому). Конфиги
+   stabilization, motion, field-focus, sheet-local и reuse повторяют файлы
+   основного набора; на них не ссылается ни один скрипт, кроме stabilization.
+7. CI: после чистки — один невизуальный e2e-шард на `pull_request` (сейчас
+   браузерные наборы только ручные: `browser-e2e.yml` 5, `portfolio-release-gate.yml` 3).
+8. Мёртвое: шаги `verify.yml` для веток `feat/portfolio-mvp-legal-ux` и
+   `feature/web-auth` (94, 122); `apps/mobile/e2e/run-close.mjs` (импортирует
+   несуществующие модули); дубль `test:e2e:all`. Два известных глубоких импорта
+   `usePreventRemove` (`AuthViewport.tsx` 3, `product-draft-navigation.ts` 3) свести в
+   одну обёртку `src/lib/use-prevent-remove.ts`; запрет ESLint расширить на
+   `expo-router/build/*` с исключением только этого файла через `overrides`
+   (без `eslint-disable`).
 
 Не трогать: `auth-abuse.integration.spec.ts`, `social-auth.integration.spec.ts`,
 `registration-consent.spec.ts`, `admin-moderation-pagination.integration.spec.ts`,

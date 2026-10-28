@@ -18,6 +18,9 @@ Read this map, choose one row, then open only relevant headings in its owner. Do
 | Legal publication | [Final legal audit](legal/00-FINAL-LEGAL-AUDIT.md) |
 | Decision / revision lookup | Search heading/ID in [Decision Log](product/12-DECISION-LOG.md), then read the whole matching entry and any later revisions |
 | Performance audit | [PERFORMANCE-AUDIT.md](launch/PERFORMANCE-AUDIT.md) |
+| Tech debt / refactor timing | [TECH-DEBT.md](launch/TECH-DEBT.md) |
+| Incidents, support, admin routine | [OPERATIONS.md](launch/OPERATIONS.md) |
+| Open founder / design / legal questions | [Open decisions](product/14-OPEN-MVP-DECISIONS.md) |
 | After launch | [AFTER-WAVES.md](launch/AFTER-WAVES.md), [post-launch backlog](product/15-POST-MVP-BACKLOG.md) |
 
 For large owners, first `rg -n '^##|<topic>' <owner>` and read the matching section range. A search hit alone does not establish the latest decision: follow Revises/Supersedes and later revisions inside that entry.

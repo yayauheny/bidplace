@@ -103,6 +103,16 @@ Durable Object `POST /api/internal/tick` с внутренним секрето�
   задать: `wrangler secret put INTERNAL_TICK_SECRET --env production`), цена
   «контейнер не спит», как отключить.
 - [ ] **Шаг 6:** коммит `feat: wake api with a cron tick`.
+- [ ] **Шаг 7: один контур и честный шаблон окружения.** `DEC-102` — только
+  production: удалить `env.staging` из `wrangler.jsonc` и ветки `staging` в
+  `scripts/cloudflare/{deploy,migrate,config,build-web}.mjs` и `package.json`
+  (`cloudflare:deploy:staging`, `cloudflare:build:staging`); путь без проверки
+  релизной ветки исчезает вместе с ними. `.env.example` и `scripts/doctor.mjs`
+  называют `JWT_SECRET`, который API не читает, — заменить на имена из
+  `apps/api/src/core/config/env.ts` (`SESSION_SECRET`, `OTP_HASH_SECRET`,
+  `ANALYTICS_WEB_ENABLED`); README — `SEED_ADMIN_PASSWORD` вместо
+  `SEED_ADMIN_PASSWORD_HASH`. Только имена, без значений. `pnpm cloudflare:check` →
+  PASS; коммит `chore: single production contour and accurate env template`.
 
 ### Task 2: Nest — внутренний тик
 
