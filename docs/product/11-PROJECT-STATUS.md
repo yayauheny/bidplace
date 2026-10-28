@@ -16,6 +16,19 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-28 — Story editor control gutter
+
+**Partial.** Story text is a row: the field and a 44px strip outside the
+textarea (`product-draft-story.tsx`). Text width is unchanged. The active ⋮
+stays in its own strip. A press on the neighbor's right edge or in that
+neighbor's strip focuses the neighbor and does not open the other menu.
+Inactive strips do not capture the press. Chromium and WebKit covered both
+orders for two single-line paragraphs and for heading plus paragraph. WebKit
+scrolls from the inactive strip; Chromium has no scrollport on this step.
+Native gutter taps remain **Needs verification**. No upload, save, DnD, or
+server file-reuse change.
+[Evidence](../audits/evidence/2026-10-28-story-editor-controls/README.md).
+
 ## 2026-10-28 — Story editor active block controls
 
 **Partial.** User decision, variant A: keep Figma text density (line-height

@@ -1081,10 +1081,15 @@ icon glyphs use existing `stroke.icon` 1.3; `FigmaIconButton` still defaults to
 `stroke.iconHeavy` 1.6. Story ⋮ is shown only on the selected block. That is
 an accepted difference from Figma, where ⋮ is on every block. Line-height
 24/20 and the 6px text gap stay. The selected control is a real 44×44 box
-(`size.touch`); the muted 42px glyph stays centered inside it. Text keeps a
-right gutter (`size.touch` plus `space.x2`) so the line does not run under the
-control. The menu delete control is the same real 44×44 box. Native sizes are
-Needs verification on a device. The open menu ring uses
+(`size.touch`); the muted 42px glyph stays centered inside it. The text field
+is a row: the input (`flex: 1`, plus `space.x2`) and a 44px strip
+(`story-control-gutter`) that is outside the textarea. Text width stays the
+previous content width. The active button sits in that strip. While the menu
+is closed the block is not raised, so the button may paint over the next
+strip and a press there selects that neighbor instead of opening this menu.
+An inactive strip has `pointerEvents="none"` and no control, so it does not
+take the press or stop scrolling. The menu delete control is the same real
+44×44 box. Native sizes are Needs verification on a device. The open menu ring uses
 `figmaButtonStrokeRadius` so both SVG axes share one capsule radius.
 Divider and ring paint are `react-native-svg` `LinearGradient`.
 `experimental_backgroundImage` does not paint on the installed RN Web.

@@ -5,6 +5,24 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-28 — Story editor control gutter
+
+**Partial.** The text field no longer keeps the 44px control inside
+`paddingRight`. The row is the input (`flex: 1` plus `space.x2`) and a 44px
+strip outside the textarea, so the text width stays the same. The active ⋮
+stays a real 44×44 box in that strip. A closed block is not raised, so the
+button may paint over the next strip; a press there focuses that neighbor
+and does not open the other menu. An inactive strip has `pointerEvents="none"`
+and no control. Chromium and WebKit: clicks at the neighbor field's right−12,
+right−4, and the strip center select that field in both directions, for two
+single-line paragraphs and for heading plus paragraph. WebKit wheel over the
+inactive strip scrolls the document and does not open a menu. Chromium's
+story step has no scrollport, so that wheel does not move `scrollTop` and
+does not open a menu. Toolbar stays 272.21875×53. Menu stroke stays
+144.5×51.5 with rx=ry=25.75. Native 44×44 and gutter taps remain
+**Needs verification** on a device. Browser zoom 200% was not run. Wide exact
+parity stays NEEDS-FIGMA. Server file reuse is **Not implemented**.
+
 ## 2026-10-28 — Story editor active block controls
 
 **Partial.** The user accepted variant A: Figma density stays (line-height

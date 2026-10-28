@@ -103,15 +103,18 @@ vi.mock('react-native', () => ({
     children,
     style,
     dataSet,
+    pointerEvents,
   }: {
     children?: ReactNode;
     style?: unknown;
     dataSet?: Record<string, string | boolean>;
+    pointerEvents?: 'box-none' | 'none' | 'box-only' | 'auto';
   }) => {
     const flat: Record<string, unknown> = {};
     for (const item of Array.isArray(style) ? style : [style]) {
       if (item && typeof item === 'object') Object.assign(flat, item);
     }
+    if (pointerEvents) flat.pointerEvents = pointerEvents;
     const dataAttrs: Record<string, string> = {};
     if (dataSet) {
       for (const [key, val] of Object.entries(dataSet)) {
@@ -819,9 +822,14 @@ describe('app theme owner', () => {
         'Расскажите о том как создавалась ваша работа',
     ) as HTMLElement;
     expect(parseFloat(intro.style.letterSpacing)).toBe(0);
-    expect(parseFloat(paragraph.style.paddingRight)).toBe(
-      designTokens.size.touch + designTokens.space.x2,
-    );
+    expect(parseFloat(paragraph.style.paddingRight || '0')).toBe(0);
+    const textColumn = paragraph.parentElement as HTMLElement;
+    expect(textColumn.parentElement?.style.flexDirection).toBe('row');
+    expect(parseFloat(textColumn.style.marginRight)).toBe(designTokens.space.x2);
+    const gutter = textColumn.nextElementSibling as HTMLElement;
+    expect(parseFloat(gutter.style.width)).toBe(designTokens.size.touch);
+    expect(gutter.style.pointerEvents).toBe('none');
+    expect(gutter.childElementCount).toBe(0);
     expect(container.querySelector('[aria-label="Действия с блоком"]')).toBeNull();
     const focusField = (field: HTMLTextAreaElement) => {
       act(() => {

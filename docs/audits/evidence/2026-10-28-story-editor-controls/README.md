@@ -12,7 +12,7 @@ gitignore rule itself is unchanged. Older evidence folders were not replaced.
 | --- | --- |
 | `*-photos-five-plus-add-390.png` | Five different accepted photos plus the add tile |
 | `*-story-empty-390.png` | Step 3, empty story, «Пропустить» |
-| `*-story-two-paragraphs-390.png` | Two paragraphs; ⋮ only on the selected block |
+| `*-story-two-paragraphs-390.png` | Two single-line paragraphs; ⋮ only on the selected block, in the right strip |
 | `*-story-menu-open-390.png` | Open block menu, SVG gradient ring and divider |
 | `*-story-heading-paragraph-390.png` | Heading «Заголовок», reference paragraph, «Закончить» |
 | `*-toolbar.json` | Toolbar box and computed gradient paint |
@@ -21,7 +21,7 @@ gitignore rule itself is unchanged. Older evidence folders were not replaced.
 
 | | Figma | До | После |
 | --- | --- | --- | --- |
-| Text ⋮ | `4563:32795`, 43×43, on every block | 24×24 Web box. Native hit slop was short of 44×44. | User decision, variant A: ⋮ only on the selected block (accepted difference from Figma). Real 44×44 box, muted 42px glyph centered. Chromium and WebKit, mouse and touch: center and corners hit that button. The neighbor field does not take those points. Line-height 24/20 and the 6px gap stay. Native 44×44 is Needs verification on a device. |
+| Text ⋮ | `4563:32795`, 43×43, on every block | 24×24 Web box. Native hit slop was short of 44×44. | User decision, variant A: ⋮ only on the selected block (accepted difference from Figma). Real 44×44 box in a strip outside the textarea. A press on the neighbor field's right edge, or in the center of that neighbor's strip, focuses the neighbor and does not open the active menu. The inactive strip has no control and does not take the press. Line-height 24/20 and the 6px gap stay. Native 44×44 is Needs verification on a device. |
 | Menu paint | Gradient ring and 1×26 divider on `4563:33344` | Rect 134.5×41.5 with rx=ry=20.75 after the earlier ellipse fix. | `figmaButtonStrokeRadius` on the taller panel. Chromium and WebKit both measure 144.5×51.5 with rx=ry=25.75, so the ends are semicircles. Divider stays 1×26. |
 | Delete | Compact icon, `destructiveInk` `#731A06` | Web box 34×34. | Real 44×44 `FigmaIconButton` box, 18px glyph centered. Measured 44×44 in Chromium and WebKit. Native size is Needs verification on a device. |
 | Paragraph | Body copy | Paragraph used `subtitle` (tracking 0). | Paragraph is `bodySmall`, tracking −0.14. That tracking is the review decision. The intro stays `subtitle` at 0. Story ⋮ stroke stays 1.3. Photo buttons and icon-button defaults stay 1.6. |
@@ -31,7 +31,8 @@ gitignore rule itself is unchanged. Older evidence folders were not replaced.
 
 - Chromium and WebKit: `story editor polish` and `keeps photo status geometry stable` passed.
 - Current step is the existing label «Шаг 3 из 4». RN Web does not map `accessibilityState.selected` on `role=button` to `aria-selected`.
-- Hit checks: active 44×44 target (mouse and touch), corners and center, click on an inactive block, Tab/Enter/Escape, move, delete, image description. Locators follow `data-block-key`.
+- Hit checks: active 44×44 target inside its own row (mouse and touch), click on an inactive block, neighbor right edge and strip center in both directions for two single-line paragraphs and for heading plus paragraph, Tab/Enter/Escape, move, delete, image description. Locators follow `data-block-key`.
+- A press in the neighbor strip outside the button focuses that field. It does not open the other block's menu. The inactive strip is `pointer-events: none` and contains no control. WebKit wheel there scrolls the document. Chromium's story step has no scrollport, so the same wheel does not move `scrollTop` and does not open a menu.
 - After a non-empty paragraph the label is «Закончить». Whitespace still shows «Пропустить». Focus/blur keeps computed font-size, weight, line-height, letter-spacing, wrapping, and height. The first field and menu-open position stay put.
 - Browser zoom 200% was not run.
 - Native iOS/Android was not run. `simctl` is not available. Needs verification on a device: tap ⋮ on adjacent single-line blocks, type in the right gutter, scroll across the control, and check that Android does not clip the 44×44 box.

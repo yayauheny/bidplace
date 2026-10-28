@@ -169,7 +169,7 @@ export function ProductDraftStoryStep({
               key={block.key}
               style={{
                 marginTop: storyBlockGapBefore(renderedBlocks[index - 1], block),
-                zIndex: openBlock === block.key ? 2 : selected ? 1 : 0,
+                zIndex: openBlock === block.key ? 2 : 0,
                 overflow: 'visible',
               }}
             >
@@ -381,43 +381,67 @@ function StoryTextInput({
     }
   }, [value, focus, onFocused, lineHeight]);
   return (
-    <TextInput
-      ref={input}
-      accessibilityLabel={heading ? 'Заголовок истории' : 'Текст истории'}
-      placeholder={placeholder}
-      placeholderTextColor={palette.fieldLabel}
-      value={value}
-      onChangeText={onChange}
-      onFocus={() => onActivate?.()}
-      editable={!disabled}
-      multiline
-      scrollEnabled={false}
-      onContentSizeChange={
-        Platform.OS === 'web'
-          ? undefined
-          : (event) =>
-              setHeight(
-                Math.max(lineHeight, event.nativeEvent.contentSize.height),
-              )
-      }
-      maxLength={
-        heading
-          ? STORY_LIMITS.headingMaxLength
-          : STORY_LIMITS.paragraphMaxLength
-      }
-      textAlignVertical="top"
-      style={{
-        ...typography,
-        color: palette.inkStrong,
-        padding: 0,
-        paddingRight: designTokens.size.touch + designTokens.space.x2,
-        ...(Platform.OS === 'web'
-          ? { minHeight: lineHeight }
-          : {
-              minHeight: lineHeight,
-              height,
-            }),
-      }}
-    />
+    <View
+      style={{ flexDirection: 'row' }}
+      {...(Platform.OS === 'web'
+        ? {
+            onClick: (event: { target: EventTarget | null }) => {
+              const target = event.target as {
+                closest?: (selector: string) => unknown;
+              } | null;
+              if (target?.closest?.('textarea, input')) return;
+              input.current?.focus();
+            },
+          }
+        : {})}
+    >
+      <View
+        style={{ flex: 1, marginRight: designTokens.space.x2, minWidth: 0 }}
+      >
+        <TextInput
+          ref={input}
+          accessibilityLabel={heading ? 'Заголовок истории' : 'Текст истории'}
+          placeholder={placeholder}
+          placeholderTextColor={palette.fieldLabel}
+          value={value}
+          onChangeText={onChange}
+          onFocus={() => onActivate?.()}
+          editable={!disabled}
+          multiline
+          scrollEnabled={false}
+          onContentSizeChange={
+            Platform.OS === 'web'
+              ? undefined
+              : (event) =>
+                  setHeight(
+                    Math.max(lineHeight, event.nativeEvent.contentSize.height),
+                  )
+          }
+          maxLength={
+            heading
+              ? STORY_LIMITS.headingMaxLength
+              : STORY_LIMITS.paragraphMaxLength
+          }
+          textAlignVertical="top"
+          style={{
+            ...typography,
+            color: palette.inkStrong,
+            padding: 0,
+            width: '100%',
+            ...(Platform.OS === 'web'
+              ? { minHeight: lineHeight }
+              : {
+                  minHeight: lineHeight,
+                  height,
+                }),
+          }}
+        />
+      </View>
+      <View
+        pointerEvents="none"
+        testID="story-control-gutter"
+        style={{ width: designTokens.size.touch }}
+      />
+    </View>
   );
 }
