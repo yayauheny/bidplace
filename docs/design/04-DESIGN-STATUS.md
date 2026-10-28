@@ -5,6 +5,20 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-10-28 — W0 story editor ownership and styles
+
+**Partial.** `ProductDraftStoryStep` reads capacity from `useProductStoryEditor`,
+keeps text enabled while uploading and disables composition actions; saving still
+locks input. `ProductBlockActions` owns story/tile geometry through `variant`;
+PrivateStoryImage consumers share `authEpoch`. Styles moved to StyleSheet with
+existing typography, spacing, palette and accepted local Figma4563:32790 geometry;
+no new composition or DnD behavior. Empty virtual paragraph keeps its key/focus.
+
+Owner/consumer119 tests and Chromium/WebKit story checks pass. Captures390×874
+before/after retain layout; all story states are pixel-identical except46 toolbar-edge pixels at1 RGB level in one Chromium frame. Existing toolbar deviations from Figma275×52 remain;
+wide parity is NEEDS-FIGMA and native remains Needs verification. Full mobile and
+protected E2E gates remain unclosed; [W0 journal](../launch/waves/W0-photo-and-trunk.md#журнал-исполнения-2026-10-28).
+
 ## 2026-10-28 — Story interaction and opening avatar acceptance
 
 **Partial.** Supersedes the control-gutter claims below: the selected story block

@@ -16,6 +16,28 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-28 — W0 photo/story hardening (`DEC-150`)
+
+**Partial.** Tasks1–4 changes: `replaceProductStory` atomically releases unused
+story-purpose revision holds; `ImagesService.addStoryImage` checks admission
+before staging and under lock; `SharpImageProcessor` shares gallery/story pixel
+budgets. Contracts own 10MiB story input and ten gallery photos; 20MiB story
+aggregate budget removed. Media retries stop at20 without resetting timestamps.
+Client uploads use `WORK_PHOTO_PREPARE`; upload preserves story text/focus, blank
+alt saves as null, server owns hold release. `story-local-draft.ts` owns v2;
+editor uses StyleSheet/tokens, old optional gallery branch removed.
+
+API unit476/476, addressed frontend119/119, four-package typecheck and web export
+pass. Integration57/59 (two gallery atomicity failures also on base). Story UI
+Chromium/WebKit4/4 pass, before/after390×874 stable (one frame has46 toolbar-edge pixels differing by1 RGB level).
+Mandatory browser gates6/12 pass; protected old selectors fail. Full mobile gate
+has four synthetic picker fixtures without image metadata; permission to update
+only those fixtures is pending, assertions remain intact. Shared lint finds two
+pre-existing duplicate enum imports in contracts/admin.ts. Full evidence and
+rulings: [W0 journal](../launch/waves/W0-photo-and-trunk.md#журнал-исполнения-2026-10-28).
+Task5 (main/CI/deploy) explicitly deferred. `DEC-112` reuse, story CDN and native
+acceptance remain open; no overall Implemented claim.
+
 ## 2026-10-28 — Launch plan and docs restructure
 
 - Not implemented: commerce (`DEC-149`): listings, bids, orders, reports, strikes,

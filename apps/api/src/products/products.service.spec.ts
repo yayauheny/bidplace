@@ -128,6 +128,7 @@ function createWritePrisma(options: {
         ),
       update: vi.fn().mockResolvedValue(revision),
     },
+    productRevisionStoryAsset: { findMany: vi.fn().mockResolvedValue([]) },
     productRevisionStoryBlock: {
       findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn(),
