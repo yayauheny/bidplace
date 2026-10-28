@@ -95,6 +95,7 @@ describe('Work story image lifecycle', () => {
         'work-id',
         new Blob(['image'], { type: 'image/png' }),
         'one-upload',
+        '82222222-2222-4222-8222-222222222222',
       ),
     ).toEqual({
       mediaAssetId: id,
@@ -106,6 +107,9 @@ describe('Work story image lifecycle', () => {
     expect(requests[0]?.init.method).toBe('POST');
     expect(new Headers(requests[0]?.init.headers).get('Idempotency-Key')).toBe(
       'one-upload',
+    );
+    expect(new Headers(requests[0]?.init.headers).get('X-Photo-Revision')).toBe(
+      '82222222-2222-4222-8222-222222222222',
     );
     expect(requests[0]?.init.body).toBeInstanceOf(FormData);
     expect((requests[0]?.init.body as FormData).getAll('image')).toHaveLength(

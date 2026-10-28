@@ -3429,3 +3429,31 @@ Refines: `DEC-115` (the sales wave is the launch; its plan lives in `docs/launch
 Mechanics, data, races and open defaults C1–C6:
 [COMMERCE.md](../launch/COMMERCE.md). Order of work: [launch plan](../launch/README.md).
 Nothing here is implemented yet; runtime status lives in `11-PROJECT-STATUS.md`.
+
+
+## DEC-151 — Story/Work photo limits unified
+
+Date: 2026-10-28
+Status: Confirmed contract; implementation acceptance Partial
+Source: explicit instruction to execute W0 photo Tasks 1–4 and related Task 6.
+Number: `DEC-151`. Published `DEC-150` on `fix/launch-docs-review` (`54925364`) is the deals decision and stays that number.
+Revises: `DEC-116` story file/aggregate budget; `DEC-148` session byte-deduplication clause.
+
+Gallery and story use the same client preparation: 3840px, 10 MiB output,
+25 MiB source, quality 0.85; PNG remains PNG. Avatar keeps 1600px / 2 MiB.
+Server story input is 10 MiB, gallery input remains 25 MiB; both use
+8192px / 50_331_648 input pixels and a 5 MiB stored master. The separate
+20 MiB story-photo aggregate budget is removed. Story keeps five image blocks,
+twenty text blocks and 200/5000/300 character limits; gallery keeps ten photos.
+Client source SHA-256/session duplicate rejection and v1 story restore are removed;
+server operation identity and input-checksum conflict checks remain authoritative.
+
+Unused story-owned holds are released by the server in the locked story-save
+transaction and queued through the existing cleanup owner. Gallery assets and
+other revisions are excluded. Media operations stop at twenty attempts without
+clearing `nextAttemptAt`. No migration, shared-byte lookup (`DEC-112`), story CDN,
+Cron move, native acceptance or main/CI/deploy cutover is included.
+
+Owners: [RFC §10](05-MVP-RFC.md#10-создание-work),
+[architecture](10-CODE-ARCHITECTURE.md), [status](11-PROJECT-STATUS.md),
+[W0 verification journal](../launch/waves/W0-photo-and-trunk.md#журнал-исполнения-2026-10-28).

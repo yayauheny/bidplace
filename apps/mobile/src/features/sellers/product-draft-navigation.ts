@@ -68,7 +68,7 @@ export function useProductDraftNavigation({
   const [stepOneAttempted, setStepOneAttempted] = useState(false);
 
   useEffect(() => {
-    if (form.formState.isDirty || storyEditor.dirty || storyEditor.pending)
+    if (form.formState.isDirty || storyEditor.dirty || (storyEditor.saving || storyEditor.uploading))
       return;
     const navigate = pendingNavigation.current;
     if (!navigate || session.inputsLocked || uploadBusy) return;
@@ -77,7 +77,7 @@ export function useProductDraftNavigation({
   }, [
     form.formState.isDirty,
     storyEditor.dirty,
-    storyEditor.pending,
+    (storyEditor.saving || storyEditor.uploading),
     session.inputsLocked,
     pendingNavigationVersion,
     uploadBusy,
@@ -109,7 +109,7 @@ export function useProductDraftNavigation({
   usePreventRemove(
     form.formState.isDirty ||
       storyEditor.dirty ||
-      storyEditor.pending ||
+      (storyEditor.saving || storyEditor.uploading) ||
       session.inputsLocked,
     ({ data }) => {
       const operation = session.snapshotOperation();
@@ -122,7 +122,7 @@ export function useProductDraftNavigation({
   );
 
   const moveToWizardStep = async (nextStep: number) => {
-    if (uploadBusy || session.transitionLock.current || storyEditor.pending)
+    if (uploadBusy || session.transitionLock.current || (storyEditor.saving || storyEditor.uploading))
       return;
     if (!existingProduct) return;
     if (!canOpenProductWizardStep(nextStep, wizardDraft, uploadUnfinished))
@@ -186,7 +186,7 @@ export function useProductDraftNavigation({
     if (
       session.transitionLock.current ||
       session.saveInFlight() ||
-      storyEditor.pending
+      (storyEditor.saving || storyEditor.uploading)
     )
       return;
     const operation = session.snapshotOperation();
@@ -202,7 +202,7 @@ export function useProductDraftNavigation({
 
   const saveStoryAndContinue = async () => {
     if (isCreationFlow && uploadUnfinished) return;
-    if (uploadBusy || session.transitionLock.current || storyEditor.pending)
+    if (uploadBusy || session.transitionLock.current || (storyEditor.saving || storyEditor.uploading))
       return;
     const operation = session.snapshotOperation();
     const persisted = await session.persistAll('transition');

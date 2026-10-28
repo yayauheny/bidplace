@@ -27,6 +27,8 @@ import {
 } from './media-object-store';
 import { PublicMediaCache, publicMediaUrl } from './public-media-cache';
 
+export const MEDIA_OPERATION_MAX_ATTEMPTS = 20;
+
 const activeStates = ['PENDING', 'RUNNING', 'FAILED'] as const;
 
 export function mediaUploadIdentity(
@@ -119,6 +121,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       (await this.prisma.mediaOperation.count({
         where: {
           kind: { in: ['REVOKE', 'CLEANUP'] },
+          attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
           state: { in: ['PENDING', 'RUNNING', 'FAILED'] },
         },
       })) > 0
@@ -152,6 +155,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     const operations = await this.prisma.mediaOperation.findMany({
       where: {
         kind: { in: ['REVOKE', 'CLEANUP'] },
+          attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
         OR: [
           { state: { in: ['PENDING', 'FAILED'] }, nextAttemptAt: { lte: now } },
           { state: 'RUNNING', leaseUntil: { lt: now } },
@@ -187,6 +191,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     file: RawImageUpload,
     idempotencyKey: string = randomUUID(),
     preserveSource = false,
+    revisionId?: string,
   ) {
     if (!this.enabled) throw new Error('Media lifecycle is disabled');
     if (!/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey))
@@ -196,6 +201,10 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       where: { identity },
       include: objectInclude,
     });
+    if (
+      revisionId && operation?.revisionId && operation.revisionId !== revisionId
+    )
+      throw new ConflictException('Upload identity belongs to an earlier revision');
     const keepSource =
       preserveSource ||
       Boolean(
@@ -261,6 +270,8 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
             data: {
               kind: 'UPLOAD',
               identity,
+              // Bind before object writes: failed uploads must keep their owner.
+              revisionId: revisionId ?? null,
               inputChecksum: mediaInputChecksum(file),
               objects: {
                 create: objects.map((object) => ({ objectId: object.id })),
@@ -282,6 +293,17 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           include: objectInclude,
         });
       }
+    }
+    if (revisionId) {
+      const bound = await this.prisma.mediaOperation.updateMany({
+        where: {
+          id: operation.id,
+          OR: [{ revisionId: null }, { revisionId }],
+        },
+        data: { revisionId },
+      });
+      if (bound.count !== 1)
+        throw new ConflictException('Upload identity belongs to an earlier revision');
     }
     this.armOrphanScan();
     const source = operation.objects.find(
@@ -748,6 +770,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       const result = await tx.mediaOperation.updateMany({
         where: {
           id,
+          attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
           OR: [
             { state: { in: ['PENDING', 'FAILED'] } },
             { state: 'RUNNING', leaseUntil: { lt: now } },
@@ -779,16 +802,21 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     token: string,
     errorCode = 'MEDIA_DELIVERY_FAILED',
   ) {
-    await this.prisma.mediaOperation.updateMany({
+    const operation = await this.prisma.mediaOperation.findUniqueOrThrow({
+      where: { id }, select: { attemptCount: true, kind: true },
+    });
+    const exhausted = operation.attemptCount >= MEDIA_OPERATION_MAX_ATTEMPTS;
+    const result = await this.prisma.mediaOperation.updateMany({
       where: { id, leaseToken: token, state: 'RUNNING' },
       data: {
         state: 'FAILED',
         errorCode,
-        nextAttemptAt: new Date(Date.now() + 15_000),
+        ...(!exhausted ? { nextAttemptAt: new Date(Date.now() + 15_000) } : {}),
         leaseUntil: null,
         leaseToken: null,
       },
     });
+    if (exhausted && result.count) this.logger.warn(`Media operation exhausted retries: ${id} ${operation.kind}`);
   }
   private async writeVerified(
     object: {

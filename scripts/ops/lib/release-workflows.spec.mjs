@@ -12,7 +12,9 @@ test('Verify retains general pull request coverage and release branch pushes', a
   );
   // Feature pushes are checked via PR only: one change must not trigger two runs.
   assert.match(workflow, /pull_request:\s*\n\s*types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
-  assert.match(workflow, /push:\s*\n\s*branches:\s*\n\s*- main\s*\n\s*- master\s*\n\s*- feature\/portfolio-mvp-release/);
+  const pushBranches = workflow.match(/  push:\s*\n    branches:\s*\n((?:      - [^\n]+\n)+)/)?.[1]
+    .trim().split('\n').map((line) => line.trim().slice(2));
+  assert.deepEqual(pushBranches, ['main']);
   assert.doesNotMatch(workflow, /- 'fix\/\*\*'/);
   assert.doesNotMatch(workflow, /- 'feat\/\*\*'/);
   assert.match(workflow, /workflow_dispatch:/);
@@ -22,6 +24,15 @@ test('Verify retains general pull request coverage and release branch pushes', a
   assert.match(workflow, /github\.event\.pull_request\.draft == false/);
   assert.match(workflow, /run: pnpm verify/);
   assert.match(workflow, /cancel-in-progress: true/);
+});
+
+test('manual production deploy accepts main and configures the same Workers CI branch', async () => {
+  const workflow = await readFile(resolve(root, '.github/workflows/production-deploy.yml'), 'utf8');
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /if \[ "\$GITHUB_REF" != "refs\/heads\/main" \]/);
+  assert.match(workflow, /Production deploy requires main/);
+  assert.match(workflow, /WORKERS_CI_BRANCH: main/);
+  assert.doesNotMatch(workflow, /portfolio-mvp-release/);
 });
 
 test('browser workflow remains manual-only and retains sharded Chromium coverage', async () => {

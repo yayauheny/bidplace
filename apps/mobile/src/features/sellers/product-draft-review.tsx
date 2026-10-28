@@ -21,7 +21,7 @@ export type ProductDraftReviewStepProps = {
   selection?: SellerProductDetailResponse['selection'];
   catalog: Pick<SellerProductDetailResponse['selection'], 'materialTerms' | 'techniqueTerms'>;
   productId: string;
-  sessionEpoch: number;
+  authEpoch: number;
   images: Array<{
     id: string;
     url: string;
@@ -44,7 +44,7 @@ export function ProductDraftReviewStep({
   selection,
   catalog,
   productId,
-  sessionEpoch,
+  authEpoch,
   images,
   blocks,
   editable,
@@ -104,7 +104,7 @@ export function ProductDraftReviewStep({
             <PrivateStoryImage
               key={block.key}
               productId={productId}
-              sessionEpoch={sessionEpoch}
+              authEpoch={authEpoch}
               mediaAssetId={block.mediaAssetId}
               galleryImageId={
                 images.find(

@@ -13,14 +13,14 @@ export function PrivateStoryImage({
   productId,
   mediaAssetId,
   galleryImageId,
-  sessionEpoch,
+  authEpoch,
   label,
   style,
 }: {
   productId: string;
   mediaAssetId: string;
   galleryImageId?: string;
-  sessionEpoch: number;
+  authEpoch: number;
   label: string;
   style: ImageStyle;
 }) {
@@ -28,7 +28,7 @@ export function PrivateStoryImage({
   const apiRef = useRef(api);
   apiRef.current = api;
   const [retry, setRetry] = useState(0);
-  const mediaKey = `${sessionEpoch}:${productId}:${mediaAssetId}:${galleryImageId ?? ''}:${retry}`;
+  const mediaKey = `${authEpoch}:${productId}:${mediaAssetId}:${galleryImageId ?? ''}:${retry}`;
   const [view, setView] = useState<{ key: string; uri: string | null; failed: boolean }>({
     key: '',
     uri: null,

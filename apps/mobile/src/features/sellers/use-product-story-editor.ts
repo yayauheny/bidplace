@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
-import type { StoryBlock, StoryWriteRequest } from '@bidplace/contracts';
+import type { StoryBlock } from '@bidplace/contracts';
 import { STORY_LIMITS, storyWriteRequestSchema } from '@bidplace/contracts';
-import { z } from 'zod';
 
 import type { ApiClient } from '@bidplace/api-client';
 
@@ -11,7 +10,6 @@ import {
   clearFormDraft,
   createDraftWriter,
   draftWriteNeedsWarning,
-  formDraftKey,
   readFormDraft,
   writeFormDraft,
 } from '../../lib/local-form-draft';
@@ -20,112 +18,8 @@ import {
   draftWriteLeaseIsValid,
 } from '../../lib/query-cache';
 
-export type EditableStoryBlock = StoryWriteRequest['blocks'][number] & {
-  key: string;
-};
-
-/**
- * Local restore covers unfinished story state; uploaded images stay
- * server-side — the draft keeps only their ids and order, never bytes.
- * v2 blocks carry stable keys (server block id when persisted, client key
- * otherwise) so restore matches by identity and order, not by content.
- */
-const storyTextBlockSchema = z.object({
-  key: z.string(),
-  type: z.enum(['HEADING', 'PARAGRAPH']),
-  text: z.string(),
-});
-
-const storyImageBlockSchema = z.object({
-  key: z.string(),
-  type: z.literal('IMAGE'),
-  mediaAssetId: z.string(),
-  altText: z.string().nullable(),
-});
-
-const storyStoredBlockSchema = z.discriminatedUnion('type', [
-  storyTextBlockSchema,
-  storyImageBlockSchema,
-]);
-
-export const storyLocalDraftSchema = z.object({
-  v: z.literal(2).optional(),
-  // The server revision this draft belongs to. A draft without a revision id
-  // is ambiguous (written before revision tracking) and must never be applied
-  // to a concrete revision.
-  revisionId: z.string().optional(),
-  token: z.number(),
-  blocks: z.array(storyStoredBlockSchema),
-});
-
-export type StoryLocalDraft = z.infer<typeof storyLocalDraftSchema>;
-
-function storyDraftEntityId(
-  productId: string | undefined,
-  revisionId: string | undefined,
-): string {
-  // The creation flow has no product/revision yet: it keeps the single
-  // revision-less 'new' surface that migrateStoryDraft moves after create.
-  if (!productId) return 'new';
-  // A product draft always belongs to one editing revision; the revision-less
-  // plain product key stays the legacy surface that is migrated on read.
-  return revisionId ? `${productId}@${revisionId}` : productId;
-}
-
-function storyDraftKey(
-  accountId: string | null,
-  productId: string | undefined,
-  revisionId: string | undefined,
-) {
-  if (!accountId) return null;
-  return formDraftKey(
-    accountId,
-    'product-story',
-    storyDraftEntityId(productId, revisionId),
-  );
-}
-
-/** Revision-less key written before drafts were scoped per revision. */
-function storyDraftLegacyKey(
-  accountId: string,
-  productId: string | undefined,
-): string {
-  return formDraftKey(accountId, 'product-story', productId ?? 'new');
-}
-
-/**
- * A draft that must never be applied automatically (another revision's copy,
- * or one written before revision tracking) is kept here, one per revision
- * scope, so live writes and confirmed saves cannot destroy the only copy.
- * Logout clears it with the account prefix; the notice offers the text.
- */
-function storyDraftRecoveryKey(
-  accountId: string,
-  productId: string | undefined,
-  revisionId: string | undefined,
-): string {
-  return `${storyDraftKey(accountId, productId, revisionId)}~recovery`;
-}
-
-function storedBlocksOf(blocks: readonly EditableStoryBlock[]) {
-  return blocks.map((block) => {
-    // Server ids survive a remount; client keys identify not-yet-saved blocks.
-    const key = block.id ?? block.key;
-    if (block.type === 'IMAGE') {
-      return {
-        key,
-        type: 'IMAGE' as const,
-        mediaAssetId: block.mediaAssetId,
-        altText: block.altText ?? null,
-      };
-    }
-    return {
-      key,
-      type: block.type as 'HEADING' | 'PARAGRAPH',
-      text: block.text,
-    };
-  });
-}
+export type { EditableStoryBlock } from './story-local-draft';
+import { storyLocalDraftSchema, storyDraftKey, storyDraftRecoveryKey, storedBlocksOf, draftTextOf, restoreV2, moveStoredDraft, writeBlocks, type StoryLocalDraft, type EditableStoryBlock } from './story-local-draft';
 
 type StorySnapshot = { storyToken: number; blocks: StoryBlock[] };
 
@@ -153,7 +47,8 @@ type DraftState = {
   token: number;
   blocks: EditableStoryBlock[];
   dirty: boolean;
-  pending: boolean;
+  saving: boolean;
+  uploading: boolean;
   error: string | null;
   /** True once this state incorporates a real server story snapshot. */
   serverHydrated: boolean;
@@ -181,14 +76,6 @@ type DraftState = {
 const RECOVERY_NOTICE =
   'Локальная копия истории относится к другой редакции работы и не может быть восстановлена автоматически.';
 
-function draftTextOf(stored: StoryLocalDraft): string | null {
-  const text = stored.blocks
-    .map((block) => (block.type === 'IMAGE' ? '' : block.text))
-    .filter(Boolean)
-    .join('\n\n');
-  return text || null;
-}
-
 function editableBlock(
   block: StoryBlock,
   key: string = block.id,
@@ -215,35 +102,14 @@ function fromServer(identity: string, story?: StorySnapshot): DraftState {
     token: story?.storyToken ?? 0,
     blocks: (story?.blocks ?? []).map((block) => editableBlock(block)),
     dirty: false,
-    pending: false,
+    saving: false,
+    uploading: false,
     error: null,
     serverHydrated: story !== undefined,
     awaitingOwnerSnapshot: false,
     storageError: null,
     recoveryText: null,
   };
-}
-
-function writeBlocks(
-  blocks: readonly EditableStoryBlock[],
-): StoryWriteRequest['blocks'] {
-  return blocks
-    .filter((block) => block.type === 'IMAGE' || Boolean(block.text.trim()))
-    .map((block) => {
-      if (block.type === 'IMAGE') {
-        return {
-          id: block.id,
-          type: 'IMAGE',
-          mediaAssetId: block.mediaAssetId,
-          altText: block.altText ?? null,
-        };
-      }
-      return {
-        id: block.id,
-        type: block.type,
-        text: block.text,
-      };
-    });
 }
 
 export function useProductStoryEditor({
@@ -292,8 +158,11 @@ export function useProductStoryEditor({
   const current = useRef(state);
   const outstanding = useRef<Promise<boolean> | null>(null);
   const retry = useRef<{ snapshot: string; key: string } | null>(null);
-  const pendingImage = useRef<{ image: Blob; key: string } | null>(null);
-  const uploaded = useRef<Set<string>>(new Set());
+  const pendingImage = useRef<{
+    image: Blob;
+    key: string;
+    revisionId: string;
+  } | null>(null);
   const writer = useRef(createDraftWriter());
   const accountRef = useRef(accountId);
   const productRef = useRef(productId);
@@ -309,13 +178,6 @@ export function useProductStoryEditor({
     storyToken: number;
   } | null>(null);
   const lastEffectRevision = useRef(revisionId);
-  const persistedAssets = useRef<Set<string>>(
-    new Set(
-      (story?.blocks ?? []).flatMap((block) =>
-        block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-      ),
-    ),
-  );
 
   const replace = (next: DraftState) => {
     current.current = next;
@@ -359,28 +221,6 @@ export function useProductStoryEditor({
    * leaves the source untouched, so a migration can never destroy the only
    * copy (quota/denied) nor overwrite a newer draft (A-01).
    */
-  const moveStoredDraft = (
-    fromKey: string,
-    toKey: string,
-  ): 'moved' | 'kept-source' | 'nothing' => {
-    const stored = readFormDraft(fromKey, storyLocalDraftSchema);
-    if (!stored) return 'nothing'; // nothing parseable there; leave it as is
-    const existing = readFormDraft(toKey, storyLocalDraftSchema);
-    if (existing) {
-      if (JSON.stringify(existing) === JSON.stringify(stored)) {
-        // Identical copies collapse into the destination; no write needed.
-        clearFormDraft(fromKey);
-        return 'moved';
-      }
-      return 'kept-source'; // occupied by a different copy; never overwrite
-    }
-    if (writeFormDraft(toKey, stored) === 'ok') {
-      clearFormDraft(fromKey);
-      return 'moved';
-    }
-    return 'kept-source';
-  };
-
   const withRecoveryNotice = (
     state: DraftState,
     account: string,
@@ -416,34 +256,12 @@ export function useProductStoryEditor({
     const base = fromServer(identityNow, storySnapshot);
     if (!account || !activeKey) return base;
 
-    // The revision-less legacy key (written before drafts were scoped per
-    // revision) is never applied as-is: a copy of this revision moves to the
-    // active key only when that key does not already hold a different draft;
-    // anything else goes to the recovery namespace, and an occupied or
-    // unwritable destination keeps the source where it is. Without a revision
-    // identity (owner query still loading) nothing is moved: a copy migrated
-    // into an undefined-revision namespace would be invisible to the loaded
-    // revision's restore pass, so a foreign copy is offered from its source
-    // in place and migrates once the revision is known.
-    const legacyKey = storyDraftLegacyKey(account, productId);
     let recoverySourceText: string | null = null;
-    if (revision) {
-      if (legacyKey !== activeKey) {
-        const legacy = readFormDraft(legacyKey, storyLocalDraftSchema);
-        if (legacy) {
-          const target =
-            legacy.revisionId != null && legacy.revisionId === revision
-              ? activeKey
-              : storyDraftRecoveryKey(account, productId, revision);
-          if (moveStoredDraft(legacyKey, target) === 'kept-source') {
-            recoverySourceText = draftTextOf(legacy);
-          }
-        }
-      }
-    } else {
-      const legacy = readFormDraft(legacyKey, storyLocalDraftSchema);
-      if (legacy && legacy.revisionId != null) {
-        recoverySourceText = draftTextOf(legacy);
+    const unscopedKey = storyDraftKey(account, productId, undefined);
+    if (revision && unscopedKey && unscopedKey !== activeKey) {
+      const unscoped = readFormDraft(unscopedKey, storyLocalDraftSchema);
+      if (unscoped && moveStoredDraft(unscopedKey, storyDraftRecoveryKey(account, productId, revision)) === 'kept-source') {
+        recoverySourceText = draftTextOf(unscoped);
       }
     }
 
@@ -468,10 +286,7 @@ export function useProductStoryEditor({
       if (stored.token >= serverToken) {
         // The stored draft belongs to this revision and does not predate the
         // server story. (Tokens are only comparable inside one revision.)
-        const restored =
-          stored.v === 2
-            ? restoreV2(base, stored)
-            : restoreLegacy(base, stored);
+        const restored = restoreV2(base, stored);
         return withRecoveryNotice(
           restored,
           account,
@@ -491,81 +306,6 @@ export function useProductStoryEditor({
       revision,
       recoverySourceText,
     );
-  };
-
-  // v2: blocks match server blocks by stable key, so identity, edits,
-  // deletions and reordering restore exactly; server media keeps its id.
-  const restoreV2 = (base: DraftState, stored: StoryLocalDraft): DraftState => {
-    const serverByKey = new Map(base.blocks.map((block) => [block.key, block]));
-    const blocks: EditableStoryBlock[] = [];
-    for (const block of stored.blocks) {
-      const match = serverByKey.get(block.key);
-      if (block.type === 'IMAGE') {
-        blocks.push(
-          match?.type === 'IMAGE'
-            ? { ...match, altText: block.altText ?? null }
-            : {
-                key: block.key,
-                type: 'IMAGE',
-                mediaAssetId: block.mediaAssetId,
-                altText: block.altText ?? null,
-              },
-        );
-        continue;
-      }
-      if (match && match.type !== 'IMAGE') {
-        blocks.push({ ...match, text: block.text });
-        continue;
-      }
-      blocks.push({ key: block.key, type: block.type, text: block.text });
-    }
-    const same =
-      JSON.stringify(writeBlocks(blocks)) ===
-      JSON.stringify(writeBlocks(base.blocks));
-    if (same) return base;
-    return { ...base, blocks, dirty: true };
-  };
-
-  // Legacy text-only payloads cannot record deletions/reordering/images, so
-  // they keep the old content-merge semantics; the ambiguity is documented
-  // in the wave report rather than guessed.
-  const restoreLegacy = (
-    base: DraftState,
-    stored: StoryLocalDraft,
-  ): DraftState => {
-    const storedTexts = stored.blocks.filter(
-      (block): block is z.infer<typeof storyTextBlockSchema> =>
-        block.type !== 'IMAGE',
-    );
-    if (storedTexts.length === 0) return base;
-    const serverCounts = new Map<string, number>();
-    for (const block of base.blocks) {
-      if (block.type === 'IMAGE') continue;
-      const contentKey = `${block.type}:${block.text}`;
-      serverCounts.set(contentKey, (serverCounts.get(contentKey) ?? 0) + 1);
-    }
-    const fresh = storedTexts.filter((block) => {
-      const contentKey = `${block.type}:${block.text}`;
-      const count = serverCounts.get(contentKey) ?? 0;
-      if (count > 0) {
-        serverCounts.set(contentKey, count - 1);
-        return false;
-      }
-      return true;
-    });
-    if (fresh.length === 0) return base;
-    return {
-      ...base,
-      blocks: [
-        ...base.blocks,
-        ...fresh.map((block) => ({
-          key: block.key,
-          type: block.type,
-          text: block.text,
-        })),
-      ],
-      dirty: true,
-    };
   };
 
   const clearLocalDraft = () => {
@@ -602,7 +342,6 @@ export function useProductStoryEditor({
     const snapshotBelongs = ownership !== 'foreign';
     if (previous.identity !== identity) {
       writer.current.cancel();
-      uploaded.current = new Set();
       outstanding.current = null;
       pendingImage.current = null;
       retry.current = null;
@@ -613,7 +352,7 @@ export function useProductStoryEditor({
         revisionChanged &&
         confirmed &&
         !previous.dirty &&
-        !previous.pending &&
+        !(previous.saving || previous.uploading) &&
         previous.serverHydrated &&
         !snapshotBelongs
       ) {
@@ -625,11 +364,6 @@ export function useProductStoryEditor({
         // across revisions. The blocks stay visible but waiting: they must
         // not be edited or sent under the new revision's identity.
         confirmedSave.current = null;
-        persistedAssets.current = new Set(
-          previous.blocks.flatMap((block) =>
-            block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-          ),
-        );
         replace({ ...previous, identity, awaitingOwnerSnapshot: true });
         // restoredFor intentionally stays on the old identity: when a
         // snapshot that belongs to this revision arrives, the restore below
@@ -637,11 +371,6 @@ export function useProductStoryEditor({
         return;
       }
       confirmedSave.current = null;
-      persistedAssets.current = new Set(
-        (snapshotBelongs ? (story?.blocks ?? []) : []).flatMap((block) =>
-          block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-        ),
-      );
       if (snapshotBelongs) {
         restoredFor.current = identity;
         replace(restoreDraft(identity, story));
@@ -669,21 +398,16 @@ export function useProductStoryEditor({
       story &&
       snapshotBelongs &&
       !previous.dirty &&
-      !previous.pending &&
+      !(previous.saving || previous.uploading) &&
       story.storyToken > previous.token
     ) {
       // A newer token within the same revision is an external save; it wins.
       confirmedSave.current = null;
-      persistedAssets.current = new Set(
-        story.blocks.flatMap((block) =>
-          block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-        ),
-      );
       replace(fromServer(identity, story));
     } else if (
       story &&
       !previous.dirty &&
-      !previous.pending &&
+      !(previous.saving || previous.uploading) &&
       confirmedSave.current &&
       confirmedSave.current.revisionId === revisionId &&
       story.storyToken === previous.token
@@ -700,7 +424,7 @@ export function useProductStoryEditor({
     const previous = current.current;
     if (
       previous.identity !== identity ||
-      previous.pending ||
+      previous.saving ||
       previous.awaitingOwnerSnapshot ||
       canChange?.() === false
     )
@@ -762,13 +486,12 @@ export function useProductStoryEditor({
       return next;
     });
 
-  const addImage = async (image?: Blob): Promise<boolean> => {
+  const uploadImage = async (image?: Blob): Promise<boolean> => {
     if (
       !productId ||
-      current.current.pending ||
+      (current.current.saving || current.current.uploading) ||
       current.current.identity !== identity ||
-      current.current.awaitingOwnerSnapshot ||
-      canChange?.() === false
+      current.current.awaitingOwnerSnapshot
     )
       return false;
     if (
@@ -784,7 +507,7 @@ export function useProductStoryEditor({
     if (image && image.size > STORY_LIMITS.maxFileBytes) {
       replace({
         ...current.current,
-        error: 'Фото истории должно быть не больше 5 МиБ.',
+        error: 'Фото истории должно быть не больше 10 МиБ.',
       });
       return false;
     }
@@ -795,25 +518,28 @@ export function useProductStoryEditor({
       });
       return false;
     }
+    const revisionAtStart = revisionRef.current;
     const pending =
       pendingImage.current ??
-      (image ? { image, key: crypto.randomUUID() } : null);
+      (image && revisionAtStart
+        ? { image, key: crypto.randomUUID(), revisionId: revisionAtStart }
+        : null);
     if (!pending) return false;
     pendingImage.current = pending;
     const previous = current.current;
-    replace({ ...previous, pending: true, error: null });
+    replace({ ...previous, uploading: true, dirty: true, error: null });
     try {
       const result = await api.images.addStoryImage(
         productId,
         pending.image,
         pending.key,
+        pending.revisionId,
       );
       if (current.current.identity !== identity) return false;
       pendingImage.current = null;
-      uploaded.current.add(result.mediaAssetId);
       replace({
         ...current.current,
-        pending: false,
+        uploading: false,
         dirty: true,
         blocks: [
           ...current.current.blocks,
@@ -831,7 +557,7 @@ export function useProductStoryEditor({
       if (current.current.identity === identity) {
         replace({
           ...current.current,
-          pending: false,
+          uploading: false,
           error:
             'Не удалось загрузить фото. Повторите загрузку без повторного выбора файла.',
         });
@@ -840,15 +566,28 @@ export function useProductStoryEditor({
     }
   };
 
+  const addImage = async (image?: Blob): Promise<boolean> => {
+    if (canChange?.() === false) return false;
+    return uploadImage(image);
+  };
+
   const save = async (): Promise<boolean> => {
-    const before = current.current;
-    if (before.identity !== identity || before.pending || !productId)
+    let before = current.current;
+    if (before.identity !== identity || (before.saving || before.uploading) || !productId)
       return false;
     // Waiting for the owner's snapshot of this revision: nothing here may
     // reach the API, even if a dirty draft predates the identity change.
-    if (before.awaitingOwnerSnapshot) return false;
+    if (before.awaitingOwnerSnapshot || outstanding.current) return false;
+    if (pendingImage.current) {
+      // The save may own the transition lock; replay belongs to that save.
+      if (!(await uploadImage())) return false;
+      before = current.current;
+      if (
+        before.identity !== identity ||
+        before.awaitingOwnerSnapshot
+      ) return false;
+    }
     if (!before.dirty) return true;
-    if (outstanding.current) return false;
     const blocks = writeBlocks(before.blocks);
     const parsed = storyWriteRequestSchema.safeParse({
       storyToken: before.token,
@@ -867,7 +606,7 @@ export function useProductStoryEditor({
       retry.current = { snapshot, key: crypto.randomUUID() };
     }
     const request = { ...parsed.data, idempotencyKey: retry.current.key };
-    replace({ ...before, pending: true, error: null });
+    replace({ ...before, saving: true, error: null });
     const task = (async () => {
       try {
         const result = await api.products.replaceCreation(productId, request);
@@ -881,25 +620,13 @@ export function useProductStoryEditor({
             )[index]?.key ?? block.id,
           ),
         );
-        const removedAssets = [
-          ...new Set([...persistedAssets.current, ...uploaded.current]),
-        ].filter(
-          (id) =>
-            !result.blocks.some(
-              (block) => block.type === 'IMAGE' && block.mediaAssetId === id,
-            ),
-        );
-        persistedAssets.current = new Set(
-          result.blocks.flatMap((block) =>
-            block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-          ),
-        );
         replace({
           ...current.current,
           token: result.storyToken,
           blocks: saved,
           dirty: false,
-          pending: false,
+          saving: false,
+          uploading: false,
         });
         confirmedSave.current = {
           revisionId: revisionRef.current ?? null,
@@ -909,20 +636,13 @@ export function useProductStoryEditor({
         // the whole local operation — drop the stored copy for this identity.
         clearLocalDraft();
         onSaved?.(result);
-        for (const assetId of removedAssets) {
-          try {
-            await api.images.removeStoryImage(productId, assetId);
-            uploaded.current.delete(assetId);
-          } catch {
-            // A failed hold release cannot undo a successfully saved story.
-          }
-        }
         return true;
       } catch {
         if (current.current.identity === identity) {
           replace({
             ...current.current,
-            pending: false,
+            saving: false,
+          uploading: false,
             error:
               'История не сохранена. При конфликте с другой вкладкой сохраните текст и обновите страницу.',
           });
@@ -944,8 +664,11 @@ export function useProductStoryEditor({
 
   return {
     blocks: state.blocks,
+    canAddText: state.blocks.filter((block) => block.type !== 'IMAGE').length < STORY_LIMITS.maxTextBlocks,
+    canAddImage: state.blocks.filter((block) => block.type === 'IMAGE').length < STORY_LIMITS.maxImages,
     dirty: state.dirty,
-    pending: state.pending,
+    saving: state.saving,
+    uploading: state.uploading,
     error: state.error,
     storageError: state.storageError,
     recoveryText: state.recoveryText,
@@ -953,7 +676,7 @@ export function useProductStoryEditor({
     // Synchronous read for guard effects: rendered dirty/pending can lag one
     // commit behind when a save response lands before the effect phase.
     isEffectivelyClean: () =>
-      !current.current.dirty && !current.current.pending,
+      !current.current.dirty && !(current.current.saving || current.current.uploading),
     addText,
     editText,
     editAlt,

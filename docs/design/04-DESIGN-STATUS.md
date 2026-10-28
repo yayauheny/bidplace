@@ -5,6 +5,43 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-10-29 — Story upload revision, same geometry
+
+**Partial.** No layout, token, or frame change. Story upload now sends the
+editing revision that was current when the photo was selected. Chromium/WebKit
+story matrix 12/12 still passes. Wide exact Figma parity and native acceptance
+remain outside the claim. Evidence stays in the
+[W0 journal](../launch/waves/W0-photo-and-trunk.md).
+
+## 2026-10-29 — W0 regression acceptance refresh
+
+**Partial.** Runtime layout/tokens remain the previous story implementation. With
+explicit founder approval, browser specs now follow the separate author photo
+step and explicit Work photo upload before the story step. Text recovery, no
+duplicate writes and revision isolation assertions remain. save-race fixture
+changes add dimensions/MIME only. Story matrix12/12 passes on Chromium/WebKit.
+`8a5de85a` keeps an uncertain story photo across Continue, close and submit when
+the save owns the transition lock; geometry is unchanged. Final390×874 evidence
+and results belong to the [W0 journal](../launch/waves/W0-photo-and-trunk.md).
+Wide exact Figma parity and native acceptance remain outside the claim.
+
+## 2026-10-28 — W0 story editor ownership and styles
+
+**Partial.** `ProductDraftStoryStep` reads capacity from `useProductStoryEditor`,
+keeps text enabled while uploading and disables composition actions; saving still
+locks input. `ProductBlockActions` owns story/tile geometry through `variant`;
+PrivateStoryImage consumers share `authEpoch`. Styles moved to StyleSheet with
+existing typography, spacing, palette and accepted local Figma4563:32790 geometry;
+no new composition or DnD behavior. Empty virtual paragraph keeps its key/focus.
+Alt input keeps intermediate spaces and normalizes only on save; sequential
+keyboard entry is verified in Chromium/WebKit. Unknown upload outcomes reconcile
+before save or retain local text on failure.
+
+Owner/consumer119 tests and Chromium/WebKit story checks pass. Captures390×874
+before/after retain layout; all story states are pixel-identical except46 toolbar-edge pixels at1 RGB level in one Chromium frame. Existing toolbar deviations from Figma275×52 remain;
+wide parity is NEEDS-FIGMA and native remains Needs verification. Full mobile and
+protected E2E gates remain unclosed; [W0 journal](../launch/waves/W0-photo-and-trunk.md#журнал-исполнения-2026-10-28).
+
 ## 2026-10-28 — Story interaction and opening avatar acceptance
 
 **Partial.** Supersedes the control-gutter claims below: the selected story block

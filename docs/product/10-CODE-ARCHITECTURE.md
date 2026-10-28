@@ -1,12 +1,13 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-26
+Последнее обновление: 2026-10-29
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## 2026-10-26 — Photo workflow (DEC-148)
 
-`product-draft-image-actions.ts` owns selection, exact-byte session deduplication,
-sequential preparation/upload, addressed retry and confirmed server order.
+`product-draft-image-actions.ts` owns selection, sequential preparation/upload,
+addressed retry and confirmed server order. Client byte-deduplication was removed
+by `DEC-151`; the server retains operation identity and input checksums.
 `chooseImages()` now adds local cards; `startUpload()` is explicit. Save remains
 before picker; `persistDirtyForm()` waits for active saves and current React Hook
 Form dirtiness before delayed upload without duplicating the form state model.
@@ -54,17 +55,47 @@ resizable frame. Native CropZoom embeds the approved screen; a modal-only native
 cropper would replace it. Chromium/WebKit isolated prototype checked transform,
 reset/cancel, crop output and PNG transparency. Device calibration remains open.
 
-Client refinement2026-10-27: `WorkPhotoCard` keeps a session-only source SHA-256
-(`expo-crypto`, computed before app transforms) and a transient local preview
-until remote decode. It is not an authoritative server checksum or shared-asset
-lookup. Load callbacks are guarded by session/card/current URI; generated and
-picker blob resources retire after switch/removal/session cleanup. Existing
-resilient-image retries still own remote failures. `useProductStoryEditor` omits
-blank text at serialization while retaining meaningful block keys. No server,
-database, API or media-ownership contract changed. Automatic server reuse of an
-identical file selected for gallery and story is **Not implemented**; the session
-hash is not that feature. The story UI now supplies its virtual empty field key
-when adding the first block, preserving input identity through adoption.
+Client refinement 2026-10-28 (`DEC-151`): gallery after `preparePhotoEdit` and
+story selection both call `prepareImageUpload` with `WORK_PHOTO_PREPARE`
+(3840px / 10 MiB / 25 MiB source / quality0.85, PNG retained). Crops and avatar
+policy keep their existing owners. `WorkPhotoCard` retains the local preview until
+remote decode; URI callbacks and disposal remain session-scoped.
+`useProductStoryEditor` separates saving from uploading: text stays editable
+during upload, composition actions wait, and save still blocks mutations.
+Editable alt retains spaces; serialization trims it or produces null.
+Before story PUT, an uncertain upload is reconciled once via the internal keyed
+upload (`8a5de85a`). Public `addImage` still refuses a user transition lock;
+save calls that same upload without the lock because the save owns it. Pending
+selection is dirty at staging, so Continue, close and submit do not skip the
+save. Replay failure prevents PUT and keeps text/file/key; identity and owner
+guards are checked again after waiting. This prevents cleanup of an unseen
+accepted upload during a text-only save. Story upload also sends
+`X-Photo-Revision` (`8a6e3620`). The client captures the editing revision with
+the pending file. `ImagesService.addStoryImage` rejects a missing or different
+revision before staging and again after the Product lock; the operation row
+stores that revision atomically when the upload operation is created, before
+object writes, without putting it in the idempotency hash. Failed staging keeps
+the binding; existing unbound operations are bound conditionally before writes. A replay for
+another revision is 409 and does not create a hold. The same revision can still
+replay a lost response, including at the five-photo limit. `story-local-draft.ts` owns mandatory-v2 serialization,
+identity restore and recovery-only quarantine of old unscoped v2 copies;
+v1/content merging and adoption from unscoped keys are removed. This quarantine
+preserves the protected revision recovery regression without applying old text.
+
+`replaceProductStory` releases only unused `STORY_IMAGE` holds of the editing
+revision after writing blocks, under the existing Product lock and in the same
+transaction as `MediaLifecycleService.enqueueCleanup`. Gallery holds and other
+revisions are excluded; the client no longer issues post-save DELETEs.
+`ImagesService` checks five-hold admission before staging and repeats it under
+the Product lock; attached keyed uploads can replay at capacity. Cleanup retains
+its existing reference/asset-lock checks. One story asset referenced by two
+revisions stays `READY` with its bytes after the first revision releases its
+hold (`080bc7c6`); cleanup code did not change. `prepareImageUpload` deletes an
+encoding that is too large or cannot be read through `deleteGeneratedImage`
+(`ec860de9`) and keeps the source file and the URI it returns. `tick`, claim and outstanding-work
+selection exclude twenty-attempt operations; terminal failure preserves
+`nextAttemptAt` and logs only operation id/kind once. No database migration.
+Shared-byte lookup (`DEC-112`), story CDN and native acceptance remain open.
 
 ## 2026-10-05 — Cloudflare application deployment (Partial)
 
@@ -696,7 +727,8 @@ resize oversized sources without cropping or flattening alpha. Derivatives are
 built from the persisted master, so upload recovery can reproduce their checksums.
 
 An idempotent gallery request accepts one JPEG/PNG/WebP up to 25 MiB; legacy
-multi-file requests and story uploads retain the 5 MiB input limit. Gallery input is bounded at 8192px per edge / 50_331_648 pixels;
+multi-file requests retain 5 MiB; story input is 10 MiB (`DEC-151`). Gallery and
+story input is bounded at 8192px per edge / 50_331_648 pixels;
 stored masters and other purposes retain 4096px / 16_777_216 pixels. `WorkImageUploadInterceptor` keeps large
 input single-file, avoiding a ten-file 250 MiB buffered request. Gallery admission
 allows 20 requests/minute for the initial ten files and manual retries; the shared
@@ -717,7 +749,7 @@ Back/unload are guarded during preparation/upload. Preparation and per-file
 results use existing UI components; portrait preparation uses the Expo helper
 from PR #56, with a final 640px fallback instead of 256px.
 
-Review corrections (2026-10-23): gallery input is bounded at 8192px per edge /
+Review corrections (2026-10-23; story extended by `DEC-151`): gallery/story input is bounded at 8192px per edge /
 50_331_648 pixels; stored masters and other purposes retain 4096px / 16_777_216
 pixels. Compact 16-bit PNGs remain byte-identical. Oversized artwork is encoded
 at quality 90/82/70, then resized to 2560/1600px with a final 1600px quality-60

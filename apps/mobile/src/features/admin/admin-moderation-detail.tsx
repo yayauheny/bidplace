@@ -468,7 +468,7 @@ export function AdminModerationDetail({
                                   <PrivateStoryImage
                                     productId={id}
                                     mediaAssetId={block.mediaAssetId}
-                                    sessionEpoch={currentAuthEpoch(queryClient)}
+                                    authEpoch={currentAuthEpoch(queryClient)}
                                     label={block.altText ?? 'Этап создания'}
                                     style={{
                                       width: '100%',
@@ -890,7 +890,7 @@ function StoryComparison({
                   <PrivateStoryImage
                     productId={detail.data.entity.id}
                     mediaAssetId={block.mediaAssetId}
-                    sessionEpoch={currentAuthEpoch(client)}
+                    authEpoch={currentAuthEpoch(client)}
                     label={block.altText ?? 'Этап создания'}
                     style={{
                       width: '100%',

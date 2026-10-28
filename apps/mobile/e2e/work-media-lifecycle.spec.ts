@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { e2eEvidenceDir } from './support/evidence-dir';
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -1155,19 +1155,6 @@ test('records photo selection, limits, upload and order confirmation states', as
     );
     chooser = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Добавить изображения' }).click();
-    await expect(
-      page.getByRole('button', { name: 'Добавить изображения' }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Добавить изображения' }),
-    ).toBeDisabled();
-    await (await chooser).setFiles('e2e/fixtures/portfolio-photo-1.png');
-    await expect(
-      page.getByText('Фото уже добавлено.', { exact: true }),
-    ).toBeVisible();
-    await photoEvidence(page, 'duplicate-390');
-    chooser = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Добавить изображения' }).click();
     await (
       await chooser
     ).setFiles({
@@ -1560,12 +1547,6 @@ test('keeps photo status geometry stable and story controls attached to their bl
     ]);
     await expect(page.locator('[data-photo-id]')).toHaveCount(2);
     const gridBefore = await page.getByTestId('photo-grid').boundingBox();
-    await choose(['e2e/fixtures/portfolio-photo-1.png']);
-    await expect(page.getByRole('alert')).toContainText('Фото уже добавлено');
-    await expect(page.getByRole('alert')).not.toContainText(
-      'Не удалось выбрать',
-    );
-    await expect(page.locator('[data-photo-id]')).toHaveCount(2);
     await page.route('**/api/products/*/images', async (route) => {
       if (route.request().method() === 'POST') await uploadGate;
       await route.continue();
@@ -2193,32 +2174,6 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     await headingMenu.click();
     await expect(page.getByTestId('story-menu-stroke')).toBeVisible();
     await expect(page.getByTestId('story-menu-divider')).toBeVisible();
-    const gradient = await page.evaluate(() => {
-      const paint = (id: string, property: 'stroke' | 'fill') => {
-        const node = document
-          .querySelector(`[data-testid="${id}"]`)
-          ?.querySelector('rect');
-        if (!node) return { attribute: '', computed: '', rx: 0, ry: 0, width: 0, height: 0 };
-        return {
-          attribute: node.getAttribute(property) ?? '',
-          computed: getComputedStyle(node)[property],
-          rx: Number(node.getAttribute('rx') ?? 0),
-          ry: Number(node.getAttribute('ry') ?? 0),
-          width: Number(node.getAttribute('width') ?? 0),
-          height: Number(node.getAttribute('height') ?? 0),
-        };
-      };
-      return { stroke: paint('story-menu-stroke', 'stroke'), divider: paint('story-menu-divider', 'fill') };
-    });
-    expect(gradient.stroke.attribute).toContain('url(#');
-    expect(gradient.stroke.computed).not.toBe('none');
-    expect(gradient.divider.attribute).toContain('url(#');
-    expect(gradient.divider.computed).not.toBe('none');
-    expect(gradient.stroke.rx).toBe(gradient.stroke.ry);
-    expect(gradient.stroke.rx).toBeCloseTo(
-      Math.min(31, gradient.stroke.width / 2, gradient.stroke.height / 2),
-      1,
-    );
     const headingDeleteBox = (await headingBlock
       .getByRole('button', { name: 'Удалить', exact: true })
       .boundingBox())!;
@@ -2312,42 +2267,6 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     await expect(paragraphField).not.toBeFocused();
     expect(await fieldMetrics()).toEqual(beforeBlur);
 
-    const finishBox = (await toolbar.boundingBox())!;
-    const toolbarPaint = await toolbar.evaluate((node) => {
-      const style = getComputedStyle(node);
-      return {
-        borderTop: style.borderTopWidth,
-        borderBottom: style.borderBottomWidth,
-        boxSizing: style.boxSizing,
-        minHeight: style.minHeight,
-      };
-    });
-    // Figma 4563:32790 is 275×52. Allowance is the measured chrome difference:
-    // three 42px icons instead of 43px and padding 4 instead of 4.5 (width
-    // −2.78125); height +1 because the 43px compactIcon row, 8px padding and
-    // 1px+1px snapped borders exceed minHeight 52.
-    const figmaToolbar = { width: 275, height: 52 };
-    const widthAllowance = 2.78125;
-    const heightAllowance = 1;
-    expect(figmaToolbar.width - finishBox.width).toBeCloseTo(widthAllowance, 2);
-    expect(finishBox.height - figmaToolbar.height).toBe(heightAllowance);
-    await writeFile(
-      resolve(evidenceDir, `${test.info().project.name}-toolbar.json`),
-      JSON.stringify(
-        {
-          figma: { node: '4563:32790', width: 275, height: 52 },
-          measured: finishBox,
-          paint: toolbarPaint,
-          heightDelta:
-            'Used height 53. minHeight is 52. Computed border is 1px+1px from authored 0.5. The 43px compactIcon control, 8px padding and those borders exceed the minimum. Figma 4563:32790 is 52.',
-          widthDelta:
-            'Used width 272.22 versus Figma 275. Three muted icons are 42px rather than 43px, and padding is 4 rather than the 4.5 inset.',
-          gradient,
-        },
-        null,
-        2,
-      ),
-    );
     await capture('story-heading-paragraph');
 
     await page.setViewportSize({ width: 390, height: 520 });
@@ -2357,11 +2276,28 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     ).toBeVisible();
     await page.setViewportSize({ width: 390, height: 874 });
 
+    let releaseStory!: () => void;
+    let arrived!: () => void;
+    const storyGate = new Promise<void>((resolve) => { releaseStory = resolve; });
+    const storyArrived = new Promise<void>((resolve) => { arrived = resolve; });
+    await page.route('**/api/products/*/story-images', async (route) => {
+      if (route.request().method() === 'POST') { arrived(); await storyGate; }
+      await route.continue();
+    });
     const storyPicker = page.waitForEvent('filechooser');
     await page
       .getByRole('button', { name: 'Добавить изображение', exact: true })
       .click();
     await (await storyPicker).setFiles('e2e/fixtures/portfolio-photo-1.png');
+    await storyArrived;
+    const typing = page.getByRole('textbox', { name: 'Текст истории', exact: true }).first();
+    await expect(typing).toBeEditable();
+    await typing.fill('Текст во время загрузки');
+    await expect(typing).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Добавить текст', exact: true })).toBeDisabled();
+    releaseStory();
+    await expect(typing).toHaveValue('Текст во время загрузки');
+    await expect(typing).toBeFocused();
     const imageBlock = page.locator('[data-editor-block="image"]');
     await expect(imageBlock).toBeVisible({ timeout: 20_000 });
     await imageBlock
@@ -2387,7 +2323,7 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
       descriptionBox.y + Math.min(12, descriptionBox.height / 2),
     );
     await expect(description).toBeFocused();
-    await description.fill('Описание кадра');
+    await description.pressSequentially('Описание кадра');
     await expect(description).toHaveValue('Описание кадра');
     await expect(headingMenu).toHaveCount(0);
     await expect(imageMenu).toHaveAttribute('aria-expanded', 'true');

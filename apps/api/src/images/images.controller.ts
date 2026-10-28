@@ -18,6 +18,7 @@ import {
 import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
+  STORY_LIMITS,
   productImageOrderRequestSchema,
   workPhotoEditRequestSchema,
   uuidSchema,
@@ -165,7 +166,7 @@ export class ImagesController {
   @UseInterceptors(
     FilesInterceptor('image', 1, {
       limits: {
-        fileSize: productImageUploadLimits.maxFileBytes,
+        fileSize: STORY_LIMITS.maxFileBytes + 1,
         files: 1,
       },
       fileFilter: (_request, file, done) =>
@@ -178,14 +179,18 @@ export class ImagesController {
     productId: string,
     @UploadedFiles() files: RawImageUpload[] = [],
     @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-photo-revision') expectedRevisionId?: string,
   ) {
     if (files.length !== 1)
       throw new BadRequestException('An image is required');
+    if (!expectedRevisionId)
+      throw new BadRequestException('Story upload requires a revision');
     return this.images.addStoryImage(
       auth.sub,
       productId,
       files[0]!,
       idempotencyKey,
+      parseBody(uuidSchema, expectedRevisionId),
     );
   }
 

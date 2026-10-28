@@ -675,6 +675,7 @@ describe('ordered block actions', () => {
         root.render(
           createElement(ProductBlockActions, {
             kind: 'text',
+          variant: 'story',
             editable: true,
             disabled,
             first: true,

@@ -16,6 +16,96 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — Partial staging keeps its original story revision
+
+**Partial.** Follow-up review reproduced a remaining `ImagesService` /
+`MediaLifecycleService.stage` boundary: after a private object write failed in
+R1, replay of its operation key in R2 returned201 and created a hold there.
+The upload operation now records its revision in the creation transaction before
+object writes. Retry retains that binding, and a conditional update supports
+existing unbound operations. The HTTP regression requires409 in R2, no hold in
+R2, and successful recovery in R1. No migration, UI or limits changed.
+API unit478/478, integration61/61, API typecheck/lint and dependency build pass.
+Verification results are recorded in the [W0 journal](../launch/waves/W0-photo-and-trunk.md).
+
+## 2026-10-29 — Story revision binding and rejected encodings
+
+**Partial.** `8a6e3620` requires `X-Photo-Revision` on story upload. The client
+stores the editing revision when the photo is selected and sends it again on
+replay. The API checks that revision before staging and after the Product lock.
+A replay for a different revision returns 409 and does not create a hold. A
+lost response on the same revision still returns the existing hold, and the
+five-photo limit stays. The revision is not part of the idempotency hash.
+
+`080bc7c6` covers one `mediaAssetId` held by two revisions. Saving the first
+releases only its hold. After cleanup, the second reference, `READY`, and the
+stored bytes remain. Production cleanup was not changed: the defect did not
+reproduce. `ec860de9` deletes a rejected encoding through `deleteGeneratedImage`
+when the result is too large or cannot be read; the source file and an accepted
+URI stay. `b4af2da2` types that spy. Verify on `9252cee8` rejected the unused
+parameter; `8b578f2d` uses the spy argument.
+
+Addressed checks: API image unit 34/34, api-client images 4/4, mobile
+prepare/editor/submit 131/131, integration `work-media-http` and
+`author-story-catalog` 18/18. Four-package typecheck, API/mobile lint, API
+build, and web export pass. Chromium/WebKit story matrix 12/12. Commands and
+the unchanged Partial scope are in the
+[W0 journal](../launch/waves/W0-photo-and-trunk.md). `DEC-112`, story CDN, and
+native acceptance stay open.
+
+## 2026-10-29 — W0 acceptance and main workflow preparation
+
+**Partial.** Supersedes the previous W0 gate refusal: founder explicitly approved
+metadata-only save-race fixture corrections, current browser flow/locators and
+main-only push checks. `d701f87a` keeps the same save/lease/concurrency assertions
+and uses revision-owned gallery positions; backing image identity and exact
+locked409 are checked. Browser flows explicitly upload photos and retain
+draft/revision recovery and no-extra-write assertions. Shared contract lint is
+clean. `8f610267` prepares Verify/production workflow and Workers CI branch for
+main; ops32/32 pass. No switch/reset/push/merge/deploy was performed. Actual
+cutover remains a founder action (W0 Task5).
+
+Review of `9a2bdf97..8f610267` required one fix. A pending first upload was not
+dirty, so transition owners skipped save, and keyed replay called public
+`addImage`, which the save's own transition lock blocked. `8a5de85a` marks that
+pending intent dirty at staging; public `addImage` still checks the user lock,
+and save calls the internal upload. Identity, owner and session guards stay.
+Photo limits are `DEC-151`. Published `DEC-150` on `fix/launch-docs-review`
+(`54925364`) is the deals decision.
+
+Mobile1138/1138, API476/476, integration59/59, contracts48/48, api-client51/51,
+Chromium/WebKit12/12 and ops32/32 pass. Four-package typecheck, API/mobile/shared
+lint and API/web builds pass. [W0 journal](../launch/waves/W0-photo-and-trunk.md)
+owns commands and results. Overall photos remain Partial: shared-byte reuse
+(`DEC-112`), story CDN and native acceptance are outside W0. Merge
+`fix/launch-docs-review` after this W0 review and before W1.
+
+## 2026-10-28 — W0 photo/story hardening (`DEC-151`)
+
+**Partial.** Tasks1–4 changes: `replaceProductStory` atomically releases unused
+story-purpose revision holds; `ImagesService.addStoryImage` checks admission
+before staging and under lock; `SharpImageProcessor` shares gallery/story pixel
+budgets. Contracts own 10MiB story input and ten gallery photos; 20MiB story
+aggregate budget removed. Media retries stop at20 without resetting timestamps.
+Client uploads use `WORK_PHOTO_PREPARE`; upload preserves story text/focus, blank
+alt becomes null at serialization while typing keeps spaces; server owns hold release.
+A save reconciles an uncertain upload by its existing key before PUT; failure
+preserves text and never releases an unseen hold. `story-local-draft.ts` owns v2;
+editor uses StyleSheet/tokens, old optional gallery branch removed.
+
+API unit476/476, addressed frontend119/119, four-package typecheck and web export
+pass. Integration57/59 (two gallery atomicity failures also on base). Story UI
+Chromium/WebKit4/4 pass, before/after390×874 stable (one frame has46 toolbar-edge pixels differing by1 RGB level).
+Mandatory browser gates6/12 pass; protected old selectors fail. Full mobile gate
+1127/1131 passes; four synthetic picker fixtures lack image metadata. The founder
+explicitly declined fixture changes; the protected gate remains unclosed. Assertions
+and timeouts remain intact. Independent review stopped at its usage limit; two
+concrete findings were reproduced and fixed (upload replay before save, alt typing). Shared lint finds two
+pre-existing duplicate enum imports in contracts/admin.ts. Full evidence and
+rulings: [W0 journal](../launch/waves/W0-photo-and-trunk.md#журнал-исполнения-2026-10-28).
+Task5 (main/CI/deploy) explicitly deferred. `DEC-112` reuse, story CDN and native
+acceptance remain open; no overall Implemented claim.
+
 ## 2026-10-28 — Launch plan and docs restructure
 
 - Not implemented: commerce (`DEC-149`): listings, bids, orders, reports, strikes,

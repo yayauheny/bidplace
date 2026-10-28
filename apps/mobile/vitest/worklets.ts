@@ -80,16 +80,4 @@ vi.mock('../src/features/sellers/photo-editor', async () => {
   };
 });
 
-// Native Expo hashing uses the same SHA-256 contract through Node in owner tests.
-vi.mock('expo-crypto', async () => {
-  const { createHash } = await import('node:crypto');
-  return {
-    CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
-    digest: async (algorithm: string, data: ArrayBuffer) =>
-      Uint8Array.from(
-        createHash(algorithm).update(new Uint8Array(data)).digest(),
-      ).buffer,
-  };
-});
-
 if (typeof URL.revokeObjectURL !== 'function') URL.revokeObjectURL = vi.fn();

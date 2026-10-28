@@ -11,6 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  STORY_LIMITS,
   photoCropSchema,
   workPhotoResultSchema,
   type WorkPhotoResult,
@@ -1195,7 +1196,8 @@ export class ImagesService {
     userId: string,
     productId: string,
     file: RawImageUpload,
-    idempotencyKey?: string,
+    idempotencyKey: string | undefined,
+    expectedRevisionId: string,
   ) {
     if (!this.media?.enabled) {
       throw new ConflictException('Story images require the media pipeline');
@@ -1207,39 +1209,100 @@ export class ImagesService {
       throw new BadRequestException('Invalid idempotency key');
     }
     // Match gallery uploads: reject non-owners before staging bytes in R2.
-    await this.requireEditableOwner(this.prisma, userId, productId);
+    const product = await this.requireEditableOwner(this.prisma, userId, productId);
+    if (product.editingRevisionId !== expectedRevisionId) {
+      throw new ConflictException('Product editing revision changed');
+    }
     const media = this.media;
+    // The idempotency identity stays stable across retries. The revision is a
+    // separate check: putting it only in this hash would make a later revision
+    // look like a new upload and create a hold there.
     const scopedKey = idempotencyKey
       ? createHash('sha256')
           .update(`${productId}:story:${idempotencyKey}`)
           .digest('hex')
       : undefined;
-    const asset = await media.stage(userId, 'STORY_IMAGE', file, scopedKey);
+    const uploadIdentity = scopedKey
+      ? mediaUploadIdentity(userId, 'STORY_IMAGE', scopedKey)
+      : undefined;
+    if (uploadIdentity) {
+      const prior = await this.prisma.mediaOperation.findUnique({
+        where: { identity: uploadIdentity },
+        select: { revisionId: true },
+      });
+      if (prior?.revisionId && prior.revisionId !== expectedRevisionId) {
+        throw new ConflictException(
+          'Upload identity belongs to an earlier revision',
+        );
+      }
+    }
+    const holds = await this.prisma.productRevisionStoryAsset.count({
+      where: { revisionId: expectedRevisionId },
+    });
+    if (holds >= STORY_LIMITS.maxImages) {
+      const operation = uploadIdentity
+        ? await this.prisma.mediaOperation.findUnique({
+            where: { identity: uploadIdentity },
+            include: { objects: { include: { object: true } } },
+          })
+        : null;
+      const source = operation?.objects.find(
+        (item) => item.object.variant === 'SOURCE',
+      )?.object;
+      const held =
+        source &&
+        (await this.prisma.productRevisionStoryAsset.findUnique({
+          where: {
+            revisionId_mediaAssetId: {
+              revisionId: expectedRevisionId,
+              mediaAssetId: source.assetId,
+            },
+          },
+        }));
+      if (!held) throw new ConflictException('Story image holds are full');
+    }
+    const asset = await media.stage(
+      userId,
+      'STORY_IMAGE',
+      file,
+      scopedKey,
+      false,
+      expectedRevisionId,
+    );
     return runReadCommittedTransaction(this.prisma, async (tx) => {
-      const product = await this.requireWritableOwnerInTx(
-        tx,
-        userId,
-        productId,
-      );
-      if (!product.editingRevisionId) {
-        throw new ConflictException('Product editing revision is missing');
+      const locked = await this.requireWritableOwnerInTx(tx, userId, productId);
+      if (locked.editingRevisionId !== expectedRevisionId) {
+        throw new ConflictException('Product editing revision changed');
+      }
+      if (uploadIdentity) {
+        const operation = await tx.mediaOperation.findUnique({
+          where: { identity: uploadIdentity },
+          select: { revisionId: true },
+        });
+        if (operation?.revisionId && operation.revisionId !== expectedRevisionId) {
+          throw new ConflictException(
+            'Upload identity belongs to an earlier revision',
+          );
+        }
       }
       await media.assertNotPending(tx, { productId });
-      const revisionId = product.editingRevisionId;
       const held = await tx.productRevisionStoryAsset.findUnique({
         where: {
-          revisionId_mediaAssetId: { revisionId, mediaAssetId: asset.id },
+          revisionId_mediaAssetId: {
+            revisionId: expectedRevisionId,
+            mediaAssetId: asset.id,
+          },
         },
       });
       if (!held) {
         const holds = await tx.productRevisionStoryAsset.count({
-          where: { revisionId },
+          where: { revisionId: expectedRevisionId },
         });
-        if (holds >= 5) {
+        if (holds >= STORY_LIMITS.maxImages) {
           throw new ConflictException('Story image holds are full');
         }
         await tx.productRevisionStoryAsset.create({
-          data: { revisionId, mediaAssetId: asset.id },
+          data: { revisionId: expectedRevisionId, mediaAssetId: asset.id },
         });
       }
       await media.attach(tx, asset.id);

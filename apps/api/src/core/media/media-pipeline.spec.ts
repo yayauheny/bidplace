@@ -114,19 +114,24 @@ describe('media pipeline', () => {
     expect((await sharp(master!.bytes).metadata()).bitsPerSample).toBe(16);
   });
 
-  it('accepts a 48MP phone photo and bounds the stored master to 4096px', async () => {
+  it.each(['WORK_IMAGE', 'STORY_IMAGE'] as const)('accepts a 48MP phone photo for %s and bounds the stored master to 4096px', async (purpose) => {
     const source = await sharp({ create: { width: 8064, height: 6048, channels: 3, background: '#83a6c9' } }).jpeg().toBuffer();
-    const [master] = await processor.process({ buffer: source, mimetype: 'image/jpeg' }, 'WORK_IMAGE');
+    const [master] = await processor.process({ buffer: source, mimetype: 'image/jpeg' }, purpose);
     expect(master!.width).toBe(4096);
     expect(master!.height).toBe(3072);
     expect(master!.bytes.length).toBeLessThanOrEqual(5 * 1024 * 1024);
-    await expect(processor.process({ buffer: source, mimetype: 'image/jpeg' }, 'STORY_IMAGE')).rejects.toThrow();
   });
 
-  it('rejects inputs beyond the separate source edge ceiling', async () => {
+  it.each(['WORK_IMAGE', 'STORY_IMAGE'] as const)('rejects %s inputs beyond the source edge ceiling', async (purpose) => {
     const source = await sharp({ create: { width: 8193, height: 10, channels: 3, background: 'red' } }).png().toBuffer();
-    await expect(processor.process({ buffer: source, mimetype: 'image/png' }, 'WORK_IMAGE')).rejects.toThrow('8192px');
+    await expect(processor.process({ buffer: source, mimetype: 'image/png' }, purpose)).rejects.toThrow('8192px');
   });
+  it('accepts a 12MP story phone photo', async () => {
+    const buffer = await sharp({ create: { width: 4032, height: 3024, channels: 3, background: 'blue' } }).jpeg().toBuffer();
+    const [master] = await processor.process({ buffer, mimetype: 'image/jpeg' }, 'STORY_IMAGE');
+    expect([master!.width, master!.height]).toEqual([4032, 3024]);
+  });
+
   it('preserves SOURCE bytes and strips metadata from bounded sRGB WebP derivatives', async () => {
     const source = await sharp({
       create: {
@@ -230,7 +235,7 @@ describe('media pipeline', () => {
     );
   }, 30_000);
 
-  it('rejects the input byte ceiling and keeps the story input contract at 5 MiB', async () => {
+  it('rejects the input byte ceiling and keeps the story input contract at 10 MiB', async () => {
     await expect(
       processor.process(
         { buffer: Buffer.alloc(25 * 1024 * 1024 + 1), mimetype: 'image/png' },
@@ -239,10 +244,10 @@ describe('media pipeline', () => {
     ).rejects.toThrow('26214400 bytes');
     await expect(
       processor.process(
-        { buffer: Buffer.alloc(5 * 1024 * 1024 + 1), mimetype: 'image/png' },
+        { buffer: Buffer.alloc(10 * 1024 * 1024 + 1), mimetype: 'image/png' },
         'STORY_IMAGE',
       ),
-    ).rejects.toThrow('5242880 bytes');
+    ).rejects.toThrow('10485760 bytes');
   });
 
   it('rejects mismatched MIME and corrupt payloads', async () => {

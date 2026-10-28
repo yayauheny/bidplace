@@ -62,9 +62,9 @@ import { useProductDraftBrowserHistoryGuard } from './product-draft-browser-guar
 import { PhotoEditor } from './photo-editor';
 import { useProductDraftImageActions } from './product-draft-image-actions';
 import { useProductDraftNavigation } from './product-draft-navigation';
+import { storyLocalDraftSchema } from './story-local-draft';
 import {
   useProductStoryEditor,
-  storyLocalDraftSchema,
   type ProductStoryEditor,
 } from './use-product-story-editor';
 import {
@@ -199,7 +199,7 @@ export function ProductDraftScreen({
   });
 
   const uploadUnfinished =
-    imageActions.uploadFiles.some((file) => file.status !== 'done') ||
+    imageActions.photoCards.some((file) => file.status !== 'done') ||
     !imageActions.photoOrderConfirmed;
   const uploadBusy =
     imageActions.choosingImages ||
@@ -210,7 +210,7 @@ export function ProductDraftScreen({
     uploadPending: uploadBusy,
     isDirty: form.formState.isDirty,
     storyDirty: storyEditor.dirty,
-    storyPending: storyEditor.pending,
+    storyPending: (storyEditor.saving || storyEditor.uploading),
     draftEffectivelyClean: () =>
       !form.formState.isDirty && storyEditor.isEffectivelyClean(),
     productId,
@@ -380,17 +380,17 @@ export function ProductDraftScreen({
             }
             onStepPress={(step) => void wizardNavigation.moveToWizardStep(step)}
             storyBarDisabled={
-              storyEditor.pending || session.inputsLocked || uploadBusy
+              (storyEditor.saving || storyEditor.uploading) || session.inputsLocked || uploadBusy
             }
             closeLabel={
               form.formState.isDirty || storyEditor.dirty
                 ? 'Сохранить и закрыть'
                 : 'Закрыть'
             }
-            closeLoading={session.save.isPending || storyEditor.pending}
+            closeLoading={session.save.isPending || (storyEditor.saving || storyEditor.uploading)}
             closeDisabled={
               session.submit.isPending ||
-              storyEditor.pending ||
+              (storyEditor.saving || storyEditor.uploading) ||
               session.inputsLocked
             }
             onClose={() => {
@@ -500,7 +500,6 @@ export function ProductDraftScreen({
               reorderPending={imageActions.reorderImages.isPending}
               removePending={imageActions.removeImage.isPending}
               uploadPending={uploadBusy || imageActions.removeImage.isPending}
-              uploadFiles={imageActions.uploadFiles}
               photoCards={imageActions.photoCards}
               photoOrderError={imageActions.photoOrderError}
               photoPreparationError={imageActions.photoPreparationError}
@@ -543,7 +542,7 @@ export function ProductDraftScreen({
           (!isCreationFlow || wizardStep === productWizardStep.story) ? (
             <ProductDraftStoryStep
               productId={existingProduct.id}
-              sessionEpoch={authEpoch}
+              authEpoch={authEpoch}
               isCreationFlow={isCreationFlow}
               images={existingProduct.images}
               blocks={storyEditor.blocks}
@@ -554,9 +553,12 @@ export function ProductDraftScreen({
                   : undefined
               }
               editable={editable && !session.inputsLocked && !storyNeedsDraft}
-              savePending={storyEditor.pending || session.save.isPending}
+              savePending={storyEditor.saving || session.save.isPending}
+              uploading={storyEditor.uploading}
               saveError={storyEditor.error}
               retryUpload={storyEditor.retryUpload}
+              canAddText={storyEditor.canAddText}
+              canAddImage={storyEditor.canAddImage}
               onAddText={storyEditor.addText}
               onEditText={storyEditor.editText}
               onEditAlt={storyEditor.editAlt}
@@ -581,7 +583,7 @@ export function ProductDraftScreen({
                 techniqueTerms: data.techniquesCatalog.data?.terms ?? [],
               }}
               productId={existingProduct.id}
-              sessionEpoch={authEpoch}
+              authEpoch={authEpoch}
               images={existingProduct.images}
               blocks={storyEditor.blocks}
               editable={editable && !session.inputsLocked}
@@ -590,7 +592,7 @@ export function ProductDraftScreen({
               submitPending={
                 session.submit.isPending ||
                 session.save.isPending ||
-                storyEditor.pending
+                (storyEditor.saving || storyEditor.uploading)
               }
               submitError={session.submit.isError}
               onSubmitPress={() => void session.submitCurrentForm()}

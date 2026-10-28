@@ -84,8 +84,8 @@ Provider configuration and external acceptance are owned by [Web auth rollout](.
 | --- | --- | --- |
 | Authz before decode | Implemented | `ImagesService` runs owner + editable product + listing lock + `assertApprovedSeller` before Sharp; the persist TX repeats that guard under `SELECT … FOR UPDATE` |
 | Static images only | Implemented | Reject `image/gif` and animated WebP/PNG (`pages`/`frames`/`delay`) |
-| Pixel budgets | Implemented | Gallery input: **8192px / 50_331_648** pixels (`workImageInputPixelBudgets`); stored masters and other purposes: **4096px / 16_777_216** pixels (`productImagePixelBudgets`) |
-| Byte/file caps | Implemented | Existing `productImageUploadLimits` unchanged |
+| Pixel budgets | Implemented | Gallery/story input: **8192px / 50_331_648** pixels (`workImageInputPixelBudgets`); stored masters and other purposes: **4096px / 16_777_216** pixels (`productImagePixelBudgets`) |
+| Byte/file caps | Partial acceptance | Gallery input25 MiB, story input10 MiB, stored master5 MiB; no separate story aggregate budget (`DEC-151`). `WORK_PHOTO_LIMITS` and `STORY_LIMITS` own counts. Locked save releases only unused story-purpose holds; cleanup rechecks references, including a story asset still held by another revision. Story POST requires `X-Photo-Revision` and binds that revision; a replay for a different revision is 409 before a new hold. Rejected client encodings are deleted; the source and an accepted URI stay. Verification gaps: W0 journal. |
 | Decode outside TX | Implemented | Normalize outside the persist TX; short locked TX for status/listing/capacity check + insert |
 | Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
 | Upload rate limit | Implemented | `@RateLimit` 20/min per user on gallery upload POSTs; 10/min on creation-step uploads, author achievement upload/delete, and profile photo create/update. Author, achievement, and work decode share one process-local admission of two operations. |

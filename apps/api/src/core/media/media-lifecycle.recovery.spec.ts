@@ -1,6 +1,6 @@
 import { ImageProcessor } from '../../images/image-processor';
 import { SharpImageProcessor } from './media-pipeline';
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SERVER_ENV } from '../config';
@@ -121,6 +121,55 @@ Module({
 describe('media recovery scheduler', () => {
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('stops after twenty failures, warns once and lets neighboring work finish within the eight-operation batch', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const failed = { id: 'exhausted', kind: 'REVOKE', state: 'PENDING', attemptCount: 0, nextAttemptAt: new Date(), leaseToken: null as string | null,
+      objects: [{ objectId: 'object', object: { tier: 'PRIVATE', assetId: 'asset' } }] };
+    const neighbor = { ...failed, id: 'neighbor', objects: [] };
+    const rows = [failed, neighbor];
+    const findMany = vi.fn(async (query: { where: { attemptCount?: { lt: number } }; take: number }) => rows.filter((row) =>
+      row.state !== 'DONE' && row.nextAttemptAt <= new Date() && row.attemptCount < (query.where.attemptCount?.lt ?? Infinity),
+    ).slice(0, query.take).map(({ id }) => ({ id })));
+    const updateMany = vi.fn(async (query: { where: { id?: string; leaseToken?: string; state?: string; attemptCount?: { lt: number } }; data: Record<string, unknown> }) => {
+      const row = rows.find((item) => item.id === query.where.id);
+      if (!row || (query.where.leaseToken && row.leaseToken !== query.where.leaseToken) || row.attemptCount >= (query.where.attemptCount?.lt ?? Infinity)) return { count: 0 };
+      const { attemptCount, ...data } = query.data;
+      Object.assign(row, data);
+      if (attemptCount) row.attemptCount += 1;
+      return { count: 1 };
+    });
+    const client = {
+      $queryRaw: vi.fn(),
+      mediaOperation: {
+        findMany, updateMany,
+        findUnique: vi.fn(async ({ where }: { where: { id: string } }) => rows.find((row) => row.id === where.id)),
+        findUniqueOrThrow: vi.fn(async ({ where }: { where: { id: string } }) => rows.find((row) => row.id === where.id)),
+      },
+      mediaObject: { count: vi.fn().mockResolvedValue(0), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      mediaAsset: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaOperationObject: { count: vi.fn().mockRejectedValue(new Error('transport unavailable')) },
+    };
+    const media = new MediaLifecycleService({ ...client, $transaction: async (callback: (tx: typeof client) => Promise<unknown>) => callback(client) } as never,
+      {} as never, {} as never, recoveryEnv(), new SharpImageProcessor());
+    media.onModuleDestroy();
+    try {
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        await media.tick();
+        vi.setSystemTime(Date.now() + 15_000);
+      }
+      const deadline = failed.nextAttemptAt;
+      await media.tick();
+      await media.run(failed.id);
+      expect(failed.attemptCount).toBe(20);
+      expect(failed.state).toBe('FAILED');
+      expect(failed.nextAttemptAt).toBe(deadline);
+      expect(neighbor.state).toBe('DONE');
+      expect(findMany.mock.calls.every(([query]) => query.take === 8)).toBe(true);
+      expect(warn.mock.calls).toEqual([['Media operation exhausted retries: exhausted REVOKE']]);
+    } finally { warn.mockRestore(); }
   });
 
   it('does not poll after a healthy empty startup', async () => {

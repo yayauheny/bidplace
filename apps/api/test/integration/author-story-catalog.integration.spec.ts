@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
+
+import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
+import { syntheticServerEnv } from '../../src/core/config/synthetic-server-env';
+import { SharpImageProcessor } from '../../src/core/media/media-pipeline';
 
 import { bootstrapCatalog } from '../../src/catalog/catalog-bootstrap';
 import {
@@ -181,6 +185,131 @@ async function storyAsset(ownerId: string, revisionId: string) {
 }
 
 describe('author story, catalog, and proposals', () => {
+  it('atomically releases unused story holds without releasing gallery or other revision holds', async () => {
+    await bootstrapCatalog(prisma as never);
+    const { owner, profile, painting } = await authorWithoutCity();
+    const work = await draftWork(owner.id, profile.id, 'Hold cleanup', painting.id);
+    const assets = await Promise.all(Array.from({ length: 5 }, () => storyAsset(owner.id, work.revision.id)));
+    const gallery = await storyAsset(owner.id, work.revision.id);
+    await prisma.mediaAsset.update({ where: { id: gallery.id }, data: { purpose: 'WORK_IMAGE' } });
+    await prisma.productImage.update({ where: { id: work.image.id }, data: { mediaAssetId: gallery.id } });
+    const otherRevision = await prisma.productRevision.create({ data: {
+      productId: work.product.id, version: 2, status: 'DRAFT', title: 'Other revision', categoryId: painting.id,
+    } });
+    const other = await storyAsset(owner.id, otherRevision.id);
+    http.app.get(MediaLifecycleService).onModuleDestroy();
+    const remove = vi.fn().mockResolvedValue(undefined);
+    const media = new MediaLifecycleService(prisma as never, { delete: remove } as never, { purge: vi.fn() } as never, syntheticServerEnv(), new SharpImageProcessor());
+    media.onModuleDestroy();
+    try {
+      const saved = await owner.client.put(`/products/${work.product.id}/creation`, {
+        storyToken: 0,
+        blocks: [...assets.slice(0, 3), gallery].map((asset) => ({ type: 'IMAGE', mediaAssetId: asset.id })),
+      });
+      expect(saved.status).toBe(200);
+      const storyHolds = () => prisma.productRevisionStoryAsset.count({ where: {
+        revisionId: work.revision.id, mediaAsset: { purpose: 'STORY_IMAGE' },
+      } });
+      expect(await storyHolds()).toBe(3);
+      expect(await prisma.mediaOperation.count({ where: { kind: 'CLEANUP' } })).toBe(2);
+      await media.tick();
+      expect(await prisma.mediaAsset.count({ where: { id: { in: assets.slice(3).map((a) => a.id) }, state: 'FAILED' } })).toBe(2);
+      expect(await prisma.mediaObject.count({ where: { assetId: { in: assets.slice(3).map((a) => a.id) }, state: 'DELETED' } })).toBe(2);
+      const again = await owner.client.put(`/products/${work.product.id}/creation`, {
+        storyToken: 1,
+        blocks: assets.slice(0, 2).map((asset) => ({ type: 'IMAGE', mediaAssetId: asset.id })),
+      });
+      expect(again.status).toBe(200);
+      expect(await storyHolds()).toBe(2);
+      expect(await prisma.productRevisionStoryAsset.count({ where: { mediaAssetId: { in: [gallery.id, other.id] } } })).toBe(2);
+      expect(await prisma.mediaOperationObject.count({ where: { object: { assetId: gallery.id } } })).toBe(0);
+      await media.tick();
+      expect(await prisma.mediaAsset.findUniqueOrThrow({ where: { id: gallery.id } })).toMatchObject({ state: 'READY' });
+      expect(remove).toHaveBeenCalledTimes(3);
+    } finally {
+      remove.mockRestore();
+    }
+  });
+
+  it('keeps a shared story asset after one revision releases its hold', async () => {
+    await bootstrapCatalog(prisma as never);
+    const { owner, profile, painting } = await authorWithoutCity();
+    const work = await draftWork(owner.id, profile.id, 'Shared asset', painting.id);
+    const shared = await storyAsset(owner.id, work.revision.id);
+    const otherRevision = await prisma.productRevision.create({
+      data: {
+        productId: work.product.id,
+        version: 2,
+        status: 'DRAFT',
+        title: 'Shared revision',
+        categoryId: painting.id,
+      },
+    });
+    await prisma.productRevisionStoryAsset.create({
+      data: { revisionId: otherRevision.id, mediaAssetId: shared.id },
+    });
+    await prisma.productRevisionStoryBlock.create({
+      data: {
+        revisionId: otherRevision.id,
+        position: 0,
+        type: 'IMAGE',
+        mediaAssetId: shared.id,
+      },
+    });
+    const object = await prisma.mediaObject.findFirstOrThrow({
+      where: { assetId: shared.id, variant: 'SOURCE' },
+    });
+    const bytes = Buffer.from('shared-story-bytes');
+    const stored = new Map<string, Buffer>([
+      [`${object.tier}:${object.objectKey}`, bytes],
+    ]);
+    http.app.get(MediaLifecycleService).onModuleDestroy();
+    const media = new MediaLifecycleService(
+      prisma as never,
+      {
+        delete: async (tier: string, key: string) => {
+          stored.delete(`${tier}:${key}`);
+        },
+      } as never,
+      { purge: vi.fn() } as never,
+      syntheticServerEnv(),
+      new SharpImageProcessor(),
+    );
+    media.onModuleDestroy();
+    try {
+      const saved = await owner.client.put(`/products/${work.product.id}/creation`, {
+        storyToken: 0,
+        blocks: [],
+      });
+      expect(saved.status).toBe(200);
+      expect(
+        await prisma.productRevisionStoryAsset.count({
+          where: { revisionId: work.revision.id, mediaAssetId: shared.id },
+        }),
+      ).toBe(0);
+      expect(
+        await prisma.productRevisionStoryAsset.count({
+          where: { revisionId: otherRevision.id, mediaAssetId: shared.id },
+        }),
+      ).toBe(1);
+      await media.tick();
+      expect(
+        await prisma.mediaAsset.findUniqueOrThrow({ where: { id: shared.id } }),
+      ).toMatchObject({ state: 'READY' });
+      expect(
+        await prisma.mediaObject.findUniqueOrThrow({ where: { id: object.id } }),
+      ).toMatchObject({ state: 'READY' });
+      expect(stored.get(`${object.tier}:${object.objectKey}`)).toEqual(bytes);
+      expect(
+        await prisma.productRevisionStoryBlock.count({
+          where: { revisionId: otherRevision.id, mediaAssetId: shared.id },
+        }),
+      ).toBe(1);
+    } finally {
+      media.onModuleDestroy();
+    }
+  });
+
   it('bootstraps starter dictionaries without overwriting admin edits', async () => {
     await bootstrapCatalog(prisma as never);
     const before = await prisma.category.findUniqueOrThrow({
@@ -1028,6 +1157,21 @@ describe('author story, catalog, and proposals', () => {
     );
   });
 
+  it('accepts five 9 MiB story sources without a separate aggregate budget', async () => {
+    await bootstrapCatalog(prisma as never);
+    const { owner, profile, painting } = await authorWithoutCity();
+    const work = await draftWork(owner.id, profile.id, 'Five sources', painting.id);
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      const asset = await storyAsset(owner.id, work.revision.id);
+      await prisma.mediaObject.updateMany({ where: { assetId: asset.id }, data: { byteLength: 9 * 1024 * 1024 } });
+      ids.push(asset.id);
+    }
+    expect((await owner.client.put(`/products/${work.product.id}/creation`, {
+      storyToken: 0, blocks: ids.map((mediaAssetId) => ({ type: 'IMAGE', mediaAssetId })),
+    })).status).toBe(200);
+  });
+
   it('repeats a story asset without multiplying bytes and searches published terms', async () => {
     await bootstrapCatalog(prisma as never);
     const { owner, profile, painting } = await authorWithoutCity();
@@ -1066,20 +1210,6 @@ describe('author story, catalog, and proposals', () => {
       blocks: [{ type: 'IMAGE', mediaAssetId: foreign.id }],
     });
     expect(rejectedAsset.status).toBe(409);
-    const heavyIds = [];
-    for (let index = 0; index < 5; index += 1) {
-      const heavy = await storyAsset(owner.id, work.revision.id);
-      await prisma.mediaObject.updateMany({
-        where: { assetId: heavy.id, variant: 'SOURCE' },
-        data: { byteLength: 4_194_305 },
-      });
-      heavyIds.push(heavy.id);
-    }
-    const overBudget = await owner.client.put(`/products/${work.product.id}/creation`, {
-      storyToken: 1,
-      blocks: heavyIds.map((mediaAssetId) => ({ type: 'IMAGE' as const, mediaAssetId })),
-    });
-    expect(overBudget.status).toBe(409);
     const canvas = await prisma.catalogTerm.findUniqueOrThrow({
       where: { role_slug: { role: 'MATERIAL', slug: 'canvas' } },
     });

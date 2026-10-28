@@ -320,7 +320,7 @@ export function useProductDraftSaveSession({
   const persistAll = async (mode: 'ordinary' | 'transition' = 'ordinary') => {
     const storyEditor = storyEditorSlot.current;
     // Never release a route guard while another transition or save is in flight.
-    if (transitionLock.current || saveInFlight.current || storyEditor?.pending)
+    if (transitionLock.current || saveInFlight.current || (storyEditor?.saving || storyEditor?.uploading))
       return false;
     if (form.formState.isDirty) {
       if (!(await persistCurrentForm(mode))) return false;
@@ -342,7 +342,7 @@ export function useProductDraftSaveSession({
     const storyEditor = storyEditorSlot.current;
     if (
       saveInFlight.current ||
-      storyEditor?.pending ||
+      (storyEditor?.saving || storyEditor?.uploading) ||
       !beginLockedTransition()
     )
       return;

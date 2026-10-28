@@ -5,7 +5,11 @@ import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { workImageMaxInputBytes } from '@bidplace/contracts';
+import {
+  workImageMaxInputBytes,
+  type StoryWriteRequest,
+} from '@bidplace/contracts';
+import type { ProductDraftStoryStepProps } from './product-draft-story';
 import { ApiClientError, type ApiClient } from '@bidplace/api-client';
 import {
   ProductDraftImagesStep,
@@ -27,7 +31,13 @@ import {
   workPhotoSessionKey,
   type WorkPhotoSession,
 } from './work-photo-session';
+import { prepareImageUpload, WORK_PHOTO_PREPARE } from '../../lib/media/prepare-image-upload';
 import { originalPhotoEdit } from '../../lib/media/photo-edit';
+
+vi.mock('../../lib/media/prepare-image-upload', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/media/prepare-image-upload')>();
+  return { ...actual, prepareImageUpload: vi.fn(async (input: { uri: string; file?: File }) => ({ uri: input.uri, blob: input.file ?? await (await fetch(input.uri)).blob() })) };
+});
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 vi.mock('../../components/shared/PrivateStoryImage', () => ({
@@ -65,6 +75,9 @@ const harness = vi.hoisted(() => ({
   updateProduct: vi.fn(),
   submitProduct: vi.fn(),
   addImages: vi.fn(),
+  addStoryImage: vi.fn(),
+  replaceCreation: vi.fn(),
+  storyError: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
   reorderImages: vi.fn(),
   photoOperation: vi.fn(),
@@ -94,7 +107,26 @@ vi.mock('../../components/figma/FigmaIconButton', () => ({
 }));
 
 vi.mock('./product-draft-story', () => ({
-  ProductDraftStoryStep: () => null,
+  ProductDraftStoryStep: ({
+    onChooseImage,
+    onAddText,
+    onSaveAndContinue,
+    retryUpload,
+    blocks,
+  }: ProductDraftStoryStepProps) =>
+    createElement(
+      'div',
+      null,
+      createElement('button', { onClick: onChooseImage }, 'Выбрать фото истории'),
+      createElement('button', {
+        onClick: () => onAddText('PARAGRAPH', 'Текст после ошибки'),
+      }, 'Добавить текст истории'),
+      createElement('button', { onClick: onSaveAndContinue }, 'Продолжить историю'),
+      retryUpload ? createElement('span', null, 'Фото ожидает повтора') : null,
+      ...blocks.map((block) => createElement(
+        'span', { key: block.key }, block.type === 'IMAGE' ? 'Фото истории' : block.text,
+      )),
+    ),
 }));
 
 vi.mock('../../components/figma/FigmaChoiceChip', () => ({
@@ -185,9 +217,11 @@ vi.mock('../../providers/api-provider', () => ({
       create: vi.fn(),
       update: harness.updateProduct,
       submit: harness.submitProduct,
+      replaceCreation: harness.replaceCreation,
     },
     images: {
       add: harness.addImages,
+      addStoryImage: harness.addStoryImage,
       reorder: harness.reorderImages,
       photoOperation: harness.photoOperation,
       remove: harness.removeImages,
@@ -358,7 +392,7 @@ function detail(
   };
 }
 
-function mount(props: { flow?: string; stepParam?: '4' | '2' } = {}) {
+function mount(props: { flow?: string; stepParam?: '4' | '3' | '2' } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -421,6 +455,10 @@ beforeEach(() => {
   harness.updateProduct.mockReset();
   harness.submitProduct.mockReset();
   harness.addImages.mockReset();
+  vi.mocked(prepareImageUpload).mockImplementation(async (input) => ({ uri: input.uri, blob: input.file ?? await (await fetch(input.uri)).blob() }));
+  harness.addStoryImage.mockReset();
+  harness.replaceCreation.mockReset();
+  harness.storyError.mockReset();
   harness.launchImageLibraryAsync.mockReset();
   harness.addImages.mockImplementation(async () => ({
     ok: true,
@@ -520,7 +558,7 @@ function mountImageActions(
       existingProduct: { id: productId, images: [] },
       editorStatus,
       session: session as unknown as ProductDraftSaveSession,
-      storyEditor: {} as ProductStoryEditor,
+      storyEditor: { addImage: harness.addStoryImage, reportError: harness.storyError } as unknown as ProductStoryEditor,
     });
     return null;
   }
@@ -544,6 +582,27 @@ function mountImageActions(
 }
 
 describe('product draft submit lifecycle', () => {
+  it.each(['image/jpeg', 'image/png'])('prepares gallery and story %s with the shared photo options', async (mimeType) => {
+    const source = { uri: 'blob:phone', width: 6000, height: 4000, mimeType, file: new File([new Uint8Array(9 * 1024 * 1024)], 'phone', { type: mimeType }) };
+    const prepared = { uri: 'blob:prepared', blob: new Blob(['prepared'], { type: mimeType }) };
+    vi.mocked(prepareImageUpload).mockResolvedValue(prepared);
+    const view = mountImageActions();
+    try {
+      harness.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [source] });
+      await act(() => view.actions.chooseStoryImage());
+      expect(prepareImageUpload).toHaveBeenCalledWith(source, WORK_PHOTO_PREPARE);
+      expect(harness.addStoryImage).toHaveBeenCalledWith(prepared.blob);
+      expect(prepared.blob.size).toBeLessThanOrEqual(10 * 1024 * 1024);
+      expect(prepared.blob.type).toBe(mimeType);
+      harness.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [source] });
+      await act(() => view.actions.chooseImages());
+      await act(() => view.actions.startUpload());
+      await flush();
+      expect(prepareImageUpload).toHaveBeenLastCalledWith(source, WORK_PHOTO_PREPARE);
+      expect(harness.addImages.mock.calls.at(-1)?.[1]).toEqual([prepared.blob]);
+    } finally { view.unmount(); vi.mocked(prepareImageUpload).mockReset(); }
+  });
+
   it('recovers accepted bytes after closing while preserving the pending crop and clears resources on logout', async () => {
     const client = new QueryClient();
     const dispose = vi.fn();
@@ -751,13 +810,12 @@ describe('product draft submit lifecycle', () => {
     },
   );
 
-  it('deduplicates exact source bytes and allows reselecting a removed file', async () => {
+  it('accepts selected source files independently and allows reselecting a removed file', async () => {
     const asset = (bytes: string, name: string) => ({
       uri: `blob:${name}`,
       file: new File([bytes], name, { type: 'image/png' }),
     });
     const first = asset('same', 'first.png');
-    const firstRead = vi.spyOn(first.file, 'arrayBuffer');
     harness.launchImageLibraryAsync.mockResolvedValueOnce({
       canceled: false,
       assets: [
@@ -770,12 +828,8 @@ describe('product draft submit lifecycle', () => {
     try {
       await act(() => view.actions.chooseImages());
       await flush();
-      expect(view.actions.photoCards).toHaveLength(2);
-      expect(view.actions.imageSelectionError).toBe('Фото уже добавлено.');
-      expect(firstRead).toHaveBeenCalledTimes(1);
-      expect(view.actions.photoCards[0]?.sourceChecksum).toMatch(
-        /^[a-f0-9]{64}$/,
-      );
+      expect(view.actions.photoCards).toHaveLength(3);
+      expect(view.actions.imageSelectionError).toBeNull();
       await act(() => view.actions.removePhoto(view.actions.photoCards[0]!.id));
       harness.launchImageLibraryAsync.mockResolvedValueOnce({
         canceled: false,
@@ -783,7 +837,7 @@ describe('product draft submit lifecycle', () => {
       });
       await act(() => view.actions.chooseImages());
       await flush();
-      expect(view.actions.photoCards).toHaveLength(2);
+      expect(view.actions.photoCards).toHaveLength(3);
       expect(harness.addImages).not.toHaveBeenCalled();
     } finally {
       view.unmount();
@@ -1620,7 +1674,7 @@ describe('product draft submit lifecycle', () => {
       expect(selected).toBeDefined();
       expect(harness.addImages).not.toHaveBeenCalled();
       expect(read).not.toHaveBeenCalled();
-      expect(view.actions.uploadFiles).toEqual([]);
+      expect(view.actions.photoCards).toEqual([]);
       const selection = selected!;
       await act(async () => {
         const start = view.actions.startUpload(selection);
@@ -2336,6 +2390,7 @@ describe('photo status transitions', () => {
     const container = document.createElement('div');
     const root = createRoot(container);
     const props: ProductDraftImagesStepProps = {
+      photoCards: [],
       images: [],
       productStatus: 'DRAFT',
       editable: true,
@@ -2452,16 +2507,114 @@ describe('photo failure feedback', () => {
           root.render(
             createElement(ProductDraftImagesStep, {
               ...props,
-              imageSelectionError: 'Фото уже добавлено.',
+              imageSelectionError: 'Не удалось прочитать выбранное фото.',
             }),
           ),
         );
-        expect(container.textContent).not.toContain('Не удалось выбрать фото');
-        expect(container.textContent).toContain('Фото уже добавлено.');
+        expect(container.textContent).toContain('Не удалось выбрать фото');
+        expect(container.textContent).toContain('Не удалось прочитать выбранное фото.');
         expect(container.textContent).not.toContain(message);
       } finally {
         act(() => root.unmount());
       }
     },
   );
+});
+
+describe('uncertain story upload during a draft transition', () => {
+  async function chooseStoryPhoto(view: ReturnType<typeof mount>) {
+    await until(view.container, () => Boolean(button(view.container, 'Выбрать фото истории')), 'story');
+    harness.launchImageLibraryAsync.mockResolvedValueOnce({
+      canceled: false,
+      assets: [{
+        uri: 'blob:story',
+        file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+        width: 100,
+        height: 100,
+        mimeType: 'image/png',
+      }],
+    });
+    act(() => button(view.container, 'Выбрать фото истории')!.click());
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Фото ожидает повтора') === true,
+      'uncertain upload',
+    );
+  }
+
+  it.each([
+    ['continue', false],
+    ['continue', true],
+    ['close', false],
+    ['close', true],
+    ['submit', false],
+    ['submit', true],
+  ] as const)('replays the first photo before %s with dirty text=%s', async (action, withText) => {
+    const mediaAssetId = '66666666-6666-4666-8666-666666666666';
+    harness.addStoryImage
+      .mockRejectedValueOnce(new Error('response lost after attach'))
+      .mockResolvedValueOnce({ mediaAssetId });
+    harness.replaceCreation.mockImplementation(async (_id: string, request: StoryWriteRequest) => ({
+      storyToken: 1,
+      blocks: request.blocks.map((block, position) => ({ ...block, id: crypto.randomUUID(), position })),
+    }));
+    harness.submitProduct.mockResolvedValue({ product: product('PENDING_REVIEW') });
+    const view = mount(action === 'submit' ? {} : { flow: 'creation', stepParam: '3' });
+    await chooseStoryPhoto(view);
+    if (withText) act(() => button(view.container, 'Добавить текст истории')!.click());
+    const label = action === 'continue' ? 'Продолжить историю'
+      : action === 'close' ? 'Сохранить и закрыть' : 'Отправить на модерацию';
+    act(() => (button(view.container, label) ?? button(view.container, 'Закрыть'))!.click());
+    await until(view.container, () => harness.replaceCreation.mock.calls.length === 1, 'replayed story save');
+
+    expect(harness.addStoryImage).toHaveBeenCalledTimes(2);
+    expect(harness.addStoryImage.mock.calls[1]?.[2]).toBe(harness.addStoryImage.mock.calls[0]?.[2]);
+    expect(harness.addStoryImage.mock.calls[0]?.[3]).toBe(
+      '22222222-2222-4222-8222-222222222222',
+    );
+    expect(harness.addStoryImage.mock.calls[1]?.[3]).toBe(
+      harness.addStoryImage.mock.calls[0]?.[3],
+    );
+    expect(harness.addStoryImage.mock.invocationCallOrder[1])
+      .toBeLessThan(harness.replaceCreation.mock.invocationCallOrder[0]!);
+    expect(harness.replaceCreation.mock.calls[0]?.[1].blocks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'IMAGE', mediaAssetId }),
+    ]));
+    if (withText) {
+      expect(harness.replaceCreation.mock.calls[0]?.[1].blocks).toEqual(expect.arrayContaining([
+        expect.objectContaining({ text: 'Текст после ошибки' }),
+      ]));
+    }
+    if (action === 'continue') {
+      await until(view.container, () => harness.setParams.mock.calls.some(([params]) => params.step === '4'), 'review step');
+    }
+    if (action === 'close') {
+      await until(view.container, () => harness.replace.mock.calls.some(([path]) => path === '/profile'), 'close after save');
+    }
+    if (action === 'submit') {
+      await until(view.container, () => harness.submitProduct.mock.calls.length === 1, 'submit after save');
+      expect(harness.replaceCreation.mock.invocationCallOrder[0])
+        .toBeLessThan(harness.submitProduct.mock.invocationCallOrder[0]!);
+    }
+    view.unmount();
+  });
+
+  it('retains a failed photo and text when replay fails during Continue', async () => {
+    harness.addStoryImage.mockRejectedValue(new Error('offline'));
+    const view = mount({ flow: 'creation', stepParam: '3' });
+    await chooseStoryPhoto(view);
+    act(() => button(view.container, 'Добавить текст истории')!.click());
+    act(() => button(view.container, 'Продолжить историю')!.click());
+    await flush();
+
+    expect(harness.addStoryImage).toHaveBeenCalledTimes(2);
+    expect(harness.replaceCreation).not.toHaveBeenCalled();
+    expect(harness.submitProduct).not.toHaveBeenCalled();
+    expect(harness.setParams).not.toHaveBeenCalledWith(expect.objectContaining({ step: '4' }));
+    expect(harness.replace).not.toHaveBeenCalled();
+    expect(view.container.textContent).toContain('Фото ожидает повтора');
+    expect(view.container.textContent).toContain('Текст после ошибки');
+    expect(button(view.container, 'Сохранить и закрыть')?.disabled).toBe(false);
+    view.unmount();
+  });
 });
