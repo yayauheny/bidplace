@@ -23,7 +23,7 @@ const renderer = vi.hoisted(() => ({
 }));
 
 const generated = vi.hoisted(() => ({
-  deleteGeneratedImage: vi.fn(async () => undefined),
+  deleteGeneratedImage: vi.fn(async (_uri: string) => undefined),
 }));
 
 vi.mock('expo-image-manipulator', () => ({
