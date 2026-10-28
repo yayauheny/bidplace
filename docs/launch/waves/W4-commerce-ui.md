@@ -28,6 +28,11 @@
   из брифа (только чтение) и `03-DESIGN-SYSTEM.md`.
 - Цвета, отступы, радиусы, типографика — токены `packages/design-tokens`; inline
   `style={{` только для уникальной геометрии.
+- Цвет — только `useAppTheme()`: ни hex, ни `rgba(` в фичах; новый компонент
+  проверяется и в теме `black` (`theme.spec.ts`), чтобы тёмная тема потом
+  включалась заменой палитры ([TECH-DEBT](../TECH-DEBT.md) §4).
+- Кнопки — `PrimaryButton`/`SecondaryButton`/`TextButton`; `FigmaButton`
+  напрямую — только когда нужного варианта у обёртки нет.
 - Ключи React Query — только из `src/lib/query-cache.ts` (фабрики); строковых
   массивов ключей в фичах нет.
 - Приватные данные продаж (заказы, «требует внимания», избранное, контакты,
@@ -148,7 +153,7 @@ invalidateWorkSurfaces(queryClient, { publicId?, sellerSlug? }): Promise<void> /
 **Interfaces:** `SettingsRow` получает `toggle?: { value: boolean; onChange(v: boolean): void; disabled?: boolean }`
 (роль `switch`, подпись = `label`); `StatusBadge({ tone: 'neutral' | 'accent' | 'success' | 'danger'; label })`.
 
-- [ ] Падающий тест (роль, состояние, нажатие) → реализовать по Figma `7008:15149` → PASS → коммит `feat: settings toggle row and status badge`.
+- [ ] Падающий тест (роль, состояние, нажатие; цвета из темы в `light` и `black`) → реализовать по Figma `7008:15149` → PASS → коммит `feat: settings toggle row and status badge`.
 
 ### Task 3: Блок лота на странице работы
 

@@ -96,6 +96,15 @@
    одну обёртку `src/lib/use-prevent-remove.ts`; запрет ESLint расширить на
    `expo-router/build/*` с исключением только этого файла через `overrides`
    (без `eslint-disable`).
+9. Списки исключений `apps/mobile/.eslintrc.cjs`: убрать файлы, где нарушения уже
+   нет (hex: `FilterSheet.tsx`, `AuthorShare.tsx`, `product-draft-story.tsx`;
+   импорты: несуществующий `search-overlay-surface.tsx`, `product-draft-screen.tsx`,
+   спеки без запрещённых импортов) и запрет `lucide-react-native` (зависимости
+   нет). Удалить компоненты без потребителей — `OverlayDimmer`, `CreatorCard`,
+   `AuthorAtmosphere`, `AuthorIdentity` (имена остались только в типе
+   `ResilientRemoteImage.tsx` 30–39) — вместе с их style-файлами и спеками;
+   перед удалением `rg` по `src` и `e2e`. Описание `CreatorCard` в
+   `03-DESIGN-SYSTEM.md` остаётся — это макет, не код.
 
 Не трогать: `auth-abuse.integration.spec.ts`, `social-auth.integration.spec.ts`,
 `registration-consent.spec.ts`, `admin-moderation-pagination.integration.spec.ts`,
