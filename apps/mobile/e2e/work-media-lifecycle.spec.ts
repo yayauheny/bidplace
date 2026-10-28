@@ -1155,19 +1155,6 @@ test('records photo selection, limits, upload and order confirmation states', as
     );
     chooser = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Добавить изображения' }).click();
-    await expect(
-      page.getByRole('button', { name: 'Добавить изображения' }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Добавить изображения' }),
-    ).toBeDisabled();
-    await (await chooser).setFiles('e2e/fixtures/portfolio-photo-1.png');
-    await expect(
-      page.getByText('Фото уже добавлено.', { exact: true }),
-    ).toBeVisible();
-    await photoEvidence(page, 'duplicate-390');
-    chooser = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Добавить изображения' }).click();
     await (
       await chooser
     ).setFiles({
@@ -1560,12 +1547,6 @@ test('keeps photo status geometry stable and story controls attached to their bl
     ]);
     await expect(page.locator('[data-photo-id]')).toHaveCount(2);
     const gridBefore = await page.getByTestId('photo-grid').boundingBox();
-    await choose(['e2e/fixtures/portfolio-photo-1.png']);
-    await expect(page.getByRole('alert')).toContainText('Фото уже добавлено');
-    await expect(page.getByRole('alert')).not.toContainText(
-      'Не удалось выбрать',
-    );
-    await expect(page.locator('[data-photo-id]')).toHaveCount(2);
     await page.route('**/api/products/*/images', async (route) => {
       if (route.request().method() === 'POST') await uploadGate;
       await route.continue();
@@ -2357,11 +2338,28 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     ).toBeVisible();
     await page.setViewportSize({ width: 390, height: 874 });
 
+    let releaseStory!: () => void;
+    let arrived!: () => void;
+    const storyGate = new Promise<void>((resolve) => { releaseStory = resolve; });
+    const storyArrived = new Promise<void>((resolve) => { arrived = resolve; });
+    await page.route('**/api/products/*/story-images', async (route) => {
+      if (route.request().method() === 'POST') { arrived(); await storyGate; }
+      await route.continue();
+    });
     const storyPicker = page.waitForEvent('filechooser');
     await page
       .getByRole('button', { name: 'Добавить изображение', exact: true })
       .click();
     await (await storyPicker).setFiles('e2e/fixtures/portfolio-photo-1.png');
+    await storyArrived;
+    const typing = page.getByRole('textbox', { name: 'Текст истории', exact: true }).first();
+    await expect(typing).toBeEditable();
+    await typing.fill('Текст во время загрузки');
+    await expect(typing).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Добавить текст', exact: true })).toBeDisabled();
+    releaseStory();
+    await expect(typing).toHaveValue('Текст во время загрузки');
+    await expect(typing).toBeFocused();
     const imageBlock = page.locator('[data-editor-block="image"]');
     await expect(imageBlock).toBeVisible({ timeout: 20_000 });
     await imageBlock

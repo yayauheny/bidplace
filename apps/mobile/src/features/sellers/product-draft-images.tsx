@@ -235,7 +235,6 @@ export function ProductDraftImagesStep({
   onDeleteImage,
 }: ProductDraftImagesStepProps) {
   const palette = useAppTheme();
-  const duplicateSelection = imageSelectionError === 'Фото уже добавлено.';
   const [dragPreview, setDragPreview] = useState<PhotoDragPreview | null>(null);
   if (photoCards) {
     const errors = photoCards.filter((card) => card.status === 'error');
@@ -529,16 +528,14 @@ export function ProductDraftImagesStep({
                 style={{ color: palette.feedbackDangerTitle }}
               >
                 {imageSelectionError
-                  ? duplicateSelection
-                    ? 'Фото уже добавлено.'
-                    : 'Не удалось выбрать фото'
+                  ? 'Не удалось выбрать фото'
                   : photoPreparationError
                     ? 'Не удалось начать загрузку'
                     : errors.length
                       ? 'Не удалось загрузить фото'
                       : 'Не удалось сохранить порядок'}
               </AppText>
-              {!duplicateSelection ? (
+              {(
                 <AppText
                   role="feedbackBody"
                   style={{ color: palette.feedbackDangerText }}
@@ -553,7 +550,7 @@ export function ProductDraftImagesStep({
                         !errors.length,
                     )}
                 </AppText>
-              ) : null}
+              )}
             </View>
           </View>
         ) : null}

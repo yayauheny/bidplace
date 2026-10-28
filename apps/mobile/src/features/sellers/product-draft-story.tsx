@@ -48,6 +48,7 @@ export type ProductDraftStoryStepProps = {
   images: GalleryImage[];
   editable: boolean;
   savePending: boolean;
+  uploading: boolean;
   saveError: string | null;
   retryUpload: boolean;
   onAddText: (
@@ -74,6 +75,7 @@ export function ProductDraftStoryStep({
   images,
   editable,
   savePending,
+  uploading,
   saveError,
   retryUpload,
   onAddText,
@@ -104,9 +106,9 @@ export function ProductDraftStoryStep({
   const textCount = blocks.filter((block) => block.type !== 'IMAGE').length;
   const imageCount = blocks.length - textCount;
   const canAddText =
-    editable && !savePending && textCount < STORY_LIMITS.maxTextBlocks;
+    editable && !savePending && !uploading && textCount < STORY_LIMITS.maxTextBlocks;
   const canAddImage =
-    editable && !savePending && imageCount < STORY_LIMITS.maxImages;
+    editable && !savePending && !uploading && imageCount < STORY_LIMITS.maxImages;
   const availableGallery = images.filter((image) => image.mediaAssetId);
   const hasBlocks = blocks.some(
     (block) => block.type === 'IMAGE' || Boolean(block.text.trim()),
@@ -182,7 +184,7 @@ export function ProductDraftStoryStep({
               triggerStrokeWidthPx={designTokens.stroke.icon}
               blockKey={block.key}
               editable={editable && !virtual}
-              disabled={disabled}
+              disabled={disabled || uploading}
               first={index === 0}
               last={index === blocks.length - 1}
               onMove={(direction) => onMove(block.key, direction)}
@@ -308,7 +310,7 @@ export function ProductDraftStoryStep({
               icon="arrow-right-01"
               iconPosition="right"
               size="compactIcon"
-              disabled={savePending}
+              disabled={savePending || uploading}
               onPress={onSaveAndContinue}
             />
           </View>
@@ -317,7 +319,7 @@ export function ProductDraftStoryStep({
           <View style={{ marginTop: designTokens.space.x3 }}>
             <SecondaryButton
               label="Повторить загрузку фото"
-              disabled={!editable || savePending}
+              disabled={!editable || savePending || uploading}
               onPress={onRetryUpload}
             />
           </View>

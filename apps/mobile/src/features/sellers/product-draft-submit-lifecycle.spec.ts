@@ -27,7 +27,13 @@ import {
   workPhotoSessionKey,
   type WorkPhotoSession,
 } from './work-photo-session';
+import { prepareImageUpload, WORK_PHOTO_PREPARE } from '../../lib/media/prepare-image-upload';
 import { originalPhotoEdit } from '../../lib/media/photo-edit';
+
+vi.mock('../../lib/media/prepare-image-upload', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/media/prepare-image-upload')>();
+  return { ...actual, prepareImageUpload: vi.fn(async (input: { uri: string; file?: File }) => ({ uri: input.uri, blob: input.file ?? await (await fetch(input.uri)).blob() })) };
+});
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 vi.mock('../../components/shared/PrivateStoryImage', () => ({
@@ -65,6 +71,8 @@ const harness = vi.hoisted(() => ({
   updateProduct: vi.fn(),
   submitProduct: vi.fn(),
   addImages: vi.fn(),
+  addStoryImage: vi.fn(),
+  storyError: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
   reorderImages: vi.fn(),
   photoOperation: vi.fn(),
@@ -421,6 +429,9 @@ beforeEach(() => {
   harness.updateProduct.mockReset();
   harness.submitProduct.mockReset();
   harness.addImages.mockReset();
+  vi.mocked(prepareImageUpload).mockImplementation(async (input) => ({ uri: input.uri, blob: input.file ?? await (await fetch(input.uri)).blob() }));
+  harness.addStoryImage.mockReset();
+  harness.storyError.mockReset();
   harness.launchImageLibraryAsync.mockReset();
   harness.addImages.mockImplementation(async () => ({
     ok: true,
@@ -520,7 +531,7 @@ function mountImageActions(
       existingProduct: { id: productId, images: [] },
       editorStatus,
       session: session as unknown as ProductDraftSaveSession,
-      storyEditor: {} as ProductStoryEditor,
+      storyEditor: { addImage: harness.addStoryImage, reportError: harness.storyError } as unknown as ProductStoryEditor,
     });
     return null;
   }
@@ -544,6 +555,27 @@ function mountImageActions(
 }
 
 describe('product draft submit lifecycle', () => {
+  it.each(['image/jpeg', 'image/png'])('prepares gallery and story %s with the shared photo options', async (mimeType) => {
+    const source = { uri: 'blob:phone', width: 6000, height: 4000, mimeType, file: new File([new Uint8Array(9 * 1024 * 1024)], 'phone', { type: mimeType }) };
+    const prepared = { uri: 'blob:prepared', blob: new Blob(['prepared'], { type: mimeType }) };
+    vi.mocked(prepareImageUpload).mockResolvedValue(prepared);
+    const view = mountImageActions();
+    try {
+      harness.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [source] });
+      await act(() => view.actions.chooseStoryImage());
+      expect(prepareImageUpload).toHaveBeenCalledWith(source, WORK_PHOTO_PREPARE);
+      expect(harness.addStoryImage).toHaveBeenCalledWith(prepared.blob);
+      expect(prepared.blob.size).toBeLessThanOrEqual(10 * 1024 * 1024);
+      expect(prepared.blob.type).toBe(mimeType);
+      harness.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [source] });
+      await act(() => view.actions.chooseImages());
+      await act(() => view.actions.startUpload());
+      await flush();
+      expect(prepareImageUpload).toHaveBeenLastCalledWith(source, WORK_PHOTO_PREPARE);
+      expect(harness.addImages.mock.calls.at(-1)?.[1]).toEqual([prepared.blob]);
+    } finally { view.unmount(); vi.mocked(prepareImageUpload).mockReset(); }
+  });
+
   it('recovers accepted bytes after closing while preserving the pending crop and clears resources on logout', async () => {
     const client = new QueryClient();
     const dispose = vi.fn();
@@ -751,13 +783,12 @@ describe('product draft submit lifecycle', () => {
     },
   );
 
-  it('deduplicates exact source bytes and allows reselecting a removed file', async () => {
+  it('accepts selected source files independently and allows reselecting a removed file', async () => {
     const asset = (bytes: string, name: string) => ({
       uri: `blob:${name}`,
       file: new File([bytes], name, { type: 'image/png' }),
     });
     const first = asset('same', 'first.png');
-    const firstRead = vi.spyOn(first.file, 'arrayBuffer');
     harness.launchImageLibraryAsync.mockResolvedValueOnce({
       canceled: false,
       assets: [
@@ -770,12 +801,8 @@ describe('product draft submit lifecycle', () => {
     try {
       await act(() => view.actions.chooseImages());
       await flush();
-      expect(view.actions.photoCards).toHaveLength(2);
-      expect(view.actions.imageSelectionError).toBe('Фото уже добавлено.');
-      expect(firstRead).toHaveBeenCalledTimes(1);
-      expect(view.actions.photoCards[0]?.sourceChecksum).toMatch(
-        /^[a-f0-9]{64}$/,
-      );
+      expect(view.actions.photoCards).toHaveLength(3);
+      expect(view.actions.imageSelectionError).toBeNull();
       await act(() => view.actions.removePhoto(view.actions.photoCards[0]!.id));
       harness.launchImageLibraryAsync.mockResolvedValueOnce({
         canceled: false,
@@ -783,7 +810,7 @@ describe('product draft submit lifecycle', () => {
       });
       await act(() => view.actions.chooseImages());
       await flush();
-      expect(view.actions.photoCards).toHaveLength(2);
+      expect(view.actions.photoCards).toHaveLength(3);
       expect(harness.addImages).not.toHaveBeenCalled();
     } finally {
       view.unmount();
@@ -2452,12 +2479,12 @@ describe('photo failure feedback', () => {
           root.render(
             createElement(ProductDraftImagesStep, {
               ...props,
-              imageSelectionError: 'Фото уже добавлено.',
+              imageSelectionError: 'Не удалось прочитать выбранное фото.',
             }),
           ),
         );
-        expect(container.textContent).not.toContain('Не удалось выбрать фото');
-        expect(container.textContent).toContain('Фото уже добавлено.');
+        expect(container.textContent).toContain('Не удалось выбрать фото');
+        expect(container.textContent).toContain('Не удалось прочитать выбранное фото.');
         expect(container.textContent).not.toContain(message);
       } finally {
         act(() => root.unmount());

@@ -109,6 +109,7 @@ function mount(
     render,
     replaceCreation,
     addStoryImage,
+    removeStoryImage,
   };
 }
 
@@ -120,6 +121,31 @@ afterEach(() => {
 });
 
 describe('revision-backed Work Story editor', () => {
+  it('keeps text edits during upload and saves whitespace alt as null without client hold release', async () => {
+    const view = mount();
+    let finish!: (value: { mediaAssetId: string }) => void;
+    view.addStoryImage.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    let key = '';
+    act(() => { key = view.editor.addText('PARAGRAPH', 'Before')!; });
+    let upload!: Promise<boolean>;
+    act(() => { upload = view.editor.addImage(new Blob(['png'], { type: 'image/png' })); });
+    act(() => view.editor.editText(key, 'Typed during upload'));
+    expect(view.editor.blocks[0]).toMatchObject({ text: 'Typed during upload' });
+    await act(async () => { finish({ mediaAssetId: assetId }); await upload; });
+    const image = view.editor.blocks.find((block) => block.type === 'IMAGE')!;
+    act(() => view.editor.editAlt(image.key, '   '));
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 1, blocks: [
+      { id: blockId, position: 0, type: 'PARAGRAPH', text: 'Typed during upload' },
+      { id: '85555555-5555-4555-8555-555555555555', position: 1, type: 'IMAGE', mediaAssetId: assetId, altText: null },
+    ] });
+    await act(async () => { expect(await view.editor.save()).toBe(true); });
+    expect(view.replaceCreation.mock.calls[0]?.[1].blocks[1]).toMatchObject({ altText: null });
+    act(() => view.editor.remove(image.key));
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 2, blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH', text: 'Typed during upload' }] });
+    await act(async () => { expect(await view.editor.save()).toBe(true); });
+    expect(view.removeStoryImage).not.toHaveBeenCalled();
+  });
+
   it('adopts the empty input key and keeps it while editing and clearing its contents', async () => {
     const view = mount();
     const inputKey = 'empty-input';

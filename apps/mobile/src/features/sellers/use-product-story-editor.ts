@@ -153,7 +153,8 @@ type DraftState = {
   token: number;
   blocks: EditableStoryBlock[];
   dirty: boolean;
-  pending: boolean;
+  saving: boolean;
+  uploading: boolean;
   error: string | null;
   /** True once this state incorporates a real server story snapshot. */
   serverHydrated: boolean;
@@ -215,7 +216,8 @@ function fromServer(identity: string, story?: StorySnapshot): DraftState {
     token: story?.storyToken ?? 0,
     blocks: (story?.blocks ?? []).map((block) => editableBlock(block)),
     dirty: false,
-    pending: false,
+    saving: false,
+    uploading: false,
     error: null,
     serverHydrated: story !== undefined,
     awaitingOwnerSnapshot: false,
@@ -293,7 +295,6 @@ export function useProductStoryEditor({
   const outstanding = useRef<Promise<boolean> | null>(null);
   const retry = useRef<{ snapshot: string; key: string } | null>(null);
   const pendingImage = useRef<{ image: Blob; key: string } | null>(null);
-  const uploaded = useRef<Set<string>>(new Set());
   const writer = useRef(createDraftWriter());
   const accountRef = useRef(accountId);
   const productRef = useRef(productId);
@@ -309,13 +310,6 @@ export function useProductStoryEditor({
     storyToken: number;
   } | null>(null);
   const lastEffectRevision = useRef(revisionId);
-  const persistedAssets = useRef<Set<string>>(
-    new Set(
-      (story?.blocks ?? []).flatMap((block) =>
-        block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-      ),
-    ),
-  );
 
   const replace = (next: DraftState) => {
     current.current = next;
@@ -602,7 +596,6 @@ export function useProductStoryEditor({
     const snapshotBelongs = ownership !== 'foreign';
     if (previous.identity !== identity) {
       writer.current.cancel();
-      uploaded.current = new Set();
       outstanding.current = null;
       pendingImage.current = null;
       retry.current = null;
@@ -613,7 +606,7 @@ export function useProductStoryEditor({
         revisionChanged &&
         confirmed &&
         !previous.dirty &&
-        !previous.pending &&
+        !(previous.saving || previous.uploading) &&
         previous.serverHydrated &&
         !snapshotBelongs
       ) {
@@ -625,11 +618,6 @@ export function useProductStoryEditor({
         // across revisions. The blocks stay visible but waiting: they must
         // not be edited or sent under the new revision's identity.
         confirmedSave.current = null;
-        persistedAssets.current = new Set(
-          previous.blocks.flatMap((block) =>
-            block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-          ),
-        );
         replace({ ...previous, identity, awaitingOwnerSnapshot: true });
         // restoredFor intentionally stays on the old identity: when a
         // snapshot that belongs to this revision arrives, the restore below
@@ -637,11 +625,6 @@ export function useProductStoryEditor({
         return;
       }
       confirmedSave.current = null;
-      persistedAssets.current = new Set(
-        (snapshotBelongs ? (story?.blocks ?? []) : []).flatMap((block) =>
-          block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-        ),
-      );
       if (snapshotBelongs) {
         restoredFor.current = identity;
         replace(restoreDraft(identity, story));
@@ -669,21 +652,16 @@ export function useProductStoryEditor({
       story &&
       snapshotBelongs &&
       !previous.dirty &&
-      !previous.pending &&
+      !(previous.saving || previous.uploading) &&
       story.storyToken > previous.token
     ) {
       // A newer token within the same revision is an external save; it wins.
       confirmedSave.current = null;
-      persistedAssets.current = new Set(
-        story.blocks.flatMap((block) =>
-          block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-        ),
-      );
       replace(fromServer(identity, story));
     } else if (
       story &&
       !previous.dirty &&
-      !previous.pending &&
+      !(previous.saving || previous.uploading) &&
       confirmedSave.current &&
       confirmedSave.current.revisionId === revisionId &&
       story.storyToken === previous.token
@@ -700,7 +678,7 @@ export function useProductStoryEditor({
     const previous = current.current;
     if (
       previous.identity !== identity ||
-      previous.pending ||
+      previous.saving ||
       previous.awaitingOwnerSnapshot ||
       canChange?.() === false
     )
@@ -744,7 +722,7 @@ export function useProductStoryEditor({
     change((blocks) =>
       blocks.map((block) =>
         block.key === key && block.type === 'IMAGE'
-          ? { ...block, altText: altText || null }
+          ? { ...block, altText: altText.trim() || null }
           : block,
       ),
     );
@@ -765,7 +743,7 @@ export function useProductStoryEditor({
   const addImage = async (image?: Blob): Promise<boolean> => {
     if (
       !productId ||
-      current.current.pending ||
+      (current.current.saving || current.current.uploading) ||
       current.current.identity !== identity ||
       current.current.awaitingOwnerSnapshot ||
       canChange?.() === false
@@ -784,7 +762,7 @@ export function useProductStoryEditor({
     if (image && image.size > STORY_LIMITS.maxFileBytes) {
       replace({
         ...current.current,
-        error: 'Фото истории должно быть не больше 5 МиБ.',
+        error: 'Фото истории должно быть не больше 10 МиБ.',
       });
       return false;
     }
@@ -801,7 +779,7 @@ export function useProductStoryEditor({
     if (!pending) return false;
     pendingImage.current = pending;
     const previous = current.current;
-    replace({ ...previous, pending: true, error: null });
+    replace({ ...previous, uploading: true, error: null });
     try {
       const result = await api.images.addStoryImage(
         productId,
@@ -810,10 +788,9 @@ export function useProductStoryEditor({
       );
       if (current.current.identity !== identity) return false;
       pendingImage.current = null;
-      uploaded.current.add(result.mediaAssetId);
       replace({
         ...current.current,
-        pending: false,
+        uploading: false,
         dirty: true,
         blocks: [
           ...current.current.blocks,
@@ -831,7 +808,7 @@ export function useProductStoryEditor({
       if (current.current.identity === identity) {
         replace({
           ...current.current,
-          pending: false,
+          uploading: false,
           error:
             'Не удалось загрузить фото. Повторите загрузку без повторного выбора файла.',
         });
@@ -842,7 +819,7 @@ export function useProductStoryEditor({
 
   const save = async (): Promise<boolean> => {
     const before = current.current;
-    if (before.identity !== identity || before.pending || !productId)
+    if (before.identity !== identity || (before.saving || before.uploading) || !productId)
       return false;
     // Waiting for the owner's snapshot of this revision: nothing here may
     // reach the API, even if a dirty draft predates the identity change.
@@ -867,7 +844,7 @@ export function useProductStoryEditor({
       retry.current = { snapshot, key: crypto.randomUUID() };
     }
     const request = { ...parsed.data, idempotencyKey: retry.current.key };
-    replace({ ...before, pending: true, error: null });
+    replace({ ...before, saving: true, error: null });
     const task = (async () => {
       try {
         const result = await api.products.replaceCreation(productId, request);
@@ -881,25 +858,12 @@ export function useProductStoryEditor({
             )[index]?.key ?? block.id,
           ),
         );
-        const removedAssets = [
-          ...new Set([...persistedAssets.current, ...uploaded.current]),
-        ].filter(
-          (id) =>
-            !result.blocks.some(
-              (block) => block.type === 'IMAGE' && block.mediaAssetId === id,
-            ),
-        );
-        persistedAssets.current = new Set(
-          result.blocks.flatMap((block) =>
-            block.type === 'IMAGE' ? [block.mediaAssetId] : [],
-          ),
-        );
         replace({
           ...current.current,
           token: result.storyToken,
           blocks: saved,
           dirty: false,
-          pending: false,
+          uploading: false,
         });
         confirmedSave.current = {
           revisionId: revisionRef.current ?? null,
@@ -909,20 +873,12 @@ export function useProductStoryEditor({
         // the whole local operation — drop the stored copy for this identity.
         clearLocalDraft();
         onSaved?.(result);
-        for (const assetId of removedAssets) {
-          try {
-            await api.images.removeStoryImage(productId, assetId);
-            uploaded.current.delete(assetId);
-          } catch {
-            // A failed hold release cannot undo a successfully saved story.
-          }
-        }
         return true;
       } catch {
         if (current.current.identity === identity) {
           replace({
             ...current.current,
-            pending: false,
+            uploading: false,
             error:
               'История не сохранена. При конфликте с другой вкладкой сохраните текст и обновите страницу.',
           });
@@ -945,7 +901,8 @@ export function useProductStoryEditor({
   return {
     blocks: state.blocks,
     dirty: state.dirty,
-    pending: state.pending,
+    saving: state.saving,
+    uploading: state.uploading,
     error: state.error,
     storageError: state.storageError,
     recoveryText: state.recoveryText,
@@ -953,7 +910,7 @@ export function useProductStoryEditor({
     // Synchronous read for guard effects: rendered dirty/pending can lag one
     // commit behind when a save response lands before the effect phase.
     isEffectivelyClean: () =>
-      !current.current.dirty && !current.current.pending,
+      !current.current.dirty && !(current.current.saving || current.current.uploading),
     addText,
     editText,
     editAlt,

@@ -1,10 +1,11 @@
-import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, type QueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
 import {
   ImagePreparationError,
+  prepareImageUpload,
+  WORK_PHOTO_PREPARE,
   readImageUpload,
   type ImageUploadInput,
 } from '../../lib/media/prepare-image-upload';
@@ -36,12 +37,25 @@ import {
   type WorkPhotoCard,
   type WorkPhotoSession,
 } from './work-photo-session';
+import { deleteGeneratedImage } from '../../lib/media/temporary-image';
 import { rememberPendingOpener } from '../../components/ui/use-return-focus';
 import { Image as NativeImage } from 'react-native';
 import { ApiClientError } from '@bidplace/api-client';
 import { shouldClearSessionForError } from '../../errors';
 import type { ProductDraftSaveSession } from './product-draft-save';
 import type { ProductStoryEditor } from './use-product-story-editor';
+
+async function prepareGalleryPhoto(input: ImageUploadInput, edit: PhotoEdit) {
+  const edited = await preparePhotoEdit(input, edit, 'work');
+  try {
+    const prepared = await prepareImageUpload(edited.input, WORK_PHOTO_PREPARE);
+    if (prepared.uri !== edited.input.uri) await deleteGeneratedImage(prepared.uri);
+    return { ...edited, blob: prepared.blob };
+  } catch (error) {
+    edited.dispose();
+    throw error;
+  }
+}
 
 export type UploadImageState = {
   key: string;
@@ -421,7 +435,7 @@ export function useProductDraftImageActions({
             let prepared = card.prepared;
             if (card.kind !== 'crop' && !prepared) {
               if (!card.source) throw new ImagePreparationError('READ_FAILED');
-              prepared = await preparePhotoEdit(card.source, card.edit, 'work');
+              prepared = await prepareGalleryPhoto(card.source, card.edit);
               if (!active()) {
                 prepared.dispose();
                 return;
@@ -729,24 +743,12 @@ export function useProductDraftImageActions({
     try {
       for (const source of inputs) {
         if (currentPhotos().cards.length >= 10) break;
-        let sourceChecksum: string | undefined;
         let selectionError: unknown;
         try {
-          const sourceBytes = await (
-            await readImageUpload(source, workImageMaxInputBytes)
-          ).arrayBuffer();
-          const hash = await digest(CryptoDigestAlgorithm.SHA256, sourceBytes);
-          sourceChecksum = Array.from(new Uint8Array(hash), (byte) =>
-            byte.toString(16).padStart(2, '0'),
-          ).join('');
+          await readImageUpload(source, workImageMaxInputBytes);
         } catch (error) {
           selectionError = error;
         }
-        const duplicate =
-          sourceChecksum !== undefined &&
-          currentPhotos().cards.some(
-            (card) => card.sourceChecksum === sourceChecksum,
-          );
         if (
           !mounted.current ||
           generation !== imageSelection.current ||
@@ -754,10 +756,6 @@ export function useProductDraftImageActions({
           !canWritePrivateCache(queryClient, selected.epoch)
         )
           return false;
-        if (duplicate) {
-          setImageSelectionError('Фото уже добавлено.');
-          continue;
-        }
         const id = crypto.randomUUID();
         updatePhotos((value) => ({
           ...value,
@@ -771,7 +769,6 @@ export function useProductDraftImageActions({
               width: source.width,
               height: source.height,
               source,
-              sourceChecksum,
               sourceDispose: () => {
                 if (source.file && source.uri.startsWith('blob:'))
                   URL.revokeObjectURL(source.uri);
@@ -1002,7 +999,7 @@ export function useProductDraftImageActions({
       const prepared =
         unchangedOrientation && card.prepared
           ? card.prepared
-          : await preparePhotoEdit(card.source, edit, 'work');
+          : await prepareGalleryPhoto(card.source, edit);
       if (
         turn !== editorTurn.current ||
         !mounted.current ||
@@ -1139,30 +1136,24 @@ export function useProductDraftImageActions({
   };
 
   const chooseStoryImage = async () => {
-    if (
-      session.transitionLock.current ||
-      storyEditor.pending ||
-      !existingProduct
-    )
-      return;
+    if (session.transitionLock.current || storyEditor.saving || storyEditor.uploading || !existingProduct) return;
     const operation = session.snapshotOperation();
+    let selectedUri: string | undefined;
+    let preparedUri: string | undefined;
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: false,
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const response = await fetch(result.assets[0].uri);
-      if (!response.ok) throw new Error('Selected image could not be read');
-      const blob = await response.blob();
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false });
+      const asset = result.assets?.[0];
+      if (result.canceled || !asset) return;
+      selectedUri = asset.uri;
+      const prepared = await prepareImageUpload(asset, WORK_PHOTO_PREPARE);
+      preparedUri = prepared.uri;
       if (!session.isCurrentOperation(operation)) return;
-      await storyEditor.addImage(blob);
+      await storyEditor.addImage(prepared.blob);
     } catch {
-      if (session.isCurrentOperation(operation)) {
-        storyEditor.reportError(
-          'Не удалось прочитать выбранное фото. Выберите файл ещё раз.',
-        );
-      }
+      if (session.isCurrentOperation(operation)) storyEditor.reportError('Не удалось прочитать выбранное фото. Выберите файл ещё раз.');
+    } finally {
+      if (preparedUri && preparedUri !== selectedUri) await deleteGeneratedImage(preparedUri);
+      if (selectedUri?.startsWith('blob:')) URL.revokeObjectURL(selectedUri);
     }
   };
 

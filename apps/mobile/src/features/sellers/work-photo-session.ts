@@ -10,7 +10,6 @@ export type WorkPhotoCard = {
   height?: number | null;
   source?: ImageUploadInput;
   sourceDispose?: () => void;
-  sourceChecksum?: string;
   preview?: {
     uri: string;
     width?: number | null;

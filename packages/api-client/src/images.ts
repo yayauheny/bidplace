@@ -134,14 +134,6 @@ export function createImagesClient(context: RequestContext) {
         },
       );
     },
-    removeStoryImage(productId: string, mediaAssetId: string) {
-      return requestJson(
-        context,
-        `/api/products/${productId}/story-images/${mediaAssetId}`,
-        imageUploadResponseSchema,
-        { method: 'DELETE' },
-      );
-    },
     addCreationStepImage(productId: string, stepId: string, image: Blob) {
       return requestJson(
         context,

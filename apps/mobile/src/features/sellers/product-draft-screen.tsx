@@ -210,7 +210,7 @@ export function ProductDraftScreen({
     uploadPending: uploadBusy,
     isDirty: form.formState.isDirty,
     storyDirty: storyEditor.dirty,
-    storyPending: storyEditor.pending,
+    storyPending: (storyEditor.saving || storyEditor.uploading),
     draftEffectivelyClean: () =>
       !form.formState.isDirty && storyEditor.isEffectivelyClean(),
     productId,
@@ -380,17 +380,17 @@ export function ProductDraftScreen({
             }
             onStepPress={(step) => void wizardNavigation.moveToWizardStep(step)}
             storyBarDisabled={
-              storyEditor.pending || session.inputsLocked || uploadBusy
+              (storyEditor.saving || storyEditor.uploading) || session.inputsLocked || uploadBusy
             }
             closeLabel={
               form.formState.isDirty || storyEditor.dirty
                 ? 'Сохранить и закрыть'
                 : 'Закрыть'
             }
-            closeLoading={session.save.isPending || storyEditor.pending}
+            closeLoading={session.save.isPending || (storyEditor.saving || storyEditor.uploading)}
             closeDisabled={
               session.submit.isPending ||
-              storyEditor.pending ||
+              (storyEditor.saving || storyEditor.uploading) ||
               session.inputsLocked
             }
             onClose={() => {
@@ -554,7 +554,8 @@ export function ProductDraftScreen({
                   : undefined
               }
               editable={editable && !session.inputsLocked && !storyNeedsDraft}
-              savePending={storyEditor.pending || session.save.isPending}
+              savePending={storyEditor.saving || session.save.isPending}
+              uploading={storyEditor.uploading}
               saveError={storyEditor.error}
               retryUpload={storyEditor.retryUpload}
               onAddText={storyEditor.addText}
@@ -590,7 +591,7 @@ export function ProductDraftScreen({
               submitPending={
                 session.submit.isPending ||
                 session.save.isPending ||
-                storyEditor.pending
+                (storyEditor.saving || storyEditor.uploading)
               }
               submitError={session.submit.isError}
               onSubmitPress={() => void session.submitCurrentForm()}

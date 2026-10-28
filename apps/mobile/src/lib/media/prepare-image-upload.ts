@@ -1,3 +1,5 @@
+import { STORY_LIMITS, workImageMaxInputBytes } from '@bidplace/contracts';
+
 /**
  * Shared device-side preparation for images that may be resized before upload.
  * Callers choose their own limits; artwork originals should use their separate
@@ -21,6 +23,13 @@ export type ImagePreparationOptions = {
   /** Override output format. By default PNG stays PNG to preserve transparency. */
   format?: 'jpeg' | 'png';
 };
+
+export const WORK_PHOTO_PREPARE = {
+  maxDimension: 3840,
+  maxBytes: STORY_LIMITS.maxFileBytes,
+  maxSourceBytes: workImageMaxInputBytes,
+  quality: 0.85,
+} as const;
 
 export type PreparedImage = {
   uri: string;
