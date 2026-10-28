@@ -22,10 +22,18 @@ const renderer = vi.hoisted(() => ({
   manipulate: vi.fn(),
 }));
 
+const generated = vi.hoisted(() => ({
+  deleteGeneratedImage: vi.fn(async () => undefined),
+}));
+
 vi.mock('expo-image-manipulator', () => ({
   SaveFormat: { JPEG: 'jpeg', PNG: 'png' },
   FlipType: { Horizontal: 'horizontal', Vertical: 'vertical' },
   ImageManipulator: { manipulate: renderer.manipulate },
+}));
+
+vi.mock('./temporary-image', () => ({
+  deleteGeneratedImage: generated.deleteGeneratedImage,
 }));
 
 const options = {
@@ -452,6 +460,99 @@ describe('image upload preparation', () => {
         compress: options.quality,
       });
       expect(prepared.blob.type).toBe('image/png');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  function stageEncoder() {
+    renderer.manipulate.mockReturnValue({
+      resize: renderer.resize,
+      renderAsync: async () => ({
+        saveAsync: renderer.save,
+        release: renderer.renderRelease,
+      }),
+      release: renderer.contextRelease,
+    });
+  }
+
+  it('deletes every encoding that stays above the byte budget', async () => {
+    const file = new File(['source'], 'portrait.png', { type: 'image/png' });
+    const oversized = new Blob([new Uint8Array(options.maxBytes + 1)]);
+    const uris = ['blob:try-0', 'blob:try-1', 'blob:try-2', 'blob:try-3'];
+    let saved = 0;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      blob: async () => oversized,
+    } as Response);
+    renderer.save.mockImplementation(async () => ({ uri: uris[saved++] }));
+    stageEncoder();
+    try {
+      await expect(
+        prepareImageUpload(
+          { uri: 'blob:source', width: 4000, height: 3000, file },
+          options,
+        ),
+      ).rejects.toMatchObject({ code: 'OUTPUT_TOO_LARGE' });
+      expect(generated.deleteGeneratedImage.mock.calls.map((call) => call[0])).toEqual(
+        uris,
+      );
+      expect(file.size).toBe('source'.length);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('deletes a generated file when the encoded result cannot be read', async () => {
+    const file = new File(['source'], 'portrait.png', { type: 'image/png' });
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new Error('unreadable'));
+    renderer.save.mockResolvedValue({ uri: 'blob:unreadable' });
+    stageEncoder();
+    try {
+      await expect(
+        prepareImageUpload(
+          { uri: 'blob:source', width: 4000, height: 3000, file },
+          options,
+        ),
+      ).rejects.toMatchObject({ code: 'READ_FAILED' });
+      expect(generated.deleteGeneratedImage).toHaveBeenCalledExactlyOnceWith(
+        'blob:unreadable',
+      );
+      expect(file.size).toBe('source'.length);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('keeps the source and the accepted encoding after an oversized attempt', async () => {
+    const file = new File(['source'], 'portrait.png', { type: 'image/png' });
+    const oversized = new Blob([new Uint8Array(options.maxBytes + 1)]);
+    const compact = new Blob(['compact']);
+    let reads = 0;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () =>
+        ({
+          ok: true,
+          blob: async () => (reads++ === 0 ? oversized : compact),
+        }) as Response,
+    );
+    renderer.save
+      .mockResolvedValueOnce({ uri: 'blob:rejected' })
+      .mockResolvedValueOnce({ uri: 'blob:accepted' });
+    stageEncoder();
+    try {
+      const result = await prepareImageUpload(
+        { uri: 'blob:source', width: 4000, height: 3000, file },
+        options,
+      );
+      expect(result.uri).toBe('blob:accepted');
+      expect(result.blob.size).toBe(compact.size);
+      expect(generated.deleteGeneratedImage.mock.calls.map((call) => call[0])).toEqual([
+        'blob:rejected',
+      ]);
+      expect(file.size).toBe('source'.length);
     } finally {
       fetchSpy.mockRestore();
     }

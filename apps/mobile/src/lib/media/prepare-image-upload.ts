@@ -1,5 +1,7 @@
 import { STORY_LIMITS, workImageMaxInputBytes } from '@bidplace/contracts';
 
+import { deleteGeneratedImage } from './temporary-image';
+
 /**
  * Shared device-side preparation for images that may be resized before upload.
  * Callers choose their own limits; artwork originals should use their separate
@@ -168,7 +170,13 @@ export async function prepareImageUpload(
       context.release();
     }
 
-    const encoded = await readImage(resultUri);
+    let encoded: Blob;
+    try {
+      encoded = await readImage(resultUri);
+    } catch (error) {
+      await deleteGeneratedImage(resultUri);
+      throw error;
+    }
     if (encoded.size <= options.maxBytes && encoded.size > 0) {
       return {
         uri: resultUri,
@@ -177,6 +185,7 @@ export async function prepareImageUpload(
         }),
       };
     }
+    await deleteGeneratedImage(resultUri);
   }
 
   throw new ImagePreparationError('OUTPUT_TOO_LARGE');
