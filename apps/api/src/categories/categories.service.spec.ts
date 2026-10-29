@@ -32,7 +32,7 @@ describe('CategoriesService', () => {
       orderBy: [{ name: 'asc' }, { slug: 'asc' }],
     });
     expect(result.categories).toHaveLength(1);
-    expect(result.categories[0].slug).toBe('art-object');
+    expect(result.categories[0]!.slug).toBe('art-object');
   });
 
   it('does not require category timestamps from the database', async () => {

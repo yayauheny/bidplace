@@ -21,7 +21,7 @@ describe('S3ImageStore', () => {
   });
 
   it('writes an object with the configured bucket and MIME type', async () => {
-    const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({});
+    const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue(undefined);
     const store = new S3ImageStore(s3Env());
 
     await store.put('product-image:image-id', {
@@ -48,7 +48,7 @@ describe('S3ImageStore', () => {
   });
 
   it('deletes the configured object key', async () => {
-    const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({});
+    const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue(undefined);
     const store = new S3ImageStore(s3Env());
 
     await store.delete('product-image:image-id');

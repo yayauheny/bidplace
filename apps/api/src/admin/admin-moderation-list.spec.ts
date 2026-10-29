@@ -34,7 +34,7 @@ function pagesOf(rows: Array<{ id: string; createdAt: Date }>, limit: number) {
   let cursor: AdminModerationCursor | null = null;
   const pages: string[][] = [];
   for (;;) {
-    const eligible = cursor
+    const eligible: typeof rows = cursor
       ? sorted.filter((item) => isAfterModerationCursor(item, cursor!))
       : sorted;
     const taken = eligible.slice(0, limit + 1);
@@ -182,7 +182,7 @@ describe('admin moderation list queries', () => {
     expect(sellerText).not.toContain('Alpha%');
     expect(sellerSql.values).toContain('%Alpha\\%\\_\\\\ parent%');
     expect(
-      sellerModerationWhere(sellers, null).AND?.some((filter) =>
+      [sellerModerationWhere(sellers, null).AND].flat().some((filter) =>
         JSON.stringify(filter).includes('contains'),
       ),
     ).toBe(false);
@@ -230,7 +230,7 @@ describe('admin moderation list queries', () => {
     expect(
       encodeAdminModerationCursor({
         createdAt: '2026-09-26T12:00:00.000Z',
-        id: ids[0],
+        id: ids[0]!,
       }),
     ).toEqual(expect.any(String));
   });

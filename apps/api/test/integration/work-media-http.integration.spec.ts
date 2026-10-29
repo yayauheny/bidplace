@@ -1,3 +1,11 @@
+import {
+  sellerProfileResponseSchema,
+  productResponseSchema,
+  sellerProductDetailResponseSchema,
+  portfolioWorkDetailResponseSchema,
+  portfolioWorksResponseSchema,
+  portfolioAuthorsResponseSchema,
+} from '@bidplace/contracts';
 import { createHash, randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -398,7 +406,7 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     );
     const createdAuthor = await author.client.post('/seller/profile', photo);
     expect(createdAuthor.status).toBe(201);
-    const profileId = (await createdAuthor.json()).sellerProfile.id;
+    const profileId = (sellerProfileResponseSchema.parse(await createdAuthor.json())).sellerProfile.id;
     const application = await db.prisma.sellerProfile.findUniqueOrThrow({
       where: { id: profileId },
       select: { editingRevisionId: true },
@@ -430,7 +438,7 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
       categoryId: category.id,
     });
     expect(created.status).toBe(201);
-    const work = (await created.json()).product;
+    const work = (productResponseSchema.parse(await created.json())).product;
     const imagePath = `/products/${work.id}/images`;
     const largeInput = Buffer.concat([
       bytes,
@@ -504,7 +512,7 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
         .status,
     ).toBe(409);
     const pending = await author.client.get(`/seller/products/${work.id}`);
-    expect((await pending.json()).publication.state).toBe('FAILED');
+    expect((sellerProductDetailResponseSchema.parse(await pending.json())).publication!.state).toBe('FAILED');
     expect(
       (await new HttpTestClient(http.baseUrl).get(`/works/${work.publicId}`))
         .status,
@@ -532,12 +540,12 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
         })
       ).status,
     ).toBe(409);
-    const publicWork = await (
+    const publicWork = portfolioWorkDetailResponseSchema.parse(await (
       await new HttpTestClient(http.baseUrl).get(`/works/${work.publicId}`)
-    ).json();
+    ).json());
     const preview = publicWork.work.images[0];
     expect(preview.url).toMatch(/\/preview.webp$/);
-    expect(preview.full.url).toMatch(/\/full.webp$/);
+    expect(preview.full!.url).toMatch(/\/full.webp$/);
     const oldPublicId = (
       await db.prisma.product.findUniqueOrThrow({ where: { id: work.id } })
     ).publishedRevisionId;
@@ -578,9 +586,9 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     ).toBe(409);
     expect(
       (
-        await (
+        portfolioWorkDetailResponseSchema.parse(await (
           await new HttpTestClient(http.baseUrl).get(`/works/${work.publicId}`)
-        ).json()
+        ).json())
       ).work.title,
     ).toBe('First work');
     expect(
@@ -596,11 +604,11 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
         )
       ).status,
     ).toBe(200);
-    const revised = await (
+    const revised = portfolioWorkDetailResponseSchema.parse(await (
       await new HttpTestClient(http.baseUrl).get(`/works/${work.publicId}`)
-    ).json();
+    ).json());
     expect(revised.work.title).toBe('Revised work');
-    expect(revised.work.images[0].url).not.toBe(preview.url);
+    expect(revised.work.images[0]!.url).not.toBe(preview.url);
     expect(
       objects.has(`PUBLIC:${new URL(preview.url).pathname.slice(1)}`),
     ).toBe(false);
@@ -613,7 +621,7 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     ).toBe(404);
     await run('REVOKE', work.id);
     for (const image of revised.work.images)
-      for (const url of [image.url, image.full.url]) {
+      for (const url of [image.url, image.full!.url]) {
         expect(objects.has(`PUBLIC:${new URL(url).pathname.slice(1)}`)).toBe(
           false,
         );
@@ -652,15 +660,15 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
       '/sellers/http-media-author/photo',
     ])
       expect((await guest.get(path)).status).toBe(404);
-    const catalogue = await (await guest.get('/works?page=1&limit=12')).json();
+    const catalogue = portfolioWorksResponseSchema.parse(await (await guest.get('/works?page=1&limit=12')).json());
     expect(catalogue.works).toEqual([]);
     expect(
-      (await (await guest.get('/authors?page=1&limit=12')).json()).authors,
+      (portfolioAuthorsResponseSchema.parse(await (await guest.get('/authors?page=1&limit=12')).json())).authors,
     ).toEqual([]);
     await run('REVOKE', undefined, profileId);
     for (const url of [
-      revised.work.images[0].url,
-      revised.work.images[0].full.url,
+      revised.work.images[0]!.url,
+      revised.work.images[0]!.full!.url,
     ]) {
       expect(objects.has(`PUBLIC:${new URL(url).pathname.slice(1)}`)).toBe(
         false,

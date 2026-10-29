@@ -1,3 +1,4 @@
+import { PrismaService } from '../core/database';
 import {
   ConflictException,
   UnauthorizedException,
@@ -5,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
 import { syntheticServerEnv } from '../core/config/synthetic-server-env';
 import { authCredentialsSelect, authUserContractSelect } from './auth.mapper';
 import { AuthService } from './auth.service';
@@ -35,7 +35,6 @@ const legal = {
   },
   age18Confirmed: true as const,
 };
-const registerProof = syntheticTurnstileToken('register');
 
 type PrismaUser = {
   id: string;
@@ -79,21 +78,21 @@ describe('AuthService', () => {
     vi.unstubAllEnvs();
   });
 
-  const prisma = {
-    user: {
-      findFirst: vi.fn(),
-      create: vi.fn(),
-      findUnique: vi.fn(),
-      update: vi.fn(),
-      updateMany: vi.fn(),
-    },
+  const prisma = new PrismaService();
+  const userMocks = {
+    findFirst: vi.spyOn(prisma.user, 'findFirst'),
+    create: vi.spyOn(prisma.user, 'create'),
+    findUnique: vi.spyOn(prisma.user, 'findUnique'),
+    update: vi.spyOn(prisma.user, 'update'),
+    updateMany: vi.spyOn(prisma.user, 'updateMany'),
   };
 
-  const passwordHasher = {
-    hash: vi.fn(),
-    verify: vi.fn(),
-    dummyHash: vi.fn().mockResolvedValue('dummy-hash'),
-  } satisfies Pick<PasswordHasherService, 'hash' | 'verify' | 'dummyHash'>;
+  const passwordHasher = new PasswordHasherService();
+  const passwordMocks = {
+    hash: vi.spyOn(passwordHasher, 'hash'),
+    verify: vi.spyOn(passwordHasher, 'verify'),
+    dummyHash: vi.spyOn(passwordHasher, 'dummyHash').mockResolvedValue('dummy-hash'),
+  };
 
   const abuse = {
     assertRegistration: vi.fn().mockResolvedValue(undefined),
@@ -117,25 +116,23 @@ describe('AuthService', () => {
   });
 
   it('registers a new user with a hashed password', async () => {
-    prisma.user.findFirst.mockResolvedValue(null);
-    prisma.user.create.mockResolvedValue(
+    userMocks.findFirst.mockResolvedValue(null);
+    userMocks.create.mockResolvedValue(
       createPrismaUser({
         email: 'new-seller@example.com',
         passwordHash: 'hashed-value',
       }),
     );
-    passwordHasher.hash.mockResolvedValue('hashed-value');
+    passwordMocks.hash.mockResolvedValue('hashed-value');
 
     const result = await service.register({
       email: 'New-Seller@Example.com',
       password: 'super-secret',
-      phone: '+15555550123',
       slug: 'demo-seller',
-      turnstileToken: registerProof,
       legal,
     });
 
-    expect(prisma.user.create).toHaveBeenCalledWith({
+    expect(userMocks.create).toHaveBeenCalledWith({
       data: {
         email: 'new-seller@example.com',
         slug: 'demo-seller',
@@ -182,14 +179,13 @@ describe('AuthService', () => {
     vi.mocked(readPublishedLegalDocuments).mockImplementationOnce(() => {
       throw new ServiceUnavailableException();
     });
-    prisma.user.findFirst.mockResolvedValue(null);
-    prisma.user.create.mockResolvedValue(createPrismaUser());
-    passwordHasher.hash.mockResolvedValue('hashed-value');
+    userMocks.findFirst.mockResolvedValue(null);
+    userMocks.create.mockResolvedValue(createPrismaUser());
+    passwordMocks.hash.mockResolvedValue('hashed-value');
     await service.register({
       email: 'new-user@example.com',
       password: 'registration-password',
       slug: 'new-user',
-      turnstileToken: registerProof,
       legal: {
         agreement: { confirmed: true },
         privacy: { confirmed: true },
@@ -198,8 +194,7 @@ describe('AuthService', () => {
       },
     });
     expect(
-      prisma.user.create.mock.calls[0]?.[0].data.registrationLegalEvidence
-        .create,
+      userMocks.create.mock.calls[0]?.[0].data.registrationLegalEvidence?.create,
     ).toMatchObject({
       agreementVersion: 'portfolio-legal-2026-10-12',
       privacyVersion: 'portfolio-legal-2026-10-12',
@@ -222,49 +217,45 @@ describe('AuthService', () => {
         email: 'seller@example.com',
         password: 'super-secret',
         slug: 'seller',
-        turnstileToken: registerProof,
         legal,
       }),
     ).rejects.toMatchObject({ status: 409 });
-    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(userMocks.create).not.toHaveBeenCalled();
     expect(abuse.assertRegistration).not.toHaveBeenCalled();
   });
 
   it('does not issue a session when the atomic user/evidence insert fails', async () => {
-    prisma.user.findFirst.mockResolvedValue(null);
-    prisma.user.create.mockRejectedValueOnce(
+    userMocks.findFirst.mockResolvedValue(null);
+    userMocks.create.mockRejectedValueOnce(
       new Error('registration evidence insert failed'),
     );
-    passwordHasher.hash.mockResolvedValue('hash');
+    passwordMocks.hash.mockResolvedValue('hash');
     await expect(
       service.register({
         email: 'seller@example.com',
         password: 'super-secret',
         slug: 'seller',
-        turnstileToken: registerProof,
         legal,
       }),
     ).rejects.toThrow('registration evidence insert failed');
   });
 
   it('rejects duplicate email or phone on registration', async () => {
-    prisma.user.findFirst.mockResolvedValue(createPrismaUser());
+    userMocks.findFirst.mockResolvedValue(createPrismaUser());
 
     await expect(
       service.register({
         email: 'seller@example.com',
         password: 'super-secret',
-        phone: '+15555550123',
         slug: 'demo-seller',
-        turnstileToken: registerProof,
         legal,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('rejects an unknown email after a dummy password check', async () => {
-    prisma.user.findUnique.mockResolvedValue(null);
-    passwordHasher.verify.mockResolvedValue(false);
+    userMocks.findUnique.mockResolvedValue(null);
+    passwordMocks.verify.mockResolvedValue(false);
 
     await expect(
       service.login({
@@ -274,7 +265,7 @@ describe('AuthService', () => {
     ).rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
 
     expect(passwordHasher.dummyHash).toHaveBeenCalled();
-    expect(passwordHasher.verify).toHaveBeenCalledWith(
+    expect(passwordMocks.verify).toHaveBeenCalledWith(
       'dummy-hash',
       'super-secret',
     );
@@ -284,14 +275,14 @@ describe('AuthService', () => {
         email: 'missing@example.com',
       }),
     );
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(userMocks.update).not.toHaveBeenCalled();
   });
 
   it('rejects a wrong password with the stored hash', async () => {
-    prisma.user.findUnique.mockResolvedValue(
+    userMocks.findUnique.mockResolvedValue(
       createPrismaUser({ passwordHash: 'hashed-login-password' }),
     );
-    passwordHasher.verify.mockResolvedValue(false);
+    passwordMocks.verify.mockResolvedValue(false);
 
     await expect(
       service.login({
@@ -301,35 +292,35 @@ describe('AuthService', () => {
     ).rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
 
     expect(passwordHasher.dummyHash).not.toHaveBeenCalled();
-    expect(passwordHasher.verify).toHaveBeenCalledWith(
+    expect(passwordMocks.verify).toHaveBeenCalledWith(
       'hashed-login-password',
       'super-secret',
     );
     expect(abuse.assessLogin).toHaveBeenCalledWith(
       expect.objectContaining({ passwordAccepted: false }),
     );
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(userMocks.update).not.toHaveBeenCalled();
   });
 
   it('logs a user in with a valid password', async () => {
-    prisma.user.findUnique.mockResolvedValue(
+    userMocks.findUnique.mockResolvedValue(
       createPrismaUser({
         email: 'login@example.com',
         passwordHash: 'hashed-login-password',
       }),
     );
-    passwordHasher.verify.mockResolvedValue(true);
+    passwordMocks.verify.mockResolvedValue(true);
 
     const result = await service.login({
       email: 'Login@Example.com',
       password: 'super-secret',
     });
 
-    expect(passwordHasher.verify).toHaveBeenCalledWith(
+    expect(passwordMocks.verify).toHaveBeenCalledWith(
       'hashed-login-password',
       'super-secret',
     );
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(userMocks.update).not.toHaveBeenCalled();
     expect(result).toEqual({
       sessionVersion: 0,
       user: {
@@ -350,7 +341,7 @@ describe('AuthService', () => {
   });
 
   it('returns the current user from me', async () => {
-    prisma.user.findUnique.mockResolvedValue(createPrismaUser());
+    userMocks.findUnique.mockResolvedValue(createPrismaUser());
 
     const result = await service.me('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1');
 
@@ -368,7 +359,7 @@ describe('AuthService', () => {
       createdAt: '2026-07-13T12:00:00.000Z',
       updatedAt: '2026-07-13T12:00:00.000Z',
     });
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+    expect(userMocks.findUnique).toHaveBeenCalledWith({
       where: {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
       },
@@ -377,20 +368,20 @@ describe('AuthService', () => {
   });
 
   it('returns the stored slug when a second claim loses the race', async () => {
-    prisma.user.updateMany.mockResolvedValue({ count: 0 });
-    prisma.user.findUnique.mockResolvedValue({ slug: 'kept-name' });
+    userMocks.updateMany.mockResolvedValue({ count: 0 });
+    userMocks.findUnique.mockResolvedValue(createPrismaUser({ slug: 'kept-name' }));
 
     await expect(
       service.claimSlug('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', 'other-name'),
     ).resolves.toEqual({ slug: 'kept-name' });
-    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+    expect(userMocks.updateMany).toHaveBeenCalledWith({
       where: { id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', slug: null },
       data: { slug: 'other-name' },
     });
   });
 
   it('rejects banned users on login', async () => {
-    prisma.user.findUnique.mockResolvedValue(
+    userMocks.findUnique.mockResolvedValue(
       createPrismaUser({
         email: 'banned@example.com',
         status: 'banned',
@@ -404,7 +395,7 @@ describe('AuthService', () => {
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(passwordHasher.dummyHash).toHaveBeenCalled();
-    expect(passwordHasher.verify).toHaveBeenCalledWith(
+    expect(passwordMocks.verify).toHaveBeenCalledWith(
       'dummy-hash',
       'super-secret',
     );
@@ -414,22 +405,22 @@ describe('AuthService', () => {
         email: 'banned@example.com',
       }),
     );
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(userMocks.update).not.toHaveBeenCalled();
   });
 
   it('reports slug availability without reserving the nickname', async () => {
-    prisma.user.findUnique.mockResolvedValueOnce(null);
+    userMocks.findUnique.mockResolvedValueOnce(null);
     await expect(service.slugAvailability('author')).resolves.toEqual({
       available: true,
     });
-    expect(prisma.user.create).not.toHaveBeenCalled();
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(userMocks.create).not.toHaveBeenCalled();
+    expect(userMocks.update).not.toHaveBeenCalled();
 
-    prisma.user.findUnique.mockResolvedValueOnce({ id: 'taken' });
+    userMocks.findUnique.mockResolvedValueOnce(createPrismaUser({ id: 'taken' }));
     await expect(service.slugAvailability('author')).resolves.toEqual({
       available: false,
     });
-    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(userMocks.create).not.toHaveBeenCalled();
   });
 
   it('reads service rules from the injected config', async () => {
@@ -451,11 +442,11 @@ describe('AuthService', () => {
   });
 
   it('invalidates existing sessions on logout', async () => {
-    prisma.user.update.mockResolvedValue({});
+    userMocks.update.mockResolvedValue(createPrismaUser());
 
     await service.logout('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1');
 
-    expect(prisma.user.update).toHaveBeenCalledWith({
+    expect(userMocks.update).toHaveBeenCalledWith({
       where: {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
       },

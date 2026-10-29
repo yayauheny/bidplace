@@ -1,3 +1,10 @@
+import {
+  meResponseSchema,
+  apiErrorResponseSchema,
+  legalDocumentsResponseSchema,
+  emailLoginRequestResponseSchema,
+  CURRENT_RULES_VERSION,
+} from '@bidplace/contracts';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { readPublishedLegalDocuments } from '../../src/auth/legal-documents';
 import { createHash, randomUUID } from 'node:crypto';
@@ -18,7 +25,7 @@ import {
   vi,
 } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
-import { CURRENT_RULES_VERSION } from '@bidplace/contracts';
+
 
 import {
   createIntegrationDatabaseContext,
@@ -175,12 +182,12 @@ describe('auth HTTP transport', () => {
         headers: { cookie },
       });
       expect(me.status).toBe(200);
-      expect((await me.json()).user.id).toBe(fixture.buyer.id);
+      expect((meResponseSchema.parse(await me.json())).user.id).toBe(fixture.buyer.id);
       await client.post('/auth/logout');
       // Simulate a request that loaded this session before logout and saved afterwards.
       await prisma.authSession.upsert({
         where: { sid: stored.sid },
-        create: stored,
+        create: { ...stored, sess: stored.sess! },
         update: { sess: stored.sess! },
       });
       const stale = await fetch(new URL('/api/auth/me', restarted.baseUrl), {
@@ -216,7 +223,7 @@ describe('auth HTTP transport', () => {
       const response = await fetch(url, { headers });
 
       expect(response.status).toBe(401);
-      expect((await response.json()).code).toBe('unauthorized');
+      expect((apiErrorResponseSchema.parse(await response.json())).code).toBe('unauthorized');
       expect(
         (await fetch(new URL('/api/works', http.baseUrl), { headers })).status,
       ).toBe(200);
@@ -277,7 +284,7 @@ describe('auth HTTP transport', () => {
     });
 
     expect(acceptance.status).toBe(201);
-    expect((await acceptance.json()).user.acceptedRulesVersion).toBe(
+    expect((meResponseSchema.parse(await acceptance.json())).user.acceptedRulesVersion).toBe(
       CURRENT_RULES_VERSION,
     );
   });
@@ -291,7 +298,7 @@ describe('auth HTTP transport', () => {
     const response = await visitor.get('/auth/legal');
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toContain('no-store');
-    const body = await response.json();
+    const body = legalDocumentsResponseSchema.parse(await response.json());
     expect(body.version).toBe(LEGAL_VERSION);
     expect(body.documents).toHaveLength(
       syntheticPublishedLegalPack.documents.length,
@@ -525,7 +532,7 @@ describe('auth HTTP transport', () => {
           turnstileToken: turnstileToken('register'),
         });
         expect(response.status).toBe(201);
-        expect(Object.keys(await response.json()).sort()).toEqual([
+        expect(Object.keys(emailLoginRequestResponseSchema.parse(await response.json())).sort()).toEqual([
           'ok', 'resendAvailableAt', 'serverNow',
         ]);
         expect(code).toMatch(/^\d{6}$/);
@@ -730,7 +737,7 @@ describe('auth HTTP transport', () => {
       turnstileToken: turnstileToken('email_verification'),
     });
     expect(otherAddress.status).toBe(429);
-    expect((await otherAddress.json()).code).toBe('MAIL_COOLDOWN');
+    expect((apiErrorResponseSchema.parse(await otherAddress.json())).code).toBe('MAIL_COOLDOWN');
   });
 
   it('rejects register and OTP bodies that omit the proof or idempotency key', async () => {

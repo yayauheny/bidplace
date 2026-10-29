@@ -257,16 +257,12 @@ describe('SellersService', () => {
       service.create(
         'user-id',
         {
-          sellerType: 'creator',
           discipline: 'Керамика',
           fullName: 'Seller',
           country: 'BY',
           city: 'Minsk',
           socialLink: 'https://example.com/seller',
           shortDescription: 'Description',
-          handoffContactType: 'TELEGRAM',
-          handoffContactValue: '@seller',
-          handoffInitiator: 'BUYER_CONTACTS_SELLER',
         },
         { buffer: Buffer.from([1]), mimeType: 'image/png' },
       ),
@@ -479,16 +475,12 @@ describe('SellersService', () => {
       service.create(
         'user-id',
         {
-          sellerType: 'creator',
           discipline: 'Керамика',
           fullName: 'Seller',
           country: 'BY',
           city: 'Minsk',
           socialLink: 'https://example.com/seller',
           shortDescription: 'Description',
-          handoffContactType: 'TELEGRAM',
-          handoffContactValue: '@seller',
-          handoffInitiator: 'BUYER_CONTACTS_SELLER',
         },
         { buffer: Buffer.from([1, 2, 3]), mimeType: 'image/png' },
       ),

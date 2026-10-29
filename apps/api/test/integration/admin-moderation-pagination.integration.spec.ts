@@ -1,8 +1,15 @@
+import {
+  adminModerationSummariesSchema,
+  adminHistoryResponseSchema,
+  adminModerationListQuerySchema,
+  adminQueueQuerySchema,
+  encodeAdminQueueCursor,
+} from '@bidplace/contracts';
 import { randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Prisma, type PrismaClient } from '@bidplace/database';
-import { adminModerationListQuerySchema, adminQueueQuerySchema, encodeAdminQueueCursor } from '@bidplace/contracts';
+
 
 import { AdminModerationService } from '../../src/admin/admin-moderation.service';
 import { moderationSummarySql } from '../../src/admin/admin-moderation-summary';
@@ -1059,8 +1066,8 @@ it('pages summaries by revision submission time with unknown times last and keep
     const response = await api.get(`/admin/seller-profiles/summary?${params}`);
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('private, no-store');
-    const body = await response.json();
-    const item = body.items[0];
+    const body = adminModerationSummariesSchema.parse(await response.json());
+    const item = body.items[0]!;
     expect(item.submissionTimeUnknown).toBe(found.length === 2);
     expect(item.reviewStatus).toBe('PENDING_REVIEW');
     found.push(item.id);
@@ -1069,7 +1076,7 @@ it('pages summaries by revision submission time with unknown times last and keep
   expect(found).toEqual(ids);
   const enriched = await api.get(`/admin/seller-profiles/summary?${new URLSearchParams({search:label,includeCard:'true'})}`);
   expect(enriched.status).toBe(200);
-  expect((await enriched.json()).items[0].card).toMatchObject({author:null,reviewKind:'unknown',thumbnail:{kind:'seller-photo',revisionId:revisions[0],checksum:'0'.repeat(64)}});
+  expect((adminModerationSummariesSchema.parse(await enriched.json())).items[0]!.card).toMatchObject({author:null,reviewKind:'unknown',thumbnail:{kind:'seller-photo',revisionId:revisions[0],checksum:'0'.repeat(64)}});
   const approved = await api.get(
     `/admin/seller-profiles/summary?${new URLSearchParams({ search: label, filter: 'APPROVED' })}`,
   );
@@ -1120,7 +1127,7 @@ it('uses UTC and revision ids for tied summary cursors, and preserves unknown hi
     oldStatus: 'PENDING_REVIEW', newStatus: 'REJECTED',
   } });
   const first = await api.get(`/admin/seller-profiles/${sellerId}/history?limit=1`);
-  const page = await first.json();
+  const page = adminHistoryResponseSchema.parse(await first.json());
   expect(page.events[0]).toMatchObject({ id: ids[0], revisionId: null, action: null, operationGeneration: null, mediaOperationId: null });
   const second = await api.get(`/admin/seller-profiles/${sellerId}/history?limit=1&cursor=${page.nextCursor}`);
   expect(await second.json()).toMatchObject({ events: [{ id: ids[1] }], nextCursor: null });
@@ -1150,11 +1157,11 @@ it('returns separate Work snapshots without tracking public page views', async (
     reviewRevision: { id: reviewId, content: { title: label } }, decisionTarget: { kind: 'revision', id: reviewId } });
   const enriched = await api.get(`/admin/products/summary?search=${label}&includeCard=true`);
   expect(enriched.status).toBe(200);
-  expect((await enriched.json()).items[0].card).toMatchObject({ author: { fullName:label,slug:label }, reviewKind:'repeat', thumbnail:null });
+  expect((adminModerationSummariesSchema.parse(await enriched.json())).items[0]!.card).toMatchObject({ author: { fullName:label,slug:label }, reviewKind:'repeat', thumbnail:null });
   for (const filter of ['PENDING_REVIEW', 'APPROVED']) {
     const summaries = await api.get(`/admin/products/summary?search=${label}&limit=1&filter=${filter}`);
     expect(summaries.status).toBe(200);
-    const body = await summaries.json();
+    const body = adminModerationSummariesSchema.parse(await summaries.json());
     expect(body).toMatchObject({ items: [{ id: productId, parentStatus: 'APPROVED', reviewStatus: 'PENDING_REVIEW' }] });
     expect(body.items[0]).not.toHaveProperty('card');
   }

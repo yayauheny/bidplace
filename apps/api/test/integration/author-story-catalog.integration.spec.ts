@@ -446,11 +446,11 @@ describe('author story, catalog, and proposals', () => {
     );
     expect(page.status).toBe(200);
     const firstPage = (await page.json()) as {
-      works: Array<{ product: { publicId: string } }>;
+      works: Array<{ work: { publicId: string } }>;
       pagination: { total: number };
     };
     const secondPage = (await next.json()) as {
-      works: Array<{ product: { publicId: string } }>;
+      works: Array<{ work: { publicId: string } }>;
     };
     expect(firstPage.pagination.total).toBe(2);
     expect(firstPage.works).toHaveLength(1);

@@ -122,8 +122,6 @@ describe('AuthController logout', () => {
         email: 'seller@example.com',
         role: 'user',
         sessionVersion: 2,
-        iat: 1,
-        exp: 2_000_000_000,
       },
       {} as never,
       response,

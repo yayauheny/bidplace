@@ -262,7 +262,7 @@ async function createFacetWork(input: {
           : input.revisionCategoryId,
       title,
       story: 'Facet fixture',
-      materials: input.materials,
+      ...(input.materials === undefined ? {} : { materials: input.materials }),
       ...(withRevisionImage && product.images[0]
         ? {
             images: {

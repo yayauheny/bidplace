@@ -1,3 +1,4 @@
+import type { ServerEnv } from '../../src/core/config';
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { cpSync, mkdtempSync, rmSync } from 'node:fs';
@@ -36,7 +37,6 @@ import {
 } from '../../src/auth-abuse/turnstile-verifier';
 import {
   syntheticServerEnv,
-  type ServerEnv,
 } from '../../src/core/config/synthetic-server-env';
 import { Clock, SystemClock } from '../../src/core/time';
 import { PasswordResetService } from '../../src/password-reset/password-reset.service';
@@ -372,7 +372,8 @@ async function runResetCorrectionRace(
     if (input.first === 'reset') expect(resetResult?.status).toBe('fulfilled');
     if (input.first === 'correction') {
       expect(resetResult?.status).toBe('rejected');
-      expect(resetResult?.reason).toMatchObject({
+      if (resetResult?.status !== 'rejected') throw new Error('Expected reset rejection');
+      expect(resetResult.reason).toMatchObject({
         apiCode: ApiErrorCode.PASSWORD_RESET_INVALID,
       });
     }
@@ -447,7 +448,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
   beforeAll(async () => {
     assertIsolatedDatabase(databaseUrl!);
     migrateIsolatedDatabase(databaseUrl!);
-    prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+    prisma = new PrismaClient({ datasources: { db: { url: databaseUrl! } } });
     await prisma.$connect();
   }, 180_000);
 
@@ -484,7 +485,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
     ).rejects.toMatchObject({ apiCode: ApiErrorCode.OTP_INVALID });
 
     const next = new PrismaClient({
-      datasources: { db: { url: databaseUrl } },
+      datasources: { db: { url: databaseUrl! } },
     });
     const restarted = createHarness(next, syntheticServerEnv(), recorded.mail);
     await expect(
@@ -893,6 +894,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
         userId: user.id,
         idempotencyKey: key,
         ip: '203.0.113.42',
+        turnstileToken: '',
       }),
     ).resolves.toEqual({ delivery: 'already_verified' });
     expect(sends).toBe(0);
@@ -939,7 +941,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
     ).resolves.toEqual({ delivery: 'unknown' });
 
     const next = new PrismaClient({
-      datasources: { db: { url: databaseUrl } },
+      datasources: { db: { url: databaseUrl! } },
     });
     const restarted = createHarness(next, env, mail);
     await expect(
@@ -1021,7 +1023,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
       ip: '203.0.113.50',
     });
     const nextPrisma = new PrismaClient({
-      datasources: { db: { url: databaseUrl } },
+      datasources: { db: { url: databaseUrl! } },
     });
     const second = createHarness(nextPrisma, env, mail);
     await expect(
@@ -1125,7 +1127,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
         ).outcome,
       ).toBe('invalid');
     }
-    const sixth = new Date(samples[4].getTime() + 1000);
+    const sixth = new Date(samples[4]!.getTime() + 1000);
     expect(
       (
         await store.evaluateLogin({
@@ -1137,7 +1139,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
         })
       ).outcome,
     ).toBe('invalid');
-    const fifthMostRecent = samples[1];
+    const fifthMostRecent = samples[1]!;
     expect(
       (
         await store.evaluateLogin({
@@ -1159,7 +1161,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
         timestamp.toISOString(),
       ),
     ).toEqual(
-      [samples[2], samples[3], samples[4], sixth].map((timestamp) =>
+      [samples[2]!, samples[3]!, samples[4]!, sixth].map((timestamp) =>
         timestamp.toISOString(),
       ),
     );
@@ -1271,7 +1273,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
     expect(operation.resultDeadline).toEqual(deadline);
 
     const next = new PrismaClient({
-      datasources: { db: { url: databaseUrl } },
+      datasources: { db: { url: databaseUrl! } },
     });
     const restarted = new AuthAbuseStore(
       next as never,
@@ -1632,7 +1634,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
     ).toEqual(boundary);
 
     await prisma.authAbuseOperation.updateMany({
-      where: { ownerUserId: user.id, createdAt: stamps[2], status: 'accepted' },
+      where: { ownerUserId: user.id, createdAt: stamps[2]!, status: 'accepted' },
       data: { status: 'rejected' },
     });
     const afterRelease = new Date(
@@ -1851,6 +1853,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
       email: user.email,
       idempotencyKey: refusedKey,
       ip: '203.0.113.100',
+      turnstileToken: '',
     });
     expect(sends).toBe(1);
     await expect(
@@ -1875,6 +1878,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
       email: unknown,
       idempotencyKey: unknownKey,
       ip: '203.0.113.101',
+      turnstileToken: '',
     });
     await expect(
       service.sendPasswordReset({
@@ -1893,9 +1897,9 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
     const monthStart = new Date(now.getTime() - 31 * 24 * 60 * 60 * 1000);
     const spendWhere = {
       purpose: {
-        in: ['email_verification_send', 'password_reset_send'] as const,
+        in: ['email_verification_send', 'password_reset_send'],
       },
-      status: { in: ['reserved', 'accepted', 'unknown'] as const },
+      status: { in: ['reserved', 'accepted', 'unknown'] },
     };
     const countSince = (since: Date) =>
       prisma.authAbuseOperation.count({
@@ -2204,6 +2208,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
         userId: user.id,
         idempotencyKey: secondKey,
         ip: '203.0.113.123',
+        turnstileToken: '',
       }),
     ).resolves.toEqual({ delivery: 'already_verified' });
     expect(sends).toBe(1);
@@ -2343,7 +2348,7 @@ describe.skipIf(!databaseUrl)('auth abuse legacy credential import', () => {
     schemaUrlBuilder.searchParams.set('schema', schemaName);
     schemaUrl = schemaUrlBuilder.toString();
     const admin = new PrismaClient({
-      datasources: { db: { url: databaseUrl } },
+      datasources: { db: { url: databaseUrl! } },
     });
     await admin.$executeRawUnsafe(`CREATE SCHEMA "${schemaName}"`);
     await admin.$disconnect();
@@ -2353,7 +2358,7 @@ describe.skipIf(!databaseUrl)('auth abuse legacy credential import', () => {
     await legacy?.$disconnect();
     if (!/^legacy_cutover_[a-f0-9]+$/.test(schemaName)) return;
     const admin = new PrismaClient({
-      datasources: { db: { url: databaseUrl } },
+      datasources: { db: { url: databaseUrl! } },
     });
     await admin.$executeRawUnsafe(
       `DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`,

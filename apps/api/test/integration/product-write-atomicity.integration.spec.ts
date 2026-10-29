@@ -153,6 +153,7 @@ async function createSubmitReadyProduct(
     },
     select: {
       id: true,
+      publicId: true,
       title: true,
       status: true,
       editingRevisionId: true,
@@ -198,7 +199,7 @@ function createServices() {
   return {
     products: new ProductsService(prisma as never, new PublicIdService()),
     images: new ImagesService(prisma as never, imageStore, undefined, new SharpImageProcessor()),
-    admin: new AdminModerationService(prisma as never),
+    admin: new AdminModerationService(prisma as never, imageStore),
     sellers: new SellersService(prisma as never, imageStore),
   };
 }

@@ -78,7 +78,7 @@ class MemoryCache extends PublicMediaCache {
 let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
 const mediaServices = new Set<MediaLifecycleService>();
-let bytes: Buffer;
+let bytes: Buffer<ArrayBuffer>;
 beforeAll(async () => {
   context = await createIntegrationDatabaseContext();
   prisma = context.prisma;
@@ -1190,7 +1190,7 @@ describe('scheduled media recovery on PostgreSQL', () => {
     const realClearTimeout = globalThis.clearTimeout;
     const queue = new Map<object, { at: number; run: () => unknown }>();
     vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
-      fn: TimerHandler,
+      fn: (...args: unknown[]) => void,
       delay?: number,
       ...args: unknown[]
     ) => {
@@ -1354,7 +1354,7 @@ describe('scheduled media recovery on PostgreSQL', () => {
     const owner = await user();
     const input = await sharp(bytes).toColourspace('rgb16').png().toBuffer();
     const currentProcess = SharpImageProcessor.prototype.process;
-    const oldEncoder = vi.spyOn(SharpImageProcessor.prototype, 'process').mockImplementation(async function (file, purpose, preserveSource) {
+    const oldEncoder = vi.spyOn(SharpImageProcessor.prototype, 'process').mockImplementation(async function (this: SharpImageProcessor, file, purpose, preserveSource) {
       const downgraded = await sharp(file.buffer).png().toBuffer();
       return currentProcess.call(this, { buffer: downgraded, mimetype: 'image/png' }, purpose, preserveSource);
     });
@@ -1733,13 +1733,21 @@ describe('tick media recovery on PostgreSQL', () => {
     const findMany = prisma.mediaOperation.findMany.bind(prisma.mediaOperation);
     const selection = vi
       .spyOn(prisma.mediaOperation, 'findMany')
-      .mockImplementationOnce(async (args) => {
-        const rows = await findMany(args);
-        await prisma.mediaOperation.update({
-          where: { id: operation.id },
-          data: { state: 'FAILED', leaseUntil: null },
-        });
-        return rows;
+      .mockImplementationOnce((args) => {
+        const result = (async () => {
+          const rows = await findMany(args);
+          await prisma.mediaOperation.update({
+            where: { id: operation.id },
+            data: { state: 'FAILED', leaseUntil: null },
+          });
+          return rows;
+        })();
+        return {
+          [Symbol.toStringTag]: 'PrismaPromise',
+          then: result.then.bind(result),
+          catch: result.catch.bind(result),
+          finally: result.finally.bind(result),
+        };
       });
     try {
       await s.tick.run();

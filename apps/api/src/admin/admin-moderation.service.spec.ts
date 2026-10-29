@@ -333,7 +333,7 @@ describe('AdminModerationService', () => {
       expect.objectContaining({
         where: sellerModerationWhere(query, {
           createdAt: sameTime.toISOString(),
-          id: ids[0],
+          id: ids[0]!,
         }),
         take: 2,
       }),

@@ -119,6 +119,10 @@ describe('toPublicSellerProfile', () => {
     const profile = toPublicSellerProfile({
       id: '2b2e93b2-1428-40fc-a15a-b9cd98e422b6',
       slug: 'maker',
+      user: { slug: 'maker' },
+      practice: null,
+      city: null,
+      biography: null,
       sellerType: 'creator',
       discipline: 'Керамика',
       fullName: 'Maker',
@@ -130,11 +134,14 @@ describe('toPublicSellerProfile', () => {
       publicEmail: 'maker@example.com',
       shortDescription: 'Short bio',
       publishedRevision: {
+        profilePhotoAsset: null,
+        directions: [],
         achievements: [
           {
             id: '3b2e93b2-1428-40fc-a15a-b9cd98e422b6',
             occurredAt: new Date('2025-03-02T00:00:00.000Z'),
             occurredAtPrecision: 'DAY',
+            mediaAsset: null,
             body: 'Групповая выставка',
             mimeType: null,
             byteLength: null,

@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
+import { PostgresImageStore } from '../../src/core/image-store';
 import { ImagesService } from '../../src/images/images.service';
 import { productImageUploadLimits } from '../../src/images/image-policy';
 
@@ -65,7 +66,7 @@ describe('public media transport over HTTP and PostgreSQL', () => {
         }),
       ),
     });
-    const images = new ImagesService(prisma as never);
+    const images = new ImagesService(prisma as never, new PostgresImageStore(prisma as never));
 
     await expect(
       images.add(fixture.sellers.approved.id, product.id, [

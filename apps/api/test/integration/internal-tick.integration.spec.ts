@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { TickService } from '../../src/core/tick/tick.service';
 import { createHttpTestApp, type HttpTestApp } from './http-test-app';
@@ -54,7 +55,7 @@ describe('private tick HTTP and database boundary', () => {
     );
     expect(responses.every((response) => response.status === 200)).toBe(true);
     const bodies = await Promise.all(
-      responses.map((response) => response.json()),
+      responses.map(async (response) => z.object({ skipped: z.boolean(), jobs: z.array(z.unknown()) }).passthrough().parse(await response.json())),
     );
     expect(
       bodies.every(

@@ -1,3 +1,4 @@
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 import 'reflect-metadata';
 
 import { type AnalyticsIngestRequest } from '@bidplace/contracts';
@@ -77,7 +78,7 @@ SetMetadata(RATE_LIMIT_METADATA_KEY, {
 })(
   RateLimitProbe.prototype,
   'handle',
-  Object.getOwnPropertyDescriptor(RateLimitProbe.prototype, 'handle'),
+  Object.getOwnPropertyDescriptor(RateLimitProbe.prototype, 'handle')!,
 );
 
 describe('server env ownership', () => {
@@ -284,17 +285,11 @@ describe('server env ownership', () => {
         .select(RateLimitModule)
         .get(RateLimitGuard, { strict: true });
       const context = (ip: string) =>
-        ({
-          getHandler: () => RateLimitProbe.prototype.handle,
-          getClass: () => RateLimitProbe,
-          switchToHttp: () => ({
-            getRequest: () => ({
-              ip,
-              params: {},
-              socket: { remoteAddress: '10.0.0.1' },
-            }),
-          }),
-        }) satisfies Parameters<RateLimitGuard['canActivate']>[0];
+        new ExecutionContextHost(
+          [{ ip, params: {}, socket: { remoteAddress: '10.0.0.1' } }],
+          RateLimitProbe,
+          RateLimitProbe.prototype.handle,
+        );
 
       expect(guard.canActivate(context('203.0.113.5'))).toBe(true);
       expect(guard.canActivate(context('198.51.100.9'))).toBe(true);

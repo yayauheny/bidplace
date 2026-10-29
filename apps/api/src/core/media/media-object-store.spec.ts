@@ -19,7 +19,7 @@ const env = () =>
 afterEach(() => vi.restoreAllMocks());
 describe('tiered S3 media transport', () => {
   it('uses separate buckets and conditional writes with browser revalidation', async () => {
-    const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({});
+    const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue(undefined);
     const store = new S3MediaObjectStore(env());
     const object = { bytes: Uint8Array.from([1]), mimeType: 'image/webp' };
     await store.put('PRIVATE', key.replace('/p1/', '/p2/'), object, {
@@ -44,7 +44,7 @@ describe('tiered S3 media transport', () => {
     });
   });
   it('rejects SOURCE and arbitrary keys in the public tier before issuing an SDK command', async () => {
-    const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({});
+    const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue(undefined);
     const store = new S3MediaObjectStore(env());
     await expect(
       store.get('PUBLIC', key.replace('p1/preview.webp', 'source.png')),

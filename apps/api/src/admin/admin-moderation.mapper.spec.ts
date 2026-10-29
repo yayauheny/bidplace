@@ -46,6 +46,7 @@ function sellerRecord(
     profilePhotoChecksum: parentChecksum,
     profilePhotoObjectKey: imageKey.sellerPhoto(sellerId),
     editingRevision: revision,
+    mediaOperations: [],
   };
 }
 
@@ -76,6 +77,7 @@ describe('admin moderation mapper', () => {
         profilePhotoChecksum: null,
         profilePhotoObjectKey: null,
         achievements: [],
+        directions: [],
       }),
       null,
       false,
@@ -155,6 +157,8 @@ describe('admin moderation mapper', () => {
     const product = {
       id: productId,
       publicId: 'abcdefghijk',
+      createdAt: now,
+      mediaOperations: [],
       sellerProfileId: sellerId,
       status: 'APPROVED',
       updatedAt: now,
@@ -202,6 +206,8 @@ describe('admin moderation mapper', () => {
         updatedAt: now,
         submittedAt: now,
         categoryId: '00000000-0000-4000-8000-000000000008',
+        category: null,
+        proposals: [],
         title: 'Pending title',
         story: null,
         technique: 'Лепка',
@@ -243,8 +249,13 @@ describe('admin moderation mapper', () => {
         images: [
           {
             position: 0,
+            version: 0,
+            slotId: imageId,
+            crop: null,
             image: {
               id: imageId,
+              mediaAsset: null,
+              mediaAssetId: null,
               mimeType: 'image/png',
               byteLength: 8,
               checksum: parentChecksum,
@@ -254,7 +265,7 @@ describe('admin moderation mapper', () => {
           },
         ],
       },
-    } as AdminProductListRecord;
+    } satisfies AdminProductListRecord;
 
     const mapped = toAdminProduct(product, null);
     expect(mapped.parent.story).toBe('Published story');
