@@ -27,7 +27,7 @@ import {
   toContractUser,
 } from './auth.mapper';
 import { PasswordHasherService } from './password-hasher.service';
-import { AuthAbuseService } from '../auth-abuse/auth-abuse.service';
+import { AntifraudService } from '../antifraud';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import {
   PrismaService,
@@ -59,7 +59,7 @@ export class AuthService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     private readonly passwordHasher: PasswordHasherService,
-    private readonly abuse: AuthAbuseService,
+    private readonly abuse: AntifraudService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 

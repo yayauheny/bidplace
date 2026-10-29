@@ -30,7 +30,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { resolveClientIp } from '../auth-abuse/client-ip';
+import { resolveClientIp } from '../antifraud';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import { parseBody } from '../core/validation';

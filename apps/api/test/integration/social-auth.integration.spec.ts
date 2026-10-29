@@ -41,9 +41,9 @@ import { ServiceUnavailableException } from '@nestjs/common';
 
 import { MailTransport } from '../../src/core/mail';
 import { PrismaService } from '../../src/core/database';
-import { MAIL_SPEND_STATUSES } from '../../src/auth-abuse/auth-abuse.policy';
+import { MAIL_SPEND_STATUSES, AntifraudService } from '../../src/antifraud';
 import { EmailProofService } from '../../src/auth/email-proof.service';
-import { AuthAbuseService } from '../../src/auth-abuse/auth-abuse.service';
+
 
 const optionalErrorSchema = apiErrorResponseSchema.pick({ code: true }).partial().passthrough();
 const deliverySchema = emailOtpRequestResponseSchema.pick({ delivery: true }).passthrough();
@@ -315,7 +315,7 @@ describe('OIDC, email login and explicit account linking', () => {
     const captchaRelease = deferred();
     const smtpEntered = deferred();
     const smtpRelease = deferred();
-    const abuse = http.app.get(AuthAbuseService);
+    const abuse = http.app.get(AntifraudService);
     const validate = abuse.assertOnboardingEmailProof.bind(abuse);
     const captcha = vi.spyOn(abuse, 'assertOnboardingEmailProof').mockImplementationOnce(async (...args) => {
       await validate(...args);

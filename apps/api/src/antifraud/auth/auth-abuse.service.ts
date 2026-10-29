@@ -7,12 +7,12 @@ import {
   type ServerEnv,
   isTestEmailBypassEnabled,
   resolveCorsOrigin,
-} from '../core/config';
-import { PrismaService } from '../core/database';
-import { AppException } from '../core/errors';
-import { MailTransport } from '../core/mail';
-import { safeFailureLocation } from '../core/request-context/safe-request-log';
-import { buildPasswordResetLink } from '../password-reset/password-reset-link';
+} from '../../core/config';
+import { PrismaService } from '../../core/database';
+import { AppException } from '../../core/errors';
+import { MailTransport } from '../../core/mail';
+import { safeFailureLocation } from '../../core/request-context/safe-request-log';
+import { buildPasswordResetLink } from '../../password-reset/password-reset-link';
 import {
   cooldownAfterSends,
   normalizeEmail,

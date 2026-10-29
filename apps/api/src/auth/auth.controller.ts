@@ -42,7 +42,7 @@ import {
   type ServerEnv,
   requiresProductionSecurity,
 } from '../core/config';
-import { resolveClientIp } from '../auth-abuse/client-ip';
+import { resolveClientIp } from '../antifraud';
 import { parseBody } from '../core/validation';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 

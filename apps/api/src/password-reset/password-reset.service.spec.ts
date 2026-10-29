@@ -4,6 +4,7 @@ import { describe, expect, it, vi, afterEach } from 'vitest';
 import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
 import { syntheticServerEnv } from '../core/config/synthetic-server-env';
 import { AppException } from '../core/errors';
+import { AntifraudService } from '../antifraud';
 import { PasswordResetController } from './password-reset.controller';
 import { PasswordResetService } from './password-reset.service';
 
@@ -18,6 +19,7 @@ const rateLimits = {
 };
 
 const abuse = {
+  lockAbuseUser: AntifraudService.prototype.lockAbuseUser,
   sendPasswordReset: vi.fn().mockResolvedValue(undefined),
 };
 

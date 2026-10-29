@@ -7,7 +7,7 @@ import {
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AnalyticsModule } from './analytics/analytics.module';
-import { AuthAbuseModule } from './auth-abuse/auth-abuse.module';
+import { AntifraudModule } from './antifraud';
 import { AuthModule } from './auth/auth.module';
 import { SocialAuthModule } from './auth/social-auth.module';
 import { CatalogModule } from './catalog/catalog.module';
@@ -55,7 +55,7 @@ export class AppModule implements NestModule {
         CategoriesModule,
         CatalogModule,
         DatabaseModule,
-        AuthAbuseModule,
+        AntifraudModule,
         AuthModule,
         SocialAuthModule,
         AnalyticsModule,

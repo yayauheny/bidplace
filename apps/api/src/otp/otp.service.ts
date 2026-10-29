@@ -2,10 +2,11 @@ import { ApiErrorCode } from '@bidplace/contracts';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 
 import {
-  AuthAbuseService,
+  AntifraudService,
   type MailDelivery,
-} from '../auth-abuse/auth-abuse.service';
-import { resolveClientIp, type ClientIpRequest } from '../auth-abuse/client-ip';
+  resolveClientIp,
+  type ClientIpRequest,
+} from '../antifraud';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { AppException } from '../core/errors';
 import { RateLimitService } from '../core/rate-limit';
@@ -25,7 +26,7 @@ export type OtpVerifyContext = ClientIpRequest & {
 export class OtpService {
   constructor(
     private readonly rateLimits: RateLimitService,
-    private readonly abuse: AuthAbuseService,
+    private readonly abuse: AntifraudService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 

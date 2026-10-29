@@ -19,11 +19,11 @@ to the upstream project.
 Update from a reviewed commit:
 
 ```sh
-curl -fsSL -o apps/api/src/auth-abuse/vendor/LICENSE.txt \
+curl -fsSL -o apps/api/src/antifraud/auth/vendor/LICENSE.txt \
   https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/81a8976e63879a11bf4301a28c14e0eb7a7855cf/LICENSE.txt
-curl -fsSL -o apps/api/src/auth-abuse/vendor/disposable-email-domains.txt \
+curl -fsSL -o apps/api/src/antifraud/auth/vendor/disposable-email-domains.txt \
   https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/81a8976e63879a11bf4301a28c14e0eb7a7855cf/disposable_email_blocklist.conf
-shasum -a 256 apps/api/src/auth-abuse/vendor/disposable-email-domains.txt
+shasum -a 256 apps/api/src/antifraud/auth/vendor/disposable-email-domains.txt
 ```
 
 Replace the commit SHA in these URLs with the newly reviewed revision, then

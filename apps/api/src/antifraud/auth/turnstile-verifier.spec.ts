@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   syntheticProductionServerEnv,
   syntheticServerEnv,
-} from '../core/config/synthetic-server-env';
+} from '../../core/config/synthetic-server-env';
 import {
   CloudflareTurnstileVerifier,
   ScriptedTurnstileVerifier,

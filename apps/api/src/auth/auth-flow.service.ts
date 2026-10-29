@@ -15,8 +15,7 @@ import {
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import * as oidc from 'openid-client';
-import { AuthAbuseService } from '../auth-abuse/auth-abuse.service';
-import { lockAbuseUser, otpCodeHash } from '../auth-abuse/auth-abuse.store';
+import { AntifraudService } from '../antifraud';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
 import { AppException } from '../core/errors';
@@ -59,7 +58,7 @@ export class AuthFlowService {
     private readonly providers: OidcProvidersService,
     private readonly sessions: SessionService,
     private readonly auth: AuthService,
-    private readonly abuse: AuthAbuseService,
+    private readonly abuse: AntifraudService,
     private readonly emailProof: EmailProofService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
@@ -134,7 +133,7 @@ export class AuthFlowService {
     flow: AuthFlow,
     stages: string[],
   ): Promise<AuthFlow> {
-    if (flow.userId) await lockAbuseUser(tx, flow.userId);
+    if (flow.userId) await this.abuse.lockAbuseUser(tx, flow.userId);
     await tx.$queryRaw`SELECT id FROM auth_flows WHERE id = CAST(${flow.id} AS uuid) FOR UPDATE`;
     const current = await tx.authFlow.findUniqueOrThrow({
       where: { id: flow.id },
@@ -820,7 +819,7 @@ export class AuthFlowService {
           purpose: 'email_login',
           flowId: flow.id,
           version: user.sessionVersion,
-          codeHash: otpCodeHash(
+          codeHash: this.abuse.otpCodeHash(
             this.env.OTP_HASH_SECRET,
             user.id,
             user.email,

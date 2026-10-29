@@ -1,8 +1,8 @@
 import { ApiErrorCode } from '@bidplace/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
-import { syntheticServerEnv } from '../core/config/synthetic-server-env';
+import { turnstileToken as syntheticTurnstileToken } from '../../../test/integration/abuse-request';
+import { syntheticServerEnv } from '../../core/config/synthetic-server-env';
 import { AuthAbuseService } from './auth-abuse.service';
 import { mailContentHash, resetContentHash } from './auth-abuse.store';
 

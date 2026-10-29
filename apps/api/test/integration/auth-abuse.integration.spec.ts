@@ -11,7 +11,8 @@ import { ApiErrorCode } from '@bidplace/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { PasswordHasherService } from '../../src/auth/password-hasher.service';
-import { AuthAbuseService } from '../../src/auth-abuse/auth-abuse.service';
+import { AuthAbuseService } from '../../src/antifraud/auth/auth-abuse.service';
+import { AntifraudService } from '../../src/antifraud';
 import {
   cooldownAfterSends,
   LOGIN_WINDOW_MS,
@@ -19,7 +20,7 @@ import {
   OTP_PAUSE_MS,
   OTP_TTL_MS,
   PERSONAL_MAIL_WINDOW_MS,
-} from '../../src/auth-abuse/auth-abuse.policy';
+} from '../../src/antifraud/auth/auth-abuse.policy';
 import {
   AuthAbuseStore,
   lockAbuseUser,
@@ -27,14 +28,14 @@ import {
   resetContentHash,
   verifyContentHash,
   otpCodeHash,
-} from '../../src/auth-abuse/auth-abuse.store';
-import { DisposableEmailList } from '../../src/auth-abuse/disposable-email';
+} from '../../src/antifraud/auth/auth-abuse.store';
+import { DisposableEmailList } from '../../src/antifraud/auth/disposable-email';
 import {
   ScriptedTurnstileVerifier,
   TurnstileVerifier,
   type TurnstileCheck,
   type TurnstileDecision,
-} from '../../src/auth-abuse/turnstile-verifier';
+} from '../../src/antifraud/auth/turnstile-verifier';
 import {
   syntheticServerEnv,
 } from '../../src/core/config/synthetic-server-env';
@@ -791,7 +792,10 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
       new PasswordHasherService(),
       { consume: () => true } as never,
       syntheticServerEnv(),
-      { sendPasswordReset: async () => undefined } as never,
+      {
+        sendPasswordReset: async () => undefined,
+        lockAbuseUser: AntifraudService.prototype.lockAbuseUser,
+      } as never,
     );
     const nextEmail = `reset-next-${randomUUID()}@example.com`;
     await runResetCorrectionRace(prisma, reset, service, {
@@ -2589,7 +2593,10 @@ describe.skipIf(!databaseUrl)('auth abuse legacy credential import', () => {
         new PasswordHasherService(),
         { consume: () => true } as never,
         syntheticServerEnv(),
-        { sendPasswordReset: async () => undefined } as never,
+        {
+          sendPasswordReset: async () => undefined,
+          lockAbuseUser: AntifraudService.prototype.lockAbuseUser,
+        } as never,
       );
       await expect(
         reset.resetPassword(usedReset, 'legacy-password-1', {

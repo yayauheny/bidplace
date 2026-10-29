@@ -1,12 +1,11 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import { SERVER_ENV, type ServerEnv } from '../core/config';
+import { SERVER_ENV, type ServerEnv } from '../../core/config';
 import { AuthAbuseService } from './auth-abuse.service';
 import { AuthAbuseStore } from './auth-abuse.store';
 import { DisposableEmailList } from './disposable-email';
 import { TurnstileVerifier, createTurnstileVerifier } from './turnstile-verifier';
 
-@Global()
 @Module({
   providers: [
     AuthAbuseStore,
@@ -18,6 +17,6 @@ import { TurnstileVerifier, createTurnstileVerifier } from './turnstile-verifier
     },
     AuthAbuseService,
   ],
-  exports: [AuthAbuseService, DisposableEmailList],
+  exports: [AuthAbuseService],
 })
 export class AuthAbuseModule {}

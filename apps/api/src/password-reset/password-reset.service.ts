@@ -2,9 +2,11 @@ import { ApiErrorCode } from '@bidplace/contracts';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 
-import { AuthAbuseService } from '../auth-abuse/auth-abuse.service';
-import { lockAbuseUser } from '../auth-abuse/auth-abuse.store';
-import { resolveClientIp, type ClientIpRequest } from '../auth-abuse/client-ip';
+import {
+  AntifraudService,
+  resolveClientIp,
+  type ClientIpRequest,
+} from '../antifraud';
 import { PasswordHasherService } from '../auth/password-hasher.service';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService } from '../core/database';
@@ -27,7 +29,7 @@ export class PasswordResetService {
     private readonly passwordHasher: PasswordHasherService,
     private readonly rateLimits: RateLimitService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
-    private readonly abuse: AuthAbuseService,
+    private readonly abuse: AntifraudService,
   ) {}
 
   async requestReset(
@@ -87,7 +89,7 @@ export class PasswordResetService {
     const passwordHash = await this.passwordHasher.hash(password);
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      await lockAbuseUser(tx, record.userId);
+      await this.abuse.lockAbuseUser(tx, record.userId);
       const current = await tx.passwordResetToken.findUnique({
         where: { id: record.id },
         select: {
