@@ -1,5 +1,6 @@
 import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
+  ApiErrorCode,
   productResponseSchema,
   type PortfolioWorksQuery,
   isEditableProductStatus,
@@ -54,9 +55,10 @@ import {
   portfolioDirectProductWhere,
 } from './public-visibility';
 import {
-  assertProductRevisionTransition,
-  canAuthorEditRevision,
-} from './product-revision-state';
+  assertRevisionTransition,
+  transitionProductVisibility,
+} from './product-publication';
+import { AppException } from '../core/errors/app.exception';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import { toPublicSellerProfile } from '../sellers/seller-profile.mapper';
 
@@ -129,7 +131,6 @@ export class ProductsService {
           packaging: input.packaging ?? null,
           deliveryInfo: input.deliveryInfo ?? null,
           creationIntro: input.creationIntro ?? null,
-          status: 'DRAFT',
         };
 
         const product = await this.prisma.$transaction(async (tx) => {
@@ -311,7 +312,7 @@ export class ProductsService {
             where: { id: editingRevisionId },
             select: { status: true },
           });
-          if (!canAuthorEditRevision(editingRevision.status)) {
+          if (!isEditableProductStatus(editingRevision.status)) {
             throw new ConflictException('Product revision cannot be edited');
           }
         }
@@ -361,7 +362,7 @@ export class ProductsService {
         where: { id: product.editingRevisionId },
         select: { status: true },
       });
-      if (!canAuthorEditRevision(editingRevision.status)) {
+      if (!isEditableProductStatus(editingRevision.status)) {
         throw new ConflictException('Product revision cannot be edited');
       }
 
@@ -476,8 +477,7 @@ export class ProductsService {
             images: { select: { imageId: true }, take: 1 },
           },
         });
-        assertProductRevisionTransition(
-          'author',
+        assertRevisionTransition(
           editingRevision.status,
           'PENDING_REVIEW',
         );
@@ -538,8 +538,7 @@ export class ProductsService {
           images: { select: { imageId: true }, take: 1 },
         },
       });
-      assertProductRevisionTransition(
-        'author',
+      assertRevisionTransition(
         editingRevision.status,
         'PENDING_REVIEW',
       );
@@ -553,13 +552,12 @@ export class ProductsService {
         );
       }
 
-      const moved = await tx.product.updateMany({
-        where: { id, ...writableProductWhere },
-        data: { status: 'PENDING_REVIEW' },
+      await transitionProductVisibility(tx, {
+        productId: id,
+        expected: [current.status as ProductStatus],
+        next: 'PENDING_REVIEW',
+        actor: 'author',
       });
-      if (moved.count !== 1) {
-        throw new ConflictException('Product cannot be submitted for review');
-      }
       await tx.productRevision.update({
         where: { id: current.editingRevisionId },
         data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
@@ -627,11 +625,15 @@ export class ProductsService {
           throw new ForbiddenException('Product is not owned by user');
         }
         assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-        assertProductRevisionTransition(
-          'author',
-          product.status as ProductStatus,
-          nextStatus,
-        );
+        if (
+          product.status !== (nextStatus === 'ARCHIVED' ? 'APPROVED' : 'ARCHIVED')
+        ) {
+          throw new AppException({
+            status: 409,
+            code: ApiErrorCode.PRODUCT_STATE_CONFLICT,
+            message: 'Product transition is not allowed',
+          });
+        }
         if (product.publishedRevisionId == null) {
           throw new ConflictException('Product has no published revision');
         }
@@ -665,9 +667,11 @@ export class ProductsService {
             );
           }
         }
-        await tx.product.update({
-          where: { id },
-          data: { status: nextStatus },
+        await transitionProductVisibility(tx, {
+          productId: id,
+          expected: [product.status as ProductStatus],
+          next: nextStatus,
+          actor: 'author',
         });
         await tx.auditEvent.create({
           data: {
@@ -761,7 +765,7 @@ export class ProductsService {
         where: { id: product.editingRevisionId },
         select: { status: true },
       });
-      if (!canAuthorEditRevision(revision.status)) {
+      if (!isEditableProductStatus(revision.status)) {
         throw new ConflictException('Product revision cannot be edited');
       }
       return replaceProductStory(tx, {

@@ -11,6 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  isEditableProductStatus,
   STORY_LIMITS,
   photoCropSchema,
   workPhotoResultSchema,
@@ -43,7 +44,6 @@ import {
   lockProductRowForUpdate,
   type ProductWriteGuardKind,
 } from '../products/product-write-guard';
-import { canAuthorEditRevision } from '../products/product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 
 export const productImageAuthorizationSelect = {
@@ -1537,7 +1537,7 @@ export class ImagesService {
         !product.editingRevisionId ||
         product.editingRevisionId === product.publishedRevisionId ||
         !product.editingRevision ||
-        !canAuthorEditRevision(product.editingRevision.status as ProductStatus)
+        !isEditableProductStatus(product.editingRevision.status as ProductStatus)
       ) {
         throw new ForbiddenException('Product images are locked');
       }

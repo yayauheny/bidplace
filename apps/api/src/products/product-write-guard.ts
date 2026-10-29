@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  ApiErrorCode,
   EDITABLE_PRODUCT_STATUSES,
   isEditableProductStatus,
   type ProductStatus,
@@ -11,6 +12,7 @@ import {
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 
+import { AppException } from '../core/errors/app.exception';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 
 export const PRODUCT_EDIT_LOCK_LISTING_STATUSES = ['SCHEDULED', 'LIVE'] as const;
@@ -92,5 +94,23 @@ export function productWriteLockedError(kind: ProductWriteGuardKind) {
       return new ForbiddenException('Product creation story is locked');
     default:
       return new ForbiddenException('Product cannot be edited');
+  }
+}
+
+export async function assertProductNotInSale(
+  tx: Prisma.TransactionClient,
+  productId: string,
+): Promise<void> {
+  await lockProductRowForUpdate(tx, productId);
+  const listing = await tx.listing.findFirst({
+    where: { productId, status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
+    select: { id: true },
+  });
+  if (listing) {
+    throw new AppException({
+      status: 409,
+      code: ApiErrorCode.PRODUCT_IN_SALE,
+      message: 'Product is in sale',
+    });
   }
 }

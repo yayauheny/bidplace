@@ -3,13 +3,11 @@ import {
   type ModerationResource,
   type ModerationSummaryRow,
 } from './admin-moderation-summary';
-import {
-  publishedProductData,
-  publishedSellerProfileData,
-} from '../core/media/publication-fields';
+import { publishedSellerProfileData } from '../core/media/publication-fields';
 import { createHash } from 'node:crypto';
 
 import {
+  ApiErrorCode,
   adminHistoryResponseSchema,
   adminModerationSummariesSchema,
   adminProductDetailSchema,
@@ -45,8 +43,16 @@ import {
   selectedPendingProposalCount,
   writeTermLabel,
 } from '../products/work-selection';
-import { assertProductRevisionTransition } from '../products/product-revision-state';
-import { lockProductRowForUpdate } from '../products/product-write-guard';
+import {
+  assertRevisionTransition,
+  publishRevision,
+  transitionProductVisibility,
+} from '../products/product-publication';
+import { AppException } from '../core/errors/app.exception';
+import {
+  assertProductNotInSale,
+  lockProductRowForUpdate,
+} from '../products/product-write-guard';
 import {
   sellerProfileAuthSelect,
   sellerProfileResponseSelect,
@@ -722,10 +728,6 @@ export class AdminModerationService {
             editingRevision: {
               include: { images: { select: { imageId: true } } },
             },
-            listings: {
-              where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-              select: { id: true },
-            },
           },
         });
 
@@ -768,8 +770,7 @@ export class AdminModerationService {
           if (!editingRevision) {
             throw new ConflictException('Moderation target is stale');
           }
-          assertProductRevisionTransition(
-            'admin',
+          assertRevisionTransition(
             editingRevision.status,
             input.status,
           );
@@ -813,28 +814,37 @@ export class AdminModerationService {
           }
           if (this.media?.enabled)
             await this.media.cancelPublication(tx, { productId });
-          await tx.productRevision.update({
-            where: { id: editingRevision.id },
-            data: { status: input.status, reviewedAt: new Date() },
+          if (input.status === 'APPROVED') {
+            const result = await publishRevision(tx, {
+              productId,
+              revisionId: editingRevision.id,
+              expectedPublishedRevisionId: product.publishedRevisionId,
+              expectedRevisionAt: editingRevision.updatedAt,
+            });
+            if (result === 'stale') {
+              throw new AppException({
+                status: 409,
+                code: ApiErrorCode.PRODUCT_STATE_CONFLICT,
+                message: 'Moderation target is stale',
+              });
+            }
+          } else {
+            await tx.productRevision.update({
+              where: { id: editingRevision.id },
+              data: { status: input.status, reviewedAt: new Date() },
+            });
+            if (product.status === 'PENDING_REVIEW') {
+              await transitionProductVisibility(tx, {
+                productId,
+                expected: ['PENDING_REVIEW'],
+                next: input.status,
+                actor: 'admin',
+              });
+            }
+          }
+          const updated = await tx.product.findUniqueOrThrow({
+            where: { id: productId },
           });
-          const updated =
-            input.status === 'APPROVED'
-              ? await tx.product.update({
-                  where: { id: productId },
-                  data: {
-                    ...publishedProductData(editingRevision),
-                    status:
-                      product.status === 'ARCHIVED' ? 'ARCHIVED' : 'APPROVED',
-                    publishedRevisionId: editingRevision.id,
-                    publishedAt: product.publishedAt ?? new Date(),
-                  },
-                })
-              : product.status === 'PENDING_REVIEW'
-                ? await tx.product.update({
-                    where: { id: productId },
-                    data: { status: input.status },
-                  })
-                : product;
 
           await tx.auditEvent.create({
             data: {
@@ -863,9 +873,10 @@ export class AdminModerationService {
           return updated;
         }
 
-        if (this.media?.enabled && input.status === 'ARCHIVED')
-          await this.media.enqueueRevoke(tx, { productId });
-        assertProductRevisionTransition('admin', product.status, input.status);
+        if (input.status === 'ARCHIVED') {
+          await assertProductNotInSale(tx, productId);
+          if (this.media?.enabled) await this.media.enqueueRevoke(tx, { productId });
+        }
         if (
           input.status === 'APPROVED' &&
           this.media?.enabled &&
@@ -886,9 +897,14 @@ export class AdminModerationService {
           deliveryId = operation.id;
           return product;
         }
-        const updated = await tx.product.update({
+        await transitionProductVisibility(tx, {
+          productId,
+          expected: [product.status],
+          next: input.status,
+          actor: 'admin',
+        });
+        const updated = await tx.product.findUniqueOrThrow({
           where: { id: productId },
-          data: { status: input.status },
         });
 
         await tx.auditEvent.create({
@@ -1234,9 +1250,11 @@ export class AdminModerationService {
           data: { status: 'CHANGES_REQUESTED', reviewedAt: new Date() },
         });
         if (revision.product.status === 'PENDING_REVIEW') {
-          await tx.product.update({
-            where: { id: revision.productId },
-            data: { status: 'CHANGES_REQUESTED' },
+          await transitionProductVisibility(tx, {
+            productId: revision.productId,
+            expected: ['PENDING_REVIEW'],
+            next: 'CHANGES_REQUESTED',
+            actor: 'admin',
           });
         }
         if (this.media?.enabled) {

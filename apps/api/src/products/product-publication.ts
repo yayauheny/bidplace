@@ -2,7 +2,6 @@ import { ApiErrorCode, type ProductStatus } from '@bidplace/contracts';
 import type { Prisma } from '@bidplace/database';
 
 import { AppException } from '../core/errors/app.exception';
-import { publishedProductData } from '../core/media/publication-fields';
 import { lockProductRowForUpdate } from './product-write-guard';
 
 export type PublicationActor = 'author' | 'admin' | 'media';
@@ -149,4 +148,40 @@ export async function publishRevision(
   });
   if (published.count !== 1) throw stateConflict();
   return 'published';
+}
+
+function publishedProductData(revision: {
+  categoryId: string | null;
+  title: string | null;
+  story: string | null;
+  technique: string | null;
+  materials: string | null;
+  dimensions: string | null;
+  weight: string | null;
+  year: number | null;
+  condition: string | null;
+  uniqueness: string | null;
+  provenance: string | null;
+  city: string | null;
+  packaging: string | null;
+  deliveryInfo: string | null;
+  creationIntro: string | null;
+}) {
+  return {
+    categoryId: revision.categoryId,
+    title: revision.title,
+    story: revision.story,
+    technique: revision.technique,
+    materials: revision.materials,
+    dimensions: revision.dimensions,
+    weight: revision.weight,
+    year: revision.year,
+    condition: revision.condition,
+    uniqueness: revision.uniqueness,
+    provenance: revision.provenance,
+    city: revision.city,
+    packaging: revision.packaging,
+    deliveryInfo: revision.deliveryInfo,
+    creationIntro: revision.creationIntro,
+  };
 }

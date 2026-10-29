@@ -1227,8 +1227,8 @@ describe('ProductsService', () => {
     await expect(service.hide('owner-id', product.id)).resolves.toMatchObject({
       product: { status: 'ARCHIVED' },
     });
-    expect(tx.product.update).toHaveBeenCalledWith({
-      where: { id: product.id },
+    expect(tx.product.updateMany).toHaveBeenCalledWith({
+      where: { id: product.id, status: { in: ['APPROVED'] } },
       data: { status: 'ARCHIVED' },
     });
     expect(tx.auditEvent.create).toHaveBeenCalled();

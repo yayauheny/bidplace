@@ -1,7 +1,5 @@
-import {
-  publishedProductData,
-  publishedSellerProfileData,
-} from './publication-fields';
+import { publishRevision } from '../../products/product-publication';
+import { publishedSellerProfileData } from './publication-fields';
 import { randomUUID } from 'node:crypto';
 import {
   ConflictException,
@@ -1127,49 +1125,21 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         },
       });
     } else if (operation.productId) {
-      await tx.$queryRaw`SELECT id FROM products WHERE id = ${operation.productId}::uuid FOR UPDATE`;
-      const product = await tx.product.findUnique({
-        where: { id: operation.productId },
-        include: {
-          sellerProfile: { include: { user: { select: { status: true } } } },
-          editingRevision: true,
-        },
+      const revision = await tx.productRevision.findUnique({
+        where: { id: operation.revisionId },
+        select: { status: true },
       });
-      const revision =
-        operation.restore && product
-          ? await tx.productRevision.findUnique({
-              where: { id: operation.revisionId },
-            })
-          : product?.editingRevision;
       if (
-        !product ||
-        product.sellerProfile.status !== 'APPROVED' ||
-        product.sellerProfile.user.status !== 'active' ||
-        (!operation.restore && product.status === 'ARCHIVED') ||
-        !revision ||
-        revision.id !== operation.revisionId ||
-        revision.status !==
-          (operation.restore ? 'APPROVED' : 'PENDING_REVIEW') ||
-        revision.updatedAt.getTime() !==
-          operation.expectedRevisionAt.getTime() ||
-        product.publishedRevisionId !== operation.previousRevisionId
+        revision?.status !== (operation.restore ? 'APPROVED' : 'PENDING_REVIEW')
       )
         return false;
-      const data = publishedProductData(revision);
-      if (!operation.restore)
-        await tx.productRevision.update({
-          where: { id: revision.id },
-          data: { status: 'APPROVED', reviewedAt: new Date() },
-        });
-      await tx.product.update({
-        where: { id: product.id },
-        data: {
-          ...data,
-          status: 'APPROVED',
-          publishedRevisionId: revision.id,
-          publishedAt: product.publishedAt ?? new Date(),
-        },
+      const result = await publishRevision(tx, {
+        productId: operation.productId,
+        revisionId: operation.revisionId,
+        expectedPublishedRevisionId: operation.previousRevisionId,
+        expectedRevisionAt: operation.expectedRevisionAt,
       });
+      if (result === 'stale') return false;
     } else return false;
     await tx.auditEvent.create({
       data: {
@@ -1377,6 +1347,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
   }
   private async publicationApplied(operation: {
     revisionId: string | null;
+    restore: boolean;
     profileId: string | null;
     productId: string | null;
   }) {
@@ -1398,7 +1369,8 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     });
     return (
       product?.publishedRevisionId === operation.revisionId &&
-      product.status === 'APPROVED'
+      (product.status === 'APPROVED' ||
+        (!operation.restore && product.status === 'ARCHIVED'))
     );
   }
 }
