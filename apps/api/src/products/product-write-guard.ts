@@ -15,17 +15,21 @@ import { Prisma } from '@bidplace/database';
 import { AppException } from '../core/errors/app.exception';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 
-export const PRODUCT_EDIT_LOCK_LISTING_STATUSES = ['SCHEDULED', 'LIVE'] as const;
+export const PRODUCT_EDIT_LOCK_LISTING_STATUSES = [
+  'SCHEDULED',
+  'LIVE',
+] as const;
+
+export const productInSaleWhere = {
+  listings: {
+    some: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
+  },
+} satisfies Prisma.ProductWhereInput;
 
 export const productWriteGuardSelect = {
   id: true,
   status: true,
   sellerProfile: { select: { userId: true, status: true } },
-  listings: {
-    where: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
-    select: { id: true },
-    take: 1,
-  },
 } satisfies Prisma.ProductSelect;
 
 export const writableProductWhere = {
@@ -45,7 +49,6 @@ export type ProductWriteGuardSnapshot = {
   id: string;
   status: string;
   sellerProfile: { userId: string; status: string };
-  listings: Array<{ id: string }>;
 };
 
 export async function lockProductRowForUpdate(
@@ -60,10 +63,9 @@ export async function lockProductRowForUpdate(
   }
 }
 
-export function assertProductWritable<T extends ProductWriteGuardSnapshot>(
+export function assertProductOwner<T extends ProductWriteGuardSnapshot>(
   product: T | null,
   userId: string,
-  kind: ProductWriteGuardKind,
 ): asserts product is T {
   if (!product) {
     throw new NotFoundException('Product not found');
@@ -74,14 +76,24 @@ export function assertProductWritable<T extends ProductWriteGuardSnapshot>(
   }
 
   assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+}
+
+export async function assertProductWritable<
+  T extends ProductWriteGuardSnapshot,
+>(
+  tx: Prisma.TransactionClient,
+  product: T | null,
+  userId: string,
+  kind: ProductWriteGuardKind,
+): Promise<T> {
+  assertProductOwner(product, userId);
 
   if (!isEditableProductStatus(product.status as ProductStatus)) {
     throw productWriteLockedError(kind);
   }
 
-  if (product.listings.length > 0) {
-    throw new ConflictException('Product is locked by an active Listing');
-  }
+  await assertProductNotInSale(tx, product.id);
+  return product;
 }
 
 export function productWriteLockedError(kind: ProductWriteGuardKind) {
@@ -103,7 +115,10 @@ export async function assertProductNotInSale(
 ): Promise<void> {
   await lockProductRowForUpdate(tx, productId);
   const listing = await tx.listing.findFirst({
-    where: { productId, status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
+    where: {
+      productId,
+      status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] },
+    },
     select: { id: true },
   });
   if (listing) {
@@ -113,4 +128,15 @@ export async function assertProductNotInSale(
       message: 'Product is in sale',
     });
   }
+}
+
+export async function findSellerProductIdsInSale(
+  tx: Prisma.TransactionClient,
+  sellerId: string,
+): Promise<string[]> {
+  const products = await tx.product.findMany({
+    where: { sellerProfileId: sellerId, ...productInSaleWhere },
+    select: { id: true },
+  });
+  return products.map(({ id }) => id);
 }

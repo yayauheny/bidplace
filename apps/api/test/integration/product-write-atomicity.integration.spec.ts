@@ -416,9 +416,10 @@ describe('Product write atomicity against PostgreSQL', () => {
     });
     await waitThenRelease(release);
 
-    await expect(storyPromise).rejects.toThrow(
-      'Product is locked by an active Listing',
-    );
+    await expect(storyPromise).rejects.toMatchObject({
+      status: 409,
+      apiCode: 'PRODUCT_IN_SALE',
+    });
     await finished;
 
     const step = await prisma.productCreationStep.findUniqueOrThrow({

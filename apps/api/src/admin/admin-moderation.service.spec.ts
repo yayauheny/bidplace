@@ -770,11 +770,7 @@ describe('AdminModerationService', () => {
           editingRevision: null,
         }),
       },
-      listing: {
-        findFirst: vi
-          .fn()
-          .mockResolvedValue({ id: 'listing-id', status: 'SCHEDULED' }),
-      },
+      product: { findMany: vi.fn().mockResolvedValue([{ id: 'product-id' }]) },
     };
     const service = moderationService(transactionPrisma(tx));
 

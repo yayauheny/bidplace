@@ -96,6 +96,7 @@ function createWritePrisma(options: {
         .map(({ id }) => ({ imageId: id })) ?? [],
   };
   const tx = {
+    listing: { findFirst: vi.fn().mockResolvedValue((options.product?.listings as Array<{ id: string }> | undefined)?.[0] ?? null) },
     $queryRaw: vi
       .fn()
       .mockResolvedValue(options.product ? [{ id: product.id }] : []),
@@ -339,7 +340,7 @@ describe('ProductsService', () => {
 
     await expect(
       service.update('owner-id', product.id, { title: 'Locked' }),
-    ).rejects.toThrow('Product is locked by an active Listing');
+    ).rejects.toThrow('Product is in sale');
     expect(tx.product.updateMany).not.toHaveBeenCalled();
     expect(prisma.$transaction).toHaveBeenCalledWith(
       expect.any(Function),
@@ -421,6 +422,7 @@ describe('ProductsService', () => {
     };
     const response = { ...approvedProduct, status: 'APPROVED' as const };
     const tx = {
+      listing: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
       product: {
         findUnique: vi
@@ -502,6 +504,7 @@ describe('ProductsService', () => {
       publishedRevisionId: 'revision-published',
     };
     const tx = {
+      listing: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(current),
@@ -606,6 +609,7 @@ describe('ProductsService', () => {
     };
     const response = { ...approvedProduct, status: 'APPROVED' as const };
     const tx = {
+      listing: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(current),
@@ -656,6 +660,7 @@ describe('ProductsService', () => {
       listings: [{ id: 'listing-id' }],
     };
     const tx = {
+      listing: { findFirst: vi.fn().mockResolvedValue({ id: 'listing-id' }) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
       product: { findUnique: vi.fn().mockResolvedValue(current) },
       productRevision: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
@@ -672,7 +677,7 @@ describe('ProductsService', () => {
         'owner-id',
         product.id,
       ),
-    ).rejects.toThrow('Product is locked by an active Listing');
+    ).rejects.toThrow('Product is in sale');
     expect(tx.productRevision.update).not.toHaveBeenCalled();
   });
 
@@ -727,7 +732,7 @@ describe('ProductsService', () => {
         storyToken: 0,
         blocks: [],
       }),
-    ).rejects.toThrow('Product is locked by an active Listing');
+    ).rejects.toThrow('Product is in sale');
   });
 
   it('replaces creation story only after the in-transaction writable guard', async () => {
@@ -1200,7 +1205,7 @@ describe('ProductsService', () => {
     const service = new ProductsService(prisma as never, {} as never);
 
     await expect(service.hide('owner-id', product.id)).rejects.toThrow(
-      'Work cannot be hidden while a scheduled or live listing exists',
+      'Product is in sale',
     );
     expect(tx.product.update).not.toHaveBeenCalled();
     expect(tx.auditEvent.create).not.toHaveBeenCalled();

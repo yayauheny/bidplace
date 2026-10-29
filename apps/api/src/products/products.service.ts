@@ -46,13 +46,14 @@ import {
 import { assertSelectableCategory, syncWorkSelection } from './work-selection';
 import {
   assertProductWritable,
+  assertProductOwner,
+  assertProductNotInSale,
   lockProductRowForUpdate,
   productWriteGuardSelect,
   writableProductWhere,
 } from './product-write-guard';
 import {
   portfolioCatalogProductWhere,
-  portfolioDirectProductWhere,
 } from './public-visibility';
 import {
   assertRevisionTransition,
@@ -243,7 +244,7 @@ export class ProductsService {
 
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       await lockProductRowForUpdate(tx, id);
-      const product = await tx.product.findUnique({
+      let product = await tx.product.findUnique({
         where: { id },
         select: {
           ...productWriteGuardSelect,
@@ -257,13 +258,8 @@ export class ProductsService {
         product.publishedRevisionId &&
         product.editingRevisionId
       ) {
-        if (product.sellerProfile.userId !== userId) {
-          throw new ForbiddenException('Product is not owned by user');
-        }
-        assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-        if (product.listings.length > 0) {
-          throw new ConflictException('Product is locked by an active Listing');
-        }
+        assertProductOwner(product, userId);
+        await assertProductNotInSale(tx, product.id);
         let editingRevisionId = product.editingRevisionId;
         if (product.editingRevisionId === product.publishedRevisionId) {
           const published = await tx.productRevision.findUniqueOrThrow({
@@ -343,7 +339,7 @@ export class ProductsService {
         );
         return readOwnerProductResponse(tx, id, editingRevisionId);
       }
-      assertProductWritable(product, userId, 'edit');
+      product = await assertProductWritable(tx, product, userId, 'edit');
       if (!product.editingRevisionId) {
         throw new ConflictException('Product editing revision is missing');
       }
@@ -372,7 +368,8 @@ export class ProductsService {
           data,
         });
         if (written.count !== 1) {
-          assertProductWritable(
+          await assertProductWritable(
+            tx,
             await tx.product.findUnique({
               where: { id },
               select: productWriteGuardSelect,
@@ -404,7 +401,7 @@ export class ProductsService {
   async submit(userId: string, id: string) {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       await lockProductRowForUpdate(tx, id);
-      const current = await tx.product.findUnique({
+      let current = await tx.product.findUnique({
         where: { id },
         select: {
           ...productWriteGuardSelect,
@@ -428,11 +425,8 @@ export class ProductsService {
         current?.editingRevisionId &&
         current.editingRevision?.status === 'PENDING_REVIEW'
       ) {
-        if (current.sellerProfile.userId !== userId)
-          throw new ForbiddenException('Product is not owned by user');
-        assertApprovedSeller(current.sellerProfile.status as SellerStatus);
-        if (current.listings.length > 0)
-          throw new ConflictException('Product is locked by an active Listing');
+        assertProductOwner(current, userId);
+        await assertProductNotInSale(tx, current.id);
         const revision = await tx.productRevision.findUniqueOrThrow({
           where: { id: current.editingRevisionId },
           select: productRevisionOwnerSelect,
@@ -453,13 +447,8 @@ export class ProductsService {
         current.editingRevisionId &&
         current.editingRevisionId !== current.publishedRevisionId
       ) {
-        if (current.sellerProfile.userId !== userId) {
-          throw new ForbiddenException('Product is not owned by user');
-        }
-        assertApprovedSeller(current.sellerProfile.status as SellerStatus);
-        if (current.listings.length > 0) {
-          throw new ConflictException('Product is locked by an active Listing');
-        }
+        assertProductOwner(current, userId);
+        await assertProductNotInSale(tx, current.id);
 
         const editingRevision = await tx.productRevision.findUniqueOrThrow({
           where: { id: current.editingRevisionId },
@@ -524,7 +513,7 @@ export class ProductsService {
         });
       }
 
-      assertProductWritable(current, userId, 'submit');
+      current = await assertProductWritable(tx, current, userId, 'submit');
 
       if (!current.editingRevisionId) {
         throw new ConflictException('Product editing revision is missing');
@@ -621,10 +610,7 @@ export class ProductsService {
         if (!product) {
           throw new NotFoundException('Product not found');
         }
-        if (product.sellerProfile.userId !== userId) {
-          throw new ForbiddenException('Product is not owned by user');
-        }
-        assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+        assertProductOwner(product, userId);
         if (
           product.status !== (nextStatus === 'ARCHIVED' ? 'APPROVED' : 'ARCHIVED')
         ) {
@@ -637,11 +623,7 @@ export class ProductsService {
         if (product.publishedRevisionId == null) {
           throw new ConflictException('Product has no published revision');
         }
-        if (nextStatus === 'ARCHIVED' && product.listings.length > 0) {
-          throw new ConflictException(
-            'Work cannot be hidden while a scheduled or live listing exists',
-          );
-        }
+        if (nextStatus === 'ARCHIVED') await assertProductNotInSale(tx, id);
 
         if (this.media?.enabled) {
           if (nextStatus === 'ARCHIVED')
@@ -743,9 +725,7 @@ export class ProductsService {
         throw new ForbiddenException('Product is not owned by user');
       }
       assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-      if (product.listings.length > 0) {
-        throw new ConflictException('Product is locked by an active Listing');
-      }
+      await assertProductNotInSale(tx, product.id);
       if (!product.editingRevisionId) {
         throw new ConflictException('Product editing revision is missing');
       }
@@ -780,7 +760,7 @@ export class ProductsService {
 
   async getPublishedStory(publicId: string) {
     const product = await this.prisma.product.findFirst({
-      where: { publicId, ...portfolioDirectProductWhere },
+      where: { publicId, ...portfolioCatalogProductWhere },
       select: { publishedRevisionId: true },
     });
     if (!product?.publishedRevisionId) {
@@ -793,7 +773,7 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({
       where: {
         publicId,
-        ...portfolioDirectProductWhere,
+        ...portfolioCatalogProductWhere,
       },
       select: portfolioCatalogProductSelect,
     });

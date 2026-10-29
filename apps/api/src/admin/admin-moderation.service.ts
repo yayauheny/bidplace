@@ -51,6 +51,8 @@ import {
 import { AppException } from '../core/errors/app.exception';
 import {
   assertProductNotInSale,
+  productInSaleWhere,
+  findSellerProductIdsInSale,
   lockProductRowForUpdate,
 } from '../products/product-write-guard';
 import {
@@ -136,9 +138,7 @@ export class AdminModerationService {
         ...adminSellerListSelect,
         publishedRevision: { select: adminSellerRevisionSelect },
         products: {
-          where: {
-            listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
-          },
+          where: productInSaleWhere,
           select: { id: true },
           take: 1,
         },
@@ -256,9 +256,7 @@ export class AdminModerationService {
             where: {
               id: { in: ids },
               products: {
-                some: {
-                  listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
-                },
+                some: productInSaleWhere,
               },
             },
             select: { id: true },
@@ -479,14 +477,8 @@ export class AdminModerationService {
         }
 
         if (input.status === 'SUSPENDED') {
-          const blockingListing = await tx.listing.findFirst({
-            where: {
-              status: { in: ['SCHEDULED', 'LIVE'] },
-              product: { sellerProfileId: sellerProfile.id },
-            },
-            select: { id: true },
-          });
-          if (blockingListing) {
+          const blockingProducts = await findSellerProductIdsInSale(tx, sellerProfile.id);
+          if (blockingProducts.length > 0) {
             this.logger.warn(
               `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status} because a scheduled or live listing exists`,
             );
