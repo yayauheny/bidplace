@@ -14,6 +14,8 @@ export const ApiErrorCode = {
   RATE_LIMITED: 'rate_limited',
   INTERNAL_ERROR: 'internal_error',
 
+  PRODUCT_STATE_CONFLICT: 'PRODUCT_STATE_CONFLICT',
+  PRODUCT_IN_SALE: 'PRODUCT_IN_SALE',
   BID_TOO_LOW: 'BID_TOO_LOW',
   LISTING_NOT_OPEN: 'LISTING_NOT_OPEN',
   LISTING_NOT_FOUND: 'LISTING_NOT_FOUND',
@@ -49,6 +51,8 @@ export const apiErrorCodeSchema = z.enum([
   ApiErrorCode.CONFLICT,
   ApiErrorCode.RATE_LIMITED,
   ApiErrorCode.INTERNAL_ERROR,
+  ApiErrorCode.PRODUCT_STATE_CONFLICT,
+  ApiErrorCode.PRODUCT_IN_SALE,
   ApiErrorCode.BID_TOO_LOW,
   ApiErrorCode.LISTING_NOT_OPEN,
   ApiErrorCode.LISTING_NOT_FOUND,
