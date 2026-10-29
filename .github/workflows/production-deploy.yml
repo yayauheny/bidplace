@@ -167,7 +167,7 @@ jobs:
           if missing:
               raise SystemExit("Missing production settings: " + ", ".join(missing))
 
-          for name in ("SESSION_SECRET", "OTP_HASH_SECRET"):
+          for name in ("SESSION_SECRET", "OTP_HASH_SECRET", "INTERNAL_TICK_SECRET"):
               if len(os.environ[name]) < 32:
                   raise SystemExit(f"{name} must be at least 32 characters")
           for provider in ("GOOGLE", "TELEGRAM"):

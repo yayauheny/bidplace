@@ -117,8 +117,10 @@ export function assertSecretsFile(file, checkoutRoot) {
       `SESSION_SECRET must be at least ${PRODUCTION_SESSION_SECRET_MIN_LENGTH} characters`,
     );
   }
-  if (parsed.OTP_HASH_SECRET.length < 32)
-    throw new Error('OTP_HASH_SECRET must be at least 32 characters');
+  for (const name of ['OTP_HASH_SECRET', 'INTERNAL_TICK_SECRET']) {
+    if (parsed[name].length < 32)
+      throw new Error(`${name} must be at least 32 characters`);
+  }
   for (const provider of ['GOOGLE', 'TELEGRAM']) {
     const names = optionalContainerSettings.filter((name) =>
       name.startsWith(provider),

@@ -33,6 +33,7 @@ test('manual production deploy accepts main and configures the same Workers CI b
   assert.match(workflow, /Production deploy requires main/);
   assert.match(workflow, /WORKERS_CI_BRANCH: main/);
   assert.doesNotMatch(workflow, /portfolio-mvp-release/);
+  assert.match(workflow, /for name in \("SESSION_SECRET", "OTP_HASH_SECRET", "INTERNAL_TICK_SECRET"\):\s*\n\s*if len\(os\.environ\[name\]\) < 32:/);
 });
 
 test('browser workflow remains manual-only and retains sharded Chromium coverage', async () => {
