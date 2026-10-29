@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
+import { act, createElement, useEffect, useState, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -9,7 +9,7 @@ import { ApiClientError } from '@bidplace/api-client';
 import { ApiErrorCode, type EmailVerificationState, type User } from '@bidplace/contracts';
 
 import { flush } from '../../testing/dom';
-import { AUTH_RATE_LIMIT_COPY, AUTH_TURNSTILE_REQUIRED_COPY, AUTH_TURNSTILE_UNAVAILABLE_COPY } from '../../errors';
+import { AUTH_RATE_LIMIT_COPY } from '../../errors';
 import { authKeys } from '../../lib/query-cache';
 import { VerifyEmailForm } from './verify-email-form';
 
@@ -148,23 +148,8 @@ vi.mock('../../components/ui', () => ({
 }));
 
 vi.mock('./turnstile-widget', () => ({
-  TurnstileWidget: ({
-    action,
-    onToken,
-    onAvailability,
-  }: {
-    action: string;
-    onToken: (token: string | null) => void;
-    onAvailability: (availability: 'ready' | 'unavailable') => void;
-  }) => {
-    useLayoutEffect(() => {
-      onAvailability('ready');
-      if (harness.proof) onToken(harness.proof);
-    }, [action, onAvailability, onToken]);
-    return createElement('div', { 'data-turnstile': action });
-  },
+  useInvisibleTurnstile: () => ({ getToken: async () => harness.proof }),
 }));
-
 function account(overrides: Partial<User> = {}): User {
   return {
     id: OWNER_ID,
@@ -270,11 +255,12 @@ describe('verify email form', () => {
     harness.emailVerificationState.mockResolvedValue(verificationState());
     const view = mount();
     await flush();
-    expect(view.container.textContent).toContain(AUTH_TURNSTILE_UNAVAILABLE_COPY);
     const button = [...view.container.querySelectorAll('button')].find((item) => item.textContent === 'Отправить код');
     expect(button).toBeInstanceOf(HTMLButtonElement);
-    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect((button as HTMLButtonElement).disabled).toBe(false);
     click(view.container, 'Отправить код');
+    await flush();
+    expect(view.container.textContent).toContain('Попробуйте ещё раз');
     expect(harness.requestEmailVerification).not.toHaveBeenCalled();
     view.unmount();
   });
@@ -286,11 +272,11 @@ describe('verify email form', () => {
     harness.emailVerificationState.mockResolvedValue(verificationState());
     const view = mount();
     await flush();
-    expect(view.container.querySelector('[data-turnstile="email_verification"]')).not.toBeNull();
+    expect(view.container.querySelector('[data-turnstile]')).toBeNull();
     click(view.container, 'Отправить код');
     await flush();
     expect(harness.requestEmailVerification).not.toHaveBeenCalled();
-    expect(view.container.textContent).toContain(AUTH_TURNSTILE_REQUIRED_COPY);
+    expect(view.container.textContent).toContain('Попробуйте ещё раз');
     view.unmount();
 
     harness.proof = 'widget-token';

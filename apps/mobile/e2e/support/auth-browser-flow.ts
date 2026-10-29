@@ -1,7 +1,7 @@
 import { expect, type Page, type Response } from '@playwright/test';
 
 import { e2eApiBaseURL } from './e2e-env';
-import { expectTurnstileReady } from './turnstile-fixture';
+import { expectInvisibleTurnstile } from './turnstile-fixture';
 import { createUnverifiedBuyerFixture } from './e2e-fixtures';
 import { localTestMailValue } from './task-mail';
 
@@ -30,7 +30,7 @@ export async function openUnverifiedAccount(
 }
 
 export async function finishRegistrationEmailProof(page: Page, email: string): Promise<Response> {
-  await expectTurnstileReady(page, 'register');
+  await expectInvisibleTurnstile(page);
   const request = page.waitForResponse(
     (item) => item.url() === `${e2eApiBaseURL}/api/auth/register/email/request` && item.request().method() === 'POST',
   );
@@ -61,7 +61,7 @@ export async function expectNoSendAcrossReload(page: Page, counts: { state: numb
 }
 
 export async function sendVerification(page: Page): Promise<Response> {
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   const response = page.waitForResponse(
     (item) => item.url() === `${e2eApiBaseURL}/api/auth/email/request` && item.request().method() === 'POST',
   );

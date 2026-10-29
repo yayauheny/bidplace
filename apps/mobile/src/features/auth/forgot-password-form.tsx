@@ -1,5 +1,5 @@
 import { useIsFocused, useNavigation, useRouter, type Href } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,8 +15,6 @@ import {
   authRequestMessage,
   AUTH_RECOVERY_ACCEPTED_COPY,
   AUTH_RECOVERY_PROMPT_COPY,
-  AUTH_TURNSTILE_REQUIRED_COPY,
-  AUTH_TURNSTILE_UNAVAILABLE_COPY,
   getUserFacingErrorMessage,
   readFormFailure,
 } from '../../errors';
@@ -31,7 +29,7 @@ import {
   type ReadyRecoveryOperation,
   type RecoveryAttempt,
 } from './recovery-operation';
-import { TurnstileWidget, type TurnstileAvailability } from './turnstile-widget';
+import { useInvisibleTurnstile } from './turnstile-widget';
 import { forgotPasswordFormSchema, type ForgotPasswordFormValues } from './schemas';
 
 type ForgotPasswordFormProps = { redirectTo?: SafeRedirect };
@@ -68,15 +66,13 @@ function recoveryAttempt(error: unknown): RecoveryAttempt {
 
 export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps) {
   const api = useApiClient();
+  const { getToken } = useInvisibleTurnstile('password_reset');
   const router = useRouter();
   const queryClient = useQueryClient();
   const focused = useIsFocused();
   const navigation = useNavigation();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [proof, setProof] = useState<string | null>(null);
-  const [proofAvailability, setProofAvailability] = useState<TurnstileAvailability>('ready');
-  const [widgetGeneration, setWidgetGeneration] = useState(0);
   const operation = useRef(createRecoveryOperation());
   const transport = useRef<AbortController | null>(null);
   const submitting = useRef(false);
@@ -90,10 +86,6 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
     defaultValues: { email: '' },
   });
   const emailValue = form.watch('email');
-  const onProof = useCallback((token: string | null) => setProof(token), []);
-  const onProofAvailability = useCallback((availability: TurnstileAvailability) => {
-    setProofAvailability(availability);
-  }, []);
   useAuthSheetGuard({
     dirty: Boolean(emailValue) && !submitted,
     busy: form.formState.isSubmitting,
@@ -137,14 +129,6 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
   }, [queryClient]);
 
   const submitRecovery = form.handleSubmit(async (values) => {
-    if (proofAvailability === 'unavailable') {
-      setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
-      return;
-    }
-    if (!proof) {
-      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
-      return;
-    }
     setSubmitError(null);
     const startedSession =
       queryClient.getQueryData<{ id: string } | null>(authKeys.session)?.id ?? null;
@@ -165,9 +149,6 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
     const controller = new AbortController();
     transport.current = controller;
     submittedEmail.current = values.email;
-    const token = proof;
-    setProof(null);
-    setWidgetGeneration((generation) => generation + 1);
     const owns = (error?: unknown) => {
       const epoch = readAuthEpoch(queryClient);
       const sessionId =
@@ -185,6 +166,12 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
       );
     };
     try {
+      const token = await getToken(controller.signal);
+      if (!owns() || form.getValues('email') !== values.email) return;
+      if (!token) {
+        setSubmitError('Попробуйте ещё раз');
+        return;
+      }
       await api.auth.forgotPassword(
         {
           email: values.email,
@@ -234,8 +221,6 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
           label="Отправить ещё раз"
           onPress={() => {
             operation.current = recoveryAfter(operation.current, 'new');
-            setProof(null);
-            setWidgetGeneration((generation) => generation + 1);
             setSubmitted(false);
           }}
         />
@@ -268,12 +253,6 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
               error={form.formState.errors.email?.message}
             />
           )}
-        />
-        <TurnstileWidget
-          key={widgetGeneration}
-          action="password_reset"
-          onToken={onProof}
-          onAvailability={onProofAvailability}
         />
         {submitError ? (
           <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">

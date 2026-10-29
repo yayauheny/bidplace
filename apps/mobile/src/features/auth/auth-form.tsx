@@ -53,8 +53,6 @@ import { nicknameSuggestionGenerator } from './unique-names-generator-adapter';
 import {
   applyFormFailure,
   authRequestMessage,
-  AUTH_TURNSTILE_REQUIRED_COPY,
-  AUTH_TURNSTILE_UNAVAILABLE_COPY,
   getUserFacingErrorMessage,
   readFormFailure,
 } from '../../errors';
@@ -71,10 +69,7 @@ import {
   type RegisterFormValues,
 } from './schemas';
 import type { SafeRedirect } from './auth-redirect';
-import {
-  TurnstileWidget,
-  type TurnstileAvailability,
-} from './turnstile-widget';
+import { useInvisibleTurnstile } from './turnstile-widget';
 
 const registrationConfirmationFields = [
   'agreementAccepted',
@@ -125,11 +120,9 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const focused = useIsFocused();
   const navigation = useNavigation();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const { getToken } = useInvisibleTurnstile('login');
   const [challengeEmail, setChallengeEmail] = useState<string | null>(null);
-  const [proof, setProof] = useState<string | null>(null);
-  const [proofAvailability, setProofAvailability] =
-    useState<TurnstileAvailability>('ready');
-  const [widgetGeneration, setWidgetGeneration] = useState(0);
+
   const transport = useRef<AbortController | null>(null);
   const loginReceipt = useRef<LoginSuccessReceipt | null>(null);
   const submitting = useRef(false);
@@ -154,13 +147,6 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     challengeEmail !== null && challengeEmail === normalizedEmail;
   const submittedValues = useRef<{ email: string; password: string } | null>(
     null,
-  );
-  const onProof = useCallback((token: string | null) => setProof(token), []);
-  const onProofAvailability = useCallback(
-    (availability: TurnstileAvailability) => {
-      setProofAvailability(availability);
-    },
-    [],
   );
   useEffect(() => {
     mounted.current = true;
@@ -189,9 +175,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   useEffect(() => {
     if (challengeEmail === null || normalizedEmail === challengeEmail) return;
     setChallengeEmail(null);
-    setProof(null);
     setSubmitError(null);
-    setWidgetGeneration((generation) => generation + 1);
   }, [challengeEmail, normalizedEmail]);
   const complete = useAuthSheetComplete();
   useAuthSheetGuard({
@@ -316,14 +300,6 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const openPolicy = () => openLoginLegal('privacy');
   const openRules = () => openLoginLegal('agreement');
   const submitLogin = form.handleSubmit(async (values) => {
-    if (challenge && proofAvailability === 'unavailable') {
-      setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
-      return;
-    }
-    if (challenge && !proof) {
-      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
-      return;
-    }
     setSubmitError(null);
     dropLoginReceipt();
     transport.current?.abort();
@@ -333,12 +309,18 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       email: values.email,
       password: values.password,
     };
-    const token = proof;
-    if (challenge) {
-      setProof(null);
-      setWidgetGeneration((generation) => generation + 1);
-    }
+    const startedEpoch = currentAuthEpoch(queryClient);
     try {
+      const token = challenge ? await getToken(controller.signal) : null;
+      if (
+        controller.signal.aborted || !mounted.current || !focusedRef.current ||
+        transport.current !== controller || currentAuthEpoch(queryClient) !== startedEpoch ||
+        form.getValues('email') !== values.email || form.getValues('password') !== values.password
+      ) return;
+      if (challenge && !token) {
+        setSubmitError('Попробуйте ещё раз');
+        return;
+      }
       const response = await auth.login(
         {
           email: values.email,
@@ -500,14 +482,6 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             </MotionPressable>
           </Link>
         </View>
-        {challenge ? (
-          <TurnstileWidget
-            key={widgetGeneration}
-            action="login"
-            onToken={onProof}
-            onAvailability={onProofAvailability}
-          />
-        ) : null}
         {submitError ? (
           <AppText
             role="bodySmall"
@@ -666,6 +640,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const palette = useAppTheme();
   const auth = useAuth();
   const api = useApiClient();
+  const { getToken } = useInvisibleTurnstile('register');
   const analytics = useAnalytics();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -694,17 +669,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
   const [proofNow, setProofNow] = useState(Date.now());
   const [resendingCode, setResendingCode] = useState(false);
-  const [proof, setProof] = useState<string | null>(null);
-  const [proofAvailability, setProofAvailability] =
-    useState<TurnstileAvailability>('ready');
-  const [widgetGeneration, setWidgetGeneration] = useState(0);
-  const onProof = useCallback((token: string | null) => setProof(token), []);
-  const onProofAvailability = useCallback(
-    (availability: TurnstileAvailability) => {
-      setProofAvailability(availability);
-    },
-    [],
-  );
+
   const focused = useIsFocused();
   const navigation = useNavigation();
   const focusedRef = useRef(focused);
@@ -937,29 +902,25 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
     if (!anonymousOwns(operation, epoch)) return;
-    if (step === 'password' && !emailProved.current && proofAvailability === 'unavailable') {
-      setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
-      return;
-    }
-    if (step === 'password' && !emailProved.current && !proof) {
-      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
-      return;
-    }
     registerTransport.current?.abort();
     const controller = new AbortController();
     registerTransport.current = controller;
     registerSnapshot.current = JSON.stringify(form.getValues());
-    const token = proof;
-    if (step === 'password' && !emailProved.current) {
-      setProof(null);
-      setWidgetGeneration((generation) => generation + 1);
-    }
     try {
       if (step === 'password' && !emailProved.current) {
+        const token = await getToken(controller.signal);
+        if (
+          controller.signal.aborted || !anonymousOwns(operation, epoch) ||
+          registerTransport.current !== controller || registerSnapshot.current !== JSON.stringify(form.getValues())
+        ) return;
+        if (!token) {
+          setSubmitError('Попробуйте ещё раз');
+          return;
+        }
         const result = await api.auth.requestRegistrationEmail(
           {
             email: values.email,
-            turnstileToken: token!,
+            turnstileToken: token,
             idempotencyKey: createOperationKey(),
           },
           { signal: controller.signal },
@@ -1032,32 +993,43 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   });
   const resendRegistrationCode = async () => {
     if (resendingCode || proofNow < resendAvailableAt) return;
-    if (!proof) {
-      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
-      return;
-    }
-    const token = proof;
-    setProof(null);
-    setWidgetGeneration((generation) => generation + 1);
     setResendingCode(true);
     setSubmitError(null);
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
+    const snapshot = JSON.stringify(form.getValues());
+    const controller = new AbortController();
+    registerTransport.current?.abort();
+    registerTransport.current = controller;
+    registerSnapshot.current = snapshot;
+    const owns = () =>
+      !controller.signal.aborted && anonymousOwns(operation, epoch) &&
+      registerTransport.current === controller && snapshot === JSON.stringify(form.getValues());
     try {
+      const token = await getToken(controller.signal);
+      if (!owns()) return;
+      if (!token) {
+        setSubmitError('Попробуйте ещё раз');
+        return;
+      }
       const result = await api.auth.requestRegistrationEmail({
         email: form.getValues('email'),
         turnstileToken: token,
         idempotencyKey: createOperationKey(),
-      });
-      if (!anonymousOwns(operation, epoch)) return;
+      }, { signal: controller.signal });
+      if (!owns()) return;
       setResendAvailableAt(
         Date.now() + Date.parse(result.resendAvailableAt) - Date.parse(result.serverNow),
       );
     } catch (error) {
-      if (anonymousOwns(operation, epoch))
+      if (owns())
         setSubmitError(getUserFacingErrorMessage(error, 'Не удалось отправить код'));
     } finally {
-      setResendingCode(false);
+      if (registerTransport.current === controller) {
+        registerTransport.current = null;
+        registerSnapshot.current = null;
+      }
+      if (mounted.current) setResendingCode(false);
     }
   };
   const submit = () => {
@@ -1355,12 +1327,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   />
                 )}
               />
-              <TurnstileWidget
-                key={widgetGeneration}
-                action="register"
-                onToken={onProof}
-                onAvailability={onProofAvailability}
-              />
             </>
           ) : null}
           {step === 'proof' ? (
@@ -1371,17 +1337,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 onChangeText={setRegistrationCode}
                 editable={!form.formState.isSubmitting}
               />
-              <TurnstileWidget
-                key={widgetGeneration}
-                action="register"
-                onToken={onProof}
-                onAvailability={onProofAvailability}
-              />
               <TextButton
                 label={proofNow < resendAvailableAt
                   ? `Отправить код снова через ${Math.ceil((resendAvailableAt - proofNow) / 1000)} с`
                   : 'Отправить код снова'}
-                disabled={resendingCode || proofNow < resendAvailableAt || proofAvailability === 'unavailable'}
+                disabled={resendingCode || proofNow < resendAvailableAt}
                 onPress={() => void resendRegistrationCode()}
               />
               <TextButton

@@ -1,70 +1,42 @@
 import { expect, type Page } from '@playwright/test';
 
-const TURNSTILE_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js**';
-const FLEXIBLE_MIN_WIDTH = 300;
-const FLEXIBLE_MIN_HEIGHT = 65;
-const COMPACT_MIN_HEIGHT = 140;
+const TURNSTILE_SCRIPT =
+  'https://challenges.cloudflare.com/turnstile/v0/api.js**';
+export type TurnstileFixtureMode =
+  | 'pass'
+  | 'error'
+  | 'unavailable'
+  | 'error-once';
 
-export type TurnstileFixtureMode = 'pass' | 'error' | 'unavailable';
-
-function fixtureScript(failClosed: boolean): string {
-  const fail = failClosed ? 'true' : 'false';
+function fixtureScript(mode: TurnstileFixtureMode): string {
   return `
 (() => {
   const widgets = new Map();
   let next = 1;
+  let attempts = 0;
   window.turnstile = {
     render(container, options) {
+      if (options.execution !== 'execute') throw new Error('Expected submit-time execution');
       const id = String(next++);
-      const node = document.createElement('div');
-      node.dataset.turnstileAction = options.action;
-      node.dataset.turnstileSize = options.size;
-      node.dataset.turnstileReady = 'false';
-      node.style.boxSizing = 'border-box';
-      node.style.display = 'block';
-      if (options.size === 'compact') {
-        node.style.width = '150px';
-        node.style.height = '140px';
-      } else {
-        node.style.width = '100%';
-        node.style.minWidth = '300px';
-        node.style.height = '65px';
-        node.style.minHeight = '65px';
-      }
-      container.append(node);
-      widgets.set(id, { node, options });
+      widgets.set(id, { container, options });
+      return id;
+    },
+    execute(id) {
+      const widget = widgets.get(id);
+      if (!widget) throw new Error('Missing widget');
+      attempts += 1;
+      document.body.dataset.turnstileExecutions = String(attempts);
       queueMicrotask(() => {
-        const widget = widgets.get(id);
-        if (!widget) return;
-        if (${fail}) {
+        if (!widgets.has(id)) return;
+        if ('${mode}' === 'error' || ('${mode}' === 'error-once' && attempts === 1)) {
           widget.options['error-callback']();
           return;
         }
-        widget.options.callback(
-          'pass:' + widget.options.action + ':localhost:' + crypto.randomUUID(),
-        );
-        widget.node.dataset.turnstileReady = 'true';
-      });
-      return id;
-    },
-    remove(id) {
-      const widget = widgets.get(id);
-      if (widget) widget.node.remove();
-      widgets.delete(id);
-    },
-    reset(id) {
-      const widget = widgets.get(id);
-      if (!widget || ${fail}) return;
-      widget.node.dataset.turnstileReady = 'false';
-      queueMicrotask(() => {
-        const current = widgets.get(id);
-        if (!current) return;
-        current.options.callback(
-          'pass:' + current.options.action + ':localhost:' + crypto.randomUUID(),
-        );
-        current.node.dataset.turnstileReady = 'true';
+        widget.options.callback('pass:' + widget.options.action + ':localhost:' + crypto.randomUUID());
       });
     },
+    remove(id) { widgets.delete(id); },
+    reset() { throw new Error('Each submission requires a fresh execution'); },
   };
 })();
 `;
@@ -83,7 +55,7 @@ export async function installTurnstileFixture(
     await route.fulfill({
       status: 200,
       contentType: 'application/javascript',
-      body: fixtureScript(mode === 'error'),
+      body: fixtureScript(mode),
     });
   });
 }
@@ -95,30 +67,11 @@ export function assertScriptedProof(token: unknown, action: string): void {
   }
 }
 
-export async function expectTurnstileReady(page: Page, action: string): Promise<void> {
-  await expect(
-    page.locator(`[data-turnstile-action="${action}"][data-turnstile-ready="true"]`),
-  ).toBeVisible();
-}
-
-export async function expectTurnstileSizeForHost(page: Page): Promise<void> {
-  const frame = page.getByLabel('Проверка безопасности');
-  await expect(frame).toBeVisible();
-  const marker = frame.locator('[data-turnstile-size]');
-  const size = await marker.getAttribute('data-turnstile-size');
-  const markerBox = await marker.boundingBox();
-  const hostWidth = await marker.evaluate((node) => node.parentElement?.getBoundingClientRect().width ?? 0);
-  if (markerBox === null || hostWidth <= 0 || (size !== 'compact' && size !== 'flexible')) {
-    throw new Error('Turnstile frame has no sized fixture');
+export async function expectInvisibleTurnstile(page: Page): Promise<void> {
+  await expect(page.getByLabel('Проверка безопасности')).toHaveCount(0);
+  const hosts = page.locator('[data-invisible-turnstile]');
+  for (const host of await hosts.all()) {
+    const box = await host.boundingBox();
+    expect(box?.height ?? 0).toBe(0);
   }
-  const expected = hostWidth < FLEXIBLE_MIN_WIDTH ? 'compact' : 'flexible';
-  expect(size).toBe(expected);
-  if (size === 'compact') {
-    expect(Math.round(markerBox.width)).toBe(150);
-    expect(Math.round(markerBox.height)).toBe(COMPACT_MIN_HEIGHT);
-    return;
-  }
-  expect(Math.round(markerBox.height)).toBe(FLEXIBLE_MIN_HEIGHT);
-  expect(Math.round(markerBox.width)).toBe(Math.round(hostWidth));
-  expect(markerBox.width).toBeGreaterThanOrEqual(FLEXIBLE_MIN_WIDTH);
 }

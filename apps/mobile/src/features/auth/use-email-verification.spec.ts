@@ -20,6 +20,7 @@ const LOCAL = Date.parse('2026-10-10T08:00:30.000Z');
 const harness = vi.hoisted(() => ({
   user: null as User | null,
   verified: 0,
+  proofRequest: null as (() => Promise<string | null>) | null,
   emailVerificationState: vi.fn<(...args: unknown[]) => Promise<EmailVerificationState>>(),
   requestEmailVerification: vi.fn<(...args: unknown[]) => Promise<{ ok: true; delivery: string }>>(),
   verifyEmailVerification: vi.fn<(...args: unknown[]) => Promise<{ ok: true }>>(),
@@ -107,9 +108,9 @@ function Probe({ focused }: { focused: boolean }) {
     createElement('p', null, `retrySend:${verification.retrySendPending ? 'yes' : 'no'}`),
     createElement('button', { type: 'button', onClick: () => setFocus(false) }, 'blur'),
     createElement('button', { type: 'button', onClick: () => void verification.retry() }, 'retry'),
-    createElement('button', { type: 'button', onClick: () => void verification.send('proof-token') }, 'send'),
-    createElement('button', { type: 'button', onClick: () => void verification.send('proof-token', true) }, 'send-new'),
-    createElement('button', { type: 'button', onClick: () => void verification.send('') }, 'send-empty'),
+    createElement('button', { type: 'button', onClick: () => void verification.send(() => harness.proofRequest?.() ?? Promise.resolve('proof-token')) }, 'send'),
+    createElement('button', { type: 'button', onClick: () => void verification.send(async () => 'proof-token', true) }, 'send-new'),
+    createElement('button', { type: 'button', onClick: () => void verification.send(async () => null) }, 'send-empty'),
     createElement('button', { type: 'button', onClick: () => void verification.verify() }, 'verify'),
     createElement('button', { type: 'button', onClick: () => verification.setCode('12345') }, 'short'),
     createElement('button', { type: 'button', onClick: () => verification.setCode('123456') }, 'code'),
@@ -140,6 +141,7 @@ describe('useEmailVerification', () => {
     document.body.replaceChildren();
     harness.user = null;
     harness.verified = 0;
+    harness.proofRequest = null;
     vi.clearAllMocks();
     vi.useRealTimers();
   });
@@ -169,6 +171,21 @@ describe('useEmailVerification', () => {
       ));
     });
   }
+
+  it.each(['account', 'epoch', 'blur', 'unmount'] as const)('does not send after %s changes during proof acquisition', async (retirement) => {
+    let release!: (proof: string) => void;
+    harness.proofRequest = () => new Promise((resolve) => { release = resolve; });
+    harness.emailVerificationState.mockResolvedValue(verificationState());
+    const container = render(); await flush();
+    act(() => click(container, 'send')); await flush();
+    expect(container.textContent).toContain('busy:yes');
+    if (retirement === 'account') replaceUser(account({ id: '11111111-1111-4111-8111-111111111111', email: 'other@example.com' }));
+    if (retirement === 'epoch') act(() => { if (client) advanceAuthEpoch(client); });
+    if (retirement === 'blur') act(() => click(container, 'blur'));
+    if (retirement === 'unmount') { act(() => root?.unmount()); root = null; }
+    await act(async () => release('late-proof')); await flush();
+    expect(harness.requestEmailVerification).not.toHaveBeenCalled();
+  });
 
   it('reads authorized state before any send and ignores a retired or unmounted reply', async () => {
     harness.emailVerificationState.mockRejectedValueOnce(networkError());
@@ -403,6 +420,7 @@ describe('useEmailVerification', () => {
     expect(client?.getQueryData<User>(authKeys.session)?.emailVerifiedAt).toBe('2026-10-10T08:05:00.000Z');
 
     harness.verified = 0;
+    harness.proofRequest = null;
     harness.me.mockResolvedValue({
       user: account({ id: '11111111-1111-4111-8111-111111111111', emailVerifiedAt: '2026-10-10T08:05:00.000Z' }),
     });
@@ -956,7 +974,7 @@ describe('useEmailVerification', () => {
       click(container, 'send-empty');
     });
     expect(container.textContent).toContain('entered:123456');
-    expect(container.textContent).toContain('reason:challenge');
+    expect(container.textContent).toContain('reason:proof-failed');
     expect(container.textContent).toContain('send:accepted');
 
     const otherId = '11111111-1111-4111-8111-111111111111';
@@ -970,7 +988,7 @@ describe('useEmailVerification', () => {
     });
     await flush();
     expect(container.textContent).not.toContain('entered:123456');
-    expect(container.textContent).not.toContain('reason:challenge');
+    expect(container.textContent).not.toContain('reason:proof-failed');
     expect(container.textContent).not.toContain('send:accepted');
     const otherState = pending.at(-1);
     await act(async () => {

@@ -14,6 +14,7 @@ import { useAuth } from '../../providers/auth-provider';
 import { createOperationKey } from './recovery-operation';
 
 export type VerificationReason =
+  | { kind: 'proof-failed' }
   | { kind: 'accepted' }
   | { kind: 'unknown' }
   | { kind: 'rejected' }
@@ -588,13 +589,9 @@ export function useEmailVerification(input: {
     setReloadNonce((current) => current + 1);
   }, []);
 
-  const send = useCallback(async (proof: string, explicitNewIntent = false) => {
+  const send = useCallback(async (getProof: (signal: AbortSignal) => Promise<string | null>, explicitNewIntent = false) => {
     const scope = readyScope();
     if (!scope) return;
-    if (!proof) {
-      setReason({ kind: 'challenge', outcome: 'required' });
-      return;
-    }
     const retained = sendTicket.current;
     const replayRetained = Boolean(
       !explicitNewIntent &&
@@ -634,6 +631,12 @@ export function useEmailVerification(input: {
     const { token, controller } = openAction('send');
     setSending(true);
     try {
+      const proof = await getProof(controller.signal);
+      if (!isCurrent(token, scope, controller.signal)) return;
+      if (!proof) {
+        setReason({ kind: 'proof-failed' });
+        return;
+      }
       const result = await apiRef.current.auth.requestEmailVerification({
         idempotencyKey: ticket.key,
         turnstileToken: proof,

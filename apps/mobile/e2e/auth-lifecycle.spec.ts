@@ -19,7 +19,7 @@ import { createBuyerFixture } from './support/e2e-fixtures';
 import { expectPasswordVisibility } from './support/fill-control';
 import { localTestMailHas, localTestMailValue } from './support/task-mail';
 import {
-  expectTurnstileReady,
+  expectInvisibleTurnstile,
   installTurnstileFixture,
 } from './support/turnstile-fixture';
 
@@ -190,7 +190,7 @@ test('login survives reload and password recovery rejects the old password and a
   await page
     .getByRole('textbox', { name: 'Электронная почта', exact: true })
     .fill(unknownEmail);
-  await expectTurnstileReady(page, 'password_reset');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Отправить ссылку' }).click();
   await expect(page.getByText(AUTH_RECOVERY_ACCEPTED_COPY, { exact: true })).toBeVisible();
   expect(await localTestMailHas(unknownEmail, 'token')).toBe(false);
@@ -198,7 +198,7 @@ test('login survives reload and password recovery rejects the old password and a
   await page
     .getByRole('textbox', { name: 'Электронная почта', exact: true })
     .fill(buyer.email);
-  await expectTurnstileReady(page, 'password_reset');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Отправить ссылку' }).click();
   await expect(page.getByText(AUTH_RECOVERY_ACCEPTED_COPY, { exact: true })).toBeVisible();
   const token = await localTestMailValue(buyer.email, 'token');
@@ -244,7 +244,7 @@ test('an explicit verification send is one request', async ({ page }) => {
     posts += 1;
     await route.continue();
   });
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Отправить код', exact: true }).dblclick();
   await expect.poll(() => posts).toBe(1);
   await expect(page.getByText(/Почтовый сервер принял письмо с кодом/)).toBeVisible();
@@ -258,7 +258,7 @@ test('a dropped verification send keeps the entered code', async ({ page }) => {
     slug: `drop${id}`,
   });
   await page.route('**/api/auth/email/request', (route) => route.abort('failed'));
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   await page.getByLabel('Код из письма').focus();
   await expect(page.getByLabel('Код из письма')).toBeFocused();
   await page.getByLabel('Код из письма').fill('000000');
@@ -291,10 +291,10 @@ test('an unknown verification delivery can be replayed with the same logical key
     }
     await route.continue();
   });
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Отправить код', exact: true }).click();
   await expect(page.getByText(/Исход отправки для .+ неизвестен/)).toBeVisible();
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Повторить тот же запрос', exact: true }).click();
   await expect.poll(() => keys.length).toBe(2);
   if (keys[0] !== keys[1]) throw new Error('Unknown-delivery replay did not keep the logical key');

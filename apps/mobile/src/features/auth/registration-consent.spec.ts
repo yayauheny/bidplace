@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, useLayoutEffect, type ReactNode } from 'react';
+import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -25,6 +25,8 @@ const harness = vi.hoisted(() => ({
   emitBlur: () => undefined as void,
   legalReads: 0,
   registers: 0,
+  emailRequests: 0,
+  proofRequest: null as (() => Promise<string | null>) | null,
   renderedUserId: null as string | null,
   lastRegister: null as null | { turnstileToken?: string; legal?: { agreement: {version: string}; privacy: {version: string}; dataConsent: {version: string}; age18Confirmed: boolean } },
   proof: 'widget-token' as string | null,
@@ -216,11 +218,14 @@ vi.mock('../../providers/api-provider', () => ({
         }
         return Promise.resolve({ user });
       },
-      requestRegistrationEmail: async () => ({
-        ok: true,
-        serverNow: new Date().toISOString(),
-        resendAvailableAt: new Date(Date.now() + 60_000).toISOString(),
-      }),
+      requestRegistrationEmail: async () => {
+        harness.emailRequests += 1;
+        return {
+          ok: true,
+          serverNow: new Date().toISOString(),
+          resendAvailableAt: new Date(Date.now() + 60_000).toISOString(),
+        };
+      },
       verifyRegistrationEmail: async () => ({ ok: true }),
       slugAvailability: harness.slugAvailability,
       getLegalDocuments: async () => {
@@ -321,21 +326,8 @@ vi.mock('../../components/ui', () => ({
 }));
 
 vi.mock('./turnstile-widget', () => ({
-  TurnstileWidget: ({
-      onToken,
-      onAvailability,
-    }: {
-      onToken: (token: string | null) => void;
-      onAvailability?: (availability: 'ready' | 'unavailable') => void;
-    }) => {
-      useLayoutEffect(() => {
-        onAvailability?.(harness.availability);
-        if (harness.proof) onToken(harness.proof);
-      }, [onToken, onAvailability]);
-      return createElement('div', { 'data-turnstile': 'register' });
-    },
+  useInvisibleTurnstile: () => ({ getToken: () => harness.proofRequest?.() ?? Promise.resolve(harness.availability === 'unavailable' ? null : harness.proof) }),
 }));
-
 import { AuthProvider, useAuth } from '../../providers/auth-provider';
 import { RegisterForm } from './auth-form';
 
@@ -496,6 +488,8 @@ afterEach(() => {
   harness.releaseRegister = null;
   harness.legalReads = 0;
   harness.registers = 0;
+  harness.emailRequests = 0;
+  harness.proofRequest = null;
   harness.lastRegister = null;
   harness.proof = 'widget-token';
   harness.availability = 'ready';
@@ -895,6 +889,40 @@ describe('registration consent attempt', () => {
     view.unmount();
   });
 
+  it.each(['blur', 'value', 'session', 'unmount'] as const)('does not send a late proof after %s retires registration', async (retirement) => {
+    let release!: (token: string) => void;
+    harness.proofRequest = () => new Promise((resolve) => { release = resolve; });
+    const view = mount();
+    await reachPassword(view.container);
+    clickButton(view.container, 'Дальше');
+    await flush();
+    expect(harness.emailRequests).toBe(0);
+    if (retirement === 'blur') act(() => harness.emitBlur());
+    if (retirement === 'value') fill(view.container, 'Введите пароль', 'different-password-123');
+    if (retirement === 'session') act(() => { advanceAuthEpoch(client()); harness.tick(); });
+    if (retirement === 'unmount') view.unmount();
+    await act(async () => release('late-proof'));
+    await flush();
+    expect(harness.emailRequests).toBe(0);
+    if (retirement !== 'unmount') view.unmount();
+  });
+
+  it('keeps registration values after proof failure and acquires proof on retry', async () => {
+    harness.proof = null;
+    const view = mount();
+    await reachPassword(view.container);
+    clickButton(view.container, 'Дальше');
+    await flush();
+    expect(view.container.textContent).toContain('Попробуйте ещё раз');
+    expect(view.container.querySelector('[aria-label="Введите пароль"]')).toHaveProperty('value', 'registration-password-123');
+    expect(harness.emailRequests).toBe(0);
+    harness.proof = 'retry-proof';
+    clickButton(view.container, 'Дальше');
+    await until(view.container, 'Подтвердите почту');
+    expect(harness.emailRequests).toBe(1);
+    view.unmount();
+  });
+
   it('requires Turnstile proof for the atomic registration request', async () => {
     harness.proof = null;
     const view = mount();
@@ -902,7 +930,8 @@ describe('registration consent attempt', () => {
     clickButton(view.container, 'Дальше');
     await flush();
     expect(harness.registers).toBe(0);
-    expect(view.container.textContent).toContain('Подтвердите, что вы не робот.');
+    expect(view.container.querySelector('[data-turnstile]')).toBeNull();
+    expect(view.container.textContent).toContain('Попробуйте ещё раз');
     harness.proof = 'widget-token';
     view.unmount();
   });
@@ -914,7 +943,7 @@ describe('registration consent attempt', () => {
     clickButton(view.container, 'Дальше');
     await flush();
     expect(harness.registers).toBe(0);
-    expect(view.container.textContent).toContain('Проверка безопасности сейчас недоступна.');
+    expect(view.container.textContent).toContain('Попробуйте ещё раз');
     view.unmount();
   });
 

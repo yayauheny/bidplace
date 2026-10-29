@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, useLayoutEffect, useSyncExternalStore, type ReactNode } from 'react';
+import { act, createElement, useSyncExternalStore, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -43,7 +43,7 @@ const harness = vi.hoisted(() => ({
   focused: true,
   emitBlur: () => undefined as void,
   proof: null as string | null,
-  availability: 'ready' as 'ready' | 'unavailable',
+  proofRequest: null as (() => Promise<string | null>) | null,
   user: null as { id: string; email: string; slug: string; acceptedRulesVersion: null } | null,
   bump: () => authBridge.bump(),
   login: vi.fn(),
@@ -193,22 +193,8 @@ vi.mock('../../components/ui', () => ({
 }));
 
 vi.mock('./turnstile-widget', () => ({
-  TurnstileWidget: ({
-    onToken,
-    onAvailability,
-  }: {
-    onToken: (token: string | null) => void;
-    onAvailability: (availability: 'ready' | 'unavailable') => void;
-  }) => {
-    const issued = harness.proof;
-    useLayoutEffect(() => {
-      onAvailability(harness.availability);
-      if (issued) onToken(issued);
-    }, [issued, onAvailability, onToken]);
-    return createElement('div', { 'data-turnstile': 'challenge' });
-  },
+  useInvisibleTurnstile: () => ({ getToken: () => harness.proofRequest?.() ?? Promise.resolve(harness.proof) }),
 }));
-
 function SessionHost({ children }: { children?: ReactNode }) {
   return children;
 }
@@ -270,7 +256,7 @@ afterEach(() => {
   harness.focused = true;
   harness.user = null;
   harness.proof = null;
-  harness.availability = 'ready';
+  harness.proofRequest = null;
   harness.login.mockReset();
   harness.forgot.mockReset();
   harness.replace.mockReset();
@@ -328,6 +314,41 @@ describe('onboarding email send outcomes', () => {
       }
     },
   );
+});
+
+describe('submit-time proof ownership', () => {
+  it.each(['value', 'epoch', 'blur', 'unmount'] as const)('does not send recovery after %s retires its pending proof', async (retirement) => {
+    const pending = defer<string | null>();
+    harness.proofRequest = () => pending.promise;
+    const view = mount(createElement(ForgotPasswordForm));
+    fill(view.container, 'Электронная почта', 'a@example.com');
+    click(view.container, 'Отправить ссылку');
+    await flush();
+    if (retirement === 'value') fill(view.container, 'Электронная почта', 'b@example.com');
+    if (retirement === 'epoch') act(() => { advanceAuthEpoch(view.client); });
+    if (retirement === 'blur') act(() => harness.emitBlur());
+    if (retirement === 'unmount') view.unmount();
+    await act(async () => pending.resolve('late-proof'));
+    await flush();
+    expect(harness.forgot).not.toHaveBeenCalled();
+    if (retirement !== 'unmount') view.unmount();
+  });
+
+  it('does not send challenged login after the account changes during proof acquisition', async () => {
+    const view = mount(createElement(LoginForm));
+    harness.login.mockRejectedValueOnce(new ApiClientError('challenge', { kind: 'forbidden', status: 403, code: ApiErrorCode.TURNSTILE_REQUIRED }));
+    fill(view.container, 'Электронная почта', 'a@example.com');
+    fill(view.container, 'Пароль', 'secret');
+    click(view.container, 'Войти'); await flush();
+    const pending = defer<string | null>(); harness.proofRequest = () => pending.promise;
+    click(view.container, 'Войти'); await flush();
+    act(() => { advanceAuthEpoch(view.client); view.client.setQueryData(authKeys.session, installed('user-b')); });
+    await act(async () => pending.resolve('late-proof'));
+    await flush();
+    expect(harness.login).toHaveBeenCalledTimes(1);
+    expect(harness.replace).not.toHaveBeenCalled();
+    view.unmount();
+  });
 });
 
 describe('login submit ownership', () => {
@@ -467,15 +488,15 @@ describe('login submit ownership', () => {
     fill(view.container, 'Пароль', 'secret');
     click(view.container, 'Войти');
     await flush();
-    expect(view.container.querySelector('[data-turnstile="challenge"]')).not.toBeNull();
+    expect(view.container.querySelector('[data-turnstile]')).toBeNull();
     expect(view.container.textContent).toContain(AUTH_TURNSTILE_REQUIRED_COPY);
     click(view.container, 'Войти');
     await flush();
     expect(harness.login).toHaveBeenCalledTimes(1);
     harness.proof = 'proof-a';
     fill(view.container, 'Пароль', 'secret-2');
-    expect(view.container.querySelector('[data-turnstile="challenge"]')).not.toBeNull();
-    expect(view.container.textContent).toContain(AUTH_TURNSTILE_REQUIRED_COPY);
+    expect(view.container.querySelector('[data-turnstile]')).toBeNull();
+    expect(view.container.textContent).toContain('Попробуйте ещё раз');
     harness.login.mockImplementationOnce(async () => {
       view.client.setQueryData(authKeys.session, installed('user-1'));
       return { user: { id: 'user-1' } };

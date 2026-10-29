@@ -39,25 +39,28 @@ size `auth`. The exit panel keeps the 12 px mobile gutter, so it is 366 wide at
 unchanged. Mixed legal text, the Google glyph and recovery/desktop frames are
 still unresolved; those screens are derived, not 1:1.
 
-### Turnstile widget — auth abuse (2026-10-10)
+### Invisible Turnstile — auth abuse (2026-10-29)
 
-Shared `TurnstileWidget` (`apps/mobile/src/features/auth/turnstile-widget.tsx`)
-is the only production Turnstile surface. It does not change measured auth sheet
-geometry from the 2026-10-08 fullscreen handoff; it stacks below the existing
-field column on login, registration, `/verify-email` send, and forgot-password.
+Shared `useInvisibleTurnstile` (`apps/mobile/src/features/auth/turnstile-widget.tsx`)
+owns submit-time proof acquisition for registration, challenged password login,
+email-code login, recovery, email verification and social onboarding email sends.
+It adds no field-column block, loading line, reserved height or separate retry
+control. Existing AuthViewport, fields, buttons and error slots own the layout.
+The founder's W2b Task 3 explicitly replaces the visible challenge surface;
+other Figma geometry is unchanged.
 
-Semantic states (copy from `apps/mobile/src/errors/copy.ts` unless noted):
+`getToken()` resolves with a fresh proof or `null`. The provider renders with
+`execution: 'execute'` and executes only during submission; proofs are never
+prefetched or cached. Failure/expiry/timeout uses the form's existing inline
+error slot («Попробуйте ещё раз»), preserving input for another submit. Missing
+public sitekey, script load failure and native platforms fail closed. Pending
+proofs belong to the form's abort/session/operation lifetime.
 
-| Phase                                            | User-visible behavior                                             |
-| ------------------------------------------------ | ----------------------------------------------------------------- |
-| `loading`                                        | «Загрузка проверки безопасности…» (widget-local line)             |
-| `ready`                                          | Cloudflare widget mounted when site key and script load           |
-| `unavailable`                                    | Shared `AUTH_TURNSTILE_UNAVAILABLE_COPY`; primary submit disabled |
-| Server `TURNSTILE_REQUIRED` / `TURNSTILE_FAILED` | Inline reason on the owning form; user retries proof              |
-
-Missing `EXPO_PUBLIC_TURNSTILE_SITE_KEY` or script timeout fails closed into
-`unavailable` — not a native Turnstile implementation claim. Figma geometries
-for fields, buttons, and dock hiding stay unchanged.
+Invisible mode belongs to the Cloudflare widget configuration, not its `size`
+parameter. Before production acceptance, the founder must select Invisible mode
+or replace the widget and configured keys; see [environment owner](../ops/ENVIRONMENT.md).
+Local scripted browser checks prove the submission/layout contract only. Live
+Cloudflare mode, native support, and wider Figma parity remain unverified.
 
 The fullscreen nickname frame `4547:23927` uses `authSuggestion` chips:
 37px high, hug width, 8px vertical / 13px horizontal padding, radius 80,

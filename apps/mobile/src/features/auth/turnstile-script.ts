@@ -14,7 +14,9 @@ type TurnstileRenderOptions = {
   sitekey: string;
   action: TurnstileAction;
   language: 'ru';
-  size: 'compact' | 'flexible';
+  execution: 'execute';
+  retry: 'never';
+  'refresh-expired': 'manual';
   callback: (token: string) => void;
   'error-callback': () => void;
   'expired-callback': () => void;
@@ -23,6 +25,7 @@ type TurnstileRenderOptions = {
 
 export type TurnstileApi = {
   render: (container: HTMLElement, options: TurnstileRenderOptions) => string;
+  execute: (widgetId: string) => void;
   remove: (widgetId: string) => void;
   reset: (widgetId?: string) => void;
 };

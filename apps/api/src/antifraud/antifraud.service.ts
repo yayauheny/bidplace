@@ -9,6 +9,14 @@ import { classifyMailFailure } from './auth/mail-outcome';
 export class AntifraudService {
   constructor(private readonly auth: AuthAbuseService, private readonly rateLimits: RateLimitService) {}
 
+  verifyRequired(...args: Parameters<AuthAbuseService['verifyRequired']>) {
+    return this.auth.verifyRequired(...args);
+  }
+
+  verifySignal(...args: Parameters<AuthAbuseService['verifySignal']>) {
+    return this.auth.verifySignal(...args);
+  }
+
   consumeRateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
     return this.rateLimits.consume(key, limit, windowMs);
   }

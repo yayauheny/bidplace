@@ -7,7 +7,6 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   AUTH_TURNSTILE_FAILED_COPY,
   AUTH_TURNSTILE_REQUIRED_COPY,
-  AUTH_TURNSTILE_UNAVAILABLE_COPY,
 } from '../src/errors/copy';
 
 import { openUnverifiedAccount, sendVerification } from './support/auth-browser-flow';
@@ -23,7 +22,7 @@ import { e2eApiBaseURL } from './support/e2e-env';
 import { e2eEvidenceDir } from './support/evidence-dir';
 import { createBuyerFixture } from './support/e2e-fixtures';
 import { localTestMailValue } from './support/task-mail';
-import { assertScriptedProof, expectTurnstileReady, expectTurnstileSizeForHost, installTurnstileFixture } from './support/turnstile-fixture';
+import { assertScriptedProof, expectInvisibleTurnstile, installTurnstileFixture } from './support/turnstile-fixture';
 
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
@@ -31,15 +30,14 @@ test.beforeEach(async ({ context }) => {
   await assignAuthClientIp(context);
 });
 
-test('the shared Turnstile frame follows its width rule without a reload', async ({ page }) => {
+test('invisible Turnstile reserves no auth layout space across resize', async ({ page }) => {
   await installTurnstileFixture(page);
   await page.goto('/forgot-password');
   const url = page.url();
   for (const viewport of AUTH_BROWSER_VIEWPORTS) {
     await page.setViewportSize(viewport);
     expect(page.url()).toBe(url);
-    await expectTurnstileReady(page, 'password_reset');
-    await expectTurnstileSizeForHost(page);
+    await expectInvisibleTurnstile(page);
     await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).focus();
     await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
     await expect(page.getByRole('button', { name: 'Отправить ссылку', exact: true })).toBeInViewport();
@@ -58,21 +56,22 @@ test('recovery unavailable keeps send reachable after zoom without a forgot-pass
   await page.setViewportSize(AUTH_PHONE_VIEWPORT);
   await installTurnstileFixture(page, 'unavailable');
   await page.goto('/forgot-password');
-  const unavailable = page.getByText(AUTH_TURNSTILE_UNAVAILABLE_COPY, { exact: true });
-  await expect(unavailable).toBeVisible();
   const email = page.getByRole('textbox', { name: 'Электронная почта', exact: true });
   const send = page.getByRole('button', { name: 'Отправить ссылку', exact: true });
-  await expect(email).toHaveValue('');
+  await email.fill('invisible-recovery@example.com');
+  await send.click();
+  await expect(page.getByText('Попробуйте ещё раз', { exact: true })).toBeVisible();
+  await expect(email).toHaveValue('invisible-recovery@example.com');
   await mkdir(e2eEvidenceDir, { recursive: true });
   await page.screenshot({
-    path: resolve(e2eEvidenceDir, `${engine(page)}-turnstile-unavailable-blank.png`),
+    path: resolve(e2eEvidenceDir, `${engine(page)}-turnstile-unavailable-retry.png`),
     fullPage: true,
   });
   await page.setViewportSize(AUTH_SHORT_PHONE_VIEWPORT);
   await page.evaluate(() => { document.documentElement.style.zoom = '1.5'; });
   await send.scrollIntoViewIfNeeded();
   await expect(send).toBeInViewport();
-  await expect(email).toHaveValue('');
+  await expect(email).toHaveValue('invisible-recovery@example.com');
   await expect.poll(() => forgotPasswordRequests).toBe(0);
   await page.evaluate(() => { document.documentElement.style.zoom = ''; });
 });
@@ -112,7 +111,7 @@ test('login renders a Turnstile challenge from the server response and submits a
   await required.screenshot({
     path: resolve(e2eEvidenceDir, `${engine(page)}-turnstile-required.png`),
   });
-  await expectTurnstileReady(page, 'login');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page.getByText('Неверная почта или пароль', { exact: true })).toBeVisible();
   await page.unroute('**/api/auth/login');
@@ -154,7 +153,7 @@ test('verification errors keep the fake code and show the server pause, quota, a
     code: 'MAIL_BUDGET',
     message: 'Email budget is exhausted',
   });
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Отправить код', exact: true }).click();
   await expect(page.getByText('Лимит писем исчерпан. Отправка сейчас недоступна.', { exact: true })).toBeVisible();
 
@@ -163,7 +162,7 @@ test('verification errors keep the fake code and show the server pause, quota, a
     code: 'TURNSTILE_FAILED',
     message: 'Turnstile verification failed',
   });
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Отправить код', exact: true }).click();
   await expect(page.getByText(AUTH_TURNSTILE_FAILED_COPY, { exact: true })).toBeVisible();
 
@@ -174,7 +173,7 @@ test('verification errors keep the fake code and show the server pause, quota, a
     message: 'Email quota is exhausted',
     details: { retryAt },
   });
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Отправить код', exact: true }).click();
   await expect(page.getByText(/Лимит отправок исчерпан\. Повторите через \d+ с\./)).toBeVisible();
 
@@ -254,7 +253,7 @@ test('a late registration response cannot replace the account installed while it
     await page.getByRole('button', { name: 'Дальше', exact: true }).click();
     await page.getByLabel('Введите пароль', { exact: true }).fill('registration-password-123');
     await page.getByLabel('Подтвердите пароль', { exact: true }).fill('registration-password-123');
-    await expectTurnstileReady(page, 'register');
+    await expectInvisibleTurnstile(page);
     await armAuthWriteHold('/api/auth/register');
     await page.getByRole('button', { name: 'Дальше', exact: true }).click();
     await expect(page.getByText('Подтвердите почту', { exact: true })).toBeVisible();
@@ -418,7 +417,7 @@ test('web auth completion: Google, email code and Telegram link keep one account
   expect((await logout()).status()).toBe(201);
   await page.goto('/email-login?redirectTo=/account');
   await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(original.email);
-  await expectTurnstileReady(page, 'email_login');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Получить код', exact: true }).click();
   await expect(page.getByText(/Новый аккаунт не создаётся/)).toBeVisible();
   await page.reload();
@@ -453,7 +452,7 @@ test('web auth completion: Telegram requires email proof and preserves pending s
   await expect(page.getByText(/Подтвердите почту/)).toBeVisible();
   expect((await page.request.get('/api/auth/me')).status()).toBe(401);
   await page.reload();
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   const sending = page.waitForResponse(response => response.url().endsWith('/api/auth/onboarding/email/request') && response.request().method() === 'POST');
   await page.getByRole('button', { name: 'Запросить код', exact: true }).click();
   expect((await sending).status()).toBe(201);
@@ -469,7 +468,7 @@ test('web auth completion: delayed state preserves an edited email and resend us
   await page.addInitScript(() => { const realNow = Date.now.bind(Date); Date.now = () => realNow() + 3_600_000; });
   await page.goto('/email-login');
   await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(`unknown-${randomUUID()}@example.test`);
-  await expectTurnstileReady(page, 'email_login');
+  await expectInvisibleTurnstile(page);
   await page.getByRole('button', { name: 'Получить код', exact: true }).click();
   await expect(page.getByRole('button', { name: /Повторить запрос через/ })).toBeDisabled();
   let release!: () => void;
@@ -500,7 +499,7 @@ test('web auth completion: a rejected proof email refreshes state and retries wi
   await page.getByRole('textbox', { name: 'Никнейм', exact: true }).fill(`smtp-${randomUUID().slice(0, 8)}`);
   await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
   await page.getByRole('button', { name: 'Завершить регистрацию', exact: true }).click();
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   const keys: string[] = [];
   await page.route('**/api/auth/onboarding/email/request', async route => {
     keys.push(route.request().postDataJSON().idempotencyKey);
@@ -517,7 +516,7 @@ test('web auth completion: a rejected proof email refreshes state and retries wi
   const state = await (await page.request.get('/api/auth/onboarding/email/state')).json();
   expect(state).toMatchObject({ sendStatus: 'rejected', resendAvailableAt: null, codeExpiresAt: null });
   expect(keys).toHaveLength(1);
-  await expectTurnstileReady(page, 'email_verification');
+  await expectInvisibleTurnstile(page);
   await expect(send).toBeEnabled();
   const accepted = page.waitForResponse(response => response.url().endsWith('/api/auth/onboarding/email/request') && response.request().method() === 'POST');
   await send.click();
@@ -545,8 +544,7 @@ test('web auth completion: code form preserves focus and edits through responsiv
     await email.focus();
     await expect(email).toBeFocused();
     await expect(email).toHaveValue('resize@example.test');
-    await expectTurnstileReady(page, 'email_login');
-    await expect(async () => { await expectTurnstileSizeForHost(page); }).toPass({ timeout: 5000 });
+    await expectInvisibleTurnstile(page);
     await expect(page.getByRole('button', { name: 'Получить код', exact: true })).toBeInViewport();
     expect(page.url()).toBe(originalUrl);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -568,7 +566,7 @@ test('web auth completion: a rejected proof can be retried immediately and bad c
   await page.request.post('/api/auth/logout', { headers: { Origin: 'http://127.0.0.1:55442', 'X-Bidplace-Request': '1' } });
   await page.goto('/email-login?redirectTo=/account');
   await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(user.email);
-  await expectTurnstileReady(page, 'email_login');
+  await expectInvisibleTurnstile(page);
   await page.route('**/api/auth/email-login/request', async route => {
     await page.unroute('**/api/auth/email-login/request');
     await route.continue({ postData: JSON.stringify({ ...route.request().postDataJSON(), turnstileToken: 'synthetic-invalid-proof' }) });
@@ -577,7 +575,7 @@ test('web auth completion: a rejected proof can be retried immediately and bad c
   await page.getByRole('button', { name: 'Получить код', exact: true }).click();
   expect((await failed).status()).toBe(403);
   await expect(page.getByText(AUTH_TURNSTILE_FAILED_COPY, { exact: true })).toBeVisible();
-  await expectTurnstileReady(page, 'email_login');
+  await expectInvisibleTurnstile(page);
   const sending = page.waitForResponse(response => response.url().endsWith('/api/auth/email-login/request') && response.request().method() === 'POST');
   await page.getByRole('button', { name: 'Получить код', exact: true }).click();
   expect((await sending).status()).toBe(201);

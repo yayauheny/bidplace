@@ -12,7 +12,8 @@ import { e2eEvidenceDir } from './support/evidence-dir';
 import { expectPasswordVisibility } from './support/fill-control';
 import { finishRegistrationEmailProof } from './support/auth-browser-flow';
 import {
-  expectTurnstileReady,
+  assertScriptedProof,
+  expectInvisibleTurnstile,
   installTurnstileFixture,
 } from './support/turnstile-fixture';
 import {
@@ -972,7 +973,7 @@ test('auth composition keeps a centered form inside the fullscreen registration'
   const password = page.getByLabel('Введите пароль', { exact: true });
   await expect(password).toBeVisible();
   expect(availabilityRequests).toBe(1);
-  await expectTurnstileReady(page, 'register');
+  await expectInvisibleTurnstile(page);
   const confirmation = page.getByLabel('Подтвердите пароль', { exact: true });
   await password.fill('layout-password-123');
   await confirmation.fill('layout-password-123');
@@ -1307,7 +1308,7 @@ test('nickname suggestions check availability only on explicit Next', async ({
   await page
     .getByLabel('Подтвердите пароль', { exact: true })
     .fill('registration-password-123');
-  await expectTurnstileReady(page, 'register');
+  await expectInvisibleTurnstile(page);
   expect((await finishRegistrationEmailProof(page, 'nickname-only@example.com')).status()).toBe(409);
   await expect(
     page.getByText('Этот никнейм уже занят. Выберите другой.', { exact: true }),
@@ -1534,4 +1535,50 @@ test('registration continues when document reading is unavailable', async ({ pag
   expect((await finishRegistrationEmailProof(page, registrationEmail)).status()).toBe(201);
   await expect(page).toHaveURL(/\/$/);
 
+});
+
+test('invisible registration at 390 preserves values on proof failure and retries on submit', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 874 });
+  await installTurnstileFixture(page, 'error-once');
+  await installLegalDocumentsFixture(page);
+  await page.route('**/api/auth/me', (route) => route.fulfill({ status: 401, json: { status: 401, code: 'unauthorized', message: 'Authentication required' } }));
+  await page.route('**/api/auth/slug-availability?*', (route) => route.fulfill({ json: { available: true } }));
+  let sends = 0;
+  await page.route('**/api/auth/register/email/request', async (route) => {
+    const body = route.request().postDataJSON() as { turnstileToken?: unknown; email?: string };
+    expect(body.email).toBe('invisible-layout@example.com');
+    assertScriptedProof(body.turnstileToken, 'register');
+    sends += 1;
+    const now = new Date();
+    await route.fulfill({ status: 201, json: { ok: true, serverNow: now.toISOString(), resendAvailableAt: new Date(now.getTime() + 60_000).toISOString() } });
+  });
+  await page.goto('/register');
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill('invisible-layout@example.com');
+  await acceptRegistrationConsents(page);
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await page.getByLabel('Никнейм', { exact: true }).fill('invisible-layout');
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  const password = page.getByLabel('Введите пароль', { exact: true });
+  const confirmation = page.getByLabel('Подтвердите пароль', { exact: true });
+  await password.fill('browser-registration-test-2026');
+  await confirmation.fill('browser-registration-test-2026');
+  await expectInvisibleTurnstile(page);
+  expect(await page.locator('body').getAttribute('data-turnstile-executions')).toBeNull();
+  await mkdir(artifactDir, { recursive: true });
+  await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-register-invisible-390.png`) });
+  const submit = page.getByRole('button', { name: 'Дальше', exact: true });
+  await submit.click();
+  await expect(page.getByText('Попробуйте ещё раз', { exact: true })).toBeVisible();
+  await expect(password).toHaveValue('browser-registration-test-2026');
+  await expect(confirmation).toHaveValue('browser-registration-test-2026');
+  await expectInvisibleTurnstile(page);
+  expect(sends).toBe(0);
+  expect(await page.locator('body').getAttribute('data-turnstile-executions')).toBe('1');
+  await expect(submit).toBeInViewport();
+  await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-register-invisible-failure-390.png`) });
+  await submit.click();
+  await expect(page.getByText('Подтвердите почту', { exact: true })).toBeVisible();
+  expect(sends).toBe(1);
+  expect(await page.locator('body').getAttribute('data-turnstile-executions')).toBe('2');
+  await expectInvisibleTurnstile(page);
 });

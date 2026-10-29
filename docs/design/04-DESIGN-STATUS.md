@@ -492,3 +492,15 @@ AppDialog, with retry/cancel and generic fallbacks preserved; actual cabinet,
 draft and story consumer regressions cover these paths. No source geometry,
 tokens, routes or Figma changes. Longer-copy wrapping, responsive screenshots,
 real keyboard/focus/zoom and native/device acceptance remain Needs verification.
+
+## 2026-10-29 — W2b invisible auth proof
+
+**Partial visual acceptance.** Shared `useInvisibleTurnstile` removes the old
+visible challenge block from all auth consumers without changing AuthViewport,
+controls, typography or spacing tokens. Registration at 390: Chromium and WebKit
+scripted browser checks cover no prefetch/no reserved widget space, inline
+«Попробуйте ещё раз», retained values and successful submit-time proof retry.
+Auth owner units cover expiry, timeout, abort/unmount, value/session changes and
+late callbacks. Live Cloudflare Invisible configuration remains **Needs verification**;
+1024/1440 exact Figma parity, native keyboard/device motion remain outside this
+scoped acceptance. See [shared system owner](03-DESIGN-SYSTEM.md#invisible-turnstile-auth-abuse-2026-10-29).

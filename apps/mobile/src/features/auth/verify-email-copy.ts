@@ -44,6 +44,8 @@ export function verificationReasonCopy(
     case 'accepted':
     case 'unknown':
       return null;
+    case 'proof-failed':
+      return 'Попробуйте ещё раз';
     case 'rejected':
       return 'Сервер не принял отправку.';
     case 'cooldown':
