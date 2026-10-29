@@ -48,7 +48,7 @@ describe('Cloudflare application boundary', () => {
   );
 
   it('sends one authenticated tick through the private container binding', async () => {
-    const h = harness();
+    const h = harness(() => Response.json({ skipped: false, jobs: [{ name: 'media', processed: 1, failed: false }] }));
     const response = await runScheduledTick(h.env);
     expect(response.status).toBe(200);
     expect(h.getByName).toHaveBeenCalledExactlyOnceWith('portfolio-api');
@@ -57,6 +57,21 @@ describe('Cloudflare application boundary', () => {
     expect(request.url).toBe('http://container/api/internal/tick');
     expect(request.method).toBe('POST');
     expect(request.headers.get('X-Internal-Tick')).toBe('synthetic-internal-tick');
+  });
+
+  it.each([
+    () => new Response('sensitive upstream body', { status: 500 }),
+    () => Response.json({ jobs: [{ name: 'sensitive job name', failed: true }] }),
+    () => new Response('invalid tick body'),
+  ])('rejects failed scheduled ticks without exposing their response body', async (response) => {
+    const h = harness(response);
+    await expect(runScheduledTick(h.env)).rejects.toThrow(/^Scheduled tick failed$/);
+  });
+
+  it('sanitizes scheduled transport rejection', async () => {
+    const h = harness();
+    h.fetchApi.mockRejectedValue(new Error('sensitive transport details'));
+    await expect(runScheduledTick(h.env)).rejects.toThrow(/^Scheduled tick failed$/);
   });
 
   it('does not wake the container during a release hold', async () => {

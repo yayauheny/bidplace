@@ -365,3 +365,18 @@ typecheck/lint/build, docs links and whitespace checks pass locally.
 Compensation permits brief exposure before delete/purge; strict privacy atomicity
 and live R2/CDN remain open. Older FAILED restores lacking a journal require
 manual retry; no automatic retry policy or historical backfill added.
+
+### 2026-10-29 — PR73 review fixes
+
+Nonrestore approval now rejects active sales before media enqueue and at the
+locked publication owner before revision/content/pointer writes; archive sale
+checking moved to that owner, retaining the early locked read and removing one
+redundant caller lock. Product lock contention returns 409 after 4s instead of
+expiring the 5s request transaction. Exact completed ARCHIVED approval retries
+retain audit/PRIVATE/PUBLIC state; different targets still conflict. Profile
+restore now shares the durable pre-PUT journal, exact FAILED-source exemption,
+retry/restart and shared-reference protection. Owner/admin image reads avoid the
+catalog query and remain private. Local evidence: API unit 668 + 2 isolated mock
+path cases, 97 affected PostgreSQL cases, typecheck/lint/build and Cloudflare
+checks pass. Live provider fencing/privacy atomicity/CDN remain unverified;
+older FAILED restores need explicit retry. No remote release action performed.

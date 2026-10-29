@@ -23,7 +23,10 @@ The Worker scheduled handler calls the private `portfolio-api` Durable Object
 with `POST /api/internal/tick` and `X-Internal-Tick`. Public `/api/internal/*`
 requests receive 404 before the Container is called, and forwarded requests lose
 any caller-supplied tick header. Nest independently requires `InternalTickGuard`.
-`RELEASE_HOLD=closed` blocks scheduled forwarding. `TICK_CRON` is deploy config:
+`RELEASE_HOLD=closed` blocks scheduled forwarding without treating the deliberate
+skip as a scheduled failure. Other non-success HTTP responses, malformed tick
+results and failed jobs reject the scheduled promise with a fixed safe message;
+response bodies and transport errors are not logged. `TICK_CRON` is deploy config:
 empty disables Cron; final deployment explicitly clears any old schedule. While
 awake, the timer runs without Cron; sleeping Containers have no schedule-driven
 recovery until Cron is enabled or a visit wakes them. Cloudflare config/scripts
@@ -35,7 +38,10 @@ sixteen abandoned STAGING assets, respecting the supplied deadline. It recovers
 due REVOKE/CLEANUP and expired RUNNING PUBLISH below the retry ceiling through
 the existing leases and publication CAS/active-author guards. PENDING/FAILED
 PUBLISH and UPLOAD remain explicit/manual paths. Persisted operation failures
-fail the job and prevent heartbeat success. Existing leases also arbitrate
+fail the job and prevent heartbeat success, including exhausted FAILED
+REVOKE/CLEANUP at the retry ceiling; these require manual intervention and are
+not automatically retried. The 30-second heartbeat continues while the Container
+is awake, so this runtime does not let its database idle then. Existing leases also arbitrate
 legacy-timer/direct-call overlap. W3 commerce jobs, outbox and admin health UI
 remain planned. Live scheduled execution is **Needs verification**; setup and
 post-deploy checks belong to the [runbook](../ops/CLOUDFLARE-DEPLOYMENT.md).
@@ -50,17 +56,24 @@ without PUBLIC writes or READY manifests; restore uses existing PRIVATE bytes.
 A 60s total abort signal reaches S3 requests and body consumption; the I/O-bearing
 transaction has a 65s timeout. This bounds the new per-object lock scope, with hide
 waiting or failing under slow delivery rather than succeeding ahead of a late PUT.
-Profile publication and existing revocation/shared-asset rules retain their owners.
+The shared Product write guard bounds row-lock waits to 4s, below the default 5s
+request transaction timeout, maps only PostgreSQL `55P03` through Prisma `P2010`
+to `PRODUCT_STATE_CONFLICT` (409), and restores the prior transaction-local lock
+timeout after acquisition. Required early read and canonical write locks remain;
+archive sale checking belongs to the visibility owner, without a third caller lock.
 
-Work restore commits a PUBLIC-only REVOKE journal before delivery, under the
+Work and suspended profile restore commit a PUBLIC-only REVOKE journal before delivery, under the
 PUBLISH row lock and current lease/token/generation check. Its identity binds the
 source operation/generation; revision timestamp disambiguates later restore
 cycles. FAILED retries rearm that journal. Only its corresponding FAILED restore
-on an ARCHIVED Product is exempt from PUBLIC deletion blocking; active RUNNING,
+on an ARCHIVED Product or SUSPENDED profile is exempt from PUBLIC deletion blocking; active RUNNING,
 PRIVATE/CLEANUP and public-reference guards remain. Existing recovery handles
 partial writes and expired RUNNING restore attempts without automatically retrying
 ordinary FAILED/PENDING publications. Compensation permits brief exposure before
 cleanup/purge; strict privacy atomicity and live R2/CDN acceptance remain open.
+R2 has no provider fencing here: correctness still relies on bounded delivery
+finishing before the longer operation/object lease; a process paused beyond its
+lease remains a live-verification limit.
 
 ## 2026-10-26 — Photo workflow (DEC-148)
 
@@ -325,12 +338,17 @@ cleanup/manual-retry regressions live in `media-lifecycle.integration.spec.ts`.
 
 `assertProductNotInSale` and `findSellerProductIdsInSale` own the sale policy in
 `product-write-guard.ts`; its shared query/constant also serves admin affordances.
-Author edits/submits/hide, image mutation and admin archive reuse this owner;
+Author edits/submits, image mutation, nonrestore publication approval and archive
+reuse this owner. Moderation checks before media enqueue, and `publishRevision`
+checks again under the Product lock before any revision/content/pointer writes;
 author suspension calls it from `AdminModerationService`. Active-lot mutations
 return `PRODUCT_IN_SALE` (409). Future orders extend this owner, not its callers.
 `ImagesService.get`, catalog/direct Product reads and analytics reuse
 `portfolioCatalogProductWhere`; public images must also belong to the published
-revision. Private owner/admin access retains its existing policy/cache behavior.
+revision. Authorized owner/admin image reads skip this catalog query and return
+private `no-store` bytes. Moderation retries of hidden approvals require the exact
+current published pointer and a DONE nonrestore PUBLISH journal matching the
+original target timestamp; stale/different targets retain their conflict behavior.
 
 The mobile `apiErrorMessage` owner maps these two codes in cabinet/profile hide
 and draft/story saves; unknown errors retain existing fallbacks. Hide reasons are

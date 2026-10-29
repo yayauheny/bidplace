@@ -16,6 +16,24 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — PR73 review fixes
+
+**Implemented locally / live Needs verification.** Media recovery reports exhausted
+FAILED REVOKE/CLEANUP without retrying them or advancing `system_heartbeats`.
+`product-publication.ts` rejects nonrestore approval and archive during a sale;
+moderation checks before media enqueue. Product lock contention returns
+`PRODUCT_STATE_CONFLICT` (409) after a bounded wait. Exact completed hidden
+approval retries preserve audit and PUBLIC bytes. Profile restore now shares the
+pre-PUT compensation journal, preserving PRIVATE and unrelated public references;
+owner/admin image reads skip catalog queries and use private cache policy.
+Worker scheduled failures reject with a fixed safe message; release hold skips
+forwarding. Local checks: API unit 668 + 2 isolated mocked config-path tests,
+97 PostgreSQL integration cases, API typecheck/lint/build, Cloudflare
+43 Worker + 25 script tests and typecheck/lint. Draft CI does not cover these
+full local gates. No push, Ready transition, remote Verify, merge or deploy.
+Provider fencing, live R2/CDN/Cron acceptance and strict privacy atomicity remain
+open; the 30s heartbeat keeps the database active while its Container is awake.
+
 ## 2026-10-29 — Failed Work restore compensation
 
 **Implemented locally / live Needs verification.** `media-lifecycle.service.ts`

@@ -3,6 +3,32 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed (engineering owner)
 
+## 2026-10-29 — PR73 recovery and publication review
+
+**Implemented locally / live Needs verification.** Exhausted FAILED REVOKE/CLEANUP
+keeps the media job failed and success heartbeat unchanged without unbounded retry.
+Work approval checks the sale guard before enqueue and again in the locked
+publication owner before writes; archive shares that owner. Product row-lock
+contention alone maps to 409 after 4s, preserving all other database errors and the
+previous transaction-local timeout. Suspended profile restore uses the existing
+pre-PUT PUBLIC-only journal and exact source id/generation/revision binding;
+only its own FAILED restore is exempt from deletion blocking while SUSPENDED.
+PRIVATE, running leases and legitimate shared public references remain protected.
+Hidden approval retry accepts only its exact completed current publication and
+adds no audit or PUBLIC write. Owner/admin image reads use private cache policy
+without a catalog query. Worker scheduled failures expose a fixed error message,
+without upstream body/job names/transport details; release hold is a deliberate
+no-wake skip. Regression evidence: media lifecycle, author-hide-listing, moderation,
+internal-tick, work-media-http, atomicity and cabinet integration owners (97 cases),
+API unit/typecheck/lint/build and Cloudflare checks pass locally.
+
+Limits retained: compensation may briefly expose PUBLIC bytes before delete/purge;
+there is no R2 provider fencing against a live process paused beyond its lease.
+Old FAILED restores without a journal require manual retry. Live R2/CDN/Cron and
+production timing remain unverified. Draft CI runs only its fast subset; the 30s
+heartbeat keeps the database active while the Container is awake. No remote
+verification, release transition or deployment was performed.
+
 ## 2026-10-29 — Private scheduler boundary (W2)
 
 **Implemented locally; live Needs verification.** Worker routing rejects public

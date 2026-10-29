@@ -29,9 +29,20 @@ export async function runScheduledTick(env: RouterBindings): Promise<Response> {
     return new Response(null, { status: 503, headers: privateResponse });
   }
   if (!env.INTERNAL_TICK_SECRET?.trim()) throw new Error('Missing INTERNAL_TICK_SECRET');
-  return env.API.getByName('portfolio-api').fetch(new Request('http://container/api/internal/tick', {
-    method: 'POST', headers: { 'X-Internal-Tick': env.INTERNAL_TICK_SECRET },
-  }));
+  try {
+    const response = await env.API.getByName('portfolio-api').fetch(new Request('http://container/api/internal/tick', {
+      method: 'POST', headers: { 'X-Internal-Tick': env.INTERNAL_TICK_SECRET },
+    }));
+    if (!response.ok) throw new Error('Scheduled tick failed');
+    const result: unknown = await response.clone().json();
+    if (!result || typeof result !== 'object' || !('jobs' in result) ||
+        !Array.isArray(result.jobs) || result.jobs.some((job: unknown) =>
+          !job || typeof job !== 'object' || !('failed' in job) || job.failed !== false))
+      throw new Error('Scheduled tick failed');
+    return response;
+  } catch {
+    throw new Error('Scheduled tick failed');
+  }
 }
 
 function publicCacheTtl(request: Request): number | undefined {

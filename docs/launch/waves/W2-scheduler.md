@@ -285,3 +285,16 @@ security, workers-best-practices. Сам прогони pnpm cloudflare:check и
   internal-tick 9 + media-lifecycle 31 PASS; docs links 105 файлов и diff check PASS.
   До этого Task3 проверила 60 affected integration cases; эта задача повторила 40.
   Проверки не ослаблялись. Task4 commit — `implement feature: document scheduler tick`.
+
+### 2026-10-29 — PR73 review fixes
+
+Exhausted FAILED REVOKE/CLEANUP now fails `media` and leaves the last successful
+heartbeat unchanged, without retrying beyond the existing ceiling. Worker
+scheduled non-success responses, invalid payloads, failed jobs and transport
+rejections propagate a fixed safe error; release hold remains a deliberate
+no-wake skip. Local evidence: API unit 668 + 2 isolated mock path cases,
+97 affected PostgreSQL cases, API typecheck/lint/build, Cloudflare
+43 Worker + 25 script tests and typecheck/lint pass. Draft CI covers only its
+fast subset; remote Verify/Ready/merge/deploy were not performed. The 30s timer
+keeps the database active while the Container is awake; live Cron/heartbeat,
+R2/CDN and provider fencing beyond the operation lease remain Needs verification.
