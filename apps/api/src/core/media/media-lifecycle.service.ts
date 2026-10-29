@@ -714,7 +714,12 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     target: { profileId?: string; productId?: string },
   ) {
     await tx.mediaOperation.updateMany({
-      where: { ...target, kind: 'PUBLISH', state: { in: [...activeStates] } },
+      where: {
+        ...target,
+        kind: 'PUBLISH',
+        state: { in: [...activeStates] },
+        ...(target.productId ? { restore: true } : {}),
+      },
       data: { state: 'CANCELLED' },
     });
     const objectWhere: Prisma.MediaObjectWhereInput = {
@@ -1245,7 +1250,13 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
               id: { not: operation.id },
               OR: [
                 { state: 'RUNNING', leaseUntil: { gt: new Date() } },
-                { kind: 'PUBLISH', state: { in: ['PENDING', 'FAILED'] } },
+                {
+                  kind: 'PUBLISH',
+                  state: { in: ['PENDING', 'FAILED'] },
+                  ...(operation.kind === 'REVOKE' && item.object.tier === 'PUBLIC'
+                    ? { NOT: { restore: false, product: { status: 'ARCHIVED' } } }
+                    : {}),
+                },
               ],
             },
           },
