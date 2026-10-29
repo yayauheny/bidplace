@@ -481,3 +481,14 @@ Moderation review follow-up: decision success offers an explicit return to the
 previous page; active publication offers processing/status refresh instead of
 another review decision. Existing controls/tokens/restore flow reused; no new
 visual system. Browser evidence and CI belong to PR #64.
+
+
+## 2026-10-29 — W1: Work state error copy
+
+**Implemented locally / visual Needs verification.** `api-error-messages.ts`
+provides the approved PRODUCT_IN_SALE and PRODUCT_STATE_CONFLICT text in
+profile/cabinet hide and draft/story saves. Hide errors remain inside the open
+AppDialog, with retry/cancel and generic fallbacks preserved; actual cabinet,
+draft and story consumer regressions cover these paths. No source geometry,
+tokens, routes or Figma changes. Longer-copy wrapping, responsive screenshots,
+real keyboard/focus/zoom and native/device acceptance remain Needs verification.

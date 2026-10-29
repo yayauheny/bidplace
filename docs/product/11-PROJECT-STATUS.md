@@ -16,6 +16,25 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — W1 publication state owner
+
+**Implemented locally / live and visual Needs verification.**
+`products/product-publication.ts` is the only Product status/published-pointer
+writer; author/admin/media use locked conditional transitions. Hidden revision
+approval retains ARCHIVED with the new pointer, with media on/off; deterministic
+hide/approval, PENDING/FAILED cleanup and manual-retry regressions preserve public
+revocation and private sources. `product-write-guard.ts` owns sale checks;
+`portfolioCatalogProductWhere` owns catalog/direct/image eligibility. Seller
+suspension uses the actual `AdminModerationService` boundary; its state machine
+is unchanged. Contracts expose PRODUCT_STATE_CONFLICT/PRODUCT_IN_SALE (409), and
+mobile `apiErrorMessage` maps the two approved reasons in hide/save consumers,
+including inside cabinet/profile dialogs. API test files now participate in
+ordinary typecheck/lint. Local commits, checks, rulings and limits:
+[W1 journal](../launch/waves/W1-publication-owner.md#журнал-исполнения-2026-10-29).
+No schema/dependency/product-decision change, merge, push or deployment. Longer
+copy wrapping/focus/zoom/device screenshots, dedicated auth-abuse/browser opt-ins
+and live storage acceptance remain Needs verification. Later waves are not started.
+
 ## 2026-10-29 — W2 scheduler tick
 
 **Implemented locally / live Needs verification.** Worker scheduled forwarding

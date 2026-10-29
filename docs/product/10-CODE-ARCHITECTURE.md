@@ -266,18 +266,54 @@ facts; "Planned" owners are created by the named launch wave.
 | Topic | Owner | Status |
 | --- | --- | --- |
 | Whether a user may act (auth abuse, rate limits, Turnstile, signals and holds, strikes, 3-booking cap, ban) | `apps/api/src/antifraud/` (`AntifraudService`); today `auth-abuse/` + `core/rate-limit` | Planned — W2b moves both in |
-| Product publication and visibility transitions | `apps/api/src/products/` publication module | Planned — W1 |
+| Product publication and visibility transitions | `apps/api/src/products/product-publication.ts` | Implemented locally — W1 |
+| Whether a Product is in sale | `apps/api/src/products/product-write-guard.ts` | Implemented locally — W1; orders remain W3 |
+| Public Product/image eligibility | `apps/api/src/products/public-visibility.ts` (`portfolioCatalogProductWhere`) | Implemented locally — W1 |
 | Lot and order transitions, pricing | `apps/api/src/commerce/` `listing-state.ts`, `order-state.ts`, `auction-pricing.ts` | Planned — W3 |
 | API errors | `apps/api/src/core/errors/` (`AppException` + mapper) | Implemented |
 | Business time | `apps/api/src/core/time/` (`Clock`; `dbNow(tx)` added in W3) | Partial |
 | Scheduled jobs | `apps/api/src/core/tick/TickService` | Implemented locally — W2; live Needs verification |
 | Transactional emails | notification outbox, `enqueueNotification` | Planned — W3 |
 | Client cache keys and invalidation | `apps/mobile/src/lib/query-cache.ts` | Implemented; W4 adds commerce keys |
-| Client error texts | `apps/mobile/src/lib/api-error-messages.ts` | Planned — W1 |
+| Client error texts | `apps/mobile/src/lib/api-error-messages.ts` | Implemented locally — W1; sale codes extend in W4 |
 | Money formatting, ticking time | `apps/mobile/src/lib/money.ts`, `use-now.ts` | Planned — W4 |
 | Leave-screen guard | `apps/mobile/src/lib/use-prevent-remove.ts` | Planned — W7 |
 | Formats, limits, error codes | `packages/contracts` | Implemented |
 | Colors and sizes | `packages/design-tokens` via `useAppTheme` | Implemented |
+
+## Work publication owner — 2026-10-29 (W1)
+
+`product-publication.ts` owns `assertRevisionTransition`,
+`transitionProductVisibility` and `publishRevision`, using the existing shared
+`ProductStatus`. Only this module writes Product status/published pointer and
+copies published Product fields. Author/admin/media callers retain authorization,
+review targets, audit and publication intent. Writes lock the Product inside the
+caller transaction and use conditional updates with exact row counts; publication
+also checks revision identity/time and the expected published pointer. Stale
+snapshots return `stale`; lost conditional writes throw `PRODUCT_STATE_CONFLICT`
+(409). The old revision helper is removed; SellerProfile's machine is unchanged.
+
+Approving a new revision of an ARCHIVED Work advances its published pointer but
+keeps ARCHIVED, with media enabled or disabled. Explicit unhide restores the
+published revision after media delivery. Hide cancels restore intents, preserving
+ordinary revision approval. PUBLIC revoke may bypass a PENDING/FAILED nonrestore
+approval only for an ARCHIVED Work; running leases, PRIVATE sources and cleanup
+reference checks stay protected. Deterministic approval/hide and pending/failed
+cleanup/manual-retry regressions live in `media-lifecycle.integration.spec.ts`.
+
+`assertProductNotInSale` and `findSellerProductIdsInSale` own the sale policy in
+`product-write-guard.ts`; its shared query/constant also serves admin affordances.
+Author edits/submits/hide, image mutation and admin archive reuse this owner;
+author suspension calls it from `AdminModerationService`. Active-lot mutations
+return `PRODUCT_IN_SALE` (409). Future orders extend this owner, not its callers.
+`ImagesService.get`, catalog/direct Product reads and analytics reuse
+`portfolioCatalogProductWhere`; public images must also belong to the published
+revision. Private owner/admin access retains its existing policy/cache behavior.
+
+The mobile `apiErrorMessage` owner maps these two codes in cabinet/profile hide
+and draft/story saves; unknown errors retain existing fallbacks. Hide reasons are
+inside the open confirmation dialog. Source geometry/tokens are unchanged;
+wrapping, real focus/zoom and responsive screenshots remain Needs verification.
 
 ## Applications and shared boundaries
 
@@ -611,7 +647,7 @@ cookie with `credentials: 'include'` and does not attach an Authorization
 bearer token. `OptionalBearerAuthGuard` accepts that cookie or a bearer token.
 Public and owner projections stay on their existing records.
 
-The active API is an HTTP process. There is no scheduler or Socket.IO adapter on the boot graph. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them. Commerce application code is not restored from leftover Prisma tables; the archive branch is `feature/commerce-runtime-archive` @ `19eb40e`.
+The active API is an HTTP process with the global TickModule on its boot graph (W2, local implementation above). There is no Socket.IO adapter on the boot graph. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them. Commerce application code is not restored from leftover Prisma tables; the archive branch is `feature/commerce-runtime-archive` @ `19eb40e`.
 
 ## Author story and catalog — 2026-10-11
 
