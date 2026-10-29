@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  ApiErrorCode,
   EDITABLE_PRODUCT_STATUSES,
   isEditableProductStatus,
   type ProductStatus,
@@ -11,19 +12,24 @@ import {
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 
+import { AppException } from '../core/errors/app.exception';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 
-export const PRODUCT_EDIT_LOCK_LISTING_STATUSES = ['SCHEDULED', 'LIVE'] as const;
+export const PRODUCT_EDIT_LOCK_LISTING_STATUSES = [
+  'SCHEDULED',
+  'LIVE',
+] as const;
+
+export const productInSaleWhere = {
+  listings: {
+    some: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
+  },
+} satisfies Prisma.ProductWhereInput;
 
 export const productWriteGuardSelect = {
   id: true,
   status: true,
   sellerProfile: { select: { userId: true, status: true } },
-  listings: {
-    where: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
-    select: { id: true },
-    take: 1,
-  },
 } satisfies Prisma.ProductSelect;
 
 export const writableProductWhere = {
@@ -43,25 +49,41 @@ export type ProductWriteGuardSnapshot = {
   id: string;
   status: string;
   sellerProfile: { userId: string; status: string };
-  listings: Array<{ id: string }>;
 };
 
 export async function lockProductRowForUpdate(
   tx: Pick<Prisma.TransactionClient, '$queryRaw'>,
   productId: string,
 ): Promise<void> {
-  const rows = await tx.$queryRaw<Array<{ id: string }>>(
-    Prisma.sql`SELECT id FROM "products" WHERE id = ${productId}::uuid FOR UPDATE`,
-  );
+  const [previous] = await tx.$queryRaw<Array<{ timeout: string }>>`
+    WITH previous AS MATERIALIZED (SELECT current_setting('lock_timeout') AS timeout)
+    SELECT timeout, set_config('lock_timeout', '4s', true) FROM previous
+  `;
+  let rows: Array<{ id: string }>;
+  try {
+    rows = await tx.$queryRaw<Array<{ id: string }>>(
+      Prisma.sql`SELECT id FROM "products" WHERE id = ${productId}::uuid FOR UPDATE`,
+    );
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2010' && error.meta?.code === '55P03') {
+      throw new AppException({
+        status: 409,
+        code: ApiErrorCode.PRODUCT_STATE_CONFLICT,
+        message: 'Product is being updated; retry this action',
+      });
+    }
+    throw error;
+  }
+  await tx.$queryRaw`SELECT set_config('lock_timeout', ${previous!.timeout}, true)`;
   if (rows.length === 0) {
     throw new NotFoundException('Product not found');
   }
 }
 
-export function assertProductWritable<T extends ProductWriteGuardSnapshot>(
+export function assertProductOwner<T extends ProductWriteGuardSnapshot>(
   product: T | null,
   userId: string,
-  kind: ProductWriteGuardKind,
 ): asserts product is T {
   if (!product) {
     throw new NotFoundException('Product not found');
@@ -72,14 +94,24 @@ export function assertProductWritable<T extends ProductWriteGuardSnapshot>(
   }
 
   assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+}
+
+export async function assertProductWritable<
+  T extends ProductWriteGuardSnapshot,
+>(
+  tx: Prisma.TransactionClient,
+  product: T | null,
+  userId: string,
+  kind: ProductWriteGuardKind,
+): Promise<T> {
+  assertProductOwner(product, userId);
 
   if (!isEditableProductStatus(product.status as ProductStatus)) {
     throw productWriteLockedError(kind);
   }
 
-  if (product.listings.length > 0) {
-    throw new ConflictException('Product is locked by an active Listing');
-  }
+  await assertProductNotInSale(tx, product.id);
+  return product;
 }
 
 export function productWriteLockedError(kind: ProductWriteGuardKind) {
@@ -93,4 +125,36 @@ export function productWriteLockedError(kind: ProductWriteGuardKind) {
     default:
       return new ForbiddenException('Product cannot be edited');
   }
+}
+
+export async function assertProductNotInSale(
+  tx: Prisma.TransactionClient,
+  productId: string,
+): Promise<void> {
+  await lockProductRowForUpdate(tx, productId);
+  const listing = await tx.listing.findFirst({
+    where: {
+      productId,
+      status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] },
+    },
+    select: { id: true },
+  });
+  if (listing) {
+    throw new AppException({
+      status: 409,
+      code: ApiErrorCode.PRODUCT_IN_SALE,
+      message: 'Product is in sale',
+    });
+  }
+}
+
+export async function findSellerProductIdsInSale(
+  tx: Prisma.TransactionClient,
+  sellerId: string,
+): Promise<string[]> {
+  const products = await tx.product.findMany({
+    where: { sellerProfileId: sellerId, ...productInSaleWhere },
+    select: { id: true },
+  });
+  return products.map(({ id }) => id);
 }

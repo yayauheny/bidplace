@@ -1,7 +1,9 @@
 # Bidplace: Cloudflare deployment
 
 Дата проверки документации: 2026-10-06. Реального deployment пока нет.
-Текущий путь — один production contour, `DEC-102`. Более ранние staging-шаги
+Текущий путь — один production contour, `DEC-102`. Конфиг и скрипты
+Cloudflare принимают только `production`; staging-команды удалены. Branch gate
+deploy-скрипта и ручного workflow совпадает: `main`. Более ранние staging-шаги
 ниже сохраняют историю и не являются обязательным deployment. Результаты:
 [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
 
@@ -17,8 +19,8 @@ staging buckets и DNS этой волной не удаляются и в deplo
 `workflow_dispatch`. Push, PR и расписание deploy не запускают. GitHub
 показывает кнопку Run workflow после того, как этот файл есть на default
 branch `main`. Default branch не менять. Запускать workflow нужно с branch
-`feature/portfolio-mvp-release`: Actions → Production deploy → Run workflow →
-этот branch. Job отклоняет любой другой ref. Checkout, checks, production SPA
+`main`: Actions → Production deploy → Run workflow →
+`main`. Job отклоняет любой другой ref. Checkout, checks, production SPA
 build, image gate, необязательная migration и deploy относятся к одному
 `github.sha`.
 
@@ -62,6 +64,29 @@ Environment `prod` — источник значений для этого deplo
 копия. Оригиналы остаются в зашифрованном хранилище оператора. Секреты не
 читаются обратно из GitHub и повторно не вводятся.
 
+## W2: проверка после будущего деплоя
+
+Локальная реализация не подтверждает live запуск. До нового runtime применить
+миграцию `20261029010000_system_heartbeats`; задать `INTERNAL_TICK_SECRET` в
+Environment `prod` по [реестру окружения](ENVIRONMENT.md) и передать штатным
+deploy-путём Worker → Container. Для ручного задания Worker имя команды:
+`wrangler secret put INTERNAL_TICK_SECRET --env production`; значение не писать
+в отчёты/логи. Деплой выполняется основателем позже, из `main`.
+
+После деплоя разбудить Container обычным визитом и за две минуты проверить через
+доверенное подключение к БД, что `system_heartbeats` со `name = 'tick'` обновляет
+`at` каждые успешные тики. Успешный тик не пишет отдельный response-лог; отсутствие
+ошибок в логах само по себе не доказывает работу. Проверить
+`curl -i https://bid.place/api/internal/tick` → 404 (также POST); такой публичный
+запрос не должен будить Container.
+
+При пустом `TICK_CRON` Cron выключен; deploy явно снимает старое расписание.
+Проверять пробуждение спящего Container по расписанию нужно только после явного
+включения Cron настройкой и проверки его наличия в Cloudflare. Затем подтвердить
+новый heartbeat после scheduled invocation и отсутствие ошибок задач. При пустом
+расписании recovery после сна проверяется обычным визитом и последующим тиком;
+ответа Cron через две минуты ожидать нельзя. Health UI/outbox добавляет W3.
+
 ## Архитектура
 
 `bid.place` → Worker: `/api` и `/api/*` → один private Nest Container, остальные
@@ -71,7 +96,7 @@ Environment `prod` — источник значений для этого deplo
 Cloudflare Containers, не новая очередь или business storage.
 
 Basic Container: 0.25 vCPU / 1 GiB, `max_instances=1`, одно постоянное имя DO,
-порт 3001, idle sleep 10 минут, без cron/keepalive. Internet access нужен для
+порт 3001, idle sleep 10 минут; Cron выключен при пустом `TICK_CRON`. Internet access нужен для
 Neon TCP/5432, SMTP/587 или 465, R2 и purge HTTPS. Автоматических миграций на
 старте нет. [Container class](https://developers.cloudflare.com/containers/api/container-class/),
 [configuration](https://developers.cloudflare.com/containers/configuration/wrangler/).
@@ -106,7 +131,32 @@ Neon TCP/5432, SMTP/587 или 465, R2 и purge HTTPS. Автоматическ�
 Полный список переменных со ★ обязательных, без значений —
 [ENVIRONMENT.md](ENVIRONMENT.md); перед любым production deploy пройти его
 целиком. Расписание тика — `TICK_CRON` (W2): пусто по умолчанию, Cron Trigger
-не создаётся; `*/5 * * * *` при реальных аукционах.
+не создаётся; `*/5 * * * *` при реальных аукционах. GitHub workflow берёт
+`TICK_CRON` из variables Environment `prod`; локальный deploy — из окружения
+оператора. `scripts/cloudflare/config.mjs` проверяет пять полей Cron, диапазоны,
+списки, шаги и документированные имена/расширения Cloudflare. Неверная строка
+останавливает deploy. То же расписание передаётся в `vars.TICK_CRON` и контейнер.
+Записанный `wrangler.jsonc` не содержит расписания. Пустая настройка удаляет
+шаблонные triggers; временный production config передаёт Wrangler `crons: []`,
+чтобы снять и ранее включённое расписание. Простое отсутствие `triggers`
+сохранило бы его ([правила удаления Cron](https://developers.cloudflare.com/workers/configuration/cron-triggers/#remove-a-cron-trigger)).
+
+Worker вызывает private DO один раз: `POST /api/internal/tick` с заголовком
+`X-Internal-Tick`. Внешний `/api/internal/*`, включая альтернативные кодировки,
+отвечает 404 до обращения к контейнеру. Пути вне точного API namespace
+(например, `/API/*`) остаются в Static Assets и не вызывают контейнер. При `RELEASE_HOLD=closed` Cron контейнер
+не будит. `INTERNAL_TICK_SECRET` обязателен в контракте Worker и передаётся только
+в контейнер; GitHub workflow проверяет его наличие и включает в secrets-file.
+Оператор задаёт его интерактивно из каталога `deploy/cloudflare`:
+`wrangler secret put INTERNAL_TICK_SECRET --env production`. Значение не
+передаётся в командной строке и не попадает в браузер.
+
+При старте Cron выключен. Включать `*/5 * * * *` при первых реальных аукционах:
+при `sleepAfter = 10m` тик каждые пять минут почти не даёт контейнеру уснуть,
+поэтому оплачивается почти постоянная работа контейнера. Расписание исполняется
+по UTC; обновление Cron у Cloudflare распространяется с задержкой.
+[Scheduled handler](https://developers.cloudflare.com/workers/runtime-apis/handlers/scheduled/)
+использует `ctx.waitUntil` для выполнения тика.
 
 Owner — `deploy/cloudflare/wrangler.jsonc`, allowlist Container —
 `deploy/cloudflare/src/environment.ts`, server validation — `apps/api/src/core/config/env.ts`.
@@ -116,8 +166,7 @@ server validation. `TELEGRAM_BOT_TOKEN` — secret сохранённого lega
 не входит в portfolio runtime; `TEST_EMAIL_FILE` — только локальный transport,
 в cloud Container не передаётся. Они не нужны для этого deployment.
 
-Заполнить **non-secret vars** отдельно в `env.staging.vars` и
-`env.production.vars`: `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, `SMTP_FROM`,
+Заполнить **non-secret vars** в `env.production.vars`: `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, `SMTP_FROM`,
 `SERVICE_RULES_OWNER/CONTACT/TEXT`. `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` и
 `SMTP_AUTH_MODE` уже заданы профилем Cloudflare Email Service. Bucket names и
 media domains уже раздельные; если изменить их, изменить contract до deploy.
@@ -133,6 +182,7 @@ MEDIA_PUBLIC_BASE_URL. Названия/правила публичны и се�
 | DATABASE_URL | Neon pooler URL; отдельный для каждого environment |
 | SESSION_SECRET | Независимый случайный secret, минимум 32 chars |
 | OTP_HASH_SECRET | Отдельный случайный ключ HMAC для OTP, минимум 32 chars |
+| INTERNAL_TICK_SECRET | Авторизация внутреннего тика; обязателен независимо от включения Cron |
 | S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY | R2 Object Read & Write, только два buckets данного environment |
 | SMTP_USERNAME / SMTP_PASSWORD | Cloudflare Email Service SMTP. Username — литерал `api_token`. Password — отдельный API token с Email Sending: Edit |
 | CLOUDFLARE_CACHE_TOKEN | Zone → Cache Purge только для зоны `bid.place` |
@@ -255,7 +305,7 @@ Workers Paid включает 3 000 исходящих писем на акка�
 [Prisma pool](https://www.prisma.io/docs/orm/v6/prisma-client/setup-and-configuration/databases-connections/connection-pool).
 
 Перед каждым обычным deployment — backup и просмотр новых migrations, затем оператор
-на trusted machine запускает `pnpm cloudflare:migrate staging` (production: `pnpm cloudflare:migrate production --confirm-production`) с отдельно безопасно
+на trusted machine запускает `pnpm cloudflare:migrate production --confirm-production` с отдельно безопасно
 переданным `DATABASE_URL` migration role. Для `20261008040000_add_user_slug`
 этот прежний порядок не использовать. Механизм ниже локальный: production не
 переключался, образ API не заменялся и контейнер production не останавливался.
@@ -271,7 +321,7 @@ Workers Paid включает 3 000 исходящих писем на акка�
    `prod` и в операторском хранилище секретов. Значение не печатать и не
    записывать в vars контейнера. До этого production workflow не запускать.
 2. Подготовительный запуск workflow `Production deploy` на
-   `feature/portfolio-mvp-release`: `release_hold=closed`,
+   `main`: `release_hold=closed`,
    `keep_container=true`, `confirm_migration` пустой. Wrangler получает
    `--containers-rollout none` и `--keep-vars`, проверка нового образа API
    пропускается. Прежний production-образ остаётся. После успеха `GET` и `POST`
@@ -332,17 +382,16 @@ Neon поддерживает migrations через pooler, но отдельн�
 удобна для контроля schema privileges:
 [Neon Prisma migration support](https://neon.com/blog/better-postgres-with-prisma-experience).
 
-## Build, первый staging deploy и CI
+## Build и CI
 
 Node 22, pnpm 11.7.0, Docker daemon; root monorepo — build context.
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm cloudflare:check
-pnpm cloudflare:build:staging
+pnpm build:web
 pnpm cloudflare:image:verify
-# После resource/vars/secrets setup и отдельного migration step:
-pnpm cloudflare:deploy:staging
+# Production deploy: ручной workflow из раздела «Текущий production path».
 ```
 
 Deploy script проверяет vars, Worker, строит SPA для нужного origin, проверяет
@@ -353,14 +402,14 @@ production-like amd64 image, затем вызывает Wrangler. Smoke соз�
 [Static Assets SPA](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/),
 [Image management](https://developers.cloudflare.com/containers/guides/image-management/).
 
-GitHub Verify выполняет существующий `pnpm verify`, Worker gate, staging web и
-amd64 image smoke. Production branch остаётся `feature/portfolio-mvp-release`:
+GitHub Verify выполняет существующий `pnpm verify`, Worker gate, production web и
+amd64 image smoke. Production branch остаётся `main`:
 PR → required Verify / protected branch → deploy. Branch protection требуется
 включить вручную; конфиг CI не включает её автоматически.
 
 Workers Builds поддерживает root monorepo/pnpm и Dockerfile image build. Native
 integration — предпочтительный вариант **после** required CI gate. Root directory
-`/`, Node version 22.20.0, pnpm 11.7.0, production branch только release.
+`/`, Node version 22.20.0, pnpm 11.7.0, production branch только `main`.
 Не включать production full deploy для остальных branches. Обычный
 `versions upload` не выкатывает новый Container и не создаёт полноценный preview.
 Staging — отдельный Worker, отдельная source branch/full deploy.
@@ -480,7 +529,7 @@ Staging branch, staging Worker и staging secrets в этот список не 
 
 | Что проверить | Куда | Как проверить | Статус |
 |---|---|---|---|
-| Workflow на `main` и на `feature/portfolio-mvp-release`, без смены default branch | `.github/workflows/production-deploy.yml`, `environment: prod` | Actions показывает Production deploy. Run на release branch. Другой ref job отклоняет | Needs verification. Файл подготовлен. Push и run не выполнялись |
+| Workflow на `main` и на `main`, без смены default branch | `.github/workflows/production-deploy.yml`, `environment: prod` | Actions показывает Production deploy. Run на release branch. Другой ref job отклоняет | Needs verification. Файл подготовлен. Push и run не выполнялись |
 | `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`, `CLOUDFLARE_ACCOUNT_ID` | Variables Environment `prod`. Для первого запуска owner `bidplace`, contact `work.evles@gmail.com`, текст правил утверждён временно | Пустые значения останавливают job до Wrangler. Репозиторий не хранит production owner | Operator entered. Значения этой волной не читались |
 | Secrets Environment `prod`: `NEON_DIRECT_URL` для migration, pooled `DATABASE_URL` для runtime, остальные runtime secrets workflow | Settings → Environments → `prod`. Оригиналы — в зашифрованном хранилище оператора | Имена совпадают с workflow. Значения не читать и не вводить повторно | Operator reported entered. Значения этой волной не читались |
 

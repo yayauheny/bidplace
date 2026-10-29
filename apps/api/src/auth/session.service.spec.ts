@@ -106,11 +106,13 @@ describe('server session authentication', () => {
     const order: string[] = [];
     request.session.regenerate = vi.fn((callback) => {
       order.push('rotate');
-      callback();
+      callback(undefined);
+      return request.session;
     });
     request.session.save = vi.fn((callback) => {
       order.push('save');
-      callback(new Error('offline'));
+      callback?.(new Error('offline'));
+      return request.session;
     });
     await expect(service.login(request, 'user', 0)).rejects.toThrow(
       'Session save failed',

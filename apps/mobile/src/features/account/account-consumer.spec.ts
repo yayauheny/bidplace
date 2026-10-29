@@ -5,7 +5,7 @@
  * против реального AccountScreen. Session-switch/guard-семантика кэша
  * покрыта author-cabinet-work-cache и не дублируется здесь.
  */
-import { act, createElement, type ReactNode } from 'react';
+import { act, createElement, type ComponentType, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import {
   QueryClient,
@@ -141,7 +141,14 @@ vi.mock('../../providers/api-provider', () => ({
   }),
 }));
 
+vi.mock('../../components/layout/PageScrollView', () => ({
+  PageScrollView: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+}));
+
 vi.mock('../../components/layout', () => ({
+  AppShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   FormPageShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
 }));
@@ -206,6 +213,7 @@ vi.mock('../../components/ui', () => {
       createElement('div', null, title, message),
     ImagePlaceholder: ({ label }: { label: string }) =>
       createElement('div', null, label),
+    PageHeader: ({ title }: { title: string }) => createElement('h1', null, title),
     PrimaryButton: PressButton,
     SecondaryButton: PressButton,
   };
@@ -271,6 +279,7 @@ vi.mock('../sellers/AuthorShare', () => ({
 }));
 
 import { AccountScreen } from './account-screen';
+import { AuthorCabinetScreen } from '../sellers/author-cabinet-screen';
 
 const sellerProfile = (status: string, fullName = 'Editing Name B') => ({
   sellerProfile: {
@@ -349,7 +358,7 @@ function CapabilityProbe() {
   });
 }
 
-function mount(extra: ReactNode = null) {
+function mount(extra: ReactNode = null, Screen: ComponentType = AccountScreen) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -362,7 +371,7 @@ function mount(extra: ReactNode = null) {
       createElement(
         QueryClientProvider,
         { client: queryClient },
-        createElement(AccountScreen),
+        createElement(Screen),
         extra,
       ),
     );
@@ -541,6 +550,58 @@ describe('account screen consumers', () => {
         (item) => item.textContent === 'Вернуть в профиль',
       ),
     ).toBe(false);
+    view.unmount();
+  });
+
+  it.each([
+    ['PRODUCT_IN_SALE', 'Работа сейчас в продаже. Снимите лот, чтобы изменить или скрыть её'],
+    ['PRODUCT_STATE_CONFLICT', 'Работа изменилась. Обновите страницу и попробуйте снова'],
+    ['conflict', 'Не удалось скрыть работу. Попробуйте ещё раз.'],
+  ] as const)('shows the hide failure for %s inside the existing dialog', async (code, message) => {
+    harness.getMyProfile.mockResolvedValue(sellerProfile('APPROVED'));
+    harness.hideWork.mockRejectedValue(new ApiClientError('Internal detail', {
+      kind: 'conflict', status: 409, code,
+    }));
+    const view = mount();
+    await until(view.container, () => view.container.textContent?.includes('Work title') === true, 'cabinet works');
+    clickButton(view.container, 'Скрыть');
+    await until(view.container, () => view.container.querySelector('[role="dialog"]') !== null, 'hide dialog');
+    const dialog = view.container.querySelector('[role="dialog"]') as HTMLElement;
+    clickButton(view.container, 'Скрыть', dialog);
+    await until(view.container, () => dialog.textContent?.includes(message) === true, 'work hide error');
+    expect(dialog.textContent).not.toContain('Internal detail');
+    expect(view.container.textContent).toContain('Work title');
+    view.unmount();
+  });
+
+  it.each([
+    ['PRODUCT_IN_SALE', 'Работа сейчас в продаже. Снимите лот, чтобы изменить или скрыть её'],
+    ['PRODUCT_STATE_CONFLICT', 'Работа изменилась. Обновите страницу и попробуйте снова'],
+    ['conflict', 'Не удалось изменить видимость работы. Попробуйте ещё раз.'],
+  ] as const)('keeps the cabinet hide reason for %s reachable inside the dialog', async (code, message) => {
+    harness.getMyProfile.mockResolvedValue(sellerProfile('APPROVED'));
+    harness.hideWork.mockRejectedValue(new ApiClientError('Internal detail', {
+      kind: 'conflict', status: 409, code,
+    }));
+    harness.listCabinetWorks.mockResolvedValue({
+      works: [cabinetWork('APPROVED', { coverImage: null })],
+      pagination: { page: 1, limit: 20, total: 1 },
+    });
+    const view = mount(null, AuthorCabinetScreen);
+    await until(view.container, () => view.container.textContent?.includes('Work title') === true, 'cabinet works');
+    clickButton(view.container, 'Скрыть');
+    await until(view.container, () => view.container.querySelector('[role="dialog"]') !== null, 'cabinet hide dialog');
+    const dialog = view.container.querySelector('[role="dialog"]') as HTMLElement;
+    clickButton(dialog, 'Скрыть');
+    await until(view.container, () => dialog.textContent?.includes(message) === true, 'cabinet hide reason inside dialog');
+    expect(view.container.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(harness.hideWork).toHaveBeenLastCalledWith(productId);
+    clickButton(dialog, 'Скрыть');
+    await until(view.container, () => harness.hideWork.mock.calls.length === 2, 'cabinet hide retry');
+    await until(view.container, () => dialog.textContent?.includes(message) === true, 'cabinet retry reason');
+    clickButton(dialog, 'Отмена');
+    await until(view.container, () => view.container.querySelector('[role="dialog"]') === null, 'cabinet hide cancel');
+    expect(view.container.textContent).not.toContain(message);
     view.unmount();
   });
 

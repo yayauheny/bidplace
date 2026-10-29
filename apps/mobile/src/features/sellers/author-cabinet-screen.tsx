@@ -23,6 +23,7 @@ import {
   isAuthorCabinetAvailable,
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
+import { apiErrorMessage } from '../../lib/api-error-messages';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import {
@@ -243,9 +244,10 @@ export function AuthorCabinetScreen() {
             onPress={() => void query.fetchNextPage()}
           />
         ) : null}
-        {visibility.mutation.isError ? (
+        {visibility.mutation.isError && visibility.intent?.action === 'restore' ? (
           <AppText role="bodySmall" tone="danger">
-            Не удалось изменить видимость работы. Попробуйте ещё раз.
+            {apiErrorMessage(visibility.mutation.error) ??
+              'Не удалось изменить видимость работы. Попробуйте ещё раз.'}
           </AppText>
         ) : null}
         <AppDialog
@@ -256,6 +258,12 @@ export function AuthorCabinetScreen() {
             if (!visibility.mutation.isPending) visibility.cancel();
           }}
         >
+          {visibility.mutation.isError ? (
+            <AppText role="bodySmall" tone="danger">
+              {apiErrorMessage(visibility.mutation.error) ??
+                'Не удалось изменить видимость работы. Попробуйте ещё раз.'}
+            </AppText>
+          ) : null}
           <PrimaryButton
             label="Скрыть"
             width="block"

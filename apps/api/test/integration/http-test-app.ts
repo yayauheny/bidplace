@@ -50,7 +50,7 @@ export async function createHttpTestApp(
 }
 
 export type HttpRequestInit = Omit<RequestInit, 'body'> & {
-  body?: BodyInit | Record<string, unknown>;
+  body?: RequestInit['body'] | Record<string, unknown>;
 };
 
 export class HttpTestClient {
@@ -88,7 +88,7 @@ export class HttpTestClient {
     const response = await fetch(new URL(`/api${path}`, this.baseUrl), {
       ...init,
       headers,
-      body: body as BodyInit | null | undefined,
+      body: (body ?? null) as NonNullable<RequestInit['body']> | null,
     });
 
     this.storeCookies(response);
@@ -123,7 +123,7 @@ export class HttpTestClient {
 
   private storeCookies(response: Response): void {
     for (const setCookie of response.headers.getSetCookie()) {
-      const [pair, ...attributes] = setCookie.split(';');
+      const [pair = '', ...attributes] = setCookie.split(';');
       const separator = pair.indexOf('=');
       if (separator < 1) continue;
 

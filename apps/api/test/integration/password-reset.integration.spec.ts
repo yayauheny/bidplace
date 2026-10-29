@@ -1,3 +1,4 @@
+import { apiErrorResponseSchema } from '@bidplace/contracts';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 import { readFile, rm } from 'node:fs/promises';
@@ -101,7 +102,7 @@ describe('password reset HTTP transport', () => {
       password: 'another-password-123',
     });
     expect(replay.status).toBe(400);
-    expect((await replay.json()).code).toBe('PASSWORD_RESET_INVALID');
+    expect((apiErrorResponseSchema.parse(await replay.json())).code).toBe('PASSWORD_RESET_INVALID');
 
     const staleMe = await client.get('/auth/me', {
       headers: { cookie: oldCookie.split(';', 1)[0]! },
@@ -166,7 +167,7 @@ describe('password reset HTTP transport', () => {
       password: 'first-password-123',
     });
     expect(firstReset.status).toBe(400);
-    expect((await firstReset.json()).code).toBe('PASSWORD_RESET_INVALID');
+    expect((apiErrorResponseSchema.parse(await firstReset.json())).code).toBe('PASSWORD_RESET_INVALID');
 
     const secondReset = await client.post('/auth/password/reset', {
       token: secondToken,
@@ -204,7 +205,7 @@ describe('password reset HTTP transport', () => {
       password: 'expired-password-123',
     });
     expect(reset.status).toBe(400);
-    expect((await reset.json()).code).toBe('PASSWORD_RESET_INVALID');
+    expect((apiErrorResponseSchema.parse(await reset.json())).code).toBe('PASSWORD_RESET_INVALID');
   });
 
   it('rejects forgot bodies that omit the proof or idempotency key', async () => {

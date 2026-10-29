@@ -3,6 +3,8 @@ import { SharpImageProcessor } from './media-pipeline';
 import { Logger, Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { TickService } from '../tick/tick.service';
+import { SystemClock } from '../time';
 import { SERVER_ENV } from '../config';
 import { syntheticServerEnv } from '../config/synthetic-server-env';
 import { PrismaService } from '../database';
@@ -78,6 +80,7 @@ function recoveryService(script: Script) {
     { purge: async () => undefined } as never,
     recoveryEnv(),
     new SharpImageProcessor(),
+    new TickService({} as never, new SystemClock()),
   );
 }
 
@@ -87,6 +90,10 @@ class StartupRecoveryModule {}
 Module({
   providers: [
     MediaLifecycleService,
+    {
+      provide: TickService,
+      useValue: new TickService({} as never, new SystemClock()),
+    },
     {
       provide: PrismaService,
       useValue: {
@@ -145,6 +152,7 @@ describe('media recovery scheduler', () => {
       $queryRaw: vi.fn(),
       mediaOperation: {
         findMany, updateMany,
+        count: vi.fn(async () => rows.filter((row) => row.state === 'FAILED' && row.attemptCount >= 20).length),
         findUnique: vi.fn(async ({ where }: { where: { id: string } }) => rows.find((row) => row.id === where.id)),
         findUniqueOrThrow: vi.fn(async ({ where }: { where: { id: string } }) => rows.find((row) => row.id === where.id)),
       },
@@ -153,7 +161,7 @@ describe('media recovery scheduler', () => {
       mediaOperationObject: { count: vi.fn().mockRejectedValue(new Error('transport unavailable')) },
     };
     const media = new MediaLifecycleService({ ...client, $transaction: async (callback: (tx: typeof client) => Promise<unknown>) => callback(client) } as never,
-      {} as never, {} as never, recoveryEnv(), new SharpImageProcessor());
+      {} as never, {} as never, recoveryEnv(), new SharpImageProcessor(), new TickService({} as never, new SystemClock()));
     media.onModuleDestroy();
     try {
       for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -170,6 +178,60 @@ describe('media recovery scheduler', () => {
       expect(findMany.mock.calls.every(([query]) => query.take === 8)).toBe(true);
       expect(warn.mock.calls).toEqual([['Media operation exhausted retries: exhausted REVOKE']]);
     } finally { warn.mockRestore(); }
+  });
+
+  it('does not register disabled media with the central tick', async () => {
+    const ticks = new TickService(
+      { $executeRaw: async () => 1 } as never,
+      new SystemClock(),
+    );
+    const media = new MediaLifecycleService(
+      {} as never,
+      {} as never,
+      {} as never,
+      syntheticServerEnv(),
+      new SharpImageProcessor(),
+      ticks,
+    );
+    media.onModuleInit();
+    expect(await ticks.run()).toEqual({ skipped: false, jobs: [] });
+    media.onModuleDestroy();
+  });
+
+  it('does not start the orphan query when the operation query consumes the tick budget', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const script: Script = {
+      down: false,
+      young: 0,
+      pending: 0,
+      failOperationCount: false,
+      reads: [],
+    };
+    const prisma = scriptedClient(script);
+    prisma.mediaOperation.findMany = async () => {
+      script.reads.push('operation.findMany');
+      vi.setSystemTime(Date.now() + 20_000);
+      return [];
+    };
+    const ticks = new TickService(
+      { $executeRaw: async () => 1 } as never,
+      new SystemClock(),
+    );
+    const media = new MediaLifecycleService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      recoveryEnv(),
+      new SharpImageProcessor(),
+      ticks,
+    );
+    media.onModuleInit();
+    media.onModuleDestroy();
+    expect(await ticks.run()).toEqual({
+      skipped: false,
+      jobs: [{ name: 'media', processed: 0, failed: false }],
+    });
+    expect(script.reads).toEqual(['operation.count', 'operation.findMany']);
   });
 
   it('does not poll after a healthy empty startup', async () => {
@@ -296,6 +358,7 @@ describe('media recovery scheduler', () => {
       { purge: async () => undefined } as never,
       recoveryEnv(),
       new SharpImageProcessor(),
+      new TickService({} as never, new SystemClock()),
     );
     await media.onModuleInit();
     await vi.advanceTimersByTimeAsync(5_000);

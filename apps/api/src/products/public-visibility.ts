@@ -41,12 +41,3 @@ export const portfolioCatalogProductWhere = {
   },
   ...portfolioProductContentWhere,
 } satisfies Prisma.ProductWhereInput;
-
-export const portfolioDirectProductWhere = {
-  status: 'APPROVED',
-  sellerProfile: {
-    status: 'APPROVED',
-    user: { status: 'active' },
-  },
-  ...portfolioProductContentWhere,
-} satisfies Prisma.ProductWhereInput;

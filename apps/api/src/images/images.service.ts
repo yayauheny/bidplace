@@ -11,13 +11,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  isEditableProductStatus,
   STORY_LIMITS,
   photoCropSchema,
   workPhotoResultSchema,
   type WorkPhotoResult,
   type WorkPhotoEditRequest,
   type ProductStatus,
-  type SellerStatus,
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 
@@ -40,28 +40,17 @@ import {
 } from './image-policy';
 import {
   assertProductWritable,
+  assertProductOwner,
+  assertProductNotInSale,
+  productWriteGuardSelect,
   lockProductRowForUpdate,
   type ProductWriteGuardKind,
 } from '../products/product-write-guard';
-import { canAuthorEditRevision } from '../products/product-revision-state';
-import { assertApprovedSeller } from '../sellers/seller-capability';
+import { portfolioCatalogProductWhere } from '../products/public-visibility';
 
 export const productImageAuthorizationSelect = {
   mediaAssetId: true,
-  revisions: { select: { revisionId: true } },
-  product: {
-    select: {
-      status: true,
-      publishedRevisionId: true,
-      sellerProfile: {
-        select: {
-          userId: true,
-          status: true,
-          user: { select: { status: true } },
-        },
-      },
-    },
-  },
+  product: { select: { sellerProfile: { select: { userId: true } } } },
 } satisfies Prisma.ProductImageSelect;
 
 export type ProductImageAuthorizationRecord = Prisma.ProductImageGetPayload<{
@@ -1160,14 +1149,21 @@ export class ImagesService {
 
     const isOwner = image.product.sellerProfile.userId === userId;
     const isAdmin = role === 'admin';
-    const isPublic =
-      image.product.status === 'APPROVED' &&
-      image.product.sellerProfile.status === 'APPROVED' &&
-      image.product.sellerProfile.user.status === 'active' &&
-      image.product.publishedRevisionId !== null &&
-      image.revisions.some(
-        ({ revisionId }) => revisionId === image.product.publishedRevisionId,
-      );
+    const isPublic = !isOwner && !isAdmin && Boolean(
+      await this.prisma.product.findFirst({
+        where: {
+          ...portfolioCatalogProductWhere,
+          images: { some: { id: imageId } },
+          publishedRevision: {
+            is: {
+              ...portfolioCatalogProductWhere.publishedRevision.is,
+              images: { some: { imageId } },
+            },
+          },
+        },
+        select: { id: true },
+      }),
+    );
 
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Image not found');
@@ -1483,22 +1479,15 @@ export class ImagesService {
   }
 
   private async requireEditableOwner(
-    client: Pick<Prisma.TransactionClient, 'product'>,
+    client: Prisma.TransactionClient,
     userId: string,
     productId: string,
     kind: ProductWriteGuardKind = 'images',
   ) {
-    const product = await client.product.findUnique({
+    let product = await client.product.findUnique({
       where: { id: productId },
       select: {
-        id: true,
-        status: true,
-        sellerProfile: { select: { userId: true, status: true } },
-        listings: {
-          where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-          select: { id: true },
-          take: 1,
-        },
+        ...productWriteGuardSelect,
         editingRevisionId: true,
         publishedRevisionId: true,
         images: {
@@ -1525,24 +1514,19 @@ export class ImagesService {
       product &&
       (product.status === 'APPROVED' || product.status === 'ARCHIVED')
     ) {
-      if (product.sellerProfile.userId !== userId) {
-        throw new ForbiddenException('Product is not owned by user');
-      }
-      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-      if (product.listings.length > 0) {
-        throw new ConflictException('Product is locked by an active Listing');
-      }
+      assertProductOwner(product, userId);
+      await assertProductNotInSale(client, product.id);
       if (
         kind !== 'images' ||
         !product.editingRevisionId ||
         product.editingRevisionId === product.publishedRevisionId ||
         !product.editingRevision ||
-        !canAuthorEditRevision(product.editingRevision.status as ProductStatus)
+        !isEditableProductStatus(product.editingRevision.status as ProductStatus)
       ) {
         throw new ForbiddenException('Product images are locked');
       }
     } else {
-      assertProductWritable(product, userId, kind);
+      product = await assertProductWritable(client, product, userId, kind);
     }
 
     const revisionImages = product.editingRevision?.images.map(

@@ -72,7 +72,7 @@ function runInventory(
 
 function parseStdout(result: ReturnType<typeof spawnSync>) {
   expect(result.error).toBeUndefined();
-  expect(result.status, result.stderr).toBe(0);
+  expect(result.status, String(result.stderr)).toBe(0);
   return JSON.parse(String(result.stdout)) as {
     mode: string;
     writes: boolean;
@@ -232,7 +232,7 @@ describe('read-only commerce inventory', () => {
     );
     expect(body.inventory.listingsRequiringDecision).toHaveLength(2);
     expect(first.stdout).not.toContain(created.ended.id);
-    expect(inventoryLib.reportContainsSecrets(first.stdout)).toBe(false);
+    expect(inventoryLib.reportContainsSecrets(String(first.stdout))).toBe(false);
     expect(first.stdout).not.toContain('://');
     expect(first.stdout).not.toContain('auction:auction');
 

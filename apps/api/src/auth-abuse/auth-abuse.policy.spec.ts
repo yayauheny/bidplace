@@ -39,7 +39,7 @@ describe('auth abuse policy', () => {
     expect(recentLoginFailures([start, ...recent], fifteen)).toEqual(recent);
 
     const retained = [1, 2, 3, 4, 5].map((minute) => at(minute * 60_000));
-    const oldestRetainedExpires = new Date(retained[0].getTime() + LOGIN_WINDOW_MS);
+    const oldestRetainedExpires = new Date(retained[0]!.getTime() + LOGIN_WINDOW_MS);
     expect(recentLoginFailures([start, ...retained], oldestRetainedExpires)).toEqual(retained.slice(1));
   });
 

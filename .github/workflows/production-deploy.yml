@@ -142,6 +142,7 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           CLOUDFLARE_CACHE_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          INTERNAL_TICK_SECRET: ${{ secrets.INTERNAL_TICK_SECRET }}
           RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
         run: |
           python3 - <<'PY'
@@ -159,13 +160,14 @@ jobs:
               "SMTP_PASSWORD",
               "CLOUDFLARE_CACHE_TOKEN",
               "TURNSTILE_SECRET_KEY",
+              "INTERNAL_TICK_SECRET",
               "RELEASE_CONTROL",
           ]
           missing = [name for name in required if not os.environ.get(name, "").strip()]
           if missing:
               raise SystemExit("Missing production settings: " + ", ".join(missing))
 
-          for name in ("SESSION_SECRET", "OTP_HASH_SECRET"):
+          for name in ("SESSION_SECRET", "OTP_HASH_SECRET", "INTERNAL_TICK_SECRET"):
               if len(os.environ[name]) < 32:
                   raise SystemExit(f"{name} must be at least 32 characters")
           for provider in ("GOOGLE", "TELEGRAM"):
@@ -248,8 +250,10 @@ jobs:
           CLOUDFLARE_CACHE_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}
           TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          INTERNAL_TICK_SECRET: ${{ secrets.INTERNAL_TICK_SECRET }}
           RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
           NEON_DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
+          TICK_CRON: ${{ vars.TICK_CRON }}
           WORKERS_CI_BRANCH: main
           RELEASE_HOLD: ${{ inputs.release_hold }}
           KEEP_CONTAINER: ${{ inputs.keep_container }}
@@ -272,6 +276,7 @@ jobs:
               "SMTP_PASSWORD",
               "CLOUDFLARE_CACHE_TOKEN",
               "TURNSTILE_SECRET_KEY",
+              "INTERNAL_TICK_SECRET",
               "RELEASE_CONTROL",
           ]
           missing = [name for name in names if not os.environ.get(name, "").strip()]

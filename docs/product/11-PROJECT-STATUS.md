@@ -16,6 +16,89 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — PR73 review fixes
+
+**Implemented locally / live Needs verification.** Media recovery reports exhausted
+FAILED REVOKE/CLEANUP without retrying them or advancing `system_heartbeats`.
+`product-publication.ts` rejects nonrestore approval and archive during a sale;
+moderation checks before media enqueue. Product lock contention returns
+`PRODUCT_STATE_CONFLICT` (409) after a bounded wait. Exact completed hidden
+approval retries preserve audit and PUBLIC bytes. Profile restore now shares the
+pre-PUT compensation journal, preserving PRIVATE and unrelated public references;
+owner/admin image reads skip catalog queries and use private cache policy.
+Worker scheduled failures reject with a fixed safe message; release hold skips
+forwarding. Local checks: API unit 668 + 2 isolated mocked config-path tests,
+97 PostgreSQL integration cases, API typecheck/lint/build, Cloudflare
+43 Worker + 25 script tests and typecheck/lint. Draft CI does not cover these
+full local gates. No push, Ready transition, remote Verify, merge or deploy.
+Provider fencing, live R2/CDN/Cron acceptance and strict privacy atomicity remain
+open; the 30s heartbeat keeps the database active while its Container is awake.
+
+## 2026-10-29 — Failed Work restore compensation
+
+**Implemented locally / live Needs verification.** `media-lifecycle.service.ts`
+commits generation-bound PUBLIC REVOKE intent before restore delivery, checks the
+current source lease, and rearms cleanup for manual retries. Only its exact FAILED
+restore on ARCHIVED Work bypasses PUBLIC deletion blocking. PRIVATE originals,
+RUNNING leases and legitimate shared public references remain protected.
+`media-lifecycle.integration.spec.ts` covers partial two-image delivery, interrupted
+failure transition/fresh-service recovery, journal persistence outage, shared
+references, same-generation retry and later restore cycles. API media/publication
+integration, media unit, typecheck, lint and build checks pass locally.
+Compensation does not prevent brief exposure before cleanup/purge. Pre-existing
+FAILED restores without a journal require manual retry; live R2/CDN remains open.
+
+## 2026-10-29 — Hidden Work media privacy (Opus P1)
+
+**Implemented locally / live Needs verification.** `core/media/media-lifecycle.service.ts`
+keeps ARCHIVED nonrestore revision approval in PRIVATE, advances the publication
+pointer/audit, and leaves unwritten PUBLIC manifests unready. Each Product PUBLIC
+write shares the hide row lock and rechecks operation lease/generation/status;
+PRIVATE reads remain outside the lock. `media-object-store.ts` propagates a 60s
+publication abort deadline through reads/body consumption/writes before the 65s
+transaction timeout. Hide may wait or fail under slow delivery; it cannot succeed
+then be followed by that approval's PUBLIC writes. Explicit restore still delivers
+from PRIVATE; profiles, shared-public-reference revoke guards and schema are unchanged.
+Regression evidence: `media-lifecycle.integration.spec.ts` checks zero hidden PUTs,
+known former URL absence, both deterministic delivery/hide orderings, and restore;
+`media-object-store.spec.ts` checks abort-before-write and body cancellation.
+Live R2/CDN acceptance remains Needs verification.
+
+## 2026-10-29 — W1 publication state owner
+
+**Implemented locally / live and visual Needs verification.**
+`products/product-publication.ts` is the only Product status/published-pointer
+writer; author/admin/media use locked conditional transitions. Hidden revision
+approval retains ARCHIVED with the new pointer, with media on/off; deterministic
+hide/approval, PENDING/FAILED cleanup and manual-retry regressions preserve public
+revocation and private sources. `product-write-guard.ts` owns sale checks;
+`portfolioCatalogProductWhere` owns catalog/direct/image eligibility. Seller
+suspension uses the actual `AdminModerationService` boundary; its state machine
+is unchanged. Contracts expose PRODUCT_STATE_CONFLICT/PRODUCT_IN_SALE (409), and
+mobile `apiErrorMessage` maps the two approved reasons in hide/save consumers,
+including inside cabinet/profile dialogs. API test files now participate in
+ordinary typecheck/lint. Local commits, checks, rulings and limits:
+[W1 journal](../launch/waves/W1-publication-owner.md#журнал-исполнения-2026-10-29).
+No schema/dependency/product-decision change, merge, push or deployment. Longer
+copy wrapping/focus/zoom/device screenshots, dedicated auth-abuse/browser opt-ins
+and live storage acceptance remain Needs verification. Later waves are not started.
+
+## 2026-10-29 — W2 scheduler tick
+
+**Implemented locally / live Needs verification.** Worker scheduled forwarding
+and public internal-route 404, Nest `core/tick` registration/30-second timer,
+single-flight/cooperative 20-second budget, private guard and persisted heartbeat
+are implemented. Migration `20261029010000_system_heartbeats` adds
+`system_heartbeats(name, at)` and must precede this runtime. Enabled media uses
+one bounded recovery batch for due revoke/cleanup and expired RUNNING PUBLISH;
+manual PENDING/FAILED publication retries and existing leases/CAS remain.
+Persisted media failures prevent heartbeat success; old timers only accelerate.
+Empty `TICK_CRON` keeps Cron disabled and clears a prior schedule on final deploy;
+production-only deployment requires `main`. W3 commerce, admin health and outbox
+remain **Not implemented**. Local final checks and commit evidence:
+[W2 journal](../launch/waves/W2-scheduler.md#журнал-исполнения-2026-10-29).
+No live migration, deployment, provider/CDN or Cron acceptance is claimed.
+
 ## 2026-10-29 — Launch documents integration, stage B
 
 **Partial.** Stage A is merged through PR #71 at `95083515`; this supersedes

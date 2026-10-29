@@ -59,6 +59,21 @@ describe('ApiExceptionFilter', () => {
     });
   });
 
+  it.each([ApiErrorCode.PRODUCT_STATE_CONFLICT, ApiErrorCode.PRODUCT_IN_SALE])(
+    'preserves %s as a public 409 conflict',
+    (code) => {
+      const captured: { statusCode?: number; body?: unknown } = {};
+      new ApiExceptionFilter().catch(
+        new AppException({ status: 409, code, message: 'Product conflict' }),
+        createHost(captured) as never,
+      );
+      expect(captured).toMatchObject({
+        statusCode: 409,
+        body: { status: 409, code },
+      });
+    },
+  );
+
   it('maps plain Nest exceptions to category codes', () => {
     const filter = new ApiExceptionFilter();
     const captured: { statusCode?: number; body?: unknown } = {};
@@ -86,7 +101,7 @@ describe('ApiExceptionFilter', () => {
       headers?: Record<string, string>;
     } = {};
     const loggerError = vi
-      .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
+      .spyOn((filter as unknown as { logger: { error: (message: unknown) => void } }).logger, 'error')
       .mockImplementation(() => undefined);
     const requestId = '6c456e1f-37b0-4733-a939-b5fa1a1e565d';
 
@@ -128,7 +143,7 @@ describe('ApiExceptionFilter', () => {
       headers?: Record<string, string>;
     } = {};
     const loggerError = vi
-      .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
+      .spyOn((filter as unknown as { logger: { error: (message: unknown) => void } }).logger, 'error')
       .mockImplementation(() => undefined);
     const pathMarker = 'path-secret-marker';
     const queryMarker = 'query-secret-marker';
@@ -183,7 +198,7 @@ describe('ApiExceptionFilter', () => {
     const filter = new ApiExceptionFilter();
     const captured: { statusCode?: number; body?: unknown } = {};
     const loggerError = vi
-      .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
+      .spyOn((filter as unknown as { logger: { error: (message: unknown) => void } }).logger, 'error')
       .mockImplementation(() => undefined);
     const requestId = '6c456e1f-37b0-4733-a939-b5fa1a1e565d';
     const error = new Error(
@@ -214,7 +229,7 @@ describe('ApiExceptionFilter', () => {
     const filter = new ApiExceptionFilter();
     const captured: { body?: unknown } = {};
     const loggerError = vi
-      .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
+      .spyOn((filter as unknown as { logger: { error: (message: unknown) => void } }).logger, 'error')
       .mockImplementation(() => undefined);
     const requestId = '6c456e1f-37b0-4733-a939-b5fa1a1e565d';
     const error = new Error('relation "bids" does not exist');

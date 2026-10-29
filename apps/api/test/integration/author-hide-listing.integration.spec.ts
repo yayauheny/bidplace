@@ -1,6 +1,7 @@
 import { Prisma, type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { productModerationRequest, sellerModerationRequest } from './admin-status-request';
 import { ProductsService } from '../../src/products/products.service';
 import { PublicIdService } from '../../src/core/public-id';
 import {
@@ -11,6 +12,7 @@ import {
 import {
   createPermissionFixture,
   permissionImage,
+  fixturePasswordHash,
   resetPermissionFixture,
 } from './permission-fixtures';
 import {
@@ -109,6 +111,37 @@ function listingData(
 }
 
 describe('Work hide with live commerce', () => {
+  it('returns PRODUCT_STATE_CONFLICT while a media writer holds the Product lock', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await login(owner, fixture.sellers.approved.email, fixture.sellers.approved.password);
+    const product = await publishApprovedWork(fixture.sellers.approved.profileId, fixture.categoryId);
+    const before = await prisma.product.findUniqueOrThrow({ where: { id: product.id } });
+    const audits = await prisma.auditEvent.count({ where: { targetId: product.id } });
+    let acquired!: () => void;
+    let release!: () => void;
+    const ready = new Promise<void>((resolve) => { acquired = resolve; });
+    const released = new Promise<void>((resolve) => { release = resolve; });
+    const writer = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM products WHERE id = ${product.id}::uuid FOR UPDATE`;
+      acquired();
+      await released;
+    }, { timeout: 15_000 });
+    await ready;
+    const delivery = setTimeout(release, 6_000);
+    try {
+      const response = await owner.post(`/products/${product.id}/hide`);
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ code: 'PRODUCT_STATE_CONFLICT' });
+      expect(await prisma.product.findUniqueOrThrow({ where: { id: product.id } })).toEqual(before);
+      expect(await prisma.auditEvent.count({ where: { targetId: product.id } })).toBe(audits);
+    } finally {
+      clearTimeout(delivery);
+      release();
+      await writer;
+    }
+  });
+
   it('fails closed for SCHEDULED and LIVE listings and leaves Product, Listing and audit unchanged', async () => {
     const fixture = await createPermissionFixture(prisma);
     const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
@@ -162,6 +195,186 @@ describe('Work hide with live commerce', () => {
         })
       ).status,
     ).toBe('ARCHIVED');
+  });
+
+  it.each(['hide', 'edit', 'upload', 'admin archive'] as const)(
+    'returns PRODUCT_IN_SALE before %s changes a work with a LIVE listing',
+    async (action) => {
+      const fixture = await createPermissionFixture(prisma);
+      const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+      await login(
+        owner,
+        fixture.sellers.approved.email,
+        fixture.sellers.approved.password,
+      );
+      const product = await publishApprovedWork(
+        fixture.sellers.approved.profileId,
+        fixture.categoryId,
+      );
+      await prisma.listing.create({ data: listingData(product.id, 'LIVE') });
+      const admin = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+      if (action === 'admin archive') {
+        await prisma.user.create({
+          data: {
+            email: 'guard.admin@wave3.test',
+            passwordHash: fixturePasswordHash,
+            displayName: 'Guard admin',
+            role: 'admin',
+          },
+        });
+        await login(
+          admin,
+          'guard.admin@wave3.test',
+          fixture.sellers.approved.password,
+        );
+      }
+      const form = new FormData();
+      form.append(
+        'images',
+        new Blob([permissionImage], { type: 'image/png' }),
+        'photo.png',
+      );
+      const response =
+        action === 'admin archive'
+          ? await admin.patch(
+              `/admin/products/${product.id}/status`,
+              await productModerationRequest(
+                prisma,
+                product.id,
+                'ARCHIVED',
+                'Guard test',
+              ),
+            )
+          : action === 'hide'
+            ? await owner.post(`/products/${product.id}/hide`)
+            : action === 'edit'
+              ? await owner.patch(`/products/${product.id}`, {
+                  title: 'Must not change',
+                })
+              : await owner.post(`/products/${product.id}/images`, form);
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ code: 'PRODUCT_IN_SALE' });
+      expect(
+        await prisma.product.findUniqueOrThrow({ where: { id: product.id } }),
+      ).toMatchObject({ status: 'APPROVED', title: 'Hide work' });
+      expect(
+        await prisma.productRevision.count({
+          where: { productId: product.id },
+        }),
+      ).toBe(1);
+    },
+  );
+
+  it('keeps seller suspension blocked while an owned work is in sale', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const product = await publishApprovedWork(
+      fixture.sellers.approved.profileId,
+      fixture.categoryId,
+    );
+    await prisma.listing.create({ data: listingData(product.id, 'LIVE') });
+    await prisma.user.create({
+      data: {
+        email: 'guard.admin@wave3.test',
+        passwordHash: fixturePasswordHash,
+        displayName: 'Guard admin',
+        role: 'admin',
+      },
+    });
+    const admin = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await login(
+      admin,
+      'guard.admin@wave3.test',
+      fixture.sellers.approved.password,
+    );
+    const response = await admin.patch(
+      `/admin/seller-profiles/${fixture.sellers.approved.profileId}/status`,
+      await sellerModerationRequest(
+        prisma,
+        fixture.sellers.approved.profileId,
+        'SUSPENDED',
+        'Guard test',
+      ),
+    );
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      message:
+        'Seller cannot be suspended while a scheduled or live listing exists',
+    });
+    expect(
+      await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.sellers.approved.profileId },
+      }),
+    ).toMatchObject({ status: 'APPROVED' });
+  });
+
+  it.each([
+    'hidden',
+    'unapproved author',
+    'banned user',
+    'wrong revision',
+    'missing publication date',
+    'valid',
+  ] as const)('matches catalog image membership for %s', async (state) => {
+    const fixture = await createPermissionFixture(prisma);
+    const product = await publishApprovedWork(
+      fixture.sellers.approved.profileId,
+      fixture.categoryId,
+    );
+    let image = await prisma.productImage.findFirstOrThrow({
+      where: { productId: product.id },
+    });
+    if (state === 'hidden')
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { status: 'ARCHIVED' },
+      });
+    if (state === 'unapproved author')
+      await prisma.sellerProfile.update({
+        where: { id: fixture.sellers.approved.profileId },
+        data: { status: 'PENDING_REVIEW' },
+      });
+    if (state === 'banned user')
+      await prisma.user.update({
+        where: { id: fixture.sellers.approved.id },
+        data: { status: 'banned' },
+      });
+    if (state === 'missing publication date')
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { publishedAt: null },
+      });
+    if (state === 'wrong revision')
+      image = await prisma.productImage.create({
+        data: {
+          productId: product.id,
+          position: 1,
+          mimeType: 'image/png',
+          byteLength: permissionImage.byteLength,
+          data: permissionImage,
+          checksum: '4'.repeat(64),
+        },
+      });
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const parent = await prisma.product.findUniqueOrThrow({
+      where: { id: product.id },
+    });
+    const catalog = await guest.get('/works?limit=100');
+    expect(catalog.status).toBe(200);
+    const body = (await catalog.json()) as {
+      works: Array<{
+        work: { publicId: string; images: Array<{ id: string }> };
+      }>;
+    };
+    const item = body.works.find(
+      ({ work }) => work.publicId === parent.publicId,
+    );
+    const catalogIncludesImage = Boolean(
+      item?.work.images.some(({ id }) => id === image.id),
+    );
+    expect(catalogIncludesImage).toBe(state === 'valid');
+    expect((await guest.get(`/images/${image.id}`)).status).toBe(
+      catalogIncludesImage ? 200 : 404,
+    );
   });
 
   it('serializes concurrent hide so only one ARCHIVED transition is written', async () => {

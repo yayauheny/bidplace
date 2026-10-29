@@ -1,3 +1,9 @@
+import { publishRevision } from '../../src/products/product-publication';
+import { ImagesService } from '../../src/images/images.service';
+import { ProductsService } from '../../src/products/products.service';
+import { PublicIdService } from '../../src/core/public-id';
+import { TickService } from '../../src/core/tick/tick.service';
+import { SystemClock } from '../../src/core/time';
 import { SharpImageProcessor } from '../../src/core/media/media-pipeline';
 import { randomUUID } from 'node:crypto';
 import {
@@ -31,12 +37,22 @@ import { mediaChecksum } from '../../src/core/media/media-object-store';
 class MemoryStore extends MediaObjectStore {
   objects = new Map<string, StoredMedia>();
   failPublic = false;
+  failPrivateReads = false;
   privateWritesBeforeFailure = Number.POSITIVE_INFINITY;
   privateWrites = 0;
   afterPublicPut?: () => Promise<void>;
+  afterPrivateGet?: () => Promise<void>;
   beforeDelete?: () => Promise<void>;
   async get(tier: MediaTier, key: string) {
-    return this.objects.get(`${tier}:${key}`) ?? null;
+    if (tier === 'PRIVATE' && this.failPrivateReads)
+      throw new Error('Provider outage');
+    const value = this.objects.get(`${tier}:${key}`) ?? null;
+    if (tier === 'PRIVATE' && this.afterPrivateGet) {
+      const hook = this.afterPrivateGet;
+      delete this.afterPrivateGet;
+      await hook();
+    }
+    return value;
   }
   async head() {
     return null;
@@ -76,7 +92,7 @@ class MemoryCache extends PublicMediaCache {
 let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
 const mediaServices = new Set<MediaLifecycleService>();
-let bytes: Buffer;
+let bytes: Buffer<ArrayBuffer>;
 beforeAll(async () => {
   context = await createIntegrationDatabaseContext();
   prisma = context.prisma;
@@ -104,9 +120,10 @@ function setup(store = new MemoryStore(), cache = new MemoryCache()) {
     CLOUDFLARE_ZONE_ID: 'a'.repeat(32),
     CLOUDFLARE_CACHE_TOKEN: 'test',
   });
-  const media = new MediaLifecycleService(prisma as never, store, cache, env, new SharpImageProcessor());
+  const tick = new TickService(prisma as never, new SystemClock());
+  const media = new MediaLifecycleService(prisma as never, store, cache, env, new SharpImageProcessor(), tick);
   mediaServices.add(media);
-  return { store, cache, media };
+  return { store, cache, media, tick };
 }
 async function author(media: MediaLifecycleService) {
   const user = await prisma.user.create({
@@ -203,7 +220,165 @@ async function approve(
     where: { profileId: profile.id, kind: 'PUBLISH' },
   });
 }
+async function pendingWork(
+  userId: string,
+  sellerProfileId: string,
+  media: MediaLifecycleService,
+  enabled: boolean,
+) {
+  const asset = await media.stage(userId, 'WORK_IMAGE', {
+    buffer: bytes,
+    mimetype: 'image/png',
+  });
+  return prisma.$transaction(async (tx) => {
+    await media.attach(tx, asset.id);
+    const category = await tx.category.findUniqueOrThrow({
+      where: { slug: 'painting' },
+    });
+    const work = await tx.product.create({
+      data: {
+        sellerProfileId,
+        publicId: randomUUID().replace(/-/g, '').slice(0, 11),
+        status: 'PENDING_REVIEW',
+      },
+    });
+    const image = await tx.productImage.create({
+      data: {
+        productId: work.id,
+        position: 0,
+        mediaAssetId: enabled ? asset.id : null,
+        objectKey: enabled ? asset.preview.objectKey : null,
+        mimeType: enabled ? asset.preview.mimeType : 'image/png',
+        byteLength: enabled ? asset.preview.byteLength : bytes.byteLength,
+        checksum: enabled ? asset.preview.sha256 : mediaChecksum(bytes),
+        data: enabled ? new Uint8Array(0) : bytes,
+      },
+    });
+    const first = await tx.productRevision.create({
+      data: {
+        productId: work.id,
+        version: 1,
+        status: 'PENDING_REVIEW',
+        title: 'Original work',
+        categoryId: category.id,
+        images: { create: { imageId: image.id, position: 0 } },
+      },
+    });
+    await tx.product.update({
+      where: { id: work.id },
+      data: { editingRevisionId: first.id },
+    });
+    return { ...work, first, imageId: image.id };
+  });
+}
 describe('durable media lifecycle on PostgreSQL', () => {
+  it('resumes a due revoke through the tick without starting in-process timers', async () => {
+    const s = setup();
+    const operation = await prisma.mediaOperation.create({
+      data: {
+        kind: 'REVOKE',
+        identity: `tick:${randomUUID()}`,
+        nextAttemptAt: new Date(0),
+      },
+    });
+    s.media.onModuleInit();
+    s.media.onModuleDestroy();
+    const result = await s.tick.run();
+    expect(result.jobs).toContainEqual({
+      name: 'media',
+      processed: 1,
+      failed: false,
+    });
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: operation.id },
+        })
+      ).state,
+    ).toBe('DONE');
+  });
+
+  it('stops before the next operation and orphan scan after the tick budget expires', async () => {
+    const s = setup();
+    const fixture = await author(s.media);
+    const object = await prisma.mediaObject.findFirstOrThrow({
+      where: { assetId: fixture.asset.id, tier: 'PRIVATE', variant: 'PREVIEW' },
+    });
+    const first = await prisma.mediaOperation.create({
+      data: {
+        kind: 'REVOKE',
+        identity: `budget-first:${randomUUID()}`,
+        createdAt: new Date(0),
+        objects: { create: [{ objectId: object.id }] },
+      },
+    });
+    const second = await prisma.mediaOperation.create({
+      data: {
+        kind: 'REVOKE',
+        identity: `budget-next:${randomUUID()}`,
+        createdAt: new Date(1),
+      },
+    });
+    const orphan = await prisma.mediaAsset.create({
+      data: {
+        ownerUserId: fixture.user.id,
+        purpose: 'WORK_IMAGE',
+        createdAt: new Date(0),
+      },
+    });
+    s.media.onModuleInit();
+    s.media.onModuleDestroy();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      s.store.beforeDelete = async () => {
+        vi.setSystemTime(Date.now() + 20_000);
+      };
+      expect((await s.tick.run()).jobs).toEqual([
+        { name: 'media', processed: 1, failed: false },
+      ]);
+      expect(
+        (
+          await prisma.mediaOperation.findUniqueOrThrow({
+            where: { id: first.id },
+          })
+        ).state,
+      ).toBe('DONE');
+      expect(
+        (
+          await prisma.mediaOperation.findUniqueOrThrow({
+            where: { id: second.id },
+          })
+        ).state,
+      ).toBe('PENDING');
+      expect(
+        (
+          await prisma.mediaAsset.findUniqueOrThrow({
+            where: { id: orphan.id },
+          })
+        ).state,
+      ).toBe('STAGING');
+      expect((await s.tick.run()).jobs).toEqual([
+        { name: 'media', processed: 2, failed: false },
+      ]);
+      expect(
+        (
+          await prisma.mediaOperation.findUniqueOrThrow({
+            where: { id: second.id },
+          })
+        ).state,
+      ).toBe('DONE');
+      expect(
+        (
+          await prisma.mediaAsset.findUniqueOrThrow({
+            where: { id: orphan.id },
+          })
+        ).state,
+      ).toBe('FAILED');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('imports all five legacy owners across bounded pages, preserves Bytes, refuses corruption and can resume after public delivery failure', async () => {
     const s = setup();
     const user = await prisma.user.create({
@@ -1080,7 +1255,7 @@ describe('scheduled media recovery on PostgreSQL', () => {
     const realClearTimeout = globalThis.clearTimeout;
     const queue = new Map<object, { at: number; run: () => unknown }>();
     vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
-      fn: TimerHandler,
+      fn: (...args: unknown[]) => void,
       delay?: number,
       ...args: unknown[]
     ) => {
@@ -1244,7 +1419,7 @@ describe('scheduled media recovery on PostgreSQL', () => {
     const owner = await user();
     const input = await sharp(bytes).toColourspace('rgb16').png().toBuffer();
     const currentProcess = SharpImageProcessor.prototype.process;
-    const oldEncoder = vi.spyOn(SharpImageProcessor.prototype, 'process').mockImplementation(async function (file, purpose, preserveSource) {
+    const oldEncoder = vi.spyOn(SharpImageProcessor.prototype, 'process').mockImplementation(async function (this: SharpImageProcessor, file, purpose, preserveSource) {
       const downgraded = await sharp(file.buffer).png().toBuffer();
       return currentProcess.call(this, { buffer: downgraded, mimetype: 'image/png' }, purpose, preserveSource);
     });
@@ -1460,7 +1635,7 @@ it('records one decision and completion per restore cycle, preserves retries, an
     s.store.failPublic = false;
     await moderation.updateSellerStatus(actor, profile.id, input);
     const operation = await prisma.mediaOperation.findFirstOrThrow({
-      where: { profileId: profile.id, restore: true },
+      where: { profileId: profile.id, kind: 'PUBLISH', restore: true },
     });
     expect(operation.generation).toBe(cycle);
     expect(operation.actorUserId).toBe(actor);
@@ -1524,4 +1699,895 @@ it('stops a revoke after its lease expires instead of deleting more objects', as
   expect([...s.store.objects.keys()].filter((key) => key.startsWith('PUBLIC:'))).toHaveLength(1);
   await s.media.deliver(revoke.id);
   expect([...s.store.objects.keys()].filter((key) => key.startsWith('PUBLIC:'))).toHaveLength(0);
+});
+
+describe('tick media recovery on PostgreSQL', () => {
+  it.each(['REVOKE', 'CLEANUP'] as const)('keeps exhausted %s visible without retrying it', async (kind) => {
+    const s = setup();
+    const before = new Date('2026-01-01T00:00:00Z');
+    await prisma.systemHeartbeat.upsert({ where: { name: 'tick' }, create: { name: 'tick', at: before }, update: { at: before } });
+    const operation = await prisma.mediaOperation.create({ data: {
+      identity: `exhausted:${randomUUID()}`, kind, state: 'FAILED', attemptCount: 20, nextAttemptAt: new Date(0),
+    } });
+    s.media.onModuleInit();
+    s.media.onModuleDestroy();
+    try {
+      expect((await s.tick.run()).jobs).toContainEqual({ name: 'media', processed: 0, failed: true });
+      expect(await s.tick.lastSucceededAt()).toEqual(before);
+      expect(await prisma.mediaOperation.findUniqueOrThrow({ where: { id: operation.id } })).toMatchObject({ state: 'FAILED', attemptCount: 20 });
+    } finally {
+      await prisma.mediaOperation.delete({ where: { id: operation.id } });
+    }
+  });
+
+  it.each([
+    { state: 'RUNNING' as const, expired: true, changed: false, want: 'DONE' },
+    {
+      state: 'RUNNING' as const,
+      expired: true,
+      changed: true,
+      want: 'CANCELLED',
+    },
+    {
+      state: 'RUNNING' as const,
+      expired: false,
+      changed: false,
+      want: 'RUNNING',
+    },
+    {
+      state: 'PENDING' as const,
+      expired: true,
+      changed: false,
+      want: 'PENDING',
+    },
+    { state: 'FAILED' as const, expired: true, changed: false, want: 'FAILED' },
+  ])(
+    'recovers publication $state expired=$expired changed=$changed as $want',
+    async ({ state, expired, changed, want }) => {
+      const s = setup();
+      const fixture = await author(s.media);
+      s.store.failPublic = true;
+      await expect(
+        approve(s.media, fixture.profile, fixture.user.id),
+      ).rejects.toThrow('Media delivery failed');
+      const operation = await prisma.mediaOperation.findFirstOrThrow({
+        where: { profileId: fixture.profile.id, kind: 'PUBLISH' },
+      });
+      await prisma.mediaOperation.update({
+        where: { id: operation.id },
+        data: {
+          state,
+          nextAttemptAt: new Date(0),
+          leaseToken: randomUUID(),
+          leaseUntil: new Date(Date.now() + (expired ? -60_000 : 60_000)),
+        },
+      });
+      if (changed)
+        await prisma.sellerProfileRevision.update({
+          where: { id: fixture.profile.revision.id },
+          data: {
+            updatedAt: new Date(
+              fixture.profile.revision.updatedAt.getTime() + 1000,
+            ),
+          },
+        });
+      s.store.failPublic = false;
+      s.media.onModuleDestroy();
+      const restarted = setup(s.store, s.cache);
+      restarted.media.onModuleInit();
+      restarted.media.onModuleDestroy();
+      await restarted.tick.run();
+      expect(
+        (
+          await prisma.mediaOperation.findUniqueOrThrow({
+            where: { id: operation.id },
+          })
+        ).state,
+      ).toBe(want);
+      const profile = await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.profile.id },
+      });
+      expect(profile.publishedRevisionId).toBe(
+        want === 'DONE' ? fixture.profile.revision.id : null,
+      );
+      expect(profile.status).toBe(
+        want === 'DONE' ? 'APPROVED' : 'PENDING_REVIEW',
+      );
+    },
+  );
+
+  it('does not retry a publication that fails between selection and lease claim', async () => {
+    const s = setup();
+    const fixture = await author(s.media);
+    s.store.failPublic = true;
+    await expect(
+      approve(s.media, fixture.profile, fixture.user.id),
+    ).rejects.toThrow('Media delivery failed');
+    const operation = await prisma.mediaOperation.findFirstOrThrow({
+      where: { profileId: fixture.profile.id, kind: 'PUBLISH' },
+    });
+    await prisma.mediaOperation.update({
+      where: { id: operation.id },
+      data: { state: 'RUNNING', leaseUntil: new Date(0) },
+    });
+    s.store.failPublic = false;
+    s.media.onModuleInit();
+    s.media.onModuleDestroy();
+    const findMany = prisma.mediaOperation.findMany.bind(prisma.mediaOperation);
+    const selection = vi
+      .spyOn(prisma.mediaOperation, 'findMany')
+      .mockImplementationOnce((args) => {
+        const result = (async () => {
+          const rows = await findMany(args);
+          await prisma.mediaOperation.update({
+            where: { id: operation.id },
+            data: { state: 'FAILED', leaseUntil: null },
+          });
+          return rows;
+        })();
+        return {
+          [Symbol.toStringTag]: 'PrismaPromise',
+          then: result.then.bind(result),
+          catch: result.catch.bind(result),
+          finally: result.finally.bind(result),
+        };
+      });
+    try {
+      await s.tick.run();
+      const fresh = await prisma.mediaOperation.findUniqueOrThrow({
+        where: { id: operation.id },
+      });
+      expect(fresh.state).toBe('FAILED');
+      expect(fresh.attemptCount).toBe(operation.attemptCount);
+      expect(
+        (
+          await prisma.sellerProfile.findUniqueOrThrow({
+            where: { id: fixture.profile.id },
+          })
+        ).publishedRevisionId,
+      ).toBeNull();
+    } finally {
+      selection.mockRestore();
+    }
+  });
+
+  it('reports persisted media failure to the tick instead of advancing its heartbeat', async () => {
+    const s = setup();
+    const fixture = await author(s.media);
+    await approve(s.media, fixture.profile, fixture.user.id);
+    await prisma.$transaction(async (tx) => {
+      await tx.sellerProfile.update({
+        where: { id: fixture.profile.id },
+        data: { status: 'SUSPENDED' },
+      });
+      await s.media.enqueueRevoke(tx, { profileId: fixture.profile.id });
+    });
+    s.cache.fail = true;
+    s.media.onModuleInit();
+    s.media.onModuleDestroy();
+    const before = await s.tick.lastSucceededAt();
+    expect((await s.tick.run()).jobs).toContainEqual({
+      name: 'media',
+      processed: 0,
+      failed: true,
+    });
+    expect(await s.tick.lastSucceededAt()).toEqual(before);
+    expect(
+      (
+        await prisma.mediaOperation.findFirstOrThrow({
+          where: { profileId: fixture.profile.id, kind: 'REVOKE' },
+          orderBy: { createdAt: 'desc' },
+        })
+      ).state,
+    ).toBe('FAILED');
+  });
+});
+
+describe('product publication caller integration', () => {
+  it.each(['delivery', 'restart', 'journal', 'shared'] as const)(
+    'compensates suspended profile restore before retry (%s)', async (failure) => {
+      const s = setup();
+      const f = await author(s.media);
+      await approve(s.media, f.profile, f.user.id);
+      const moderation = new AdminModerationService(prisma as never, new PostgresImageStore(prisma as never), s.media);
+      const work = await pendingWork(f.user.id, f.profile.id, s.media, true);
+      await moderation.updateProductStatus(f.user.id, work.id, { status: 'APPROVED', target: { kind: 'revision', id: work.first.id, updatedAt: work.first.updatedAt.toISOString() } });
+      let profile = await prisma.sellerProfile.findUniqueOrThrow({ where: { id: f.profile.id } });
+      await moderation.updateSellerStatus(f.user.id, profile.id, { status: 'SUSPENDED', reason: 'test suspension', target: { kind: 'parent', status: 'APPROVED', updatedAt: profile.updatedAt.toISOString() } });
+      profile = await prisma.sellerProfile.findUniqueOrThrow({ where: { id: profile.id } });
+      const privateKeys = [...s.store.objects.keys()].filter((key) => key.startsWith('PRIVATE:'));
+      const requested = await prisma.$transaction((tx) => s.media.enqueuePublication(tx, { profileId: profile.id }, f.profile.revision, f.profile.revision.id, f.user.id, true));
+      let writes = 0;
+      const put = s.store.put.bind(s.store);
+      const writing = vi.spyOn(s.store, 'put').mockImplementation(async (tier, key, value) => {
+        if (tier === 'PUBLIC') {
+          writes += 1;
+          const journal = await prisma.mediaOperation.findUnique({ where: { identity: `restore-revoke:${requested.id}:${requested.generation}` } });
+          expect(journal).toMatchObject({ profileId: profile.id, state: 'PENDING' });
+          if (writes > 1) throw new Error('Provider outage');
+        }
+        await put(tier, key, value);
+      });
+      if (failure === 'journal') {
+        await prisma.$executeRawUnsafe(`CREATE FUNCTION reject_profile_journal() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+          IF NEW.identity LIKE 'restore-revoke:%' THEN RAISE EXCEPTION 'Journal unavailable'; END IF;
+          RETURN NEW; END $$`);
+        await prisma.$executeRawUnsafe('CREATE TRIGGER reject_profile_journal BEFORE INSERT OR UPDATE ON media_operations FOR EACH ROW EXECUTE FUNCTION reject_profile_journal()');
+      }
+      const update = prisma.mediaOperation.updateMany.bind(prisma.mediaOperation);
+      const failing = failure === 'restart' ? vi.spyOn(prisma.mediaOperation, 'updateMany').mockImplementation((args) => {
+        if (args.data.state === 'FAILED') throw new Error('Failure transition unavailable');
+        return update(args);
+      }) : undefined;
+      try {
+        await expect(s.media.deliver(requested.id)).rejects.toThrow();
+      } finally {
+        failing?.mockRestore();
+        writing.mockRestore();
+        if (failure === 'journal') {
+          await prisma.$executeRawUnsafe('DROP TRIGGER reject_profile_journal ON media_operations');
+          await prisma.$executeRawUnsafe('DROP FUNCTION reject_profile_journal()');
+        }
+      }
+      expect(writes).toBe(failure === 'journal' ? 0 : 2);
+      expect(await prisma.sellerProfile.findUniqueOrThrow({ where: { id: profile.id } })).toMatchObject({ status: 'SUSPENDED', publishedRevisionId: f.profile.revision.id });
+      const objects = await prisma.mediaOperationObject.findMany({ where: { operationId: requested.id }, include: { object: true } });
+      expect(new Set(objects.map(({ object }) => object.assetId)).size).toBe(2);
+      if (failure !== 'journal') {
+        expect(await prisma.mediaOperation.findUniqueOrThrow({ where: { identity: `restore-revoke:${requested.id}:${requested.generation}` } })).toMatchObject({ profileId: profile.id, generation: requested.generation, restore: true });
+        if (failure === 'restart') {
+          await prisma.mediaOperation.update({ where: { id: requested.id }, data: { leaseUntil: new Date(0) } });
+          s.store.failPublic = true;
+        }
+        let sharedAsset: string | undefined;
+        if (failure === 'shared') {
+          sharedAsset = objects.find(({ object }) => s.store.objects.has(`PUBLIC:${object.objectKey}`))!.object.assetId;
+          const other = await author(s.media);
+          const revision = await prisma.sellerProfileRevision.update({ where: { id: other.profile.revision.id }, data: { profilePhotoAssetId: sharedAsset } });
+          await approve(s.media, { ...other.profile, revision }, other.user.id);
+        }
+        const restarted = setup(s.store, s.cache);
+        await restarted.media.tick();
+        await prisma.mediaOperation.updateMany({ where: { profileId: profile.id, kind: 'REVOKE', state: 'FAILED' }, data: { nextAttemptAt: new Date(0) } });
+        await restarted.media.tick();
+        for (const { object } of objects) {
+          if (object.assetId === sharedAsset) expect(await s.store.get('PUBLIC', object.objectKey)).not.toBeNull();
+          else expect(await s.store.get('PUBLIC', object.objectKey)).toBeNull();
+        }
+      }
+      for (const key of privateKeys) expect(s.store.objects.has(key)).toBe(true);
+      s.store.failPublic = false;
+      const input = { status: 'APPROVED' as const, target: { kind: 'parent' as const, status: 'SUSPENDED' as const, updatedAt: profile.updatedAt.toISOString() } };
+      await moderation.updateSellerStatus(f.user.id, profile.id, input);
+      await setup(s.store, s.cache).media.tick();
+      expect(await prisma.sellerProfile.findUniqueOrThrow({ where: { id: profile.id } })).toMatchObject({ status: 'APPROVED' });
+      for (const { object } of objects) expect(await s.store.get('PUBLIC', object.objectKey)).not.toBeNull();
+    },
+  );
+
+  it.each([false, true])('rejects approval in sale without changing publication or audit (media=%s)', async (enabled) => {
+    const s = setup();
+    const f = await author(s.media);
+    await approve(s.media, f.profile, f.user.id);
+    const moderation = new AdminModerationService(prisma as never, new PostgresImageStore(prisma as never), enabled ? s.media : undefined);
+    const work = await pendingWork(f.user.id, f.profile.id, s.media, enabled);
+    await moderation.updateProductStatus(f.user.id, work.id, { status: 'APPROVED', target: { kind: 'revision', id: work.first.id, updatedAt: work.first.updatedAt.toISOString() } });
+    const next = await prisma.productRevision.create({ data: {
+      productId: work.id, version: 2, status: 'PENDING_REVIEW', title: 'Must not publish', categoryId: work.first.categoryId,
+      images: { create: { imageId: work.imageId, position: 0 } },
+    } });
+    await prisma.product.update({ where: { id: work.id }, data: { editingRevisionId: next.id } });
+    const endsAt = new Date(Date.now() + 60_000);
+    await prisma.listing.create({ data: {
+      productId: work.id, status: 'LIVE', startsAt: new Date(), endsAt, originalEndsAt: endsAt,
+      currentPrice: 10, auctionRules: { create: { startPrice: 10 } },
+    } });
+    const before = await prisma.product.findUniqueOrThrow({ where: { id: work.id } });
+    const audits = await prisma.auditEvent.count({ where: { targetId: work.id } });
+    const writes = vi.spyOn(s.store, 'put');
+    await expect(moderation.updateProductStatus(f.user.id, work.id, { status: 'APPROVED', target: { kind: 'revision', id: next.id, updatedAt: next.updatedAt.toISOString() } }))
+      .rejects.toMatchObject({ response: { code: 'PRODUCT_IN_SALE' }, status: 409 });
+    await expect(prisma.$transaction((tx) => publishRevision(tx, {
+      productId: work.id, revisionId: next.id, expectedPublishedRevisionId: before.publishedRevisionId, expectedRevisionAt: next.updatedAt,
+    }))).rejects.toMatchObject({ apiCode: 'PRODUCT_IN_SALE', status: 409 });
+    expect(await prisma.product.findUniqueOrThrow({ where: { id: work.id } })).toEqual(before);
+    expect(await prisma.productRevision.findUniqueOrThrow({ where: { id: next.id } })).toEqual(next);
+    expect(await prisma.auditEvent.count({ where: { targetId: work.id } })).toBe(audits);
+    expect(writes.mock.calls.filter(([tier]) => tier === 'PUBLIC')).toHaveLength(0);
+    writes.mockRestore();
+  });
+
+  it.each(['delivery', 'restart', 'journal', 'shared'] as const)(
+    'compensates a partial archived restore durably and retains manual retry (%s)',
+    async (failure) => {
+      const s = setup();
+      const f = await author(s.media);
+      await approve(s.media, f.profile, f.user.id);
+      const products = new ProductsService(prisma as never, new PublicIdService(), s.media);
+      const moderation = new AdminModerationService(prisma as never, new PostgresImageStore(prisma as never), s.media);
+      const work = await pendingWork(f.user.id, f.profile.id, s.media, true);
+      const second = await s.media.stage(f.user.id, 'WORK_IMAGE', { buffer: bytes, mimetype: 'image/png' });
+      await prisma.$transaction(async (tx) => {
+        await s.media.attach(tx, second.id);
+        const image = await tx.productImage.create({ data: {
+          productId: work.id, position: 1, mediaAssetId: second.id,
+          objectKey: second.preview.objectKey, mimeType: second.preview.mimeType,
+          byteLength: second.preview.byteLength, checksum: second.preview.sha256, data: new Uint8Array(0),
+        } });
+        await tx.productRevisionImage.create({ data: { revisionId: work.first.id, imageId: image.id, position: 1 } });
+      });
+      await moderation.updateProductStatus(f.user.id, work.id, {
+        status: 'APPROVED', target: { kind: 'revision', id: work.first.id, updatedAt: work.first.updatedAt.toISOString() },
+      });
+      await products.hide(f.user.id, work.id);
+      const sharedImage = await prisma.productImage.findUniqueOrThrow({ where: { id: work.imageId } });
+      const privateKeys = [...s.store.objects.keys()].filter((key) => key.startsWith('PRIVATE:'));
+      let writes = 0;
+      const put = s.store.put.bind(s.store);
+      const writing = vi.spyOn(s.store, 'put').mockImplementation(async (tier, key, value) => {
+        if (tier === 'PUBLIC' && ++writes > 1) throw new Error('Provider outage');
+        await put(tier, key, value);
+      });
+      if (failure === 'journal') {
+        await prisma.$executeRawUnsafe(`CREATE FUNCTION reject_restore_journal() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+          IF NEW.identity LIKE 'restore-revoke:%' THEN RAISE EXCEPTION 'Journal unavailable'; END IF;
+          RETURN NEW; END $$`);
+        await prisma.$executeRawUnsafe('CREATE TRIGGER reject_restore_journal BEFORE INSERT OR UPDATE ON media_operations FOR EACH ROW EXECUTE FUNCTION reject_restore_journal()');
+      }
+      const update = prisma.mediaOperation.updateMany.bind(prisma.mediaOperation);
+      const failing = failure === 'restart'
+        ? vi.spyOn(prisma.mediaOperation, 'updateMany').mockImplementation((args) => {
+          if (args.data.state === 'FAILED') throw new Error('Failure transition unavailable');
+          return update(args);
+        }) : undefined;
+      const requested = await prisma.$transaction((tx) => s.media.enqueuePublication(
+        tx, { productId: work.id }, work.first, work.first.id, f.user.id, true,
+      ));
+      try {
+        await expect(s.media.deliver(requested.id)).rejects.toThrow();
+      } finally {
+        failing?.mockRestore();
+        if (failure === 'journal') {
+          await prisma.$executeRawUnsafe('DROP TRIGGER reject_restore_journal ON media_operations');
+          await prisma.$executeRawUnsafe('DROP FUNCTION reject_restore_journal()');
+        }
+      }
+      const publication = await prisma.mediaOperation.findFirstOrThrow({ where: { productId: work.id, kind: 'PUBLISH', restore: true } });
+      expect(await prisma.product.findUniqueOrThrow({ where: { id: work.id } })).toMatchObject({ status: 'ARCHIVED', publishedRevisionId: work.first.id });
+      await expect(products.getPortfolio(work.publicId)).rejects.toThrow('Work not found');
+      expect(await prisma.auditEvent.count({ where: { mediaOperationId: publication.id, action: 'PUBLICATION_COMPLETED' } })).toBe(0);
+      if (failure === 'journal') expect(writes).toBe(0);
+      else {
+        expect(writes).toBe(2);
+        expect(await prisma.mediaOperation.findFirstOrThrow({ where: { productId: work.id, kind: 'REVOKE', state: 'PENDING' } })).toMatchObject({ generation: publication.generation });
+        if (failure === 'restart') {
+          await prisma.mediaOperation.update({ where: { id: publication.id }, data: { leaseUntil: new Date(0) } });
+          s.media.onModuleDestroy();
+        }
+        if (failure === 'shared') {
+          writing.mockRestore();
+          const shared = await pendingWork(f.user.id, f.profile.id, s.media, true);
+          await prisma.productImage.update({ where: { id: shared.imageId }, data: {
+            mediaAssetId: sharedImage.mediaAssetId, objectKey: sharedImage.objectKey,
+            mimeType: sharedImage.mimeType, byteLength: sharedImage.byteLength, checksum: sharedImage.checksum,
+          } });
+          await moderation.updateProductStatus(f.user.id, shared.id, {
+            status: 'APPROVED', target: { kind: 'revision', id: shared.first.id, updatedAt: shared.first.updatedAt.toISOString() },
+          });
+        }
+        const fresh = setup(s.store, s.cache).media;
+        await fresh.tick();
+        await prisma.mediaOperation.updateMany({ where: { productId: work.id, kind: 'REVOKE', state: 'FAILED' }, data: { nextAttemptAt: new Date(0) } });
+        await fresh.tick();
+        expect(await prisma.mediaOperation.findUniqueOrThrow({ where: { id: publication.id } })).toMatchObject({ state: 'FAILED' });
+        const publicObjects = await prisma.mediaOperationObject.findMany({ where: { operationId: publication.id }, include: { object: true } });
+        for (const { object } of publicObjects) {
+          if (failure === 'shared' && object.assetId === sharedImage.mediaAssetId)
+            expect(await s.store.get('PUBLIC', object.objectKey)).not.toBeNull();
+          else {
+            expect(await s.store.get('PUBLIC', object.objectKey)).toBeNull();
+            expect(s.cache.urls).toContain(object.publicUrl);
+          }
+        }
+      }
+      if (failure === 'delivery' || failure === 'restart') {
+        writes = 0;
+        await expect(s.media.deliver(publication.id)).rejects.toThrow('Media delivery failed');
+        await setup(s.store, s.cache).media.tick();
+        const publicObjects = await prisma.mediaOperationObject.findMany({ where: { operationId: publication.id }, include: { object: true } });
+        for (const { object } of publicObjects) expect(await s.store.get('PUBLIC', object.objectKey)).toBeNull();
+      }
+      for (const key of privateKeys) expect(s.store.objects.has(key)).toBe(true);
+      writing.mockRestore();
+      await products.unhide(f.user.id, work.id);
+      expect(await products.getPortfolio(work.publicId)).toMatchObject({ product: { title: 'Original work' } });
+      if (failure === 'delivery') {
+        await products.hide(f.user.id, work.id);
+        s.store.afterPublicPut = async () => { s.store.failPublic = true; };
+        await expect(products.unhide(f.user.id, work.id)).rejects.toThrow('Media delivery failed');
+        const operations = await prisma.mediaOperation.findMany({ where: { productId: work.id, kind: 'PUBLISH', restore: true }, include: { objects: { include: { object: true } } } });
+        expect(operations.some((operation) => operation.state === 'FAILED')).toBe(true);
+        for (const operation of operations)
+          for (const { object } of operation.objects) expect(await s.store.get('PUBLIC', object.objectKey)).toBeNull();
+        s.store.failPublic = false;
+        await products.unhide(f.user.id, work.id);
+      }
+    },
+  );
+
+  it.each([false, true])(
+    'keeps a newly approved archived work hidden until explicit restore (media=%s)',
+    async (enabled) => {
+      const s = setup();
+      const f = await author(s.media);
+      await approve(s.media, f.profile, f.user.id);
+      const products = new ProductsService(
+        prisma as never,
+        new PublicIdService(),
+        enabled ? s.media : undefined,
+      );
+      const moderation = new AdminModerationService(
+        prisma as never,
+        new PostgresImageStore(prisma as never),
+        enabled ? s.media : undefined,
+      );
+      const work = await pendingWork(f.user.id, f.profile.id, s.media, enabled);
+      await moderation.updateProductStatus(f.user.id, work.id, {
+        status: 'APPROVED',
+        target: {
+          kind: 'revision',
+          id: work.first.id,
+          updatedAt: work.first.updatedAt.toISOString(),
+        },
+      });
+      await products.hide(f.user.id, work.id);
+      const next = await prisma.productRevision.create({
+        data: {
+          productId: work.id,
+          version: 2,
+          status: 'PENDING_REVIEW',
+          categoryId: work.first.categoryId,
+          title: 'Replacement work',
+          images: { create: { imageId: work.imageId, position: 0 } },
+        },
+      });
+      await prisma.product.update({
+        where: { id: work.id },
+        data: { editingRevisionId: next.id },
+      });
+      const image = await prisma.productImage.findUniqueOrThrow({ where: { id: work.imageId } });
+      const publicWrites = vi.spyOn(s.store, 'put');
+      expect(await s.store.get('PUBLIC', image.objectKey!)).toBeNull();
+      await moderation.updateProductStatus(f.user.id, work.id, {
+        status: 'APPROVED',
+        target: {
+          kind: 'revision',
+          id: next.id,
+          updatedAt: next.updatedAt.toISOString(),
+        },
+      });
+      expect(
+        await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),
+      ).toMatchObject({ status: 'ARCHIVED', publishedRevisionId: next.id });
+      await expect(products.getPortfolio(work.publicId)).rejects.toThrow(
+        'Work not found',
+      );
+      expect(publicWrites.mock.calls.filter(([tier]) => tier === 'PUBLIC')).toHaveLength(0);
+      expect(await s.store.get('PUBLIC', image.objectKey!)).toBeNull();
+      if (enabled) {
+        const operation = await prisma.mediaOperation.findFirstOrThrow({
+          where: { productId: work.id, revisionId: next.id, kind: 'PUBLISH' },
+          include: { objects: true },
+        });
+        expect(operation.state).toBe('DONE');
+        expect(operation.objects.every((item) => item.state !== 'READY')).toBe(true);
+        const audits = await prisma.auditEvent.count({ where: { targetId: work.id } });
+        await moderation.updateProductStatus(f.user.id, work.id, { status: 'APPROVED', target: { kind: 'revision', id: next.id, updatedAt: next.updatedAt.toISOString() } });
+        expect(await prisma.auditEvent.count({ where: { targetId: work.id } })).toBe(audits);
+        expect(publicWrites.mock.calls.filter(([tier]) => tier === 'PUBLIC')).toHaveLength(0);
+        for (const target of [
+          { kind: 'revision' as const, id: next.id, updatedAt: new Date(0).toISOString() },
+          { kind: 'revision' as const, id: work.first.id, updatedAt: work.first.updatedAt.toISOString() },
+        ]) await expect(moderation.updateProductStatus(f.user.id, work.id, { status: 'APPROVED', target })).rejects.toThrow('Moderation target is stale');
+
+      }
+      publicWrites.mockRestore();
+      await products.unhide(f.user.id, work.id);
+      expect(await products.getPortfolio(work.publicId)).toMatchObject({
+        product: { title: 'Replacement work' },
+      });
+      expect(
+        await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),
+      ).toMatchObject({ status: 'APPROVED', publishedRevisionId: next.id });
+    },
+  );
+
+  it.each([false, true])(
+    'serializes author hide against revision approval (media=%s)',
+    async (enabled) => {
+      const s = setup();
+      const f = await author(s.media);
+      await approve(s.media, f.profile, f.user.id);
+      const products = new ProductsService(
+        prisma as never,
+        new PublicIdService(),
+        enabled ? s.media : undefined,
+      );
+      const moderation = new AdminModerationService(
+        prisma as never,
+        new PostgresImageStore(prisma as never),
+        enabled ? s.media : undefined,
+      );
+      const work = await pendingWork(f.user.id, f.profile.id, s.media, enabled);
+      await moderation.updateProductStatus(f.user.id, work.id, {
+        status: 'APPROVED',
+        target: {
+          kind: 'revision',
+          id: work.first.id,
+          updatedAt: work.first.updatedAt.toISOString(),
+        },
+      });
+      const next = await prisma.productRevision.create({
+        data: {
+          productId: work.id,
+          version: 2,
+          status: 'PENDING_REVIEW',
+          categoryId: work.first.categoryId,
+          title: 'Concurrent replacement',
+          images: { create: { imageId: work.imageId, position: 0 } },
+        },
+      });
+      await prisma.product.update({
+        where: { id: work.id },
+        data: { editingRevisionId: next.id },
+      });
+      const results = await Promise.allSettled([
+        products.hide(f.user.id, work.id),
+        moderation.updateProductStatus(f.user.id, work.id, {
+          status: 'APPROVED',
+          target: {
+            kind: 'revision',
+            id: next.id,
+            updatedAt: next.updatedAt.toISOString(),
+          },
+        }),
+      ]);
+      for (const result of results) {
+        if (result.status === 'rejected')
+          expect(result.reason.getStatus()).toBe(409);
+      }
+      if (enabled) {
+        await s.media.deliverOutstanding({ productId: work.id }, 'PUBLISH');
+        await s.media.deliverOutstanding({ productId: work.id }, 'REVOKE');
+      }
+      expect(
+        await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),
+      ).toMatchObject({ status: 'ARCHIVED', publishedRevisionId: next.id });
+      expect(
+        await prisma.productRevision.findUniqueOrThrow({
+          where: { id: next.id },
+        }),
+      ).toMatchObject({ status: 'APPROVED' });
+      await expect(products.getPortfolio(work.publicId)).rejects.toThrow(
+        'Work not found',
+      );
+    },
+  );
+
+  it.each([false, true])(
+    'refuses admin archive while a work has a live listing (media=%s)',
+    async (enabled) => {
+      const s = setup();
+      const f = await author(s.media);
+      await approve(s.media, f.profile, f.user.id);
+      const moderation = new AdminModerationService(
+        prisma as never,
+        new PostgresImageStore(prisma as never),
+        enabled ? s.media : undefined,
+      );
+      const work = await pendingWork(f.user.id, f.profile.id, s.media, enabled);
+      await moderation.updateProductStatus(f.user.id, work.id, {
+        status: 'APPROVED',
+        target: {
+          kind: 'revision',
+          id: work.first.id,
+          updatedAt: work.first.updatedAt.toISOString(),
+        },
+      });
+      const current = await prisma.product.findUniqueOrThrow({
+        where: { id: work.id },
+      });
+      const auditCount = await prisma.auditEvent.count({
+        where: { targetId: work.id },
+      });
+      await prisma.listing.create({
+        data: {
+          productId: work.id,
+          status: 'LIVE',
+          currentPrice: '10',
+          startsAt: new Date(),
+          endsAt: new Date(Date.now() + 60_000),
+          originalEndsAt: new Date(Date.now() + 60_000),
+          auctionRules: { create: { startPrice: '10' } },
+        },
+      });
+      await expect(
+        moderation.updateProductStatus(f.user.id, work.id, {
+          status: 'ARCHIVED',
+          reason: 'Archive work',
+          target: {
+            kind: 'parent',
+            status: 'APPROVED',
+            updatedAt: current.updatedAt.toISOString(),
+          },
+        }),
+      ).rejects.toMatchObject({ status: 409, apiCode: 'PRODUCT_IN_SALE' });
+      expect(
+        await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),
+      ).toMatchObject({
+        status: 'APPROVED',
+        publishedRevisionId: work.first.id,
+      });
+      expect(
+        await prisma.auditEvent.count({ where: { targetId: work.id } }),
+      ).toBe(auditCount);
+    },
+  );
+  it.each(['PRIVATE', 'PUBLIC'] as const)('prevents public resurrection when hide races with %s revision delivery', async (barrier) => {
+    const s = setup();
+    const f = await author(s.media);
+    await approve(s.media, f.profile, f.user.id);
+    const products = new ProductsService(
+      prisma as never,
+      new PublicIdService(),
+      s.media,
+    );
+    const imageStore = new PostgresImageStore(prisma as never);
+    const images = new ImagesService(prisma as never, imageStore, s.media);
+    const moderation = new AdminModerationService(
+      prisma as never,
+      imageStore,
+      s.media,
+    );
+    const work = await pendingWork(f.user.id, f.profile.id, s.media, true);
+    await moderation.updateProductStatus(f.user.id, work.id, {
+      status: 'APPROVED',
+      target: {
+        kind: 'revision',
+        id: work.first.id,
+        updatedAt: work.first.updatedAt.toISOString(),
+      },
+    });
+    const asset = await s.media.stage(f.user.id, 'WORK_IMAGE', {
+      buffer: bytes,
+      mimetype: 'image/png',
+    });
+    const next = await prisma.$transaction(async (tx) => {
+      await s.media.attach(tx, asset.id);
+      const image = await tx.productImage.create({
+        data: {
+          productId: work.id,
+          position: 1,
+          mediaAssetId: asset.id,
+          objectKey: asset.preview.objectKey,
+          mimeType: asset.preview.mimeType,
+          byteLength: asset.preview.byteLength,
+          checksum: asset.preview.sha256,
+          data: new Uint8Array(0),
+        },
+      });
+      const revision = await tx.productRevision.create({
+        data: {
+          productId: work.id,
+          version: 2,
+          status: 'PENDING_REVIEW',
+          categoryId: work.first.categoryId,
+          title: 'Approval survives hide',
+          images: { create: { imageId: image.id, position: 0 } },
+        },
+      });
+      await tx.product.update({
+        where: { id: work.id },
+        data: { editingRevisionId: revision.id },
+      });
+      return { revision, image };
+    });
+    let reached!: () => void;
+    let resume!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
+    const released = new Promise<void>((resolve) => {
+      resume = resolve;
+    });
+    const pause = async () => {
+      reached();
+      await released;
+    };
+    if (barrier === 'PRIVATE') s.store.afterPrivateGet = pause;
+    else s.store.afterPublicPut = pause;
+    let hideCompleted = false;
+    let latePublicWrites = 0;
+    const put = s.store.put.bind(s.store);
+    vi.spyOn(s.store, 'put').mockImplementation(async (tier, key, value) => {
+      if (tier === 'PUBLIC' && hideCompleted) latePublicWrites += 1;
+      await put(tier, key, value);
+    });
+    const approval = Promise.allSettled([
+      moderation.updateProductStatus(f.user.id, work.id, {
+        status: 'APPROVED',
+        target: {
+          kind: 'revision',
+          id: next.revision.id,
+          updatedAt: next.revision.updatedAt.toISOString(),
+        },
+      }),
+    ]);
+    await blocked;
+    const hiding = Promise.allSettled([products.hide(f.user.id, work.id)]);
+    try {
+      if (barrier === 'PUBLIC') {
+        let waiting = false;
+        for (let attempt = 0; attempt < 100 && !waiting; attempt += 1) {
+          const locks = await prisma.$queryRaw<Array<{ waiting: boolean }>>`
+            SELECT EXISTS (
+              SELECT 1 FROM pg_locks l JOIN pg_class c ON c.oid = l.relation
+              JOIN pg_stat_activity a ON a.pid = l.pid
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE c.relname = 'products' AND n.nspname = current_schema()
+                AND a.wait_event_type = 'Lock'
+            ) AS waiting`;
+          waiting = locks[0]!.waiting;
+        }
+        expect(waiting).toBe(true);
+        expect((await prisma.product.findUniqueOrThrow({ where: { id: work.id } })).status).toBe('APPROVED');
+        resume();
+      }
+      const [hidden] = await hiding;
+      if (hidden!.status === 'rejected')
+        expect(hidden!.reason.getStatus()).toBe(409);
+      expect(
+        await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),
+      ).toMatchObject({ status: 'ARCHIVED' });
+      hideCompleted = true;
+      await expect(products.getPortfolio(work.publicId)).rejects.toThrow(
+        'Work not found',
+      );
+      await expect(images.get(work.imageId)).rejects.toThrow('Image not found');
+      await expect(images.get(next.image.id)).rejects.toThrow('Image not found');
+    } finally {
+      resume();
+    }
+    const [decision] = await approval;
+    expect(decision!.status).toBe('fulfilled');
+    expect(latePublicWrites).toBe(0);
+    expect([...s.store.objects.keys()].some((key) => key.startsWith('PUBLIC:') && key.includes(asset.id))).toBe(false);
+    await s.media.deliverOutstanding({ productId: work.id }, 'REVOKE');
+    expect(
+      await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),
+    ).toMatchObject({
+      status: 'ARCHIVED',
+      publishedRevisionId: next.revision.id,
+    });
+    expect(
+      await prisma.mediaOperation.findFirstOrThrow({
+        where: {
+          productId: work.id,
+          revisionId: next.revision.id,
+          kind: 'PUBLISH',
+        },
+      }),
+    ).toMatchObject({ state: 'DONE', restore: false });
+    await expect(products.getPortfolio(work.publicId)).rejects.toThrow(
+      'Work not found',
+    );
+    await expect(images.get(next.image.id)).rejects.toThrow('Image not found');
+    expect(
+      await prisma.mediaObject.count({
+        where: { assetId: asset.id, tier: 'PUBLIC', state: { not: 'DELETED' } },
+      }),
+    ).toBe(0);
+    expect(
+      [...s.store.objects.keys()].some(
+        (key) => key.startsWith('PUBLIC:') && key.includes(asset.id),
+      ),
+    ).toBe(false);
+    expect(await s.store.get('PRIVATE', asset.preview.objectKey)).not.toBeNull();
+  });
+
+  it.each(['PENDING', 'FAILED'] as const)(
+    'revokes hidden public copies without cancelling revision approval (%s)',
+    async (state) => {
+      const s = setup();
+      const f = await author(s.media);
+      await approve(s.media, f.profile, f.user.id);
+      const products = new ProductsService(
+        prisma as never,
+        new PublicIdService(),
+        s.media,
+      );
+      const moderation = new AdminModerationService(
+        prisma as never,
+        new PostgresImageStore(prisma as never),
+        s.media,
+      );
+      const work = await pendingWork(f.user.id, f.profile.id, s.media, true);
+      await moderation.updateProductStatus(f.user.id, work.id, {
+        status: 'APPROVED',
+        target: {
+          kind: 'revision',
+          id: work.first.id,
+          updatedAt: work.first.updatedAt.toISOString(),
+        },
+      });
+      const image = await prisma.productImage.findUniqueOrThrow({
+        where: { id: work.imageId },
+      });
+      const next = await prisma.productRevision.create({
+        data: {
+          productId: work.id,
+          version: 2,
+          status: 'PENDING_REVIEW',
+          categoryId: work.first.categoryId,
+          title: 'Retry after hide',
+          images: { create: { imageId: work.imageId, position: 0 } },
+        },
+      });
+      await prisma.product.update({
+        where: { id: work.id },
+        data: { editingRevisionId: next.id },
+      });
+      const decision = {
+        status: 'APPROVED' as const,
+        target: {
+          kind: 'revision' as const,
+          id: next.id,
+          updatedAt: next.updatedAt.toISOString(),
+        },
+      };
+      s.store.failPrivateReads = true;
+      try {
+        await expect(
+          moderation.updateProductStatus(f.user.id, work.id, decision),
+        ).rejects.toThrow('Media delivery failed');
+      } finally {
+        s.store.failPrivateReads = false;
+      }
+      const operation = await prisma.mediaOperation.findFirstOrThrow({
+        where: { productId: work.id, revisionId: next.id, kind: 'PUBLISH' },
+      });
+      expect(operation.state).toBe('FAILED');
+      if (state === 'PENDING') {
+        await prisma.mediaOperation.update({
+          where: { id: operation.id },
+          data: { state: 'PENDING' },
+        });
+      }
+      await products.hide(f.user.id, work.id);
+      expect(
+        await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),
+      ).toMatchObject({ status: 'ARCHIVED', publishedRevisionId: work.first.id });
+      expect(
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: operation.id },
+        }),
+      ).toMatchObject({ state, restore: false });
+      expect(await s.store.get('PUBLIC', image.objectKey!)).toBeNull();
+      expect(await s.store.get('PRIVATE', image.objectKey!)).not.toBeNull();
+      await expect(products.getPortfolio(work.publicId)).rejects.toThrow(
+        'Work not found',
+      );
+      await moderation.updateProductStatus(f.user.id, work.id, decision);
+      expect(
+        await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),
+      ).toMatchObject({ status: 'ARCHIVED', publishedRevisionId: next.id });
+      expect(
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: operation.id },
+        }),
+      ).toMatchObject({ state: 'DONE' });
+      expect(await s.store.get('PUBLIC', image.objectKey!)).toBeNull();
+      expect(await s.store.get('PRIVATE', image.objectKey!)).not.toBeNull();
+    },
+  );
 });

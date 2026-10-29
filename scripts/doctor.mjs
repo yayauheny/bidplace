@@ -38,11 +38,11 @@ version('docker', ['--version'], 'Docker CLI');
 version('docker', ['compose', 'version', '--short'], 'Docker Compose');
 
 const hasFile = existsSync(resolve(root, '.env'));
-const hasRuntimeKeys = ['DATABASE_URL', 'JWT_SECRET'].every((key) =>
+const hasRuntimeKeys = ['DATABASE_URL', 'SESSION_SECRET', 'OTP_HASH_SECRET'].every((key) =>
   Object.hasOwn(process.env, key),
 );
 result(
-  'Local env file exists or DATABASE_URL/JWT_SECRET keys are supplied',
+  'Local env file exists or DATABASE_URL/SESSION_SECRET/OTP_HASH_SECRET keys are supplied',
   hasFile || hasRuntimeKeys,
 );
 console.log(

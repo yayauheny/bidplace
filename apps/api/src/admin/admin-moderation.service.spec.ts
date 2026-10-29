@@ -333,7 +333,7 @@ describe('AdminModerationService', () => {
       expect.objectContaining({
         where: sellerModerationWhere(query, {
           createdAt: sameTime.toISOString(),
-          id: ids[0],
+          id: ids[0]!,
         }),
         take: 2,
       }),
@@ -394,8 +394,12 @@ describe('AdminModerationService', () => {
       $queryRaw: vi.fn().mockResolvedValue([{ id: productId }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(txProduct),
-        update: vi.fn().mockResolvedValue({ id: productId }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ ...txProduct, status: 'ARCHIVED' }),
       },
+      listing: { findFirst: vi.fn().mockResolvedValue(null) },
       auditEvent: { create: vi.fn() },
     };
     const prisma = {
@@ -573,6 +577,7 @@ describe('AdminModerationService', () => {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(product),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(product),
         update: vi.fn().mockResolvedValue(product),
       },
       productRevision: { update: vi.fn() },
@@ -603,10 +608,6 @@ describe('AdminModerationService', () => {
         editingRevision: {
           include: { images: { select: { imageId: true } } },
         },
-        listings: {
-          where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-          select: { id: true },
-        },
       },
     });
     expect(tx.auditEvent.create).toHaveBeenCalledWith(
@@ -622,6 +623,7 @@ describe('AdminModerationService', () => {
   it('publishes an approved revision as the new public work', async () => {
     const editingRevision = {
       id: 'revision-editing',
+      productId: 'product-id',
       status: 'PENDING_REVIEW',
       categoryId: 'category-id',
       title: 'Approved title',
@@ -645,18 +647,28 @@ describe('AdminModerationService', () => {
       id: 'product-id',
       status: 'PENDING_REVIEW',
       updatedAt: now,
-      sellerProfile: { status: 'APPROVED' },
+      sellerProfile: { status: 'APPROVED', user: { status: 'active' } },
+      publishedRevisionId: null,
+      editingRevisionId: 'revision-editing',
+      publishedAt: null,
       images: [{ id: 'image-id' }],
       listings: [],
       editingRevision,
     };
     const tx = {
+      listing: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(product),
-        update: vi.fn().mockResolvedValue({ ...product, status: 'APPROVED' }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ ...product, status: 'APPROVED' }),
       },
-      productRevision: { update: vi.fn() },
+      productRevision: {
+        findUnique: vi.fn().mockResolvedValue(editingRevision),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
       catalogProposal: { count: vi.fn().mockResolvedValue(0) },
       auditEvent: { create: vi.fn() },
     };
@@ -671,12 +683,21 @@ describe('AdminModerationService', () => {
       },
     });
 
-    expect(tx.productRevision.update).toHaveBeenCalledWith({
-      where: { id: 'revision-editing' },
+    expect(tx.productRevision.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'revision-editing',
+        productId: 'product-id',
+        status: 'PENDING_REVIEW',
+        updatedAt: now,
+      },
       data: expect.objectContaining({ status: 'APPROVED' }),
     });
-    expect(tx.product.update).toHaveBeenCalledWith({
-      where: { id: 'product-id' },
+    expect(tx.product.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'product-id',
+        status: 'PENDING_REVIEW',
+        publishedRevisionId: null,
+      },
       data: expect.objectContaining({
         status: 'APPROVED',
         publishedRevisionId: 'revision-editing',
@@ -750,11 +771,7 @@ describe('AdminModerationService', () => {
           editingRevision: null,
         }),
       },
-      listing: {
-        findFirst: vi
-          .fn()
-          .mockResolvedValue({ id: 'listing-id', status: 'SCHEDULED' }),
-      },
+      product: { findMany: vi.fn().mockResolvedValue([{ id: 'product-id' }]) },
     };
     const service = moderationService(transactionPrisma(tx));
 

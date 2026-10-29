@@ -3,6 +3,7 @@ import { containerStopped, isApiPath, releaseHoldClosed, secretMatches } from '.
 export interface RouterBindings {
   API: { getByName(name: string): { fetch(request: Request): Promise<Response> } };
   ASSETS: { fetch(request: Request): Promise<Response> };
+  INTERNAL_TICK_SECRET: string;
   RELEASE_HOLD?: string;
   RELEASE_CONTROL?: string;
   RELEASE_ID?: string;
@@ -10,6 +11,39 @@ export interface RouterBindings {
 }
 
 const privateResponse = { 'Cache-Control': 'no-store' };
+
+function internalApiPath(pathname: string): boolean {
+  let path = pathname;
+  try {
+    while (/%[0-9a-f]{2}/i.test(path)) path = decodeURIComponent(path);
+  } catch {
+    return true;
+  }
+  path = path.toLowerCase().replace(/\/+/g, '/').replace(/;[^/]*/g, '');
+  path = new URL(path, 'https://worker.invalid').pathname;
+  return path === '/api/internal' || path.startsWith('/api/internal/');
+}
+
+export async function runScheduledTick(env: RouterBindings): Promise<Response> {
+  if (releaseHoldClosed(env.RELEASE_HOLD)) {
+    return new Response(null, { status: 503, headers: privateResponse });
+  }
+  if (!env.INTERNAL_TICK_SECRET?.trim()) throw new Error('Missing INTERNAL_TICK_SECRET');
+  try {
+    const response = await env.API.getByName('portfolio-api').fetch(new Request('http://container/api/internal/tick', {
+      method: 'POST', headers: { 'X-Internal-Tick': env.INTERNAL_TICK_SECRET },
+    }));
+    if (!response.ok) throw new Error('Scheduled tick failed');
+    const result: unknown = await response.clone().json();
+    if (!result || typeof result !== 'object' || !('jobs' in result) ||
+        !Array.isArray(result.jobs) || result.jobs.some((job: unknown) =>
+          !job || typeof job !== 'object' || !('failed' in job) || job.failed !== false))
+      throw new Error('Scheduled tick failed');
+    return response;
+  } catch {
+    throw new Error('Scheduled tick failed');
+  }
+}
 
 function publicCacheTtl(request: Request): number | undefined {
   if (request.method !== 'GET' || request.headers.has('Authorization') ||
@@ -25,6 +59,7 @@ function publicCacheTtl(request: Request): number | undefined {
 function forwardedRequest(request: Request): Request {
   const forwarded = new Request(request);
   const headers = forwarded.headers;
+  headers.delete('X-Internal-Tick');
   const clientIp = request.headers.get('CF-Connecting-IP');
   // Trust only Cloudflare's ingress IP, never client-supplied proxy headers.
   for (const name of ['Forwarded', 'X-Forwarded-For', 'X-Real-IP',
@@ -84,6 +119,9 @@ export async function routeRequest(
   cache: Cache,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (internalApiPath(url.pathname)) {
+    return new Response(null, { status: 404, headers: privateResponse });
+  }
   if (url.pathname === '/_release/stop' || url.pathname === '/_release/state') {
     return controlRelease(request, env);
   }

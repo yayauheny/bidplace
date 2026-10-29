@@ -1,3 +1,12 @@
+import { z } from 'zod';
+import {
+  workPhotoResultSchema,
+  sellerProfileResponseSchema,
+  productResponseSchema,
+  workPhotoUploadResponseSchema,
+  type WorkPhotoEditRequest,
+} from '@bidplace/contracts';
+
 import { createHash } from 'node:crypto';
 
 import {
@@ -11,10 +20,7 @@ import {
 } from 'vitest';
 import sharp from 'sharp';
 import { Prisma } from '@bidplace/database';
-import {
-  workPhotoUploadResponseSchema,
-  type WorkPhotoEditRequest,
-} from '@bidplace/contracts';
+
 import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
 import {
@@ -181,7 +187,7 @@ async function approvedAuthor(suffix: string) {
     }),
   );
   expect(created.status).toBe(201);
-  const profileId = (await created.json()).sellerProfile.id as string;
+  const profileId = (sellerProfileResponseSchema.parse(await created.json())).sellerProfile.id as string;
   const application = await db.prisma.sellerProfile.findUniqueOrThrow({
     where: { id: profileId },
     select: { editingRevisionId: true },
@@ -217,7 +223,7 @@ async function approvedAuthor(suffix: string) {
     categoryId: category.id,
   });
   expect(workResponse.status).toBe(201);
-  const work = (await workResponse.json()).product as { id: string };
+  const work = (productResponseSchema.parse(await workResponse.json())).product as { id: string };
   const product = await db.prisma.product.findUniqueOrThrow({
     where: { id: work.id },
     select: { editingRevisionId: true },
@@ -419,11 +425,11 @@ describe('portfolio upload admission over HTTP and PostgreSQL', () => {
     ).toEqual(added);
     expect(
       (
-        await (
+        z.object({ photo: workPhotoResultSchema }).passthrough().parse(await (
           await f.author.client.get(
             `/products/${f.workId}/image-operations/crop-source`,
           )
-        ).json()
+        ).json())
       ).photo,
     ).toEqual(first);
     const crop = { x: 0.1, y: 0.2, width: 0.5, height: 0.6 };
@@ -439,7 +445,7 @@ describe('portfolio upload admission over HTTP and PostgreSQL', () => {
         `/products/${f.workId}/photos/${first.slotId}`,
         request,
       );
-    const edited = await (await patch()).json();
+    const edited = z.object({ photo: workPhotoResultSchema }).passthrough().parse(await (await patch()).json());
     expect(edited.photo).toMatchObject({ ...first, version: 1, crop });
     expect(await (await patch()).json()).toEqual(edited);
     expect(stage).not.toHaveBeenCalled();
@@ -627,7 +633,7 @@ describe('portfolio upload admission over HTTP and PostgreSQL', () => {
     };
     const result = await replace('replacement');
     expect(result.status).toBe(201);
-    const body = await result.json();
+    const body = z.object({ photo: workPhotoResultSchema }).passthrough().parse(await result.json());
     expect(body.photo).toMatchObject({
       slotId: first.slotId,
       revisionId: f.revisionId,
@@ -653,11 +659,11 @@ describe('portfolio upload admission over HTTP and PostgreSQL', () => {
     ).toEqual(first);
     expect(
       (
-        await (
+        z.object({ photo: workPhotoResultSchema }).passthrough().parse(await (
           await f.author.client.get(
             `/products/${f.workId}/image-operations/replacement?slotId=${first.slotId}`,
           )
-        ).json()
+        ).json())
       ).photo,
     ).toEqual(body.photo);
     const raced = await Promise.all([

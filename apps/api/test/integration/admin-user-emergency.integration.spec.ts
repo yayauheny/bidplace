@@ -1,3 +1,4 @@
+import { adminUsersLookupResponseSchema, adminUserStatusResponseSchema } from '@bidplace/contracts';
 import { randomUUID } from 'node:crypto';
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -77,7 +78,7 @@ describe('admin user emergency controls HTTP transport', () => {
       `/admin/users?email=${encodeURIComponent(fixture.buyer.email)}`,
     );
     expect(lookup.status).toBe(200);
-    expect((await lookup.json()).users).toEqual([
+    expect((adminUsersLookupResponseSchema.parse(await lookup.json())).users).toEqual([
       expect.objectContaining({
         id: fixture.buyer.id,
         email: fixture.buyer.email,
@@ -93,7 +94,7 @@ describe('admin user emergency controls HTTP transport', () => {
       reason: 'Abuse during pilot',
     });
     expect(ban.status).toBe(200);
-    expect((await ban.json()).status).toBe('banned');
+    expect((adminUserStatusResponseSchema.parse(await ban.json())).status).toBe('banned');
 
     const bannedLogin = await buyerClient.post('/auth/login', {
       email: fixture.buyer.email,
@@ -143,7 +144,7 @@ describe('admin user emergency controls HTTP transport', () => {
       { reason: 'Compromised account' },
     );
     expect(revoke.status).toBe(201);
-    expect((await revoke.json()).status).toBe('active');
+    expect((adminUserStatusResponseSchema.parse(await revoke.json())).status).toBe('active');
 
     const staleMe = await buyerClient.get('/auth/me', {
       headers: { cookie: buyerCookie.split(';', 1)[0]! },

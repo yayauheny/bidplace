@@ -638,7 +638,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
           ),
         )
       ).status,
-    ).toBe(200);
+    ).toBe(409);
     expect(
       (
         await prisma.product.findUniqueOrThrow({
@@ -646,9 +646,9 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
           select: { status: true },
         })
       ).status,
-    ).toBe('ARCHIVED');
+    ).toBe('APPROVED');
     expect(await auditFor('PRODUCT', fixture.approvedProductId)).toHaveLength(
-      1,
+      0,
     );
 
     const archivedProduct = await prisma.product.create({

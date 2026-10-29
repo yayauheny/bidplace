@@ -4,7 +4,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient } from '@tanstack/react-query';
-import type { ApiClient } from '@bidplace/api-client';
+import { ApiClientError, type ApiClient } from '@bidplace/api-client';
 import type { StoryBlock } from '@bidplace/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -938,6 +938,24 @@ describe('revision-backed Work Story editor', () => {
     expect(view.replaceCreation.mock.calls[0]?.[1].idempotencyKey).toBe(
       view.replaceCreation.mock.calls[1]?.[1].idempotencyKey,
     );
+  });
+
+  it.each([
+    ['PRODUCT_IN_SALE', 'Работа сейчас в продаже. Снимите лот, чтобы изменить или скрыть её'],
+    ['PRODUCT_STATE_CONFLICT', 'Работа изменилась. Обновите страницу и попробуйте снова'],
+  ] as const)('explains %s on failed story save without discarding text', async (code, message) => {
+    const view = mount();
+    view.replaceCreation.mockRejectedValueOnce(new ApiClientError('Internal detail', {
+      kind: 'conflict', status: 409, code,
+    }));
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Сохранить локально'));
+    await act(async () => {
+      expect(await view.editor.save()).toBe(false);
+    });
+    expect(view.editor.error).toBe(message);
+    expect(view.editor.dirty).toBe(true);
+    expect(view.editor.blocks[0]).toMatchObject({ text: 'Сохранить локально' });
   });
 
   it('keeps an unsaved block and its revision token after a server conflict', async () => {

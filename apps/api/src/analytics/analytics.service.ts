@@ -1,4 +1,4 @@
-import { portfolioDirectProductWhere } from '../products/public-visibility';
+import { portfolioCatalogProductWhere } from '../products/public-visibility';
 import { randomUUID } from 'node:crypto';
 import {
   type WebAnalyticsRequest,
@@ -36,7 +36,7 @@ export class AnalyticsService {
       workIds.length
         ? this.prisma.product.findMany({
             where: {
-              ...portfolioDirectProductWhere,
+              ...portfolioCatalogProductWhere,
               publicId: { in: workIds },
             },
             select: { publicId: true },

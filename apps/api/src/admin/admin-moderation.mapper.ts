@@ -1,3 +1,4 @@
+import { PRODUCT_EDIT_LOCK_LISTING_STATUSES } from '../products/product-write-guard';
 import { mediaDeliverySelect } from '../core/media/media.mapper';
 import { type Prisma } from '@bidplace/database';
 
@@ -153,7 +154,7 @@ export const adminProductListSelect = {
   publishedRevision: { select: revisionTermLabelSelect },
   sellerProfile: { select: { slug: true, fullName: true, status: true } },
   listings: {
-    where: { status: { in: ['SCHEDULED', 'LIVE'] } },
+    where: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
     select: { status: true },
     orderBy: { createdAt: 'desc' },
     take: 1,

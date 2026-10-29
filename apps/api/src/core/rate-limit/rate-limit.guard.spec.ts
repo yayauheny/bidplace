@@ -1,3 +1,4 @@
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { describe, expect, it } from 'vitest';
@@ -21,21 +22,17 @@ describe('RateLimitGuard', () => {
       new RateLimitService({ maxBuckets: 10, cleanupIntervalMs: 1_000 }),
     );
     const createContext = () =>
-      ({
-        getHandler: () => null,
-        getClass: () => null,
-        switchToHttp: () => ({
-          getRequest: () => ({
-            auth: {
-              sub: 'user-1',
-            },
-            params: {
-              auctionId: 'auction-1',
-            },
-            headers: {},
-          }),
-        }),
-      }) satisfies Parameters<RateLimitGuard['canActivate']>[0];
+      new ExecutionContextHost([
+        {
+          auth: {
+            sub: 'user-1',
+          },
+          params: {
+            auctionId: 'auction-1',
+          },
+          headers: {},
+        },
+      ]);
 
     expect(guard.canActivate(createContext())).toBe(true);
     try {
@@ -64,21 +61,17 @@ describe('RateLimitGuard', () => {
       false,
     );
     const createContext = (forwardedFor: string) =>
-      ({
-        getHandler: () => null,
-        getClass: () => null,
-        switchToHttp: () => ({
-          getRequest: () => ({
-            params: {},
-            headers: {
-              'x-forwarded-for': forwardedFor,
-            },
-            socket: {
-              remoteAddress: '10.0.0.1',
-            },
-          }),
-        }),
-      }) satisfies Parameters<RateLimitGuard['canActivate']>[0];
+      new ExecutionContextHost([
+        {
+          params: {},
+          headers: {
+            'x-forwarded-for': forwardedFor,
+          },
+          socket: {
+            remoteAddress: '10.0.0.1',
+          },
+        },
+      ]);
 
     expect(guard.canActivate(createContext('203.0.113.1'))).toBe(true);
     expect(() => guard.canActivate(createContext('198.51.100.2'))).toThrow(
@@ -101,20 +94,16 @@ describe('RateLimitGuard', () => {
       true,
     );
     const createContext = (ip: string) =>
-      ({
-        getHandler: () => null,
-        getClass: () => null,
-        switchToHttp: () => ({
-          getRequest: () => ({
-            ip,
-            params: {},
-            headers: {},
-            socket: {
-              remoteAddress: '10.0.0.1',
-            },
-          }),
-        }),
-      }) satisfies Parameters<RateLimitGuard['canActivate']>[0];
+      new ExecutionContextHost([
+        {
+          ip,
+          params: {},
+          headers: {},
+          socket: {
+            remoteAddress: '10.0.0.1',
+          },
+        },
+      ]);
 
     expect(guard.canActivate(createContext('203.0.113.1'))).toBe(true);
     expect(guard.canActivate(createContext('198.51.100.2'))).toBe(true);
@@ -135,21 +124,17 @@ describe('RateLimitGuard', () => {
       true,
     );
     const createContext = (forwardedFor: string) =>
-      ({
-        getHandler: () => null,
-        getClass: () => null,
-        switchToHttp: () => ({
-          getRequest: () => ({
-            params: {},
-            headers: {
-              'x-forwarded-for': forwardedFor,
-            },
-            socket: {
-              remoteAddress: '10.0.0.1',
-            },
-          }),
-        }),
-      }) satisfies Parameters<RateLimitGuard['canActivate']>[0];
+      new ExecutionContextHost([
+        {
+          params: {},
+          headers: {
+            'x-forwarded-for': forwardedFor,
+          },
+          socket: {
+            remoteAddress: '10.0.0.1',
+          },
+        },
+      ]);
 
     expect(guard.canActivate(createContext('203.0.113.1'))).toBe(true);
     expect(() => guard.canActivate(createContext('198.51.100.2'))).toThrow(

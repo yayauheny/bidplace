@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { readPublishedLegalDocuments, readRegistrationLegalVersion } from './legal-documents';
 
-const fixture = vi.hoisted(() => ({
+const fixture = vi.hoisted<{ available: boolean; body: (path: string) => string }>(() => ({
   available: true,
-  body: (_path: string) => 'Редакция: `portfolio-legal-2026-10-12`\n\nДокумент.',
+  body: () => 'Редакция: `portfolio-legal-2026-10-12`\n\nДокумент.',
 }));
 
 vi.mock('node:fs', () => ({

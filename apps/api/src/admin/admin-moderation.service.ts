@@ -3,13 +3,11 @@ import {
   type ModerationResource,
   type ModerationSummaryRow,
 } from './admin-moderation-summary';
-import {
-  publishedProductData,
-  publishedSellerProfileData,
-} from '../core/media/publication-fields';
+import { publishedSellerProfileData } from '../core/media/publication-fields';
 import { createHash } from 'node:crypto';
 
 import {
+  ApiErrorCode,
   adminHistoryResponseSchema,
   adminModerationSummariesSchema,
   adminProductDetailSchema,
@@ -45,8 +43,18 @@ import {
   selectedPendingProposalCount,
   writeTermLabel,
 } from '../products/work-selection';
-import { assertProductRevisionTransition } from '../products/product-revision-state';
-import { lockProductRowForUpdate } from '../products/product-write-guard';
+import {
+  assertRevisionTransition,
+  publishRevision,
+  transitionProductVisibility,
+} from '../products/product-publication';
+import { AppException } from '../core/errors/app.exception';
+import {
+  assertProductNotInSale,
+  productInSaleWhere,
+  findSellerProductIdsInSale,
+  lockProductRowForUpdate,
+} from '../products/product-write-guard';
 import {
   sellerProfileAuthSelect,
   sellerProfileResponseSelect,
@@ -130,9 +138,7 @@ export class AdminModerationService {
         ...adminSellerListSelect,
         publishedRevision: { select: adminSellerRevisionSelect },
         products: {
-          where: {
-            listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
-          },
+          where: productInSaleWhere,
           select: { id: true },
           take: 1,
         },
@@ -250,9 +256,7 @@ export class AdminModerationService {
             where: {
               id: { in: ids },
               products: {
-                some: {
-                  listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
-                },
+                some: productInSaleWhere,
               },
             },
             select: { id: true },
@@ -473,14 +477,8 @@ export class AdminModerationService {
         }
 
         if (input.status === 'SUSPENDED') {
-          const blockingListing = await tx.listing.findFirst({
-            where: {
-              status: { in: ['SCHEDULED', 'LIVE'] },
-              product: { sellerProfileId: sellerProfile.id },
-            },
-            select: { id: true },
-          });
-          if (blockingListing) {
+          const blockingProducts = await findSellerProductIdsInSale(tx, sellerProfile.id);
+          if (blockingProducts.length > 0) {
             this.logger.warn(
               `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status} because a scheduled or live listing exists`,
             );
@@ -722,10 +720,6 @@ export class AdminModerationService {
             editingRevision: {
               include: { images: { select: { imageId: true } } },
             },
-            listings: {
-              where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-              select: { id: true },
-            },
           },
         });
 
@@ -741,7 +735,7 @@ export class AdminModerationService {
           (product.status === 'ARCHIVED' && input.status === 'APPROVED');
         if (
           this.media?.enabled &&
-          product.status === 'APPROVED' &&
+          ['APPROVED', 'ARCHIVED'].includes(product.status) &&
           input.status === 'APPROVED' &&
           input.target.kind === 'revision' &&
           product.publishedRevisionId === input.target.id
@@ -750,9 +744,10 @@ export class AdminModerationService {
             where: {
               identity: `publish:${input.target.id}:${new Date(input.target.updatedAt).toISOString()}`,
             },
-            select: { productId: true, state: true },
+            select: { productId: true, state: true, kind: true, restore: true },
           });
-          if (delivered?.productId === productId && delivered.state === 'DONE')
+          if (delivered?.productId === productId && delivered.state === 'DONE' &&
+              delivered.kind === 'PUBLISH' && !delivered.restore)
             return product;
         }
         this.assertFreshProductTarget(product, input);
@@ -768,13 +763,13 @@ export class AdminModerationService {
           if (!editingRevision) {
             throw new ConflictException('Moderation target is stale');
           }
-          assertProductRevisionTransition(
-            'admin',
+          assertRevisionTransition(
             editingRevision.status,
             input.status,
           );
 
           if (input.status === 'APPROVED') {
+            await assertProductNotInSale(tx, productId);
             if (
               (await selectedPendingProposalCount(tx, editingRevision.id)) > 0
             ) {
@@ -813,28 +808,37 @@ export class AdminModerationService {
           }
           if (this.media?.enabled)
             await this.media.cancelPublication(tx, { productId });
-          await tx.productRevision.update({
-            where: { id: editingRevision.id },
-            data: { status: input.status, reviewedAt: new Date() },
+          if (input.status === 'APPROVED') {
+            const result = await publishRevision(tx, {
+              productId,
+              revisionId: editingRevision.id,
+              expectedPublishedRevisionId: product.publishedRevisionId,
+              expectedRevisionAt: editingRevision.updatedAt,
+            });
+            if (result === 'stale') {
+              throw new AppException({
+                status: 409,
+                code: ApiErrorCode.PRODUCT_STATE_CONFLICT,
+                message: 'Moderation target is stale',
+              });
+            }
+          } else {
+            await tx.productRevision.update({
+              where: { id: editingRevision.id },
+              data: { status: input.status, reviewedAt: new Date() },
+            });
+            if (product.status === 'PENDING_REVIEW') {
+              await transitionProductVisibility(tx, {
+                productId,
+                expected: ['PENDING_REVIEW'],
+                next: input.status,
+                actor: 'admin',
+              });
+            }
+          }
+          const updated = await tx.product.findUniqueOrThrow({
+            where: { id: productId },
           });
-          const updated =
-            input.status === 'APPROVED'
-              ? await tx.product.update({
-                  where: { id: productId },
-                  data: {
-                    ...publishedProductData(editingRevision),
-                    status:
-                      product.status === 'ARCHIVED' ? 'ARCHIVED' : 'APPROVED',
-                    publishedRevisionId: editingRevision.id,
-                    publishedAt: product.publishedAt ?? new Date(),
-                  },
-                })
-              : product.status === 'PENDING_REVIEW'
-                ? await tx.product.update({
-                    where: { id: productId },
-                    data: { status: input.status },
-                  })
-                : product;
 
           await tx.auditEvent.create({
             data: {
@@ -863,9 +867,9 @@ export class AdminModerationService {
           return updated;
         }
 
-        if (this.media?.enabled && input.status === 'ARCHIVED')
-          await this.media.enqueueRevoke(tx, { productId });
-        assertProductRevisionTransition('admin', product.status, input.status);
+        if (input.status === 'ARCHIVED') {
+          if (this.media?.enabled) await this.media.enqueueRevoke(tx, { productId });
+        }
         if (
           input.status === 'APPROVED' &&
           this.media?.enabled &&
@@ -886,9 +890,14 @@ export class AdminModerationService {
           deliveryId = operation.id;
           return product;
         }
-        const updated = await tx.product.update({
+        await transitionProductVisibility(tx, {
+          productId,
+          expected: [product.status],
+          next: input.status,
+          actor: 'admin',
+        });
+        const updated = await tx.product.findUniqueOrThrow({
           where: { id: productId },
-          data: { status: input.status },
         });
 
         await tx.auditEvent.create({
@@ -1234,9 +1243,11 @@ export class AdminModerationService {
           data: { status: 'CHANGES_REQUESTED', reviewedAt: new Date() },
         });
         if (revision.product.status === 'PENDING_REVIEW') {
-          await tx.product.update({
-            where: { id: revision.productId },
-            data: { status: 'CHANGES_REQUESTED' },
+          await transitionProductVisibility(tx, {
+            productId: revision.productId,
+            expected: ['PENDING_REVIEW'],
+            next: 'CHANGES_REQUESTED',
+            actor: 'admin',
           });
         }
         if (this.media?.enabled) {

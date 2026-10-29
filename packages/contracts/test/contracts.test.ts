@@ -41,6 +41,19 @@ const registrationLegal = {
 };
 
 describe('shared contracts', () => {
+  it.each(['PRODUCT_STATE_CONFLICT', 'PRODUCT_IN_SALE'])(
+    'accepts public %s errors',
+    (code) => {
+      expect(
+        apiErrorResponseSchema.parse({
+          status: 409,
+          code,
+          message: 'Product conflict',
+        }),
+      ).toMatchObject({ code, status: 409 });
+    },
+  );
+
   it.each([2, 3, 20, 21, 121])(
     'validates %i-character new nicknames at every write boundary',
     (length) => {

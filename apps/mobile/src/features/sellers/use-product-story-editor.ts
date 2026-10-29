@@ -5,6 +5,7 @@ import { STORY_LIMITS, storyWriteRequestSchema } from '@bidplace/contracts';
 
 import type { ApiClient } from '@bidplace/api-client';
 
+import { apiErrorMessage } from '../../lib/api-error-messages';
 import {
   DRAFT_STORAGE_ERROR_MESSAGE,
   clearFormDraft,
@@ -637,13 +638,14 @@ export function useProductStoryEditor({
         clearLocalDraft();
         onSaved?.(result);
         return true;
-      } catch {
+      } catch (error) {
         if (current.current.identity === identity) {
           replace({
             ...current.current,
             saving: false,
-          uploading: false,
+            uploading: false,
             error:
+              apiErrorMessage(error) ??
               'История не сохранена. При конфликте с другой вкладкой сохраните текст и обновите страницу.',
           });
         }

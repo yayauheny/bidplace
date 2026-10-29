@@ -46,17 +46,19 @@ async function createCabinetWork(input: CabinetWorkInput) {
         input.parentStatus === 'APPROVED' || input.parentStatus === 'ARCHIVED'
           ? input.parentUpdatedAt
           : null,
-      images: input.hasPublishedImage
+      ...(input.hasPublishedImage
         ? {
-            create: {
-              position: 0,
-              mimeType: 'image/png',
-              byteLength: 4,
-              data: Buffer.from([1, 2, 3, 4]),
-              checksum: '1'.repeat(64),
+            images: {
+              create: {
+                position: 0,
+                mimeType: 'image/png',
+                byteLength: 4,
+                data: Buffer.from([1, 2, 3, 4]),
+                checksum: '1'.repeat(64),
+              },
             },
           }
-        : undefined,
+        : {}),
     },
     include: { images: { select: { id: true } } },
   });
@@ -70,9 +72,9 @@ async function createCabinetWork(input: CabinetWorkInput) {
             categoryId: input.categoryId,
             title: input.parentTitle,
             story: 'Published cabinet fixture story.',
-            images: product.images[0]
-              ? { create: { imageId: product.images[0].id, position: 0 } }
-              : undefined,
+            ...(product.images[0]
+              ? { images: { create: { imageId: product.images[0].id, position: 0 } } }
+              : {}),
           },
         })
       : null;
@@ -94,7 +96,7 @@ async function createCabinetWork(input: CabinetWorkInput) {
     where: { id: product.id },
     data: {
       editingRevisionId: editingRevision.id,
-      publishedRevisionId: publishedRevision?.id,
+      ...(publishedRevision ? { publishedRevisionId: publishedRevision.id } : {}),
       updatedAt: input.parentUpdatedAt,
     },
     select: { id: true, publicId: true },

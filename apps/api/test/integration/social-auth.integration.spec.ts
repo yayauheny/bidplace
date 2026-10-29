@@ -1,3 +1,16 @@
+import {
+  providerStartResponseSchema,
+  onboardingResultSchema,
+  apiErrorResponseSchema,
+  meResponseSchema,
+  emailLoginRequestResponseSchema,
+  emailLoginStateSchema,
+  onboardingStateSchema,
+  authConnectionsSchema,
+  ApiErrorCode,
+  emailOtpRequestResponseSchema,
+  emailVerificationStateSchema,
+} from '@bidplace/contracts';
 import { spawn } from 'node:child_process';
 import { createServer, request as proxyRequest } from 'node:http';
 import { resolve as resolvePath } from 'node:path';
@@ -25,12 +38,20 @@ import { idempotencyKey, turnstileToken } from './abuse-request';
 import { OidcProvidersService } from '../../src/auth/oidc-providers.service';
 import { SessionService } from '../../src/auth/session.service';
 import { ServiceUnavailableException } from '@nestjs/common';
-import { ApiErrorCode } from '@bidplace/contracts';
+
 import { MailTransport } from '../../src/core/mail';
 import { PrismaService } from '../../src/core/database';
 import { MAIL_SPEND_STATUSES } from '../../src/auth-abuse/auth-abuse.policy';
 import { EmailProofService } from '../../src/auth/email-proof.service';
 import { AuthAbuseService } from '../../src/auth-abuse/auth-abuse.service';
+
+const optionalErrorSchema = apiErrorResponseSchema.pick({ code: true }).partial().passthrough();
+const deliverySchema = emailOtpRequestResponseSchema.pick({ delivery: true }).passthrough();
+const proofStateSchema = emailVerificationStateSchema.pick({
+  sendStatus: true,
+  codeExpiresAt: true,
+  resendAvailableAt: true,
+}).passthrough();
 
 const legal = {
   agreement: { confirmed: true },
@@ -107,7 +128,7 @@ async function start(kind = 'google', intent = 'login', current = client) {
     returnPath: '/account',
   });
   expect(response.status).toBe(201);
-  return (await response.json()).url as string;
+  return (providerStartResponseSchema.parse(await response.json())).url as string;
 }
 async function callback(url: URL, current = client) {
   return current.get(url.pathname.replace('/api', '') + url.search, {
@@ -125,6 +146,9 @@ async function sendVerification() {
     turnstileToken: turnstileToken('email_verification'),
   });
 }
+function authenticatedOnboarding(body: unknown) {
+  return onboardingResultSchema.options[1].parse(body);
+}
 async function signup(kind: 'google' | 'telegram', email: string) {
   const url = provider.authorize(await start(kind), {
     sub: kind + '-' + randomUUID(),
@@ -137,7 +161,8 @@ async function signup(kind: 'google' | 'telegram', email: string) {
     legal,
   });
   expect(result.status).toBe(201);
-  return { url, result, body: await result.json() };
+  const body = onboardingResultSchema.parse(await result.json());
+  return { url, result, body };
 }
 
 describe('OIDC, email login and explicit account linking', () => {
@@ -173,7 +198,7 @@ describe('OIDC, email login and explicit account linking', () => {
       send.mockRejectedValueOnce(smtpRejection());
       const rejected = await client.post(proof.path + '/request', input);
       expect(rejected.status).toBe(503);
-      expect((await rejected.json()).code).toBe(ApiErrorCode.MAIL_REJECTED);
+      expect((apiErrorResponseSchema.parse(await rejected.json())).code).toBe(ApiErrorCode.MAIL_REJECTED);
       const failedFlow = await proof.flow();
       expect(failedFlow).toMatchObject({ codeHash: null, codeExpiresAt: null, codeSentAt: null, codeSends: 1, codeRequestKey: input.idempotencyKey });
       if (intent === 'onboarding') {
@@ -183,7 +208,7 @@ describe('OIDC, email login and explicit account linking', () => {
       }
       const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
       expect(replay.status).toBe(503);
-      expect((await replay.json()).code).toBe(ApiErrorCode.MAIL_REJECTED);
+      expect((apiErrorResponseSchema.parse(await replay.json())).code).toBe(ApiErrorCode.MAIL_REJECTED);
       expect((await proof.flow()).codeSends).toBe(1);
       expect(await proof.operations()).toHaveLength(1);
       expect(mail).toHaveLength(0);
@@ -229,7 +254,7 @@ describe('OIDC, email login and explicit account linking', () => {
     for (const key of keys) {
       const replay = await client.post(proof.path + '/request', proof.input(key, 'invalid-proof'));
       expect(replay.status).toBe(503);
-      expect((await replay.json()).code).toBe(ApiErrorCode.MAIL_REJECTED);
+      expect((apiErrorResponseSchema.parse(await replay.json())).code).toBe(ApiErrorCode.MAIL_REJECTED);
     }
     expect((await proof.flow()).codeSends).toBe(3);
     expect(mail).toHaveLength(0);
@@ -255,7 +280,7 @@ describe('OIDC, email login and explicit account linking', () => {
         expect((await proof.operations())[0]?.status).toBe('reserved');
         const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
         expect(replay.status).toBe(201);
-        expect((await replay.json()).delivery).toBe('unknown');
+        expect((deliverySchema.parse(await replay.json())).delivery).toBe('unknown');
         expect((await client.post(proof.path + '/request', proof.input())).status).toBe(201);
         expect((await proof.flow()).codeSends).toBe(1);
         expect(await proof.operations()).toHaveLength(1);
@@ -271,7 +296,7 @@ describe('OIDC, email login and explicit account linking', () => {
         expect(await proof.flow()).toEqual(newer);
         const old = (await proof.operations()).find((operation) => operation.idempotencyKey === createHash('sha256').update(`${newer.id}\0${input.idempotencyKey}`).digest('hex'));
         expect(old?.status).toBe(outcome);
-        const state = await (await client.get(proof.path + '/state')).json();
+        const state = proofStateSchema.parse(await (await client.get(proof.path + '/state')).json());
         expect(state.sendStatus).toBe('accepted');
         expect(state.resendAvailableAt).not.toBeNull();
         expect((await client.post(proof.path + '/verify', { code: code(), idempotencyKey: idempotencyKey() })).status).toBe(201);
@@ -334,14 +359,14 @@ describe('OIDC, email login and explicit account linking', () => {
       send.mockRejectedValueOnce(smtpRejection());
       const response = await client.post(proof.path + '/request', input);
       expect(response.status).toBeGreaterThanOrEqual(500);
-      expect((await response.json()).code).not.toBe(ApiErrorCode.MAIL_REJECTED);
+      expect((optionalErrorSchema.parse(await response.json())).code).not.toBe(ApiErrorCode.MAIL_REJECTED);
       expect((await proof.operations())[0]?.status).toBe('reserved');
       const flow = await proof.flow();
       expect(flow.codeHash).not.toBeNull();
       expect(flow.codeSentAt).not.toBeNull();
       const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
       expect(replay.status).toBe(201);
-      expect((await replay.json()).delivery).toBe('unknown');
+      expect((deliverySchema.parse(await replay.json())).delivery).toBe('unknown');
       expect(await proof.operations()).toHaveLength(1);
       expect((await proof.flow()).codeSends).toBe(1);
       expect(mail).toHaveLength(0);
@@ -378,7 +403,7 @@ describe('OIDC, email login and explicit account linking', () => {
       smtpRelease.resolve();
       expect((await pending).status).toBe(503);
       stateRelease.resolve();
-      const snapshot = await (await pendingState).json();
+      const snapshot = proofStateSchema.parse(await (await pendingState).json());
       expect(snapshot.sendStatus).toBe('unknown');
       expect(snapshot.codeExpiresAt).not.toBeNull();
       expect(snapshot.resendAvailableAt).not.toBeNull();
@@ -417,12 +442,12 @@ describe('OIDC, email login and explicit account linking', () => {
         release.resolve();
         const response = await pending;
         expect(response.status).toBeGreaterThanOrEqual(500);
-        expect((await response.json()).code).not.toBe(ApiErrorCode.MAIL_REJECTED);
+        expect((optionalErrorSchema.parse(await response.json())).code).not.toBe(ApiErrorCode.MAIL_REJECTED);
         expect((await proof.operations())[0]?.status).toBe('rejected');
         expect((await proof.flow()).codeSentAt).toBeNull();
         const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
         expect(replay.status).toBe(503);
-        expect((await replay.json()).code).toBe(ApiErrorCode.MAIL_REJECTED);
+        expect((apiErrorResponseSchema.parse(await replay.json())).code).toBe(ApiErrorCode.MAIL_REJECTED);
         expect(await proof.operations()).toHaveLength(1);
         expect(mail).toHaveLength(0);
       } finally {
@@ -443,11 +468,11 @@ describe('OIDC, email login and explicit account linking', () => {
     });
     const sent = await client.post(proof.path + '/request', input);
     expect(sent.status).toBe(201);
-    expect((await sent.json()).delivery).toBe(outcome);
+    expect((deliverySchema.parse(await sent.json())).delivery).toBe(outcome);
     const flow = await proof.flow();
     const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
     expect(replay.status).toBe(201);
-    expect((await replay.json()).delivery).toBe(outcome);
+    expect((deliverySchema.parse(await replay.json())).delivery).toBe(outcome);
     expect((await client.post(proof.path + '/request', proof.input())).status).toBe(201);
     expect(await proof.flow()).toEqual(flow);
     expect(await proof.operations()).toHaveLength(1);
@@ -464,11 +489,11 @@ describe('OIDC, email login and explicit account linking', () => {
     try {
       const response = await client.post(proof.path + '/request', input);
       expect(response.status).toBeGreaterThanOrEqual(500);
-      expect((await response.json()).code).not.toBe(ApiErrorCode.MAIL_REJECTED);
+      expect((optionalErrorSchema.parse(await response.json())).code).not.toBe(ApiErrorCode.MAIL_REJECTED);
       expect((await proof.operations())[0]?.status).toBe('reserved');
       const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
       expect(replay.status).toBe(201);
-      expect((await replay.json()).delivery).toBe('unknown');
+      expect((deliverySchema.parse(await replay.json())).delivery).toBe('unknown');
       expect(mail).toHaveLength(1);
       expect((await client.post(proof.path + '/verify', { code: code(), idempotencyKey: idempotencyKey() })).status).toBe(201);
     } finally {
@@ -509,7 +534,7 @@ describe('OIDC, email login and explicit account linking', () => {
       idempotencyKey: idempotencyKey(),
     });
     expect(verified.status).toBe(201);
-    expect((await verified.json()).next).toBe('authenticated');
+    expect((onboardingResultSchema.parse(await verified.json())).next).toBe('authenticated');
     expect((await client.get('/auth/me')).status).toBe(200);
   });
 
@@ -526,7 +551,7 @@ describe('OIDC, email login and explicit account linking', () => {
     expect((await callback(callbackUrl)).headers.get('location')).toBe('/auth/complete');
     expect((await sendVerification()).status).toBe(201);
     expect((await client.post('/auth/onboarding/email/verify', { code: code(), idempotencyKey: idempotencyKey() })).status).toBe(201);
-    expect((await (await client.get('/auth/me')).json()).user.id).toBe(user.id);
+    expect((meResponseSchema.parse(await (await client.get('/auth/me')).json())).user.id).toBe(user.id);
     expect(await database.prisma.user.count({ where: { email } })).toBe(1);
     expect((await database.prisma.externalIdentity.findFirstOrThrow({ where: { userId: user.id } })).activatedAt).not.toBeNull();
   });
@@ -606,7 +631,7 @@ describe('OIDC, email login and explicit account linking', () => {
       idempotencyKey: key,
     });
     expect(result.status).toBe(201);
-    expect((await result.json()).user.id).toBe(body.user.id);
+    expect((meResponseSchema.parse(await result.json())).user.id).toBe(authenticatedOnboarding(body).user.id);
     expect(
       (
         await client.post('/auth/email-login/verify', {
@@ -626,7 +651,7 @@ describe('OIDC, email login and explicit account linking', () => {
       idempotencyKey: idempotencyKey(),
     });
     expect(result.status).toBe(201);
-    expect(Object.keys(await result.json()).sort()).toEqual([
+    expect(Object.keys(emailLoginRequestResponseSchema.parse(await result.json())).sort()).toEqual([
       'ok',
       'resendAvailableAt',
       'serverNow',
@@ -654,7 +679,7 @@ describe('OIDC, email login and explicit account linking', () => {
         keys.push(key);
         const result = await client.post('/auth/email-login/verify', { code: wrongCode, idempotencyKey: key });
         expect(result.status).toBe(403);
-        expect((await result.json()).code).toBe(ApiErrorCode.EMAIL_LOGIN_REJECTED);
+        expect((apiErrorResponseSchema.parse(await result.json())).code).toBe(ApiErrorCode.EMAIL_LOGIN_REJECTED);
       }
       const operations = await database.prisma.authAbuseOperation.findMany({
         where: { purpose: 'email_login_verify', idempotencyKey: { in: keys } },
@@ -811,7 +836,7 @@ describe('OIDC, email login and explicit account linking', () => {
         idempotencyKey: idempotencyKey(),
       });
       expect(rejected.status).toBe(403);
-      const { requestId, ...body } = await rejected.json();
+      const { requestId, ...body } = apiErrorResponseSchema.parse(await rejected.json());
       expect(requestId).toEqual(expect.any(String));
       expect(body).toEqual({
         status: 403,
@@ -845,7 +870,7 @@ describe('OIDC, email login and explicit account linking', () => {
         };
         const original = await client.post('/auth/email-login/request', input);
         expect(original.status).toBe(201);
-        const initial = await original.json();
+        const initial = emailLoginRequestResponseSchema.parse(await original.json());
         if (user)
           await database.prisma.user.update({
             where: { id: user.id },
@@ -862,10 +887,10 @@ describe('OIDC, email login and explicit account linking', () => {
               },
         );
         expect(response.status).toBe(201);
-        const again = await response.json();
+        const again = emailLoginRequestResponseSchema.parse(await response.json());
         expect(again.resendAvailableAt).toBe(initial.resendAvailableAt);
         expect(
-          (await (await client.get('/auth/email-login/state')).json())
+          (emailLoginStateSchema.parse(await (await client.get('/auth/email-login/state')).json()))
             .resendAvailableAt,
         ).toBe(initial.resendAvailableAt);
         expect(
@@ -934,7 +959,7 @@ describe('OIDC, email login and explicit account linking', () => {
       idempotencyKey: idempotencyKey(),
     });
     expect(signedIn.status).toBe(201);
-    expect((await signedIn.json()).user.id).toBe(user.id);
+    expect((meResponseSchema.parse(await signedIn.json())).user.id).toBe(user.id);
   });
 
   it.each(['cancelled', 'exchange', 'expired', 'collision'] as const)(
@@ -944,7 +969,7 @@ describe('OIDC, email login and explicit account linking', () => {
         intent: 'login',
         returnPath: '/profile?edit=1',
       });
-      const authorization = new URL((await response.json()).url);
+      const authorization = new URL((providerStartResponseSchema.parse(await response.json())).url);
       const url = provider.authorize(
         authorization.href,
         failure === 'collision'
@@ -999,11 +1024,11 @@ describe('OIDC, email login and explicit account linking', () => {
       });
       expect(
         (
-          await callback(provider.authorize((await retry.json()).url))
+          await callback(provider.authorize((providerStartResponseSchema.parse(await retry.json())).url))
         ).headers.get('location'),
       ).toBe('/auth/complete');
       expect(
-        (await (await client.get('/auth/onboarding')).json()).returnPath,
+        (onboardingStateSchema.parse(await (await client.get('/auth/onboarding')).json())).returnPath,
       ).toBe('/profile?edit=1');
     },
   );
@@ -1025,7 +1050,7 @@ describe('OIDC, email login and explicit account linking', () => {
       legal,
     });
     expect(denied.status).toBe(400);
-    expect((await denied.json()).code).toBe(ApiErrorCode.DISPOSABLE_EMAIL);
+    expect((apiErrorResponseSchema.parse(await denied.json())).code).toBe(ApiErrorCode.DISPOSABLE_EMAIL);
     expect((await client.get('/auth/me')).status).toBe(401);
   });
 
@@ -1106,13 +1131,13 @@ describe('OIDC, email login and explicit account linking', () => {
   it('requires explicit linking for an existing email and never transfers another identity', async () => {
     const email = `link-${randomUUID()}@gmail.com`;
     const { body } = await signup('google', email);
-    const owner = body.user.id;
+    const owner = authenticatedOnboarding(body).user.id;
     const linkUrl = provider.authorize(await start('telegram', 'link'), {
       sub: 'telegram-link-' + randomUUID(),
     });
     expect((await callback(linkUrl)).headers.get('location')).toBe('/account');
     expect(
-      (await (await client.get('/auth/connections')).json()).connections,
+      (authConnectionsSchema.parse(await (await client.get('/auth/connections')).json())).connections,
     ).toEqual(
       expect.arrayContaining([
         { provider: 'google' },
@@ -1162,15 +1187,15 @@ describe('OIDC, email login and explicit account linking', () => {
     const email = `return-${randomUUID()}@gmail.com`;
     const { body } = await signup('google', email);
     const identity = await database.prisma.externalIdentity.findFirstOrThrow({
-      where: { userId: body.user.id },
+      where: { userId: authenticatedOnboarding(body).user.id },
     });
     await client.post('/auth/logout');
     const response = await callback(
       provider.authorize(await start(), { sub: identity.subject }),
     );
     expect(response.headers.get('location')).toBe('/account');
-    expect((await (await client.get('/auth/me')).json()).user.id).toBe(
-      body.user.id,
+    expect((meResponseSchema.parse(await (await client.get('/auth/me')).json())).user.id).toBe(
+      authenticatedOnboarding(body).user.id,
     );
   });
 
@@ -1184,7 +1209,7 @@ describe('OIDC, email login and explicit account linking', () => {
     );
     expect(
       await database.prisma.externalIdentity.count({
-        where: { userId: body.user.id, provider: 'telegram' },
+        where: { userId: authenticatedOnboarding(body).user.id, provider: 'telegram' },
       }),
     ).toBe(0);
   });
@@ -1260,7 +1285,7 @@ describe('OIDC, email login and explicit account linking', () => {
       slug: 'edit-' + randomUUID().slice(0, 8),
       legal,
     });
-    expect((await response.json()).next).toBe('email');
+    expect((onboardingResultSchema.parse(await response.json())).next).toBe('email');
     expect((await client.get('/auth/me')).status).toBe(401);
   });
 
@@ -1275,7 +1300,7 @@ describe('OIDC, email login and explicit account linking', () => {
     });
     const value = code();
     await database.prisma.user.update({
-      where: { id: body.user.id },
+      where: { id: authenticatedOnboarding(body).user.id },
       data: { sessionVersion: { increment: 1 } },
     });
     expect(
@@ -1310,7 +1335,7 @@ describe('OIDC, email login and explicit account linking', () => {
     expect((await client.get('/auth/me')).status).toBe(401);
     const response = await client.post('/auth/email-login/verify', input);
     expect(response.status).toBe(201);
-    expect((await response.json()).user.id).toBe(body.user.id);
+    expect((meResponseSchema.parse(await response.json())).user.id).toBe(authenticatedOnboarding(body).user.id);
     expect(await database.prisma.user.count({ where: { email } })).toBe(1);
     save.mockRestore();
   });
@@ -1378,10 +1403,10 @@ describe('OIDC, email login and explicit account linking', () => {
     );
     expect(
       await database.prisma.externalIdentity.count({
-        where: { userId: body.user.id, provider: 'telegram' },
+        where: { userId: authenticatedOnboarding(body).user.id, provider: 'telegram' },
       }),
     ).toBe(0);
-    expect((await (await client.get('/auth/me')).json()).user.id).toBe(
+    expect((meResponseSchema.parse(await (await client.get('/auth/me')).json())).user.id).toBe(
       second.id,
     );
     spy.mockRestore();
@@ -1398,7 +1423,7 @@ describe('OIDC, email login and explicit account linking', () => {
     });
     const input = { code: code(), idempotencyKey: idempotencyKey() };
     await database.prisma.emailVerificationCode.updateMany({
-      where: { userId: body.user.id, purpose: 'email_login' },
+      where: { userId: authenticatedOnboarding(body).user.id, purpose: 'email_login' },
       data: { expiresAt: new Date(Date.now() - 1000) },
     });
     expect((await client.post('/auth/email-login/verify', input)).status).toBe(
@@ -1421,11 +1446,11 @@ describe('OIDC, email login and explicit account linking', () => {
         idempotencyKey: idempotencyKey(),
       };
       const response = await client.post('/auth/email-login/request', input);
-      const state = await (await client.get('/auth/email-login/state')).json();
+      const state = emailLoginStateSchema.parse(await (await client.get('/auth/email-login/state')).json());
       expect(response.status).toBe(201);
       expect(state.email).toBe(address);
       expect(
-        Date.parse(state.resendAvailableAt) - Date.parse(state.serverNow),
+        Date.parse(state.resendAvailableAt!) - Date.parse(state.serverNow),
       ).toBeGreaterThan(55_000);
       const again = await client.post('/auth/email-login/request', {
         ...input,
@@ -1433,7 +1458,7 @@ describe('OIDC, email login and explicit account linking', () => {
         turnstileToken: turnstileToken('email_login'),
       });
       expect(again.status).toBe(201);
-      expect((await again.json()).resendAvailableAt).toBe(
+      expect((emailLoginRequestResponseSchema.parse(await again.json())).resendAvailableAt).toBe(
         state.resendAvailableAt,
       );
     }
@@ -1542,7 +1567,7 @@ describe('OIDC, email login and explicit account linking', () => {
       201,
     );
     await database.prisma.user.update({
-      where: { id: body.user.id },
+      where: { id: authenticatedOnboarding(body).user.id },
       data: { sessionVersion: { increment: 1 }, status: 'banned' },
     });
     const revoked = await client.post('/auth/email-login/request', {
@@ -1551,7 +1576,7 @@ describe('OIDC, email login and explicit account linking', () => {
       turnstileToken: turnstileToken('email_login'),
     });
     expect(revoked.status).toBe(201);
-    expect(Object.keys(await revoked.json()).sort()).toEqual([
+    expect(Object.keys(emailLoginRequestResponseSchema.parse(await revoked.json())).sort()).toEqual([
       'ok',
       'resendAvailableAt',
       'serverNow',
@@ -1613,18 +1638,18 @@ describe('OIDC, email login and explicit account linking', () => {
         password: 'synthetic-password',
       });
       expect(login.status).toBe(201);
-      expect((await (await client.get('/auth/me')).json()).user.id).toBe(
+      expect((meResponseSchema.parse(await (await client.get('/auth/me')).json())).user.id).toBe(
         second.id,
       );
       release();
       const late = await pending;
       expect(late.status).toBe(401);
-      const after = await (await client.get('/auth/me')).json();
+      const after = meResponseSchema.parse(await (await client.get('/auth/me')).json());
       expect(after.user.id).toBe(second.id);
       expect(
         await database.prisma.externalIdentity.count({
           where: {
-            userId: first.user.id,
+            userId: authenticatedOnboarding(first).user.id,
             provider: 'telegram',
             activatedAt: { not: null },
           },
@@ -1685,7 +1710,7 @@ describe('OIDC, email login and explicit account linking', () => {
       ).toBe(201);
       release();
       expect((await pending).status).toBe(401);
-      expect((await (await client.get('/auth/me')).json()).user.id).toBe(user.id);
+      expect((meResponseSchema.parse(await (await client.get('/auth/me')).json())).user.id).toBe(user.id);
     } finally {
       release();
       spy.mockRestore();

@@ -3,6 +3,55 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed (engineering owner)
 
+## 2026-10-29 — PR73 recovery and publication review
+
+**Implemented locally / live Needs verification.** Exhausted FAILED REVOKE/CLEANUP
+keeps the media job failed and success heartbeat unchanged without unbounded retry.
+Work approval checks the sale guard before enqueue and again in the locked
+publication owner before writes; archive shares that owner. Product row-lock
+contention alone maps to 409 after 4s, preserving all other database errors and the
+previous transaction-local timeout. Suspended profile restore uses the existing
+pre-PUT PUBLIC-only journal and exact source id/generation/revision binding;
+only its own FAILED restore is exempt from deletion blocking while SUSPENDED.
+PRIVATE, running leases and legitimate shared public references remain protected.
+Hidden approval retry accepts only its exact completed current publication and
+adds no audit or PUBLIC write. Owner/admin image reads use private cache policy
+without a catalog query. Worker scheduled failures expose a fixed error message,
+without upstream body/job names/transport details; release hold is a deliberate
+no-wake skip. Regression evidence: media lifecycle, author-hide-listing, moderation,
+internal-tick, work-media-http, atomicity and cabinet integration owners (97 cases),
+API unit/typecheck/lint/build and Cloudflare checks pass locally.
+
+Limits retained: compensation may briefly expose PUBLIC bytes before delete/purge;
+there is no R2 provider fencing against a live process paused beyond its lease.
+Old FAILED restores without a journal require manual retry. Live R2/CDN/Cron and
+production timing remain unverified. Draft CI runs only its fast subset; the 30s
+heartbeat keeps the database active while the Container is awake. No remote
+verification, release transition or deployment was performed.
+
+## 2026-10-29 — Private scheduler boundary (W2)
+
+**Implemented locally; live Needs verification.** Worker routing rejects public
+`/api/internal/*` before DO forwarding/cache and strips `X-Internal-Tick` from
+ordinary forwarded traffic. Only scheduled forwarding directly addresses the
+private DO, with that header; release hold blocks it. Nest's `InternalTickGuard`
+returns 404 for absent/wrong configuration or header and compares equal-length
+buffers with `timingSafeEqual`. `INTERNAL_TICK_SECRET` is required on the
+production security profile and must have at least 32 characters. No value is
+returned or logged. Only exact POST `/api/internal/tick` bypasses CSRF; it uses
+no session/rate-limit guard and still requires the private header.
+
+`TickService` keeps single-flight exclusion until I/O settles, isolates job
+failures and logs registered names only. It persists success in
+`system_heartbeats(name, at)` only after a complete failure-free run within the
+cooperative budget. Media recovery keeps operation/object leases, publication
+CAS and active-author checks; expired RUNNING publications recover, while
+ordinary PENDING/FAILED publication retries remain manual. Persisted delivery
+errors prevent successful heartbeat. An individual in-flight I/O can overrun
+the 20-second budget; this is not hard cancellation. Apply migration
+`20261029010000_system_heartbeats` before starting the runtime. W3 health UI and
+notification outbox remain planned. [Rollout and live checks](../ops/CLOUDFLARE-DEPLOYMENT.md).
+
 ## 2026-10-05 — Cloudflare deployment boundary (Partial)
 
 The deployment Worker preserves Nest session/role/ownership checks. It
@@ -90,7 +139,8 @@ Provider configuration and external acceptance are owned by [Web auth rollout](.
 | Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
 | Upload rate limit | Implemented | `@RateLimit` 20/min per user on gallery upload POSTs; 10/min on creation-step uploads, author achievement upload/delete, and profile photo create/update. Author, achievement, and work decode share one process-local admission of two operations. |
 | Achievement / revision photo visibility | Implemented | Public achievement GET only from the published revision; owner/admin can read draft; anonymous/stranger draft reads 404. Owner application photo is private `no-store`. |
-| Active author visibility | Implemented | Public Work/Author queries, catalogs and binary media require active author user in addition to existing APPROVED/published-revision guards. Admin private photo reads use `private, no-store`; `work-media-http.integration.spec.ts` + `sellers.controller.spec.ts`. |
+| Work publication/sale integrity (W1) | Implemented locally | `product-publication.ts` is the only Product status/published-pointer writer, under transaction row locks and checked CAS. `product-write-guard.ts` owns active-sale rejection for author/image/admin mutation and seller suspension. Hidden revision approval preserves ARCHIVED and performs no PUBLIC PUT; unwritten PUBLIC manifests are not marked READY. Product PUBLIC delivery shares hide’s row lock with lease/generation/status checks and a 60s I/O abort deadline before its 65s transaction timeout. Hide preserves nonrestore approval intent while revoking public copies. PENDING/FAILED nonrestore approval does not block PUBLIC revoke for ARCHIVED Work; PRIVATE and RUNNING protections remain. Work restore durably journals PUBLIC-only compensation before delivery, guarded by its current lease/token/generation. Exact failed-restore compensation can revoke ARCHIVED bytes while retaining PRIVATE sources and legitimate public references; retries rearm cleanup. Partial delivery/restart/journal-outage/shared-reference regressions pass locally. Compensation permits brief exposure before deletion/purge; strict privacy atomicity and live R2/CDN remain unverified. Real DB/transport regressions: `media-lifecycle.integration.spec.ts`, `author-hide-listing.integration.spec.ts`, `product-write-atomicity.integration.spec.ts`. |
+| Active author visibility | Implemented | Public Work/Author queries, catalogs and binary media require active author user in addition to existing APPROVED/published-revision guards. Work image GET reuses `portfolioCatalogProductWhere` plus published-image membership, including publication-date/content eligibility. Admin private photo reads use `private, no-store`; `work-media-http.integration.spec.ts` + `sellers.controller.spec.ts`. |
 | Catalog hydration visibility | Implemented | Catalog hydration repeats APPROVED/active/published checks after selecting IDs. Controlled PostgreSQL hide/suspend/ban interleavings in `portfolio-filters.integration.spec.ts` exclude revoked records. Counts retain the first-query snapshot. |
 | Work upload replay | Implemented | Single-file HTTP key is scoped by owner/purpose/Work. A new upload over gallery count or into an already full byte budget is rejected before Sharp/R2; the locked attach transaction checks actual normalized SOURCE bytes. Large gallery input is single-file and requires an idempotency key; legacy batches retain 5 MiB per file. Replay of bytes already attached to the current revision does not create another image. Checksum conflict and earlier-revision attachment reject with 409 before the capacity short-circuit. `work-media-http.integration.spec.ts`, `upload-safety.integration.spec.ts`. Legacy ImageStore replay persists on ProductImage and is rechecked under the product lock; public fallback bytes strip metadata (`product-write-atomicity.integration.spec.ts`). |
 | Canonical storage | Partial | Private SOURCE and metadata-stripped public WebP derivatives are implemented in `core/media` (new SOURCE is a normalized master; original input identity is retained separately); existing ImageStore serves legacy records until verified cutover. Live R2/CDN/restore acceptance remains pending. Architecture owner: `10-CODE-ARCHITECTURE.md`. |
@@ -241,7 +291,7 @@ Env parsing rejects inconsistent pairs before bootstrap:
 | `development` or `test` | `production` | Rejected: `APP_ENV=production requires NODE_ENV=production` |
 | `production` | `local` (including default) | Rejected: `NODE_ENV=production requires APP_ENV=production or APP_ENV=staging` |
 
-Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `SESSION_SECRET` / `OTP_HASH_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
+Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `SESSION_SECRET` / `OTP_HASH_SECRET` / `INTERNAL_TICK_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
 
 Destructive demo seed remains `NODE_ENV=development|test`, `APP_ENV=local`, and `ALLOW_DESTRUCTIVE_DEMO_SEED=true` only.
 

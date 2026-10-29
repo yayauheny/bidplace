@@ -27,13 +27,18 @@ export function mediaChecksum(bytes: Uint8Array) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 export abstract class MediaObjectStore {
-  abstract get(tier: MediaTier, key: string): Promise<StoredMedia | null>;
+  abstract get(
+    tier: MediaTier,
+    key: string,
+    signal?: AbortSignal,
+  ): Promise<StoredMedia | null>;
   abstract head(tier: MediaTier, key: string): Promise<MediaIdentity | null>;
   abstract put(
     tier: MediaTier,
     key: string,
     value: StoredMedia,
     identity: MediaIdentity,
+    signal?: AbortSignal,
   ): Promise<void>;
   abstract delete(tier: MediaTier, key: string): Promise<void>;
 }
@@ -79,17 +84,35 @@ export class S3MediaObjectStore extends MediaObjectStore {
       ? this.env.S3_BUCKET!
       : this.env.S3_PUBLIC_BUCKET!;
   }
-  async get(tier: MediaTier, key: string): Promise<StoredMedia | null> {
+  async get(
+    tier: MediaTier,
+    key: string,
+    signal?: AbortSignal,
+  ): Promise<StoredMedia | null> {
+    const deadline = signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(30_000)])
+      : AbortSignal.timeout(30_000);
+    deadline.throwIfAborted();
     try {
       const result = await this.client.send(
         new GetObjectCommand({ Bucket: this.bucket(tier, key), Key: key }),
-        { abortSignal: AbortSignal.timeout(30_000) },
+        { abortSignal: deadline },
       );
       if (!result.Body) throw new Error('Missing media body');
-      return {
-        bytes: await result.Body.transformToByteArray(),
-        mimeType: result.ContentType ?? 'application/octet-stream',
+      const body = result.Body;
+      const abort = () => {
+        if ('destroy' in body && typeof body.destroy === 'function')
+          body.destroy(new Error('Media read aborted'));
       };
+      deadline.addEventListener('abort', abort, { once: true });
+      try {
+        deadline.throwIfAborted();
+        const bytes = await body.transformToByteArray();
+        deadline.throwIfAborted();
+        return { bytes, mimeType: result.ContentType ?? 'application/octet-stream' };
+      } finally {
+        deadline.removeEventListener('abort', abort);
+      }
     } catch (error) {
       if (missing(error)) return null;
       throw error;
@@ -116,7 +139,12 @@ export class S3MediaObjectStore extends MediaObjectStore {
     key: string,
     value: StoredMedia,
     identity: MediaIdentity,
+    signal?: AbortSignal,
   ) {
+    const deadline = signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(30_000)])
+      : AbortSignal.timeout(30_000);
+    deadline.throwIfAborted();
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket(tier, key),
@@ -130,7 +158,7 @@ export class S3MediaObjectStore extends MediaObjectStore {
             ? 'public, max-age=0, must-revalidate, s-maxage=86400'
             : 'private, no-store',
       }),
-      { abortSignal: AbortSignal.timeout(30_000) },
+      { abortSignal: deadline },
     );
   }
   async delete(tier: MediaTier, key: string) {

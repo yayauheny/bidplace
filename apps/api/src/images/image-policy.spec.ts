@@ -95,6 +95,8 @@ describe('image policy', () => {
       },
     ]);
 
+    expect(validated).toBeDefined();
+    if (!validated) throw new Error('Expected a normalized image');
     expect(validated.mimeType).toBe('image/png');
     expect(validated.width).toBe(1);
     expect(validated.height).toBe(1);
@@ -121,6 +123,8 @@ describe('image policy', () => {
       },
     ]);
 
+    expect(validated).toBeDefined();
+    if (!validated) throw new Error('Expected a normalized image');
     expect(validated.mimeType).toBe('image/jpeg');
     expect(validated.width).toBe(2);
     expect(validated.height).toBe(2);

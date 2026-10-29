@@ -14,9 +14,10 @@ function rejected(args, databaseUrl) {
 }
 
 test('migration requires explicit environment and production confirmation', () => {
-  assert.match(rejected([], undefined), /Choose staging or production/);
+  assert.match(rejected([], undefined), /Choose production/);
   assert.match(rejected(['production'], undefined), /confirm-production/);
-  assert.match(rejected(['staging'], undefined), /Supply DATABASE_URL/);
+  assert.match(rejected(['staging'], undefined), /Choose production/);
+  assert.match(rejected(['production', '--confirm-production'], undefined), /Supply DATABASE_URL/);
 });
 
 test('pooled migration URLs are rejected without printing credentials', () => {
@@ -42,7 +43,7 @@ test('invalid or non-Neon migration URLs fail without printing credentials', () 
   for (const url of ['not-a-url-local-secret-canary',
     'postgresql://user:local-secret-canary@db.example.invalid/database?sslmode=require',
     'postgresql://user:local-secret-canary@ep-test.neon.tech/database']) {
-    const output = rejected(['staging'], url);
+    const output = rejected(['production', '--confirm-production'], url);
     assert.doesNotMatch(output, /local-secret-canary/);
     assert.match(output, /Invalid migration DATABASE_URL|Neon endpoint with sslmode=require/);
   }

@@ -28,6 +28,7 @@ const localEnv = {
 const productionSecurityEnv = {
   DATABASE_URL,
   SESSION_SECRET: PRODUCTION_SESSION_SECRET,
+  INTERNAL_TICK_SECRET: 'synthetic-internal-tick-test-key-32',
   OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
   SMTP_HOST: 'smtp.example.com',
   SMTP_PORT: '465',
@@ -490,6 +491,7 @@ const productionProfileLines = [
   'APP_ENV=production',
   `DATABASE_URL=${syntheticDatabaseUrl}`,
   'SESSION_SECRET=synthetic-production-jwt-secret-32',
+  'INTERNAL_TICK_SECRET=synthetic-internal-tick-test-key-32',
   'SMTP_HOST=smtp.example.com',
   'SMTP_PORT=465',
   'SMTP_SECURE=true',
@@ -627,4 +629,34 @@ describe('ANALYTICS_WEB_ENABLED', () => {
       );
     },
   );
+});
+
+describe('internal tick configuration', () => {
+  it.each([undefined, '', 'too-short'])(
+    'rejects absent or short production tick secret (%s)',
+    (secret) => {
+      stubMissingEnvFile();
+      expect(() =>
+        loadServerEnv({
+          ...productionSecurityEnv,
+          NODE_ENV: 'production',
+          APP_ENV: 'production',
+          INTERNAL_TICK_SECRET: secret,
+        }),
+      ).toThrow('INTERNAL_TICK_SECRET');
+    },
+  );
+  it('allows local operation without a tick secret', () => {
+    stubMissingEnvFile();
+    expect(
+      loadServerEnv({ ...localEnv, INTERNAL_TICK_SECRET: undefined })
+        .INTERNAL_TICK_SECRET,
+    ).toBeUndefined();
+  });
+  it('rejects a short tick secret outside production too', () => {
+    stubMissingEnvFile();
+    expect(() =>
+      loadServerEnv({ ...localEnv, INTERNAL_TICK_SECRET: 'short' }),
+    ).toThrow('INTERNAL_TICK_SECRET');
+  });
 });

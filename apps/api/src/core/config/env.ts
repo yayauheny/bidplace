@@ -51,6 +51,10 @@ const serverEnvSchema = z
       .default(40 * 1024 * 1024),
     SESSION_SECRET: z.string().min(1),
     OTP_HASH_SECRET: z.string().min(32),
+    INTERNAL_TICK_SECRET: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(32).optional(),
+    ),
     GOOGLE_CLIENT_ID: optionalNonEmptyStringEnvSchema,
     GOOGLE_CLIENT_SECRET: optionalNonEmptyStringEnvSchema,
     GOOGLE_REDIRECT_URI: z.string().url().optional(),
@@ -199,6 +203,7 @@ const serverEnvSchema = z
 
     if (requiresProductionSecurity(env)) {
       const requiredKeys: Array<keyof ServerEnv> = [
+        'INTERNAL_TICK_SECRET',
         'SMTP_HOST',
         'SMTP_PORT',
         'SMTP_SECURE',

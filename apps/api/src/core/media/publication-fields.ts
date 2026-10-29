@@ -1,39 +1,3 @@
-export function publishedProductData(revision: {
-  categoryId: string | null;
-  title: string | null;
-  story: string | null;
-  technique: string | null;
-  materials: string | null;
-  dimensions: string | null;
-  weight: string | null;
-  year: number | null;
-  condition: string | null;
-  uniqueness: string | null;
-  provenance: string | null;
-  city: string | null;
-  packaging: string | null;
-  deliveryInfo: string | null;
-  creationIntro: string | null;
-}) {
-  return {
-    categoryId: revision.categoryId,
-    title: revision.title,
-    story: revision.story,
-    technique: revision.technique,
-    materials: revision.materials,
-    dimensions: revision.dimensions,
-    weight: revision.weight,
-    year: revision.year,
-    condition: revision.condition,
-    uniqueness: revision.uniqueness,
-    provenance: revision.provenance,
-    city: revision.city,
-    packaging: revision.packaging,
-    deliveryInfo: revision.deliveryInfo,
-    creationIntro: revision.creationIntro,
-  };
-}
-
 export function publishedSellerProfileData(revision: {
   discipline: string | null;
   fullName: string;

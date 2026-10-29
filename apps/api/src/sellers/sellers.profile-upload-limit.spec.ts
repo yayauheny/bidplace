@@ -1,3 +1,4 @@
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 import 'reflect-metadata';
 
 import { Reflector } from '@nestjs/core';
@@ -55,16 +56,12 @@ describe('profile photo upload rate limit', () => {
   });
 
   function context(method: 'create' | 'update', userId = 'user-1') {
-    return {
-      getHandler: () => SellersController.prototype[method],
-      getClass: () => SellersController,
-      switchToHttp: () => ({
-        getRequest: () => ({
-          auth: { sub: userId },
-          params: {},
-        }),
-      }),
-    } satisfies Parameters<RateLimitGuard['canActivate']>[0];
+    return new ExecutionContextHost(
+      [{ auth: { sub: userId }, params: {} }],
+      SellersController,
+      SellersController.prototype[method],
+    );
+
   }
 
   async function submit(method: 'create' | 'update', userId = 'user-1') {

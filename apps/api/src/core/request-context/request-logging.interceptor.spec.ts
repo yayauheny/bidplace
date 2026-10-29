@@ -33,7 +33,7 @@ describe('RequestLoggingInterceptor', () => {
     const interceptor = new RequestLoggingInterceptor();
     const log = vi
       .spyOn(
-        (interceptor as unknown as { logger: { log: () => void } }).logger,
+        (interceptor as unknown as { logger: { log: (message: unknown) => void } }).logger,
         'log',
       )
       .mockImplementation(() => undefined);
@@ -79,7 +79,7 @@ describe('RequestLoggingInterceptor', () => {
     const interceptor = new RequestLoggingInterceptor();
     const log = vi
       .spyOn(
-        (interceptor as unknown as { logger: { log: () => void } }).logger,
+        (interceptor as unknown as { logger: { log: (message: unknown) => void } }).logger,
         'log',
       )
       .mockImplementation(() => undefined);
@@ -121,7 +121,7 @@ describe('RequestLoggingInterceptor', () => {
     const interceptor = new RequestLoggingInterceptor();
     const log = vi
       .spyOn(
-        (interceptor as unknown as { logger: { log: () => void } }).logger,
+        (interceptor as unknown as { logger: { log: (message: unknown) => void } }).logger,
         'log',
       )
       .mockImplementation(() => undefined);

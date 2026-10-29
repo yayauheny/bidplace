@@ -70,7 +70,7 @@
 **Files:** Modify: `apps/api/tsconfig.json` (или отдельный `tsconfig.spec.json`,
 подключённый в `typecheck`), `apps/api/.eslintrc.cjs`.
 
-- [ ] Сейчас `**/*.spec.ts` и `test/**` исключены из `typecheck`, а `src/**/*.spec.ts`
+- [x] Сейчас `**/*.spec.ts` и `test/**` исключены из `typecheck`, а `src/**/*.spec.ts`
   — из ESLint, хотя Vitest их запускает: тест с ошибкой типов проходит проверки.
   Включить оба; найденные ошибки исправить в тестах, не подавлять. Если их
   больше ~50 — `Ruling:` и отдельный коммит до Task 1. Коммит
@@ -103,7 +103,7 @@ publishRevision(tx: Prisma.TransactionClient, input: {
 
   Коды ошибок: `PRODUCT_STATE_CONFLICT` (409), `PRODUCT_IN_SALE` (409) в `ApiErrorCode`.
 
-- [ ] **Шаг 1: падающий спек.** `product-publication.spec.ts`: `it.each` по всем
+- [x] **Шаг 1: падающий спек.** `product-publication.spec.ts`: `it.each` по всем
   парам `from × to` ревизии (разрешено/запрещено, как сейчас в
   `product-revision-state`); `it.each` по `from × to × actor` видимости:
   author `APPROVED ↔ ARCHIVED`; admin одобрение/отклонение/архив; media только
@@ -111,12 +111,12 @@ publishRevision(tx: Prisma.TransactionClient, input: {
   `publishRevision`: `PENDING_REVIEW → APPROVED`, `APPROVED → APPROVED`,
   `ARCHIVED → ARCHIVED` с новой `publishedRevisionId`; устаревший CAS → `'stale'`
   без записи.
-- [ ] **Шаг 2:** FAIL.
-- [ ] **Шаг 3:** реализовать три функции. Видимость — `updateMany({ where: { id, status: { in: expected } } })`,
+- [x] **Шаг 2:** FAIL.
+- [x] **Шаг 3:** реализовать три функции. Видимость — `updateMany({ where: { id, status: { in: expected } } })`,
   `count !== 1` → `AppException(PRODUCT_STATE_CONFLICT)`. `publishRevision` —
   перенос записи из `switchPublication` (поля `publishedProductData`).
-- [ ] **Шаг 4:** перенести случаи из спека `product-revision-state`, удалить старый файл.
-- [ ] **Шаг 5:** PASS; коммит `refactor: add product publication state owner`.
+- [x] **Шаг 4:** перенести случаи из спека `product-revision-state`, удалить старый файл.
+- [x] **Шаг 5:** PASS; коммит `refactor: add product publication state owner`.
 
 ### Task 2: Писатели статуса переходят на модуль
 
@@ -133,22 +133,22 @@ publishRevision(tx: Prisma.TransactionClient, input: {
 - Consumes: `transitionProductVisibility`, `publishRevision`,
   `assertRevisionTransition` (Task 1).
 
-- [ ] **Шаг 1: падающие интеграционные тесты** (`it.each` по режиму медиа вкл/выкл):
+- [x] **Шаг 1: падающие интеграционные тесты** (`it.each` по режиму медиа вкл/выкл):
   скрытая работа + одобрение новой ревизии → остаётся `ARCHIVED`,
   `publishedRevisionId` = новая; после unhide каталог показывает новую ревизию.
   Гонка: автор скрывает и модератор одобряет одновременно → обе транзакции
   завершаются без 500, итог соответствует таблице, `count` второй записи
   обрабатывается как конфликт или успешный переход.
-- [ ] **Шаг 2:** FAIL (путь с медиа сейчас отказывает).
-- [ ] **Шаг 3:** заменить прямые записи статуса и `publishedRevisionId` вызовами
+- [x] **Шаг 2:** FAIL (путь с медиа сейчас отказывает).
+- [x] **Шаг 3:** заменить прямые записи статуса и `publishedRevisionId` вызовами
   Task 1. Решение «что делать» остаётся у вызывающего.
-- [ ] **Шаг 4:** решение модератора не грузит лоты, если не архивирует работу; при
+- [x] **Шаг 4:** решение модератора не грузит лоты, если не архивирует работу; при
   архивировании — вызывает `assertProductNotInSale` (Task 3).
-- [ ] **Шаг 5:** PASS;
+- [x] **Шаг 5:** PASS;
   `rg -n "data: \{[^}]*status:" apps/api/src/products apps/api/src/admin apps/api/src/core/media -g '!*.spec.ts' -g '!product-publication.ts'`
   → нет записей статуса работы (записи статусов других сущностей — допустимы, перечислить в отчёте);
   `rg -n "publishedRevisionId:" apps/api/src -g '!*.spec.ts'` → записи только в `product-publication.ts`.
-- [ ] **Шаг 6:** коммит `refactor: route product status writes through publication owner`.
+- [x] **Шаг 6:** коммит `refactor: route product status writes through publication owner`.
 
 ### Task 3: Хелпер «в продаже» и один предикат публичности
 
@@ -171,22 +171,22 @@ findSellerProductIdsInSale(tx: Prisma.TransactionClient, sellerId: string): Prom
 
   W3 расширит обе функции незавершёнными заказами — сигнатуры не меняются.
 
-- [ ] **Шаг 1: падающие тесты** (`it.each` по действию): скрыть, править, загрузить
+- [x] **Шаг 1: падающие тесты** (`it.each` по действию): скрыть, править, загрузить
   фото, архивировать админом работу с лотом `LIVE` (лот вставляется прямо в БД —
   API лотов ещё нет) → `PRODUCT_IN_SALE`; блокировка автора с таким лотом →
   прежнее поведение через `findSellerProductIdsInSale`.
-- [ ] **Шаг 2:** FAIL.
-- [ ] **Шаг 3:** реализовать хелперы; `assertProductWritable` и `requireEditableOwner`
+- [x] **Шаг 2:** FAIL.
+- [x] **Шаг 3:** реализовать хелперы; `assertProductWritable` и `requireEditableOwner`
   вызывают `assertProductNotInSale`; `requireEditableOwner` больше не дублирует
   `assertProductWritable` (вызывает его или удаляется).
-- [ ] **Шаг 4: падающий тест публичности.** `it.each` по состояниям (работа
+- [x] **Шаг 4: падающий тест публичности.** `it.each` по состояниям (работа
   скрыта, автор не одобрен, пользователь заблокирован, фото не из опубликованной
   ревизии, всё ок): ответ `GET` картинки совпадает с наличием работы в каталоге.
-- [ ] **Шаг 5:** `ImagesService.get` использует предикат из `public-visibility.ts`;
+- [x] **Шаг 5:** `ImagesService.get` использует предикат из `public-visibility.ts`;
   если два предиката идентичны — оставить один.
-- [ ] **Шаг 6:** PASS; `rg -n "'SCHEDULED'|'LIVE'" apps/api/src -g '!*.spec.ts'` →
+- [x] **Шаг 6:** PASS; `rg -n "'SCHEDULED'|'LIVE'" apps/api/src -g '!*.spec.ts'` →
   только `product-write-guard.ts`.
-- [ ] **Шаг 7:** коммит `refactor: single in-sale guard and public visibility predicate`.
+- [x] **Шаг 7:** коммит `refactor: single in-sale guard and public visibility predicate`.
 
 ## Фронтенд
 
@@ -206,22 +206,22 @@ findSellerProductIdsInSale(tx: Prisma.TransactionClient, sellerId: string): Prom
 - Produces: `apiErrorMessage(error: unknown): string | null` — текст по
   `ApiErrorCode` или `null` (экран оставляет свой общий текст).
 
-- [ ] **Шаг 1:** падающий тест: `PRODUCT_IN_SALE` → «Работа сейчас в продаже.
+- [x] **Шаг 1:** падающий тест: `PRODUCT_IN_SALE` → «Работа сейчас в продаже.
   Снимите лот, чтобы изменить или скрыть её»; `PRODUCT_STATE_CONFLICT` → «Работа
   изменилась. Обновите страницу и попробуйте снова»; неизвестный код → `null`.
-- [ ] **Шаг 2:** реализовать; экраны скрытия и сохранения работы показывают
+- [x] **Шаг 2:** реализовать; экраны скрытия и сохранения работы показывают
   `apiErrorMessage(error) ?? <прежний текст>`; PASS; коммит `feat: map work state errors to messages`.
 
 ## Документы и проверки
 
 ### Task 5
 
-- [ ] `10-CODE-ARCHITECTURE.md`: владелец переходов работы, хелпер «в продаже»,
+- [x] `10-CODE-ARCHITECTURE.md`: владелец переходов работы, хелпер «в продаже»,
   один предикат публичности. `11-PROJECT-STATUS.md`: одна запись.
-- [ ] Проверки: `typecheck` и `lint` для `@bidplace/api`, `@bidplace/contracts`,
+- [x] Проверки: `typecheck` и `lint` для `@bidplace/api`, `@bidplace/contracts`,
   `@bidplace/mobile`; API unit + интеграция (модерация, медиа, продукты,
   изображения); mobile unit; `git diff --check`; `pnpm docs:link-check`.
-- [ ] Коммит `docs: record publication state owner`.
+- [x] Коммит `docs: record publication state owner`.
 
 Не трогать: `admin-moderation-pagination.integration.spec.ts`,
 `media-lifecycle.integration.spec.ts` (кроме добавленных случаев).
@@ -256,3 +256,127 @@ superpowers subagent-driven-development (или executing-plans), test-driven-de
 таблица переходов разрешает больше, чем раньше; строковые `ConflictException` в
 новых местах; тесты на вызовы внутренних функций вместо результата в БД;
 изменения машины профиля автора сверх проверки лотов.
+
+
+## Журнал исполнения — 2026-10-29
+
+**Implemented локально.** База W1 `abdef630`, ветка `feature/scheduler-tick`
+по явному указанию основателя; W2 остаётся в той же ветке. Оригинал документов
+`54925364`, архив и решения не изменялись. После W1 — остановка, следующие волны
+не запускались. Финальное whole-wave review — отдельный этап; scoped review
+Task 0–4 принят, P1 Task 2 и P2 Task 4 исправлены и повторно приняты.
+
+| Задача | Локальные коммиты | Результат |
+| --- | --- | --- |
+| 0 | `cadb4c24`, `8ea5c9cc` | Tests включены в API types/lint; исправлены 240 diagnostics в 39 test/helper файлах, build scope сохранён |
+| 1 | `3319aecf` | Три функции publication owner, таблицы переходов, checked writes, два contract error code |
+| 2 | `1b58a851`, `a5472a13` | Author/admin/media writers мигрированы; старый helper удалён; hidden approval, deterministic race и cleanup/manual retry |
+| 3 | `33f4c3cd` | Sale owner и один public predicate, actual seller suspension caller |
+| 4 | `22578ea9`, `6b473212` | Общий mapper и реальные hide/save consumers; cabinet reason внутри AppDialog |
+| 5 | Этот документирующий коммит | Architecture/status/security/design owners, финальная локальная приёмка |
+
+Ruling: первоначальная ветка плана переопределена указанием основателя.
+Task 0 превысил порог ~50 ошибок: конфигурация и 39 fixture repairs разделены
+на два коммита. Изменения существующих pagination/media specs в Task 0 — только
+типизация fixture/parser/thenable, не ослабление утверждений; Task 2 добавляет
+media regressions. Старый helper удалён атомарно с callers в Task 2, а не в
+Task 1. Минимальный archive guard добавлен в Task 2 для собираемого состояния;
+полная миграция consumers — Task 3. Существующий ProductStatus сохранён, новой
+schema enum нет. Seller suspension фактически в AdminModerationService,
+не SellersService. publishedProductData теперь локален publication owner;
+SellerProfile helper и машина сохраняются. Эти уточнения меняют реализацию
+плана, не продуктовые решения.
+
+Проверка writers: AST всех non-spec Product create/update/upsert calls и
+проверка переданных data подтверждают два status/published-pointer updateMany,
+оба в product-publication.ts; create полагается на DRAFT default, остальные
+пишут editing pointer или content. Grep publishedRevisionId включает reads,
+selects/types и два SellerProfile writer в admin/media — это другие сущности.
+Grep data.status также включает ProductRevision/SellerProfileRevision/
+SellerProfile, а не дополнительные Product writers. SCHEDULED/LIVE production
+literals — только product-write-guard.ts. Raw SQL writer не найден.
+
+Финальные проверки и ограничения фиксируются ниже; никаких remote Verify,
+Turbo/generate, dotenv reads, push/merge/deploy не выполнялось. БД — disposable
+localhost bidplace_integration, изолированные itest_ схемы с cleanup.
+
+Финальная локальная приёмка Task 5 (Node 22.20.0):
+
+- API unit, serial `--maxWorkers=1`: 661 pass + 2 mocked-path cases pass отдельным
+  безопасным запуском, всего **663**. Первый sandbox запуск: 660 pass/1 fail,
+  Turnstile loopback EPERM; полный разрешённый rerun — green, без изменения теста.
+- API integration, 13 affected files: **114 pass** — moderation/revision projection,
+  media lifecycle/transport, product atomicity/published revision, author story,
+  rejected recovery, hide/listing, image/upload safety, work-media HTTP, permissions.
+- Mobile unit, serial: **143 files / 1 158 pass**; contracts: **5 files / 50 pass**.
+- API/contracts/mobile typecheck и lint без autofix: pass. Contracts не имеет
+  lint script: выполнен прямой ESLint с shared packages/eslint-config. API-client
+  typecheck, contracts/api-client/design-tokens/API builds и Expo web export: pass.
+- `pnpm docs:link-check` и `git diff --check`: pass.
+
+Runtime checks используют отсутствующий безопасный BIDPLACE_ENV_FILE, APP_ENV=local,
+NODE_ENV=test; Expo отключает dotenv и получает только synthetic local public
+settings. Отдельный точный mocked-path запуск использует пустой override и
+подставленный fileExists; реальный env файл не читается. Ошибочный первый выбор
+server-env.module.spec.ts пропустил все 3 теста; исправленный env.spec.ts выполнил
+ровно требуемые 2. Не выдаётся этот skipped запуск за доказательство.
+
+Не повторялись dedicated auth-abuse (28 opt-in) и browser smoke (1 opt-in) из
+Task 0; отсутствие опций не считается green. Live R2/CDN, deployment, native,
+длинный текст/wrapping, responsive screenshots, реальный focus/zoom/device —
+**Needs verification**. Figma не редактировалась; геометрия UI не менялась.
+Продажи/заказы не включены. Расширение W3 должно менять общий sale owner, а не
+размножать проверки; один public predicate удерживает каталог и картинки вместе.
+
+Ruling: устаревшая фраза Runtime topology «no scheduler» исправлена на
+фактический global TickModule из уже реализованной W2 в той же ветке; это
+устраняет противоречие текущего architecture owner, без нового решения.
+
+### 2026-10-29 — Opus P1 hidden media privacy
+
+`media-lifecycle.service.ts` skips PUBLIC delivery for ARCHIVED nonrestore approval
+while preserving revision CAS, pointer/audit completion and PRIVATE restore bytes.
+Per-object Product row locks serialize PUBLIC delivery with hide; operation lease,
+generation and status are rechecked under lock. The total 60s I/O abort deadline
+propagates through S3 get/body/put before the 65s transaction timeout; slow hide can
+wait or fail instead of returning success ahead of a late PUBLIC PUT. No new
+schema, dependency, profile transition or product decision. Deterministic regressions
+cover zero hidden PUBLIC PUTs, known former URL absence, unwritten manifests,
+PRIVATE-read/hide and PUBLIC-put/blocked-hide orderings, explicit restore and retries.
+Local verification: 72 focused integration tests; 665 API unit cases green across
+the main run and isolated reruns; API typecheck/lint/build; docs link check and
+`git diff --check`. Initial unit command exposed environment/tool ordering limits
+(dist rebuild overlap, sandbox loopback, explicit env-path override); each affected
+spec passed after correcting invocation. Live R2/CDN verification remains open.
+
+
+### 2026-10-29 — Failed restore compensation
+
+`media-lifecycle.service.ts` commits PUBLIC-only compensation before Work restore
+writes under the source PUBLISH row lock/current lease/token/generation. Journal
+identity binds source id/generation and revision timestamp identifies later cycles;
+FAILED retries rearm it. Cleanup bypass applies only to its corresponding FAILED
+restore on ARCHIVED Work, preserving RUNNING, PRIVATE/CLEANUP and shared-public
+reference protections. No schema, dependency or public API change. Regression:
+two-image partial delivery, failed failure-transition/restart, rejected journal
+persistence before any PUT, shared public bytes, same-generation rearm, later
+restore cycles and successful manual retry. Relevant API integration/media units,
+typecheck/lint/build, docs links and whitespace checks pass locally.
+Compensation permits brief exposure before delete/purge; strict privacy atomicity
+and live R2/CDN remain open. Older FAILED restores lacking a journal require
+manual retry; no automatic retry policy or historical backfill added.
+
+### 2026-10-29 — PR73 review fixes
+
+Nonrestore approval now rejects active sales before media enqueue and at the
+locked publication owner before revision/content/pointer writes; archive sale
+checking moved to that owner, retaining the early locked read and removing one
+redundant caller lock. Product lock contention returns 409 after 4s instead of
+expiring the 5s request transaction. Exact completed ARCHIVED approval retries
+retain audit/PRIVATE/PUBLIC state; different targets still conflict. Profile
+restore now shares the durable pre-PUT journal, exact FAILED-source exemption,
+retry/restart and shared-reference protection. Owner/admin image reads avoid the
+catalog query and remain private. Local evidence: API unit 668 + 2 isolated mock
+path cases, 97 affected PostgreSQL cases, typecheck/lint/build and Cloudflare
+checks pass. Live provider fencing/privacy atomicity/CDN remain unverified;
+older FAILED restores need explicit retry. No remote release action performed.

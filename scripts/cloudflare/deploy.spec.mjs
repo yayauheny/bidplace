@@ -18,6 +18,7 @@ import { containerReleaseReady } from '../../deploy/cloudflare/src/release-gate.
 import { root } from './config.mjs';
 import {
   assertProductionReleaseMode,
+  assertReleaseBranch,
   assertSecretsFile,
   gateEnvironment,
   productionWranglerArgs,
@@ -37,6 +38,7 @@ function secrets(overrides = {}) {
     SMTP_PASSWORD: `${canary}-smtp`,
     CLOUDFLARE_CACHE_TOKEN: `${canary}-cache`,
     TURNSTILE_SECRET_KEY: `${canary}-turnstile`,
+    INTERNAL_TICK_SECRET: `${canary}-internal-tick`,
     RELEASE_CONTROL: `${canary}-release-control-value-32`,
     ...overrides,
   };
@@ -59,7 +61,7 @@ test('production deploy rejects a non-release branch without printing credential
       encoding: 'utf8',
       env: {
         PATH: process.env.PATH,
-        WORKERS_CI_BRANCH: 'main',
+        WORKERS_CI_BRANCH: 'feature/not-release',
         DATABASE_URL: canary,
       },
     },
@@ -107,9 +109,10 @@ test('gate environment removes runtime and deploy credentials', () => {
 test('secrets file accepts the runtime contract and rejects unsafe files without printing values', () => {
   const valid = writeSecrets(
     secrets(
-      Object.fromEntries(
-        optionalContainerSettings.map((name) => [name, canary]),
-      ),
+      {
+        ...Object.fromEntries(optionalContainerSettings.map((name) => [name, canary])),
+        INTERNAL_TICK_SECRET: canary.padEnd(32, 'x'),
+      },
     ),
   );
   try {
@@ -128,6 +131,7 @@ test('secrets file accepts the runtime contract and rejects unsafe files without
     [secrets({ SMTP_USERNAME: 'other-user' }), /api_token/],
     [secrets({ SESSION_SECRET: canary }), /SESSION_SECRET must be at least/],
     [secrets({ OTP_HASH_SECRET: canary }), /OTP_HASH_SECRET must be at least/],
+    [secrets({ INTERNAL_TICK_SECRET: canary.padEnd(31, 'x') }), /INTERNAL_TICK_SECRET must be at least 32 characters/],
     [
       secrets({ GOOGLE_CLIENT_ID: canary }),
       /GOOGLE configuration must be complete/,
@@ -351,6 +355,8 @@ test('production config receives service rules from the caller and keeps the che
   });
   try {
     const written = JSON.parse(readFileSync(created.file, 'utf8'));
+    assert.deepEqual(written.env.production.triggers, { crons: [] });
+    assert.equal(written.env.production.vars.TICK_CRON, '');
     assert.equal(written.env.production.vars.SERVICE_RULES_OWNER, 'bidplace');
     assert.equal(
       written.env.production.vars.SERVICE_RULES_CONTACT,
@@ -457,6 +463,7 @@ test('production workflow validation and secrets payload stay aligned with worke
   );
   const verifyStep = workflowStep(workflow, 'Verify production settings');
   const deployStep = workflowStep(workflow, 'Deploy production');
+  assert.match(deployStep, /TICK_CRON: \$\{\{ vars\.TICK_CRON \}\}/);
   const verifyPy = embeddedPython(verifyStep);
   const deployPy = embeddedPython(deployStep);
   const verifyBindings = secretBindings(verifyStep);
@@ -510,6 +517,12 @@ test('production workflow validation and secrets payload stay aligned with worke
     const verified = runPython(verifyPy, verifyEnv);
     quiet(verified);
     assert.equal(verified.status, 0);
+    for (const length of [31, 32]) {
+      const result = runPython(verifyPy, { ...verifyEnv, INTERNAL_TICK_SECRET: canary.padEnd(length, 'x') });
+      quiet(result);
+      assert.equal(result.status, length < 32 ? 1 : 0);
+      if (length < 32) assert.equal(result.stderr.trim(), 'INTERNAL_TICK_SECRET must be at least 32 characters');
+    }
 
     const deployEnv = { SECRETS_FILE: file };
     for (const name of deployRequired) {
@@ -528,5 +541,23 @@ test('production workflow validation and secrets payload stay aligned with worke
     assertSecretsFile(file, root);
   } finally {
     rmSync(folder, { recursive: true, force: true });
+  }
+});
+
+test('production config sends an enabled tick schedule to Wrangler', () => {
+  const created = writeProductionConfig({ owner: 'test', contact: 'ops@example.invalid', text: 'rules' }, '*/5 * * * *');
+  try {
+    const config = JSON.parse(readFileSync(created.file, 'utf8')).env.production;
+    assert.deepEqual(config.triggers, { crons: ['*/5 * * * *'] });
+    assert.equal(config.vars.TICK_CRON, '*/5 * * * *');
+  } finally {
+    rmSync(created.directory, { recursive: true, force: true });
+  }
+});
+
+test('production branch gate matches the main-only workflow', () => {
+  assert.doesNotThrow(() => assertReleaseBranch('main'));
+  for (const branch of ['feature/portfolio-mvp-release', 'feature/scheduler-tick', 'staging']) {
+    assert.throws(() => assertReleaseBranch(branch), /release branch/);
   }
 });

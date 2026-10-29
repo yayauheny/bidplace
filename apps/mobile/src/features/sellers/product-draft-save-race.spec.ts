@@ -1389,6 +1389,24 @@ describe('product draft save reconciliation', () => {
     view.unmount();
   });
 
+  it.each([
+    ['PRODUCT_IN_SALE', 'Работа сейчас в продаже. Снимите лот, чтобы изменить или скрыть её'],
+    ['PRODUCT_STATE_CONFLICT', 'Работа изменилась. Обновите страницу и попробуйте снова'],
+    ['conflict', 'Операцию не удалось выполнить из-за конфликта данных.'],
+  ] as const)('shows the work save message for %s and preserves input', async (code, message) => {
+    harness.updateProduct.mockRejectedValue(new ApiClientError('Internal detail', {
+      kind: 'conflict', status: 409, code,
+    }));
+    const view = mount({ productId });
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    setInput(view.container, 'Название', 'Kept title');
+    click(view.container, 'Сохранить изменения');
+    await until(view.container, () => view.container.textContent?.includes(message) === true, 'work save error');
+    expect(inputValue(view.container, 'Название')).toBe('Kept title');
+    expect(view.container.textContent).not.toContain('Internal detail');
+    view.unmount();
+  });
+
   it('replaces a stale save error with the next failure and drops it after the session changes', async () => {
     let rejectSave: (error: unknown) => void = () => undefined;
     harness.updateProduct
