@@ -20,18 +20,21 @@ function validCron(cron) {
   return fields.every((raw, index) => {
     const [min, max] = bounds[index];
     const names = index === 3 ? months : index === 4 ? weekdays : [];
-    const field = raw.toUpperCase().replace(/[A-Z]{3}/g, (name) => {
-      const position = names.indexOf(name);
-      return position < 0 ? name : String(position + 1);
-    });
+    const field = raw.toUpperCase();
+    const endpoint = (value) => {
+      if (/^\d+$/.test(value)) return Number(value);
+      const position = names.indexOf(value);
+      return position < 0 ? NaN : position + 1;
+    };
     if (index === 2 && /^(L|LW|(?:[1-9]|[12]\d|3[01])W)$/.test(field)) return true;
-    if (index === 4 && /^[1-7](?:L|#[1-5])$/.test(field)) return true;
+    const weekday = index === 4 && /^(\d+|[A-Z]{3})(?:L|#[1-5])$/.exec(field);
+    if (weekday) return endpoint(weekday[1]) >= min && endpoint(weekday[1]) <= max;
     return field.split(',').every((part) => {
-      const match = /^(\*|\d+(?:-\d+)?)(?:\/(\d+))?$/.exec(part);
+      const match = /^(\*|(?:\d+|[A-Z]{3})(?:-(?:\d+|[A-Z]{3}))?)(?:\/(\d+))?$/.exec(part);
       if (!match) return false;
       if (match[2] !== undefined && (+match[2] < 1 || +match[2] > max - min + 1)) return false;
       if (match[1] === '*') return true;
-      const [start, end = start] = match[1].split('-').map(Number);
+      const [start, end = start] = match[1].split('-').map(endpoint);
       return start >= min && end <= max && start <= end;
     });
   });

@@ -265,7 +265,8 @@ test('tick schedule is opt-in and replaces stale template triggers', () => {
 test('tick schedule rejects invalid cron fields without echoing the input', () => {
   for (const cron of ['garbage', '* * * *', '* * * * * *', '60 * * * *',
     '*/0 * * * *', '* 24 * * *', '* * 0 * *', '* * * 13 *', '* * * * 8',
-    '5-2 * * * *', '* * * * MON#6']) {
+    '5-2 * * * *', '* * * * MON#6', '0 0 * JANFEB *',
+    '0 0 * JANJAN *', '0 0 * 1JAN *']) {
     assert.throws(() => configureTickSchedule({ vars: {} }, cron), /^Error: Invalid TICK_CRON$/);
   }
   for (const cron of ['0,30 1-5/2 * JAN,MAR MON-FRI', '0 0 L * *', '0 0 15W * *', '0 0 * * FRIL', '0 0 * * MON#2']) {
