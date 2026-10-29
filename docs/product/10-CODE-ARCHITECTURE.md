@@ -300,7 +300,7 @@ facts; "Planned" owners are created by the named launch wave.
 
 | Topic | Owner | Status |
 | --- | --- | --- |
-| Whether a user may act (auth abuse, rate limits, Turnstile, signals and holds, strikes, 3-booking cap, ban) | `apps/api/src/antifraud/` (`AntifraudService`); today `auth-abuse/` + `core/rate-limit` | Planned — W2b moves both in |
+| Whether a user may act (auth abuse, rate limits, Turnstile, signals and holds, ban) | `apps/api/src/antifraud/` (`AntifraudService`, `@RateLimit`) | Implemented locally — W2b. Strikes and the 3-booking cap remain W3 |
 | Product publication and visibility transitions | `apps/api/src/products/product-publication.ts` | Implemented locally — W1 |
 | Whether a Product is in sale | `apps/api/src/products/product-write-guard.ts` | Implemented locally — W1; orders remain W3 |
 | Public Product/image eligibility | `apps/api/src/products/public-visibility.ts` (`portfolioCatalogProductWhere`) | Implemented locally — W1 |
@@ -315,6 +315,49 @@ facts; "Planned" owners are created by the named launch wave.
 | Leave-screen guard | `apps/mobile/src/lib/use-prevent-remove.ts` | Planned — W7 |
 | Formats, limits, error codes | `packages/contracts` | Implemented |
 | Colors and sizes | `packages/design-tokens` via `useAppTheme` | Implemented |
+
+## Antifraud owner — 2026-10-29 (W2b)
+
+Public callers use `AntifraudService` and `@RateLimit`. ESLint rejects imports
+under `antifraud/` except the module itself and its `index.ts` barrel. The barrel
+exports the service, rate-limit decorator/guard, and the types `SignalKind` and
+`ActorAction`. Decision functions stay internal.
+
+Auth abuse lives in `antifraud/auth/` with the previous error contracts.
+`verifyRequired(action, token, ip)` still fails closed. `verifySignal(action, token, ip)`
+returns `passed | failed | missing` and does not throw; W2b does not record that
+result as a purchase signal. The client hook is `useInvisibleTurnstile` and
+requests a token on submit. Rate limits are rows in `rate_limit_counters`
+(`key`, `window_start`, `expires_at`, `count`). `TickService` job
+`antifraud-cleanup` deletes expired rows with `FOR UPDATE SKIP LOCKED`.
+`RATE_LIMIT_MAX_BUCKETS` and `RATE_LIMIT_CLEANUP_INTERVAL_MS` are not read.
+
+`fraud_signals` and `purchase_holds` come from migration
+`20261029210000_fraud_signals`. One active hold per user is the partial unique
+index `purchase_holds_one_active_user` (`released_at IS NULL`). User status stays
+`active | banned`. `SUSPENDED` remains a seller-profile status. Two distinct
+signal kinds inside 24 database hours create one hold and one `FRAUD_HOLD` audit;
+repeating one kind only records. There is no automatic permanent ban.
+
+`recordSignal` and `assertCanAct` lock that user inside the caller transaction
+and hold the lock until the caller commits or rolls back. Supported isolation is
+Read Committed, or Serializable retried as a whole through
+`runSerializableTransaction`. Repeatable Read is unsupported. Signal time is
+`now()::timestamp(3)` in that transaction, with an inclusive 24-hour lower bound
+and no upper bound. `assertCanAct` allows only `bid | purchase | accept-offer`
+when the user is active, the email is verified, and no hold is active. A hold,
+inactive user, or missing user is `BUYER_BLOCKED`; a missing email proof is
+`EMAIL_VERIFICATION_REQUIRED`. `detectBidBurst` is policy only and has no bid
+caller. Strikes, contacts, and the 3-booking cap are W3.
+
+`releaseHold`, `banUser`, and `updateUserStatus` open their own serializable
+transactions. The service requires an active admin, a reason or note, and rejects
+self and admin-account status changes. `sessionVersion` increments only on the
+transition to `banned`. Media revocation is enqueued in that transaction and
+delivered after commit; object-store delivery is not rolled back with the ban.
+`AdminUserService` delegates those writes. HTTP release is
+`POST /api/admin/users/:id/release-hold` behind the existing session and admin
+guards.
 
 ## Work publication owner — 2026-10-29 (W1)
 
@@ -357,7 +400,7 @@ wrapping, real focus/zoom and responsive screenshots remain Needs verification.
 
 ## Applications and shared boundaries
 
-- `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Auth Abuse, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers and Portfolio; Categories and core database/mail/time/public-id/image-store modules support that graph. `AppModule` imports global `AuthAbuseModule` (`apps/api/src/auth-abuse/`). Listing, Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.
+- `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Antifraud, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers and Portfolio; Categories and core database/mail/time/public-id/image-store modules support that graph. `AppModule` imports global `AntifraudModule` (`apps/api/src/antifraud/`). Listing, Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.
 - First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating leftover Bid/Order tables. Legacy admin aggregates remain at `GET /api/admin/analytics/overview`. Expo admin `/(admin)/analytics` now reads only protected `GET /api/admin/analytics/foundation`, including opt-in daily sessions and server collection permission, through the existing service/query owners. Auction/bid/order marketplace metrics are not part of the active overview.
 - HTTP requests receive a server-generated `X-Request-Id`. An inbound `X-Request-Id` is not accepted. The same id is returned on the response and written to the request summary and unexpected-error log.
 - `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps, process-photo metadata and the latest non-null product moderation reason. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard, including `REJECTED` recovery on the same Product.
@@ -587,7 +630,7 @@ SellerProfile
   interleaves published non-cover `ProductImage` rows between paragraphs.
   `ProductCreationStep` remains owner-only and is not a public History CMS;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. Registration and forgot-password require Turnstile proof; login accepts an optional adaptive Turnstile token after challenge. **Idempotency keys are required only** on email OTP send, OTP verify, and forgot-password (`packages/contracts/src/auth.ts`, `packages/api-client/src/auth.ts`); register/login do not take idempotency keys. Email verification state exposes `serverNow`, `sendStatus`, and deadline fields from the API; mobile `use-email-verification.ts` drives copy and local countdown ticks only and does not auto-send mail. OTP send/verify and password-reset send delegate durable quotas, pauses, operation replay, and SMTP outcome classification to `AuthAbuseService`; cheap per-IP limits stay in `RateLimitService`. Mail still flows through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass only for `NODE_ENV=test` and `APP_ENV=local`. Unverified email correction and OTP verify share the same user row lock and expiry recheck as reset completion. Policy numbers and SMTP/Turnstile rules are owned by [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md) (**DEC-109**);
+- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. Registration and forgot-password require Turnstile proof; login accepts an optional adaptive Turnstile token after challenge. **Idempotency keys are required only** on email OTP send, OTP verify, and forgot-password (`packages/contracts/src/auth.ts`, `packages/api-client/src/auth.ts`); register/login do not take idempotency keys. Email verification state exposes `serverNow`, `sendStatus`, and deadline fields from the API; mobile `use-email-verification.ts` drives copy and local countdown ticks only and does not auto-send mail. OTP send/verify and password-reset send delegate durable quotas, pauses, operation replay, and SMTP outcome classification to `AntifraudService` (`antifraud/auth/`); per-IP limits are PostgreSQL `rate_limit_counters` in `antifraud/rate-limit/`. Mail still flows through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass only for `NODE_ENV=test` and `APP_ENV=local`. Unverified email correction and OTP verify share the same user row lock and expiry recheck as reset completion. Policy numbers and SMTP/Turnstile rules are owned by [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md) (**DEC-109**);
 - leftover Listing/Bid/Order rows remain in Prisma. Hide/unhide and admin
   seller/product moderation still fail closed when a `SCHEDULED` or `LIVE`
   Listing exists (`hasBlockingListing`). There is no listing/bid/order HTTP,
@@ -595,7 +638,7 @@ SellerProfile
   Ops leftover inventory is `scripts/ops/commerce-inventory.mjs`. The removed
   application code stays on `feature/commerce-runtime-archive` @ `19eb40e`.
 - password recovery lives in `apps/api/src/password-reset/`: forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup; durable reset-send ledger, cooldowns, and Turnstile run through `AuthAbuseService`; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically under the user lock; `MailTransport` sends reset links; `core/email/smtp-transport.ts` builds Nodemailer options with single-address recipient guard; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
-- admin emergency controls live in `apps/api/src/admin/admin-user.service.ts`: exact email user lookup, reasoned ban/unban with `sessionVersion++` on ban, and session revoke. Listing emergency cancel, needs-order recovery and order replacement HTTP are not on the active boot graph.
+- admin emergency controls live in `apps/api/src/admin/admin-user.service.ts`: exact email user lookup and session revoke stay there. Reasoned ban/unban and purchase-hold release delegate to `AntifraudService` (`sessionVersion++` only when status becomes `banned`). `POST /api/admin/users/:id/release-hold` requires a note. Listing emergency cancel, needs-order recovery and order replacement HTTP are not on the active boot graph.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 
@@ -635,7 +678,7 @@ SellerProfile
   sequential bounded normalize to canonical bytes outside the DB transaction, and
   a short Read Committed transaction that locks the Product row, re-checks owner, editable status, blocking
   Listing and capacity then persists via `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
-  then `ImageStore.get`. Per-user upload rate limits apply to product, creation-step,
+  then `ImageStore.get`. Per-user upload rate limits persist in PostgreSQL and apply to product, creation-step,
   achievement, and profile-photo uploads. Author, achievement, and work decode share
   one process-local admission of two operations; nested pipeline validation reuses
   that slot and releases it on failure. A new Work upload that exceeds gallery count or targets an already full byte
