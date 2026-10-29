@@ -244,7 +244,7 @@ export function AuthorCabinetScreen() {
             onPress={() => void query.fetchNextPage()}
           />
         ) : null}
-        {visibility.mutation.isError ? (
+        {visibility.mutation.isError && visibility.intent?.action === 'restore' ? (
           <AppText role="bodySmall" tone="danger">
             {apiErrorMessage(visibility.mutation.error) ??
               'Не удалось изменить видимость работы. Попробуйте ещё раз.'}
@@ -258,6 +258,12 @@ export function AuthorCabinetScreen() {
             if (!visibility.mutation.isPending) visibility.cancel();
           }}
         >
+          {visibility.mutation.isError ? (
+            <AppText role="bodySmall" tone="danger">
+              {apiErrorMessage(visibility.mutation.error) ??
+                'Не удалось изменить видимость работы. Попробуйте ещё раз.'}
+            </AppText>
+          ) : null}
           <PrimaryButton
             label="Скрыть"
             width="block"
