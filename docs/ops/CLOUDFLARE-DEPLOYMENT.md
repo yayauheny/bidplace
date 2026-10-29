@@ -1,7 +1,9 @@
 # Bidplace: Cloudflare deployment
 
 Дата проверки документации: 2026-10-06. Реального deployment пока нет.
-Текущий путь — один production contour, `DEC-102`. Более ранние staging-шаги
+Текущий путь — один production contour, `DEC-102`. Конфиг и скрипты
+Cloudflare принимают только `production`; staging-команды удалены. Branch gate
+deploy-скрипта и ручного workflow совпадает: `main`. Более ранние staging-шаги
 ниже сохраняют историю и не являются обязательным deployment. Результаты:
 [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
 
@@ -17,8 +19,8 @@ staging buckets и DNS этой волной не удаляются и в deplo
 `workflow_dispatch`. Push, PR и расписание deploy не запускают. GitHub
 показывает кнопку Run workflow после того, как этот файл есть на default
 branch `main`. Default branch не менять. Запускать workflow нужно с branch
-`feature/portfolio-mvp-release`: Actions → Production deploy → Run workflow →
-этот branch. Job отклоняет любой другой ref. Checkout, checks, production SPA
+`main`: Actions → Production deploy → Run workflow →
+`main`. Job отклоняет любой другой ref. Checkout, checks, production SPA
 build, image gate, необязательная migration и deploy относятся к одному
 `github.sha`.
 
@@ -118,7 +120,8 @@ Neon TCP/5432, SMTP/587 или 465, R2 и purge HTTPS. Автоматическ�
 
 Worker вызывает private DO один раз: `POST /api/internal/tick` с заголовком
 `X-Internal-Tick`. Внешний `/api/internal/*`, включая альтернативные кодировки,
-отвечает 404 до обращения к контейнеру. При `RELEASE_HOLD=closed` Cron контейнер
+отвечает 404 до обращения к контейнеру. Пути вне точного API namespace
+(например, `/API/*`) остаются в Static Assets и не вызывают контейнер. При `RELEASE_HOLD=closed` Cron контейнер
 не будит. `INTERNAL_TICK_SECRET` обязателен в контракте Worker и передаётся только
 в контейнер; GitHub workflow проверяет его наличие и включает в secrets-file.
 Оператор задаёт его интерактивно из каталога `deploy/cloudflare`:
@@ -140,8 +143,7 @@ server validation. `TELEGRAM_BOT_TOKEN` — secret сохранённого lega
 не входит в portfolio runtime; `TEST_EMAIL_FILE` — только локальный transport,
 в cloud Container не передаётся. Они не нужны для этого deployment.
 
-Заполнить **non-secret vars** отдельно в `env.staging.vars` и
-`env.production.vars`: `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, `SMTP_FROM`,
+Заполнить **non-secret vars** в `env.production.vars`: `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, `SMTP_FROM`,
 `SERVICE_RULES_OWNER/CONTACT/TEXT`. `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` и
 `SMTP_AUTH_MODE` уже заданы профилем Cloudflare Email Service. Bucket names и
 media domains уже раздельные; если изменить их, изменить contract до deploy.
@@ -280,7 +282,7 @@ Workers Paid включает 3 000 исходящих писем на акка�
 [Prisma pool](https://www.prisma.io/docs/orm/v6/prisma-client/setup-and-configuration/databases-connections/connection-pool).
 
 Перед каждым обычным deployment — backup и просмотр новых migrations, затем оператор
-на trusted machine запускает `pnpm cloudflare:migrate staging` (production: `pnpm cloudflare:migrate production --confirm-production`) с отдельно безопасно
+на trusted machine запускает `pnpm cloudflare:migrate production --confirm-production` с отдельно безопасно
 переданным `DATABASE_URL` migration role. Для `20261008040000_add_user_slug`
 этот прежний порядок не использовать. Механизм ниже локальный: production не
 переключался, образ API не заменялся и контейнер production не останавливался.
@@ -296,7 +298,7 @@ Workers Paid включает 3 000 исходящих писем на акка�
    `prod` и в операторском хранилище секретов. Значение не печатать и не
    записывать в vars контейнера. До этого production workflow не запускать.
 2. Подготовительный запуск workflow `Production deploy` на
-   `feature/portfolio-mvp-release`: `release_hold=closed`,
+   `main`: `release_hold=closed`,
    `keep_container=true`, `confirm_migration` пустой. Wrangler получает
    `--containers-rollout none` и `--keep-vars`, проверка нового образа API
    пропускается. Прежний production-образ остаётся. После успеха `GET` и `POST`
@@ -357,17 +359,16 @@ Neon поддерживает migrations через pooler, но отдельн�
 удобна для контроля schema privileges:
 [Neon Prisma migration support](https://neon.com/blog/better-postgres-with-prisma-experience).
 
-## Build, первый staging deploy и CI
+## Build и CI
 
 Node 22, pnpm 11.7.0, Docker daemon; root monorepo — build context.
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm cloudflare:check
-pnpm cloudflare:build:staging
+pnpm build:web
 pnpm cloudflare:image:verify
-# После resource/vars/secrets setup и отдельного migration step:
-pnpm cloudflare:deploy:staging
+# Production deploy: ручной workflow из раздела «Текущий production path».
 ```
 
 Deploy script проверяет vars, Worker, строит SPA для нужного origin, проверяет
@@ -378,14 +379,14 @@ production-like amd64 image, затем вызывает Wrangler. Smoke соз�
 [Static Assets SPA](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/),
 [Image management](https://developers.cloudflare.com/containers/guides/image-management/).
 
-GitHub Verify выполняет существующий `pnpm verify`, Worker gate, staging web и
-amd64 image smoke. Production branch остаётся `feature/portfolio-mvp-release`:
+GitHub Verify выполняет существующий `pnpm verify`, Worker gate, production web и
+amd64 image smoke. Production branch остаётся `main`:
 PR → required Verify / protected branch → deploy. Branch protection требуется
 включить вручную; конфиг CI не включает её автоматически.
 
 Workers Builds поддерживает root monorepo/pnpm и Dockerfile image build. Native
 integration — предпочтительный вариант **после** required CI gate. Root directory
-`/`, Node version 22.20.0, pnpm 11.7.0, production branch только release.
+`/`, Node version 22.20.0, pnpm 11.7.0, production branch только `main`.
 Не включать production full deploy для остальных branches. Обычный
 `versions upload` не выкатывает новый Container и не создаёт полноценный preview.
 Staging — отдельный Worker, отдельная source branch/full deploy.
@@ -505,7 +506,7 @@ Staging branch, staging Worker и staging secrets в этот список не 
 
 | Что проверить | Куда | Как проверить | Статус |
 |---|---|---|---|
-| Workflow на `main` и на `feature/portfolio-mvp-release`, без смены default branch | `.github/workflows/production-deploy.yml`, `environment: prod` | Actions показывает Production deploy. Run на release branch. Другой ref job отклоняет | Needs verification. Файл подготовлен. Push и run не выполнялись |
+| Workflow на `main` и на `main`, без смены default branch | `.github/workflows/production-deploy.yml`, `environment: prod` | Actions показывает Production deploy. Run на release branch. Другой ref job отклоняет | Needs verification. Файл подготовлен. Push и run не выполнялись |
 | `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`, `CLOUDFLARE_ACCOUNT_ID` | Variables Environment `prod`. Для первого запуска owner `bidplace`, contact `work.evles@gmail.com`, текст правил утверждён временно | Пустые значения останавливают job до Wrangler. Репозиторий не хранит production owner | Operator entered. Значения этой волной не читались |
 | Secrets Environment `prod`: `NEON_DIRECT_URL` для migration, pooled `DATABASE_URL` для runtime, остальные runtime secrets workflow | Settings → Environments → `prod`. Оригиналы — в зашифрованном хранилище оператора | Имена совпадают с workflow. Значения не читать и не вводить повторно | Operator reported entered. Значения этой волной не читались |
 

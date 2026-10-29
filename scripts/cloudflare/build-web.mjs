@@ -65,10 +65,7 @@ function verifyAssets(directory) {
     if (contents.includes(secretCanary))
       throw new Error('Non-public build setting leaked into assets');
     if (contents.includes(config.vars.API_URL)) matchingOrigin = true;
-    const otherOrigin = deploymentConfig(
-      target === 'staging' ? 'production' : 'staging',
-    ).vars.API_URL;
-    if (contents.includes(otherOrigin))
+    if (contents.includes('https://staging.bid.place'))
       throw new Error('Static assets contain the other environment API origin');
   }
 }

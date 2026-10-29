@@ -7,8 +7,8 @@ import { root } from './config.mjs';
 import { runDirectSql } from './deploy.mjs';
 
 const target = process.argv[2];
-if (!['staging', 'production'].includes(target)) throw new Error('Choose staging or production');
-if (target === 'production' && !process.argv.includes('--confirm-production')) {
+if (target !== 'production') throw new Error('Choose production');
+if (!process.argv.includes('--confirm-production')) {
   throw new Error('Production migration requires --confirm-production after backup/review');
 }
 if (!process.env.DATABASE_URL) throw new Error('Supply DATABASE_URL through the trusted operator environment');

@@ -27,7 +27,7 @@ import {
   validateConfig,
 } from './config.mjs';
 
-const RELEASE_BRANCH = 'feature/portfolio-mvp-release';
+const RELEASE_BRANCH = 'main';
 const PRODUCTION_SESSION_SECRET_MIN_LENGTH = 32;
 const GATE_ONLY_ENV = [
   ...workerSecrets,
@@ -400,119 +400,97 @@ function argumentValue(args, name) {
 function main() {
   const args = process.argv.slice(2);
   const target = args.find((arg) => !arg.startsWith('--'));
-  const config = deploymentConfig(target);
-  if (target === 'production') {
-    const branch =
-      process.env.WORKERS_CI_BRANCH ??
-      execFileSync('git', ['branch', '--show-current'], {
-        cwd: root,
-        encoding: 'utf8',
-      }).trim();
-    assertReleaseBranch(branch);
-    const status = execFileSync(
-      'git',
-      ['-c', 'core.fsmonitor=false', 'status', '--porcelain'],
-      {
-        cwd: root,
-        encoding: 'utf8',
-      },
-    );
-    if (status.trim())
-      throw new Error('Production deploy requires a clean release checkout');
-    const secretsFile = argumentValue(args, '--secrets-file');
-    if (!secretsFile)
-      throw new Error('Production deploy requires --secrets-file');
-    const rules = {
-      owner: process.env.SERVICE_RULES_OWNER,
-      contact: process.env.SERVICE_RULES_CONTACT,
-      text: process.env.SERVICE_RULES_TEXT,
-    };
-    assertRuleValue('SERVICE_RULES_OWNER', rules.owner);
-    assertRuleValue('SERVICE_RULES_CONTACT', rules.contact);
-    assertRulesText(rules.text);
-    assertSecretsFile(secretsFile, root);
-    if (!process.env.CLOUDFLARE_API_TOKEN?.trim())
-      throw new Error('CLOUDFLARE_API_TOKEN is required');
-    const release = argumentValue(args, '--release');
-    const keepContainer = args.includes('--keep-container');
-    const keepHold = args.includes('--keep-hold');
-    const releaseId =
-      release === 'closed' || release === 'open'
-        ? assertReleaseSha(
-            execFileSync('git', ['rev-parse', 'HEAD'], {
-              cwd: root,
-              encoding: 'utf8',
-            }).trim(),
-          )
-        : undefined;
-    const gates = gateEnvironment(process.env);
-    const { directory, file } = writeProductionConfig(rules);
-    const wrangler = productionWranglerArgs({
-      configFile: file,
-      secretsFile,
-      release,
-      keepContainer,
-      keepHold,
-      releaseId,
-    });
-    try {
-      if (release === 'open') {
-        if (!process.env.NEON_DIRECT_URL?.trim())
-          throw new Error(
-            'Opening access requires NEON_DIRECT_URL; value is not logged',
-          );
-        assertClosedRelease(releaseId, file);
-        runDirectSql(nicknameGateSql, process.env.NEON_DIRECT_URL);
-      }
-      execFileSync('pnpm', ['cloudflare:check'], {
-        cwd: root,
-        stdio: 'inherit',
-        env: gates,
-      });
-      execFileSync('node', ['scripts/cloudflare/build-web.mjs', target], {
-        cwd: root,
-        stdio: 'inherit',
-        env: gates,
-      });
-      if (!wrangler.skipImage) {
-        execFileSync('pnpm', ['cloudflare:image:verify'], {
-          cwd: root,
-          stdio: 'inherit',
-          env: gates,
-        });
-      }
-      execFileSync('pnpm', ['exec', 'wrangler', ...wrangler.args], {
-        cwd: root,
-        stdio: 'inherit',
-        env: {
-          ...gates,
-          CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
-        },
-      });
-    } finally {
-      rmSync(directory, { recursive: true, force: true });
-    }
-    return;
-  }
-  validateConfig(config);
-  execFileSync('pnpm', ['cloudflare:check'], { cwd: root, stdio: 'inherit' });
-  execFileSync('node', ['scripts/cloudflare/build-web.mjs', target], {
-    cwd: root,
-    stdio: 'inherit',
-  });
-  execFileSync('pnpm', ['cloudflare:image:verify'], {
-    cwd: root,
-    stdio: 'inherit',
-  });
-  execFileSync(
-    'pnpm',
-    ['exec', 'wrangler', 'deploy', '--config', configPath, '--env', target],
+  deploymentConfig(target);
+  const branch =
+    process.env.WORKERS_CI_BRANCH ??
+    execFileSync('git', ['branch', '--show-current'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+  assertReleaseBranch(branch);
+  const status = execFileSync(
+    'git',
+    ['-c', 'core.fsmonitor=false', 'status', '--porcelain'],
     {
       cwd: root,
-      stdio: 'inherit',
-      env: { ...process.env, CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false' },
+      encoding: 'utf8',
     },
   );
+  if (status.trim())
+    throw new Error('Production deploy requires a clean release checkout');
+  const secretsFile = argumentValue(args, '--secrets-file');
+  if (!secretsFile)
+    throw new Error('Production deploy requires --secrets-file');
+  const rules = {
+    owner: process.env.SERVICE_RULES_OWNER,
+    contact: process.env.SERVICE_RULES_CONTACT,
+    text: process.env.SERVICE_RULES_TEXT,
+  };
+  assertRuleValue('SERVICE_RULES_OWNER', rules.owner);
+  assertRuleValue('SERVICE_RULES_CONTACT', rules.contact);
+  assertRulesText(rules.text);
+  assertSecretsFile(secretsFile, root);
+  if (!process.env.CLOUDFLARE_API_TOKEN?.trim())
+    throw new Error('CLOUDFLARE_API_TOKEN is required');
+  const release = argumentValue(args, '--release');
+  const keepContainer = args.includes('--keep-container');
+  const keepHold = args.includes('--keep-hold');
+  const releaseId =
+    release === 'closed' || release === 'open'
+      ? assertReleaseSha(
+          execFileSync('git', ['rev-parse', 'HEAD'], {
+            cwd: root,
+            encoding: 'utf8',
+          }).trim(),
+        )
+      : undefined;
+  const gates = gateEnvironment(process.env);
+  const { directory, file } = writeProductionConfig(rules);
+  const wrangler = productionWranglerArgs({
+    configFile: file,
+    secretsFile,
+    release,
+    keepContainer,
+    keepHold,
+    releaseId,
+  });
+  try {
+    if (release === 'open') {
+      if (!process.env.NEON_DIRECT_URL?.trim())
+        throw new Error(
+          'Opening access requires NEON_DIRECT_URL; value is not logged',
+        );
+      assertClosedRelease(releaseId, file);
+      runDirectSql(nicknameGateSql, process.env.NEON_DIRECT_URL);
+    }
+    execFileSync('pnpm', ['cloudflare:check'], {
+      cwd: root,
+      stdio: 'inherit',
+      env: gates,
+    });
+    execFileSync('node', ['scripts/cloudflare/build-web.mjs', target], {
+      cwd: root,
+      stdio: 'inherit',
+      env: gates,
+    });
+    if (!wrangler.skipImage) {
+      execFileSync('pnpm', ['cloudflare:image:verify'], {
+        cwd: root,
+        stdio: 'inherit',
+        env: gates,
+      });
+    }
+    execFileSync('pnpm', ['exec', 'wrangler', ...wrangler.args], {
+      cwd: root,
+      stdio: 'inherit',
+      env: {
+        ...gates,
+        CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
+      },
+    });
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 if (

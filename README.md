@@ -31,7 +31,7 @@
 - после модерации профиль и работы доступны публично;
 - опубликованные изображения выдаются через Cloudflare R2/CDN.
 
-Медиа: S3-compatible object storage (Cloudflare R2 в production) реализован в API и deploy-скриптах; staging/production требуют своих smoke (`docs/ops/CLOUDFLARE-DEPLOYMENT.md`).
+Медиа: S3-compatible object storage (Cloudflare R2 в production) реализован в API и deploy-скриптах; production требует своего smoke (`docs/ops/CLOUDFLARE-DEPLOYMENT.md`).
 Актуальный снимок: [`docs/product/11-PROJECT-STATUS.md`](docs/product/11-PROJECT-STATUS.md); релизный audit: [`docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 
 ## Документация
@@ -204,7 +204,7 @@ Docker Compose поднимает PostgreSQL локально на `5432`.
 
 Backend использует `DATABASE_URL` из корневого `.env`.
 
-Для воспроизводимого local/test seed нужны `SEED_ADMIN_EMAIL` и `SEED_ADMIN_PASSWORD_HASH`. Они задаются локально (через `.env`), сырой пароль в Git не хранится. Реальные production credentials не должны использоваться.
+Для воспроизводимого local/test seed нужны `SEED_ADMIN_EMAIL` и `SEED_ADMIN_PASSWORD`. Они задаются локально (через `.env`), сырой пароль в Git не хранится. Реальные production credentials не должны использоваться.
 
 **Внимание**: команда удаляет все данные из настроенной базы. Запуск разрешён только для disposable local DB. Точная команда:
 

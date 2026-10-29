@@ -18,6 +18,7 @@ import { containerReleaseReady } from '../../deploy/cloudflare/src/release-gate.
 import { root } from './config.mjs';
 import {
   assertProductionReleaseMode,
+  assertReleaseBranch,
   assertSecretsFile,
   gateEnvironment,
   productionWranglerArgs,
@@ -60,7 +61,7 @@ test('production deploy rejects a non-release branch without printing credential
       encoding: 'utf8',
       env: {
         PATH: process.env.PATH,
-        WORKERS_CI_BRANCH: 'main',
+        WORKERS_CI_BRANCH: 'feature/not-release',
         DATABASE_URL: canary,
       },
     },
@@ -543,5 +544,12 @@ test('production config sends an enabled tick schedule to Wrangler', () => {
     assert.equal(config.vars.TICK_CRON, '*/5 * * * *');
   } finally {
     rmSync(created.directory, { recursive: true, force: true });
+  }
+});
+
+test('production branch gate matches the main-only workflow', () => {
+  assert.doesNotThrow(() => assertReleaseBranch('main'));
+  for (const branch of ['feature/portfolio-mvp-release', 'feature/scheduler-tick', 'staging']) {
+    assert.throws(() => assertReleaseBranch(branch), /release branch/);
   }
 });

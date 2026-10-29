@@ -38,8 +38,6 @@
     "cloudflare:check": "pnpm exec tsc -p deploy/cloudflare/tsconfig.json && pnpm exec eslint deploy/cloudflare scripts/cloudflare --ext .ts,.mts,.mjs,.cjs && pnpm exec vitest run --config deploy/cloudflare/vitest.config.mts && node --test scripts/cloudflare/*.spec.mjs",
     "cloudflare:image:verify": "node scripts/cloudflare/verify-image.mjs",
     "cloudflare:deploy": "node scripts/cloudflare/deploy.mjs production",
-    "cloudflare:deploy:staging": "node scripts/cloudflare/deploy.mjs staging",
-    "cloudflare:build:staging": "node scripts/cloudflare/build-web.mjs staging",
     "cloudflare:migrate": "node scripts/cloudflare/migrate.mjs"
   },
   "devDependencies": {

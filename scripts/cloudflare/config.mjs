@@ -7,7 +7,7 @@ export const root = fileURLToPath(new URL('../../', import.meta.url));
 export const configPath = resolve(root, 'deploy/cloudflare/wrangler.jsonc');
 
 export function deploymentConfig(target) {
-  if (!['production', 'staging'].includes(target)) throw new Error('Choose production or staging');
+  if (target !== 'production') throw new Error('Choose production');
   return configureTickSchedule(JSON.parse(readFileSync(configPath, 'utf8')).env[target], process.env.TICK_CRON);
 }
 

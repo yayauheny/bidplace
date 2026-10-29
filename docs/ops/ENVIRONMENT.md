@@ -60,7 +60,7 @@
 
 | Имя | ★ | Зачем | По умолчанию | Что сломается |
 | --- | --- | --- | --- | --- |
-| `NODE_ENV`, `APP_ENV` | ★ | Профиль; в облаке `production` + `production`/`staging` | — | Деплой отказывает |
+| `NODE_ENV`, `APP_ENV` | ★ | Профиль; в облаке `production` + `production` | — | Деплой отказывает |
 | `API_PORT` | | Порт API в контейнере | 3001 | — |
 | `API_URL`, `CORS_ORIGIN`, `PASSWORD_RESET_URL_BASE` | ★ | Адрес сайта; три значения должны совпадать с доменом маршрута | — | Деплой отказывает; ссылки в письмах |
 | `TRUST_PROXY` | ★ | Брать IP клиента из заголовков Cloudflare | false | Лимиты и антифрод считают всех одним IP |
@@ -103,7 +103,7 @@
 | `CLOUDFLARE_API_TOKEN` | ★ | Выкладка через Wrangler |
 | `NEON_DIRECT_URL` | ★ | Прямое подключение к Neon для шага открытия доступа (не логируется) |
 | `DATABASE_URL_UNPOOLED` | | Миграции без pooler, если используется |
-| `WORKERS_CI_BRANCH` | | Имя ветки в CI; деплой прода только с ветки выпуска |
+| `WORKERS_CI_BRANCH` | | Имя ветки в CI; деплой прода только с `main` |
 | `EXPECTED_RELEASE_ID`, `RELEASE_HOLD`, `RELEASE_ID`, `RELEASE_IMAGE` | | Ставит сам скрипт деплоя; руками не задавать |
 
 ## Расписание тика и будущие волны
