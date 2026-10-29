@@ -16,6 +16,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import {
   configPath,
+  configureTickSchedule,
   deploymentConfig,
   root,
   turnstileSiteKeyForBuild,
@@ -269,4 +270,30 @@ test('secrets in vars and public bypass URLs fail the preflight', () => {
   const bypass = configured('production');
   bypass.workers_dev = true;
   assert.throws(() => validateConfig(bypass), /disable public bypass/);
+});
+
+test('tick schedule is opt-in and replaces stale template triggers', () => {
+  for (const cron of [undefined, '', '   ']) {
+    const config = { vars: {}, triggers: { crons: ['* * * * *'] } };
+    configureTickSchedule(config, cron);
+    assert.equal(Object.hasOwn(config, 'triggers'), false);
+    assert.equal(config.vars.TICK_CRON, '');
+  }
+  const config = { vars: {} };
+  configureTickSchedule(config, '  */5 * * * *  ');
+  assert.deepEqual(config.triggers.crons, ['*/5 * * * *']);
+  assert.equal(config.vars.TICK_CRON, '*/5 * * * *');
+});
+
+test('tick schedule rejects invalid cron fields without echoing the input', () => {
+  for (const cron of ['garbage', '* * * *', '* * * * * *', '60 * * * *',
+    '*/0 * * * *', '* 24 * * *', '* * 0 * *', '* * * 13 *', '* * * * 8',
+    '5-2 * * * *', '* * * * MON#6']) {
+    assert.throws(() => configureTickSchedule({ vars: {} }, cron), /^Error: Invalid TICK_CRON$/);
+  }
+  for (const cron of ['0,30 1-5/2 * JAN,MAR MON-FRI', '0 0 L * *', '0 0 15W * *', '0 0 * * FRIL', '0 0 * * MON#2']) {
+    const config = { vars: {} };
+    configureTickSchedule(config, cron);
+    assert.deepEqual(config.triggers.crons, [cron]);
+  }
 });

@@ -36,6 +36,7 @@
       "SMTP_PASSWORD",
       "CLOUDFLARE_CACHE_TOKEN",
       "TURNSTILE_SECRET_KEY",
+      "INTERNAL_TICK_SECRET",
       "RELEASE_CONTROL"
     ]
   },
@@ -88,6 +89,7 @@
           "SMTP_PASSWORD",
           "CLOUDFLARE_CACHE_TOKEN",
           "TURNSTILE_SECRET_KEY",
+          "INTERNAL_TICK_SECRET",
           "RELEASE_CONTROL"
         ]
       },
@@ -168,6 +170,7 @@
           "SMTP_PASSWORD",
           "CLOUDFLARE_CACHE_TOKEN",
           "TURNSTILE_SECRET_KEY",
+          "INTERNAL_TICK_SECRET",
           "RELEASE_CONTROL"
         ]
       },

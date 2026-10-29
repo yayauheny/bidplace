@@ -106,7 +106,31 @@ Neon TCP/5432, SMTP/587 или 465, R2 и purge HTTPS. Автоматическ�
 Полный список переменных со ★ обязательных, без значений —
 [ENVIRONMENT.md](ENVIRONMENT.md); перед любым production deploy пройти его
 целиком. Расписание тика — `TICK_CRON` (W2): пусто по умолчанию, Cron Trigger
-не создаётся; `*/5 * * * *` при реальных аукционах.
+не создаётся; `*/5 * * * *` при реальных аукционах. GitHub workflow берёт
+`TICK_CRON` из variables Environment `prod`; локальный deploy — из окружения
+оператора. `scripts/cloudflare/config.mjs` проверяет пять полей Cron, диапазоны,
+списки, шаги и документированные имена/расширения Cloudflare. Неверная строка
+останавливает deploy. То же расписание передаётся в `vars.TICK_CRON` и контейнер.
+Записанный `wrangler.jsonc` не содержит расписания. Пустая настройка удаляет
+шаблонные triggers; временный production config передаёт Wrangler `crons: []`,
+чтобы снять и ранее включённое расписание. Простое отсутствие `triggers`
+сохранило бы его ([правила удаления Cron](https://developers.cloudflare.com/workers/configuration/cron-triggers/#remove-a-cron-trigger)).
+
+Worker вызывает private DO один раз: `POST /api/internal/tick` с заголовком
+`X-Internal-Tick`. Внешний `/api/internal/*`, включая альтернативные кодировки,
+отвечает 404 до обращения к контейнеру. При `RELEASE_HOLD=closed` Cron контейнер
+не будит. `INTERNAL_TICK_SECRET` обязателен в контракте Worker и передаётся только
+в контейнер; GitHub workflow проверяет его наличие и включает в secrets-file.
+Оператор задаёт его интерактивно из каталога `deploy/cloudflare`:
+`wrangler secret put INTERNAL_TICK_SECRET --env production`. Значение не
+передаётся в командной строке и не попадает в браузер.
+
+При старте Cron выключен. Включать `*/5 * * * *` при первых реальных аукционах:
+при `sleepAfter = 10m` тик каждые пять минут почти не даёт контейнеру уснуть,
+поэтому оплачивается почти постоянная работа контейнера. Расписание исполняется
+по UTC; обновление Cron у Cloudflare распространяется с задержкой.
+[Scheduled handler](https://developers.cloudflare.com/workers/runtime-apis/handlers/scheduled/)
+использует `ctx.waitUntil` для выполнения тика.
 
 Owner — `deploy/cloudflare/wrangler.jsonc`, allowlist Container —
 `deploy/cloudflare/src/environment.ts`, server validation — `apps/api/src/core/config/env.ts`.
@@ -133,6 +157,7 @@ MEDIA_PUBLIC_BASE_URL. Названия/правила публичны и се�
 | DATABASE_URL | Neon pooler URL; отдельный для каждого environment |
 | SESSION_SECRET | Независимый случайный secret, минимум 32 chars |
 | OTP_HASH_SECRET | Отдельный случайный ключ HMAC для OTP, минимум 32 chars |
+| INTERNAL_TICK_SECRET | Авторизация внутреннего тика; обязателен независимо от включения Cron |
 | S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY | R2 Object Read & Write, только два buckets данного environment |
 | SMTP_USERNAME / SMTP_PASSWORD | Cloudflare Email Service SMTP. Username — литерал `api_token`. Password — отдельный API token с Email Sending: Edit |
 | CLOUDFLARE_CACHE_TOKEN | Zone → Cache Purge только для зоны `bid.place` |

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { routeRequest } from './router';
+import { routeRequest, runScheduledTick } from './router';
 
 function harness(
   response = () => Response.json({ public: true }),
@@ -15,16 +15,63 @@ function harness(
   const getByName = vi.fn(() => ({ fetch: fetchApi }));
   const assets = vi.fn(async () => new Response('SPA'));
   const env = {
-    API: { getByName }, ASSETS: { fetch: assets },
+    API: { getByName }, ASSETS: { fetch: assets }, INTERNAL_TICK_SECRET: 'synthetic-internal-tick',
     RELEASE_HOLD: release.hold, RELEASE_CONTROL: release.control,
     RELEASE_ID: 'a'.repeat(40), RELEASE_IMAGE: release.image ?? 'current',
   };
   const ctx = { waitUntil: (promise: Promise<unknown>) => { pending.push(promise); } };
-  return { cache, fetchApi, getByName, assets, pending,
+  return { env, cache, fetchApi, getByName, assets, pending,
     request: (path: string, init?: RequestInit) => routeRequest(new Request('https://bid.place' + path, init), env, ctx, cache as unknown as Cache) };
 }
 
 describe('Cloudflare application boundary', () => {
+  it.each(['GET', 'POST'])(
+    'rejects external internal routes before the container (%s)',
+    async (method) => {
+      const h = harness();
+      for (const path of [
+        '/api/internal', '/api/internal/tick', '/api/internal/x',
+        '/api/internal/tick?source=cron', '/api/%69nternal/tick',
+        '/api/internal%2ftick', '/api//internal/tick',
+        '/API/INTERNAL/tick', '/api/internal;x/tick',
+        '/api/internal%252ftick', '/%61pi/internal/tick',
+        '/api/other%2f..%2finternal/tick', '/api/internal%3ftick',
+      ]) {
+        const response = await h.request(path, { method, headers: { 'X-Internal-Tick': 'synthetic-internal-tick' } });
+        expect(response.status).toBe(404);
+        expect(response.headers.get('Cache-Control')).toBe('no-store');
+      }
+      expect(h.getByName).not.toHaveBeenCalled();
+      expect(h.assets).not.toHaveBeenCalled();
+      expect(h.cache.match).not.toHaveBeenCalled();
+    },
+  );
+
+  it('sends one authenticated tick through the private container binding', async () => {
+    const h = harness();
+    const response = await runScheduledTick(h.env);
+    expect(response.status).toBe(200);
+    expect(h.getByName).toHaveBeenCalledExactlyOnceWith('portfolio-api');
+    expect(h.fetchApi).toHaveBeenCalledTimes(1);
+    const request = h.fetchApi.mock.calls[0][0];
+    expect(request.url).toBe('http://container/api/internal/tick');
+    expect(request.method).toBe('POST');
+    expect(request.headers.get('X-Internal-Tick')).toBe('synthetic-internal-tick');
+  });
+
+  it('does not wake the container during a release hold', async () => {
+    const h = harness(undefined, { hold: 'closed' });
+    expect((await runScheduledTick(h.env)).status).toBe(503);
+    expect(h.getByName).not.toHaveBeenCalled();
+  });
+
+  it('rejects a missing tick secret before waking the container', async () => {
+    const h = harness();
+    h.env.INTERNAL_TICK_SECRET = '';
+    await expect(runScheduledTick(h.env)).rejects.toThrow('INTERNAL_TICK_SECRET');
+    expect(h.getByName).not.toHaveBeenCalled();
+  });
+
   it('serves deep links through assets without starting the API', async () => {
     const h = harness();
     expect(await (await h.request('/works/example')).text()).toBe('SPA');
@@ -78,10 +125,11 @@ describe('Cloudflare application boundary', () => {
   it('preserves sessions and bodies while replacing spoofed proxy headers', async () => {
     const h = harness();
     await h.request('/api/auth/login', { method: 'POST', body: 'payload', headers: {
-      Cookie: 'session=opaque', 'CF-Connecting-IP': '192.0.2.1', 'X-Forwarded-For': 'spoof',
+      'X-Internal-Tick': 'synthetic-external-tick', Cookie: 'session=opaque', 'CF-Connecting-IP': '192.0.2.1', 'X-Forwarded-For': 'spoof',
       'X-Forwarded-Proto': 'http', 'X-Real-IP': 'spoof', Forwarded: 'for=spoof',
     } });
     const forwarded = h.fetchApi.mock.calls[0][0];
+    expect(forwarded.headers.has('X-Internal-Tick')).toBe(false);
     expect(forwarded.headers.get('Cookie')).toBe('session=opaque');
     expect(forwarded.headers.get('X-Forwarded-For')).toBe('192.0.2.1');
     expect(forwarded.headers.get('X-Forwarded-Proto')).toBe('https');

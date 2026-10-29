@@ -41,6 +41,7 @@ const result = spawnSync(
       SMTP_PASSWORD: secretCanary,
       CLOUDFLARE_CACHE_TOKEN: secretCanary,
       TURNSTILE_SECRET_KEY: secretCanary,
+      INTERNAL_TICK_SECRET: secretCanary,
     },
   },
 );

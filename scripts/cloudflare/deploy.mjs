@@ -21,6 +21,7 @@ import {
 } from '../../deploy/cloudflare/src/release-gate.ts';
 import {
   configPath,
+  configureTickSchedule,
   deploymentConfig,
   root,
   validateConfig,
@@ -151,7 +152,7 @@ export function assertSecretsFile(file, checkoutRoot) {
   }
 }
 
-export function writeProductionConfig(rules) {
+export function writeProductionConfig(rules, tickCron = process.env.TICK_CRON) {
   const owner = assertRuleValue('SERVICE_RULES_OWNER', rules?.owner);
   const contact = assertRuleValue('SERVICE_RULES_CONTACT', rules?.contact);
   const text = assertRulesText(rules?.text);
@@ -159,6 +160,9 @@ export function writeProductionConfig(rules) {
   full.env.production.vars.SERVICE_RULES_OWNER = owner;
   full.env.production.vars.SERVICE_RULES_CONTACT = contact;
   full.env.production.vars.SERVICE_RULES_TEXT = text;
+  configureTickSchedule(full.env.production, tickCron);
+  // Wrangler preserves deployed schedules when triggers are omitted.
+  full.env.production.triggers ??= { crons: [] };
   validateConfig(full.env.production);
   const base = dirname(configPath);
   full.main = resolve(base, full.main);

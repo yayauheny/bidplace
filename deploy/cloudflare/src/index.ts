@@ -2,7 +2,7 @@ import { Container, type State } from '@cloudflare/containers';
 
 import { containerEnvironment, type RuntimeEnvironment } from './environment';
 import { containerStopped } from './release-gate';
-import { routeRequest, type RouterBindings } from './router';
+import { routeRequest, runScheduledTick, type RouterBindings } from './router';
 
 type Environment = RuntimeEnvironment & RouterBindings;
 
@@ -44,6 +44,9 @@ export class PortfolioApi extends Container<Environment> {
 }
 
 export default {
+  scheduled(_controller: ScheduledController, env: Environment, ctx: ExecutionContext): void {
+    ctx.waitUntil(runScheduledTick(env));
+  },
   fetch(request: Request, env: Environment, ctx: ExecutionContext): Promise<Response> {
     return routeRequest(request, env, ctx, caches.default);
   },

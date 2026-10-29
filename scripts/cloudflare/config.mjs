@@ -8,7 +8,42 @@ export const configPath = resolve(root, 'deploy/cloudflare/wrangler.jsonc');
 
 export function deploymentConfig(target) {
   if (!['production', 'staging'].includes(target)) throw new Error('Choose production or staging');
-  return JSON.parse(readFileSync(configPath, 'utf8')).env[target];
+  return configureTickSchedule(JSON.parse(readFileSync(configPath, 'utf8')).env[target], process.env.TICK_CRON);
+}
+
+function validCron(cron) {
+  const fields = cron.split(/\s+/);
+  if (fields.length !== 5) return false;
+  const bounds = [[0, 59], [0, 23], [1, 31], [1, 12], [1, 7]];
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  return fields.every((raw, index) => {
+    const [min, max] = bounds[index];
+    const names = index === 3 ? months : index === 4 ? weekdays : [];
+    const field = raw.toUpperCase().replace(/[A-Z]{3}/g, (name) => {
+      const position = names.indexOf(name);
+      return position < 0 ? name : String(position + 1);
+    });
+    if (index === 2 && /^(L|LW|(?:[1-9]|[12]\d|3[01])W)$/.test(field)) return true;
+    if (index === 4 && /^[1-7](?:L|#[1-5])$/.test(field)) return true;
+    return field.split(',').every((part) => {
+      const match = /^(\*|\d+(?:-\d+)?)(?:\/(\d+))?$/.exec(part);
+      if (!match) return false;
+      if (match[2] !== undefined && (+match[2] < 1 || +match[2] > max - min + 1)) return false;
+      if (match[1] === '*') return true;
+      const [start, end = start] = match[1].split('-').map(Number);
+      return start >= min && end <= max && start <= end;
+    });
+  });
+}
+
+export function configureTickSchedule(config, value) {
+  const cron = value?.trim() ?? '';
+  if (cron && !validCron(cron)) throw new Error('Invalid TICK_CRON');
+  config.vars.TICK_CRON = cron;
+  delete config.triggers;
+  if (cron) config.triggers = { crons: [cron] };
+  return config;
 }
 
 export function turnstileSiteKeyForBuild(callerValue, configuredValue) {

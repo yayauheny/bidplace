@@ -8,6 +8,7 @@ export const requiredSecrets = [
   'SMTP_PASSWORD',
   'CLOUDFLARE_CACHE_TOKEN',
   'TURNSTILE_SECRET_KEY',
+  'INTERNAL_TICK_SECRET',
 ] as const;
 
 // Worker-only. Never copied into the API container.
@@ -54,6 +55,7 @@ export const containerVariables = [
 ] as const;
 
 export const optionalContainerSettings = [
+  'TICK_CRON',
   'ANALYTICS_WEB_ENABLED',
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',
