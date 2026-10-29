@@ -64,6 +64,29 @@ Environment `prod` — источник значений для этого deplo
 копия. Оригиналы остаются в зашифрованном хранилище оператора. Секреты не
 читаются обратно из GitHub и повторно не вводятся.
 
+## W2: проверка после будущего деплоя
+
+Локальная реализация не подтверждает live запуск. До нового runtime применить
+миграцию `20261029010000_system_heartbeats`; задать `INTERNAL_TICK_SECRET` в
+Environment `prod` по [реестру окружения](ENVIRONMENT.md) и передать штатным
+deploy-путём Worker → Container. Для ручного задания Worker имя команды:
+`wrangler secret put INTERNAL_TICK_SECRET --env production`; значение не писать
+в отчёты/логи. Деплой выполняется основателем позже, из `main`.
+
+После деплоя разбудить Container обычным визитом и за две минуты проверить через
+доверенное подключение к БД, что `system_heartbeats` со `name = 'tick'` обновляет
+`at` каждые успешные тики. Успешный тик не пишет отдельный response-лог; отсутствие
+ошибок в логах само по себе не доказывает работу. Проверить
+`curl -i https://bid.place/api/internal/tick` → 404 (также POST); такой публичный
+запрос не должен будить Container.
+
+При пустом `TICK_CRON` Cron выключен; deploy явно снимает старое расписание.
+Проверять пробуждение спящего Container по расписанию нужно только после явного
+включения Cron настройкой и проверки его наличия в Cloudflare. Затем подтвердить
+новый heartbeat после scheduled invocation и отсутствие ошибок задач. При пустом
+расписании recovery после сна проверяется обычным визитом и последующим тиком;
+ответа Cron через две минуты ожидать нельзя. Health UI/outbox добавляет W3.
+
 ## Архитектура
 
 `bid.place` → Worker: `/api` и `/api/*` → один private Nest Container, остальные
@@ -73,7 +96,7 @@ Environment `prod` — источник значений для этого deplo
 Cloudflare Containers, не новая очередь или business storage.
 
 Basic Container: 0.25 vCPU / 1 GiB, `max_instances=1`, одно постоянное имя DO,
-порт 3001, idle sleep 10 минут, без cron/keepalive. Internet access нужен для
+порт 3001, idle sleep 10 минут; Cron выключен при пустом `TICK_CRON`. Internet access нужен для
 Neon TCP/5432, SMTP/587 или 465, R2 и purge HTTPS. Автоматических миграций на
 старте нет. [Container class](https://developers.cloudflare.com/containers/api/container-class/),
 [configuration](https://developers.cloudflare.com/containers/configuration/wrangler/).

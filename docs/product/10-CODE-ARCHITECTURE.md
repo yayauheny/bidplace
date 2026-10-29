@@ -3,6 +3,43 @@
 Последнее обновление: 2026-10-29
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-10-29 — Scheduler tick (W2, local implementation)
+
+`apps/api/src/core/tick/TickService` is the single scheduling/recovery owner.
+Domain modules register bounded jobs during module initialization; the global
+`TickModule` starts one unreferenced 30-second timer after bootstrap and clears
+it on shutdown. HTTP and the timer share process-local single-flight exclusion;
+an overlapping invocation returns `skipped: true`. Jobs share one `now` and a
+cooperative 20-second deadline. Later jobs stop at the deadline; an in-flight
+I/O can overrun, and exclusion stays held until it settles. Failed jobs do not
+stop subsequent jobs and log only the registered name.
+
+The additive migration `20261029010000_system_heartbeats` creates the two-column
+`system_heartbeats(name, at)` table. Only an unskipped, failure-free run completed
+within budget upserts `tick` with PostgreSQL `now()`; `lastSucceededAt()` reads
+that durable heartbeat. Apply the migration before starting this runtime.
+
+The Worker scheduled handler calls the private `portfolio-api` Durable Object
+with `POST /api/internal/tick` and `X-Internal-Tick`. Public `/api/internal/*`
+requests receive 404 before the Container is called, and forwarded requests lose
+any caller-supplied tick header. Nest independently requires `InternalTickGuard`.
+`RELEASE_HOLD=closed` blocks scheduled forwarding. `TICK_CRON` is deploy config:
+empty disables Cron; final deployment explicitly clears any old schedule. While
+awake, the timer runs without Cron; sleeping Containers have no schedule-driven
+recovery until Cron is enabled or a visit wakes them. Cloudflare config/scripts
+support only production and guard deployment to `main` (`DEC-102`).
+
+Enabled `MediaLifecycleService` registers `media` and keeps its existing timers
+as acceleration only. One batch executor selects up to eight operations and
+sixteen abandoned STAGING assets, respecting the supplied deadline. It recovers
+due REVOKE/CLEANUP and expired RUNNING PUBLISH below the retry ceiling through
+the existing leases and publication CAS/active-author guards. PENDING/FAILED
+PUBLISH and UPLOAD remain explicit/manual paths. Persisted operation failures
+fail the job and prevent heartbeat success. Existing leases also arbitrate
+legacy-timer/direct-call overlap. W3 commerce jobs, outbox and admin health UI
+remain planned. Live scheduled execution is **Needs verification**; setup and
+post-deploy checks belong to the [runbook](../ops/CLOUDFLARE-DEPLOYMENT.md).
+
 ## 2026-10-26 — Photo workflow (DEC-148)
 
 `product-draft-image-actions.ts` owns selection, sequential preparation/upload,
@@ -112,8 +149,9 @@ Runtime vars/secrets are allowlisted into Container env; no secrets are embedded
 in static assets/image. Existing media reconciliation is preserved and can issue
 SQL while Container runs; natural Container sleep is not an automatic retry SLA.
 
-Staging/production configs, deploy/image/migration scripts and CI gates are
-prepared. Live domains, secrets, Neon/R2 and cache behavior remain unverified.
+Production-only config, deploy/image/migration scripts and CI gates are
+prepared; the deploy branch guard requires `main` (`DEC-102`). Live domains,
+secrets, Neon/R2 and cache behavior remain unverified.
 The [deployment runbook](../ops/CLOUDFLARE-DEPLOYMENT.md) owns setup/configuration;
 the [verification record](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md)
 owns exact results and blockers. Migration is a separate operator step, never cold start.
@@ -232,7 +270,7 @@ facts; "Planned" owners are created by the named launch wave.
 | Lot and order transitions, pricing | `apps/api/src/commerce/` `listing-state.ts`, `order-state.ts`, `auction-pricing.ts` | Planned — W3 |
 | API errors | `apps/api/src/core/errors/` (`AppException` + mapper) | Implemented |
 | Business time | `apps/api/src/core/time/` (`Clock`; `dbNow(tx)` added in W3) | Partial |
-| Scheduled jobs | `TickService` (W2) | Planned — W2 |
+| Scheduled jobs | `apps/api/src/core/tick/TickService` | Implemented locally — W2; live Needs verification |
 | Transactional emails | notification outbox, `enqueueNotification` | Planned — W3 |
 | Client cache keys and invalidation | `apps/mobile/src/lib/query-cache.ts` | Implemented; W4 adds commerce keys |
 | Client error texts | `apps/mobile/src/lib/api-error-messages.ts` | Planned — W1 |
@@ -535,14 +573,17 @@ SellerProfile
   that switch commits. A busy lease or a swallowed `run()` result is not success.
   Retry uses the same operation identity. A missing upload SOURCE requires the
   file to be sent again. Hide, suspend, ban and replacement still enqueue revoke.
-  The Nest executor retries only `REVOKE` and `CLEANUP`. Startup schedules the
+  The Nest executor retries `REVOKE`/`CLEANUP` and recovers expired RUNNING
+  `PUBLISH` through the shared tick batch (W2). Startup schedules the
   existing five-second timer and does not wait for recovery before the API
   finishes initializing. A failed tick, including a failed abandoned-staging
   scan, keeps that timer even when later counts are zero. The timer is removed
   after a successful read shows no work, or on shutdown. Staging intent and
   young `STAGING` assets keep the existing ten-minute orphan scan. The executor
-  does not poll while that queue is empty and does not retry publication or
-  upload. `DEC-101` withdraws the five-minute deadline after a stop, crash, or
+  does not poll while that queue is empty and does not automatically retry
+  PENDING/FAILED publication or upload. The central 30-second tick remains the
+  recovery entrypoint while awake, independently of this acceleration timer.
+  `DEC-101` withdraws the five-minute deadline after a stop, crash, or
   sleep. The executor, purge, and recovery after startup stay. Private SOURCE
   stays. An old public URL may remain until that recovery succeeds. This is
   not a wake of a stopped process.

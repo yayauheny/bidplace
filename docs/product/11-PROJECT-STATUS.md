@@ -16,6 +16,22 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — W2 scheduler tick
+
+**Implemented locally / live Needs verification.** Worker scheduled forwarding
+and public internal-route 404, Nest `core/tick` registration/30-second timer,
+single-flight/cooperative 20-second budget, private guard and persisted heartbeat
+are implemented. Migration `20261029010000_system_heartbeats` adds
+`system_heartbeats(name, at)` and must precede this runtime. Enabled media uses
+one bounded recovery batch for due revoke/cleanup and expired RUNNING PUBLISH;
+manual PENDING/FAILED publication retries and existing leases/CAS remain.
+Persisted media failures prevent heartbeat success; old timers only accelerate.
+Empty `TICK_CRON` keeps Cron disabled and clears a prior schedule on final deploy;
+production-only deployment requires `main`. W3 commerce, admin health and outbox
+remain **Not implemented**. Local final checks and commit evidence:
+[W2 journal](../launch/waves/W2-scheduler.md#журнал-исполнения-2026-10-29).
+No live migration, deployment, provider/CDN or Cron acceptance is claimed.
+
 ## 2026-10-29 — Launch documents integration, stage B
 
 **Partial.** Stage A is merged through PR #71 at `95083515`; this supersedes

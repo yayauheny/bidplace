@@ -3,6 +3,29 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed (engineering owner)
 
+## 2026-10-29 — Private scheduler boundary (W2)
+
+**Implemented locally; live Needs verification.** Worker routing rejects public
+`/api/internal/*` before DO forwarding/cache and strips `X-Internal-Tick` from
+ordinary forwarded traffic. Only scheduled forwarding directly addresses the
+private DO, with that header; release hold blocks it. Nest's `InternalTickGuard`
+returns 404 for absent/wrong configuration or header and compares equal-length
+buffers with `timingSafeEqual`. `INTERNAL_TICK_SECRET` is required on the
+production security profile and must have at least 32 characters. No value is
+returned or logged. Only exact POST `/api/internal/tick` bypasses CSRF; it uses
+no session/rate-limit guard and still requires the private header.
+
+`TickService` keeps single-flight exclusion until I/O settles, isolates job
+failures and logs registered names only. It persists success in
+`system_heartbeats(name, at)` only after a complete failure-free run within the
+cooperative budget. Media recovery keeps operation/object leases, publication
+CAS and active-author checks; expired RUNNING publications recover, while
+ordinary PENDING/FAILED publication retries remain manual. Persisted delivery
+errors prevent successful heartbeat. An individual in-flight I/O can overrun
+the 20-second budget; this is not hard cancellation. Apply migration
+`20261029010000_system_heartbeats` before starting the runtime. W3 health UI and
+notification outbox remain planned. [Rollout and live checks](../ops/CLOUDFLARE-DEPLOYMENT.md).
+
 ## 2026-10-05 — Cloudflare deployment boundary (Partial)
 
 The deployment Worker preserves Nest session/role/ownership checks. It
@@ -241,7 +264,7 @@ Env parsing rejects inconsistent pairs before bootstrap:
 | `development` or `test` | `production` | Rejected: `APP_ENV=production requires NODE_ENV=production` |
 | `production` | `local` (including default) | Rejected: `NODE_ENV=production requires APP_ENV=production or APP_ENV=staging` |
 
-Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `SESSION_SECRET` / `OTP_HASH_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
+Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `SESSION_SECRET` / `OTP_HASH_SECRET` / `INTERNAL_TICK_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
 
 Destructive demo seed remains `NODE_ENV=development|test`, `APP_ENV=local`, and `ALLOW_DESTRUCTIVE_DEMO_SEED=true` only.
 

@@ -66,7 +66,7 @@ Cron нужен только чтобы будить спящий контейн
 4. Одна задача падает каждый раз — остальные продолжают работать. → Task 2, шаг 1.
 5. Секрета нет в окружении production — сервер не стартует (а не тик открыт без секрета). → Task 2, шаг 4.
 
-## Facts
+## Facts (исходный срез до W2; актуальный результат — в журнале ниже)
 
 - `deploy/cloudflare/src/index.ts`: класс `PortfolioApi extends Container`
   (`defaultPort 3001`, `sleepAfter '10m'`, `envVars = containerEnvironment(this.env)`);
@@ -102,7 +102,7 @@ Cron нужен только чтобы будить спящий контейн
   `POST http://container/api/internal/tick` с заголовком `X-Internal-Tick: <секрет>`;
   default export получает `scheduled(controller, env, ctx) { ctx.waitUntil(runScheduledTick(env)) }`.
 
-- [ ] **Шаг 1: падающие тесты.** `router.spec.ts`: `it.each` по `GET/POST /api/internal/tick`,
+- [x] **Шаг 1: падающие тесты.** `router.spec.ts`: `it.each` по `GET/POST /api/internal/tick`,
   `/api/internal/x` → 404, `API.fetch` не вызван. `runScheduledTick` вызывает
   DO ровно раз с методом `POST`, путём `/api/internal/tick` и заголовком секрета.
   При `RELEASE_HOLD=closed` тик не вызывается. `environment.spec.ts`:
@@ -111,15 +111,15 @@ Cron нужен только чтобы будить спящий контейн
   `triggers.crons = ['*/5 * * * *']`; мусор → ошибка; то же значение уходит в
   `vars.TICK_CRON` (необязательная настройка контейнера — по ней W3 показывает
   в «Здоровье», что Cron выключен).
-- [ ] **Шаг 2:** FAIL.
-- [ ] **Шаг 3:** реализовать; `scripts/cloudflare/config.mjs` подставляет `triggers` из `TICK_CRON`.
-- [ ] **Шаг 4:** `pnpm cloudflare:check` → PASS.
-- [ ] **Шаг 5:** `CLOUDFLARE-DEPLOYMENT.md`: расписание, секрет (только имя и как
+- [x] **Шаг 2:** FAIL.
+- [x] **Шаг 3:** реализовать; `scripts/cloudflare/config.mjs` подставляет `triggers` из `TICK_CRON`.
+- [x] **Шаг 4:** `pnpm cloudflare:check` → PASS.
+- [x] **Шаг 5:** `CLOUDFLARE-DEPLOYMENT.md`: расписание, секрет (только имя и как
   задать: `wrangler secret put INTERNAL_TICK_SECRET --env production`), `TICK_CRON`
   (пусто по умолчанию, когда ставить `*/5`), цена «контейнер не спит».
   Строки `INTERNAL_TICK_SECRET` и `TICK_CRON` — в `docs/ops/ENVIRONMENT.md`.
-- [ ] **Шаг 6:** коммит `feat: wake api with a cron tick`.
-- [ ] **Шаг 7: один контур и честный шаблон окружения.** `DEC-102` — только
+- [x] **Шаг 6:** коммит `feat: wake api with a cron tick`.
+- [x] **Шаг 7: один контур и честный шаблон окружения.** `DEC-102` — только
   production: удалить `env.staging` из `wrangler.jsonc` и ветки `staging` в
   `scripts/cloudflare/{deploy,migrate,config,build-web}.mjs` и `package.json`
   (`cloudflare:deploy:staging`, `cloudflare:build:staging`); путь без проверки
@@ -162,21 +162,21 @@ TickService.lastSucceededAt(): Promise<Date | null>   // для /api/admin/healt
   (`unref`, снимается в `onModuleDestroy`); тот же флаг `running` защищает от
   наложения с внешним вызовом.
 
-- [ ] **Шаг 1: падающие тесты** (`tick.service.spec.ts`): задачи вызываются по
+- [x] **Шаг 1: падающие тесты** (`tick.service.spec.ts`): задачи вызываются по
   порядку регистрации с одним `now`; упавшая задача → `failed: true`, следующие
   выполнены, один `error`-лог с именем задачи; второй `run` во время первого →
   `skipped: true`, задачи не вызваны; превышение бюджета → оставшиеся задачи
   пропущены и помечены `processed: 0`; поддельные таймеры: после старта через
   30 с `run` вызван сам, после `onModuleDestroy` — больше нет.
-- [ ] **Шаг 2:** FAIL → реализовать → PASS.
-- [ ] **Шаг 3: интеграция.** Без заголовка / с неверным → 404; с верным → 200
+- [x] **Шаг 2:** FAIL → реализовать → PASS.
+- [x] **Шаг 3: интеграция.** Без заголовка / с неверным → 404; с верным → 200
   и `TickResult`; эндпоинт не требует сессии и не имеет rate limit. CSRF-проверка
   (Origin + `x-bidplace-request`) для этого маршрута отключена, проверка секрета —
   нет. После успешного запуска `lastSucceededAt()` вернул его время; после
   запуска с упавшей задачей — прежнее.
-- [ ] **Шаг 4:** `INTERNAL_TICK_SECRET` — обязателен при `NODE_ENV=production`
+- [x] **Шаг 4:** `INTERNAL_TICK_SECRET` — обязателен при `NODE_ENV=production`
   (тест схемы env: отсутствие → ошибка запуска), ≥ 32 символов.
-- [ ] **Шаг 5:** коммит `feat: add internal tick endpoint`.
+- [x] **Шаг 5:** коммит `feat: add internal tick endpoint`.
 
 ### Task 3: Медиа — задача тика
 
@@ -191,15 +191,15 @@ TickService.lastSucceededAt(): Promise<Date | null>   // для /api/admin/healt
 - Produces: задача `media` вызывает существующий `tick()`; публичная сигнатура
   `tick()` не меняется.
 
-- [ ] **Шаг 1: падающий тест.** Операция `REVOKE` с `nextAttemptAt` в прошлом,
+- [x] **Шаг 1: падающий тест.** Операция `REVOKE` с `nextAttemptAt` в прошлом,
   in-process таймеры не взведены (имитация «проснулись») → после
   `TickService.run()` операция выполнена.
-- [ ] **Шаг 2:** регистрация задачи (только когда сервис `enabled`); PASS.
-- [ ] **Шаг 3: проверка зависших `PUBLISH`.** Найти, как восстанавливается
+- [x] **Шаг 2:** регистрация задачи (только когда сервис `enabled`); PASS.
+- [x] **Шаг 3: проверка зависших `PUBLISH`.** Найти, как восстанавливается
   `PUBLISH` с истёкшим лизом после рестарта. Если не восстанавливается —
   добавить его в выборку `tick()` тем же условием, что `REVOKE`, с тестом. Если
   восстанавливается иначе — `Ruling:` с объяснением.
-- [ ] **Шаг 4:** коммит `feat: run media recovery from the tick`.
+- [x] **Шаг 4:** коммит `feat: run media recovery from the tick`.
 
 ## Фронтенд
 
@@ -209,15 +209,15 @@ TickService.lastSucceededAt(): Promise<Date | null>   // для /api/admin/healt
 
 ### Task 4
 
-- [ ] `10-CODE-ARCHITECTURE.md`: тик — единственная гарантия фоновой работы;
+- [x] `10-CODE-ARCHITECTURE.md`: тик — единственная гарантия фоновой работы;
   задачи регистрируют владельцы; Worker закрывает `/api/internal/*`.
   `11-PROJECT-STATUS.md`: запись; живой запуск по расписанию — `Needs verification`
   до первого деплоя.
-- [ ] Проверки: `pnpm cloudflare:check`; `typecheck`/`lint` `@bidplace/api`; API
+- [x] Проверки: `pnpm cloudflare:check`; `typecheck`/`lint` `@bidplace/api`; API
   unit + интеграция (`internal-tick`, `media-lifecycle`); `git diff --check`;
   `pnpm docs:link-check`.
-- [ ] Коммит `docs: record scheduled tick`.
-- [ ] В отчёт — шаги для основателя после деплоя: задать секрет; через 2 минуты
+- [x] Коммит `implement feature: document scheduler tick` (формат текущего checkout).
+- [x] В отчёт — шаги для основателя после деплоя: задать секрет; через 2 минуты
   в логах контейнера есть ответ тика; `curl -i https://bid.place/api/internal/tick` → 404.
 
 ## Промпт исполнителю
@@ -249,3 +249,39 @@ security, workers-best-practices. Сам прогони pnpm cloudflare:check и
 Красные флаги: `@nestjs/schedule` или второй планировщик; распределённые
 блокировки; тик, который сам решает бизнес-правила (правила — у владельцев задач);
 сравнение секрета через `===`; пустой `catch`.
+
+
+## Журнал исполнения 2026-10-29
+
+**Implemented локально; live Needs verification.** Tasks1–3 реализованы и прошли
+независимое scoped review; Task4 обновляет технических владельцев и локальную
+приёмку. Исходный план сохранён в исходной ветке; этот журнал фиксирует факты
+текущей `feature/scheduler-tick`, а не новое продуктовое решение.
+
+- Task1: `ed05765d` — Worker scheduled handler/закрытый маршрут, конфигурация
+  `TICK_CRON`; `80736b1c` — один production contour и guard `main`;
+  `612ff90c` — исправление cron endpoint grammar после review. Пустое расписание
+  не попадает в generated config; финальный deploy явно снимает старый Cron.
+- Task2: `0521b287` — глобальный `TickModule`, `TickService`, приватный POST,
+  проверка production-секрета и миграция `20261029010000_system_heartbeats`:
+  таблица `system_heartbeats` из двух колонок `name`/`at`. Применить до runtime.
+- Task3: `24d4b1c1` — enabled-only media job, общий batch executor для прежнего
+  `tick()` и центрального тика. Восстанавливается только expired RUNNING PUBLISH;
+  PENDING/FAILED PUBLISH остаются ручными. Сохранены leases/CAS/active-author
+  guards; persisted failures не дают записать успешный heartbeat.
+- Ruling: бюджет 20 с кооперативный, отдельный I/O может закончиться позже;
+  single-flight удерживается до завершения. Existing media timers — ускорение,
+  их overlap с центральным тиком ограничивают прежние operation/object leases.
+- Ruling: успешный тик не пишет response-лог. После будущего deploy проверять
+  heartbeat в БД у проснувшегося Container и внешний 404; Cron wake проверяется
+  только при включённом `TICK_CRON`. Шаги: [runbook](../../ops/CLOUDFLARE-DEPLOYMENT.md#w2-проверка-после-будущего-деплоя).
+- W3 commerce jobs, admin health UI и notifications outbox остаются Planned;
+  W1 и следующие волны этой задачей не реализуются. Деплой, migration в production,
+  live R2/CDN и Cron не выполнялись; live статус остаётся Needs verification.
+- Task4 финальная локальная приёмка: Cloudflare typecheck/lint + 39 Worker +
+  25 script tests PASS; API typecheck/lint и прямые API/DB build PASS;
+  API unit 498 + 2 mocked resolver tests PASS (полный основной прогон с одним
+  worker после contention в существующем 50мс localhost-тесте); PostgreSQL
+  internal-tick 9 + media-lifecycle 31 PASS; docs links 105 файлов и diff check PASS.
+  До этого Task3 проверила 60 affected integration cases; эта задача повторила 40.
+  Проверки не ослаблялись. Task4 commit — `implement feature: document scheduler tick`.
