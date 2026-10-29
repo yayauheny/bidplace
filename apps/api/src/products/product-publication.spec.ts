@@ -77,7 +77,8 @@ function fixture(status: ProductStatus = 'PENDING_REVIEW') {
     sellerProfile: { status: 'APPROVED', user: { status: 'active' } },
   };
   const db = {
-    $queryRaw: vi.fn().mockResolvedValue([{ id: 'product' }]),
+    $queryRaw: vi.fn().mockResolvedValue([{ id: 'product', timeout: '0' }]),
+    listing: { findFirst: vi.fn().mockResolvedValue(null) },
     product: {
       findUnique: vi.fn().mockResolvedValue(product),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -116,7 +117,7 @@ describe('product publication owner', () => {
     });
     if (visibilityMoves[actor].includes(`${from}:${to}`)) {
       await expect(result).resolves.toBeUndefined();
-      expect(db.$queryRaw).toHaveBeenCalledOnce();
+      expect(db.$queryRaw).toHaveBeenCalledTimes(3);
       expect(db.product.updateMany).toHaveBeenCalledWith({
         where: { id: 'product', status: { in: [from] } },
         data: { status: to },
@@ -125,6 +126,13 @@ describe('product publication owner', () => {
       await expect(result).rejects.toMatchObject(conflict);
       expect(db.product.updateMany).not.toHaveBeenCalled();
     }
+  });
+
+  it('rejects an in-sale archive at the publication owner before mutation', async () => {
+    const { tx, db } = fixture('APPROVED');
+    db.listing.findFirst.mockResolvedValue({ id: 'listing' });
+    await expect(transitionProductVisibility(tx, { productId: 'product', expected: ['APPROVED'], next: 'ARCHIVED', actor: 'author' })).rejects.toMatchObject({ apiCode: 'PRODUCT_IN_SALE', status: 409 });
+    expect(db.product.updateMany).not.toHaveBeenCalled();
   });
 
   it('rejects stale conditional visibility writes', async () => {
@@ -168,7 +176,7 @@ describe('product publication owner', () => {
           expectedRevisionAt: revisionAt,
         }),
       ).resolves.toBe('published');
-      expect(db.$queryRaw).toHaveBeenCalledOnce();
+      expect(db.$queryRaw).toHaveBeenCalledTimes(6);
       expect(db.productRevision.updateMany).toHaveBeenCalledWith({
         where: {
           id: 'revision',

@@ -2,7 +2,7 @@ import { ApiErrorCode, type ProductStatus } from '@bidplace/contracts';
 import type { Prisma } from '@bidplace/database';
 
 import { AppException } from '../core/errors/app.exception';
-import { lockProductRowForUpdate } from './product-write-guard';
+import { assertProductNotInSale, lockProductRowForUpdate } from './product-write-guard';
 
 export type PublicationActor = 'author' | 'admin' | 'media';
 
@@ -70,7 +70,8 @@ export async function transitionProductVisibility(
   ) {
     throw stateConflict();
   }
-  await lockProductRowForUpdate(tx, input.productId);
+  if (input.next === 'ARCHIVED') await assertProductNotInSale(tx, input.productId);
+  else await lockProductRowForUpdate(tx, input.productId);
   const moved = await tx.product.updateMany({
     where: { id: input.productId, status: { in: input.expected } },
     data: { status: input.next },
@@ -121,6 +122,7 @@ export async function publishRevision(
     return 'stale';
 
   if (!restoring) {
+    await assertProductNotInSale(tx, product.id);
     const approved = await tx.productRevision.updateMany({
       where: {
         id: revision.id,

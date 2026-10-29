@@ -1149,7 +1149,7 @@ export class ImagesService {
 
     const isOwner = image.product.sellerProfile.userId === userId;
     const isAdmin = role === 'admin';
-    const isPublic = Boolean(
+    const isPublic = !isOwner && !isAdmin && Boolean(
       await this.prisma.product.findFirst({
         where: {
           ...portfolioCatalogProductWhere,

@@ -111,6 +111,37 @@ function listingData(
 }
 
 describe('Work hide with live commerce', () => {
+  it('returns PRODUCT_STATE_CONFLICT while a media writer holds the Product lock', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await login(owner, fixture.sellers.approved.email, fixture.sellers.approved.password);
+    const product = await publishApprovedWork(fixture.sellers.approved.profileId, fixture.categoryId);
+    const before = await prisma.product.findUniqueOrThrow({ where: { id: product.id } });
+    const audits = await prisma.auditEvent.count({ where: { targetId: product.id } });
+    let acquired!: () => void;
+    let release!: () => void;
+    const ready = new Promise<void>((resolve) => { acquired = resolve; });
+    const released = new Promise<void>((resolve) => { release = resolve; });
+    const writer = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM products WHERE id = ${product.id}::uuid FOR UPDATE`;
+      acquired();
+      await released;
+    }, { timeout: 15_000 });
+    await ready;
+    const delivery = setTimeout(release, 6_000);
+    try {
+      const response = await owner.post(`/products/${product.id}/hide`);
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ code: 'PRODUCT_STATE_CONFLICT' });
+      expect(await prisma.product.findUniqueOrThrow({ where: { id: product.id } })).toEqual(before);
+      expect(await prisma.auditEvent.count({ where: { targetId: product.id } })).toBe(audits);
+    } finally {
+      clearTimeout(delivery);
+      release();
+      await writer;
+    }
+  });
+
   it('fails closed for SCHEDULED and LIVE listings and leaves Product, Listing and audit unchanged', async () => {
     const fixture = await createPermissionFixture(prisma);
     const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');

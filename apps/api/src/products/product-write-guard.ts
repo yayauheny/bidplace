@@ -55,9 +55,27 @@ export async function lockProductRowForUpdate(
   tx: Pick<Prisma.TransactionClient, '$queryRaw'>,
   productId: string,
 ): Promise<void> {
-  const rows = await tx.$queryRaw<Array<{ id: string }>>(
-    Prisma.sql`SELECT id FROM "products" WHERE id = ${productId}::uuid FOR UPDATE`,
-  );
+  const [previous] = await tx.$queryRaw<Array<{ timeout: string }>>`
+    WITH previous AS MATERIALIZED (SELECT current_setting('lock_timeout') AS timeout)
+    SELECT timeout, set_config('lock_timeout', '4s', true) FROM previous
+  `;
+  let rows: Array<{ id: string }>;
+  try {
+    rows = await tx.$queryRaw<Array<{ id: string }>>(
+      Prisma.sql`SELECT id FROM "products" WHERE id = ${productId}::uuid FOR UPDATE`,
+    );
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2010' && error.meta?.code === '55P03') {
+      throw new AppException({
+        status: 409,
+        code: ApiErrorCode.PRODUCT_STATE_CONFLICT,
+        message: 'Product is being updated; retry this action',
+      });
+    }
+    throw error;
+  }
+  await tx.$queryRaw`SELECT set_config('lock_timeout', ${previous!.timeout}, true)`;
   if (rows.length === 0) {
     throw new NotFoundException('Product not found');
   }

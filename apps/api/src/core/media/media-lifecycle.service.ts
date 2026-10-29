@@ -166,6 +166,13 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     let processed = 0;
     let failed = false;
     if (Date.now() >= deadline) return { processed, failed };
+    failed = (await this.prisma.mediaOperation.count({
+      where: {
+        kind: { in: ['REVOKE', 'CLEANUP'] },
+        state: 'FAILED',
+        attemptCount: { gte: MEDIA_OPERATION_MAX_ATTEMPTS },
+      },
+    })) > 0;
     const operations = await this.prisma.mediaOperation.findMany({
       where: {
         attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
@@ -985,7 +992,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     return state;
   }
   private async publish(operation: Operation, token: string) {
-    if (operation.restore && operation.productId) {
+    if (operation.restore && (operation.productId || operation.profileId)) {
       // Persist before external writes; FAILED retries keep the same generation.
       await runReadCommittedTransaction(this.prisma, async (tx) => {
         await tx.$queryRaw`SELECT id FROM media_operations WHERE id = ${operation.id}::uuid FOR UPDATE`;
@@ -1000,6 +1007,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
             kind: 'REVOKE',
             identity: `restore-revoke:${operation.id}:${operation.generation}`,
             productId: operation.productId,
+            profileId: operation.profileId,
             revisionId: operation.revisionId,
             expectedRevisionAt: operation.expectedRevisionAt,
             generation: operation.generation,
@@ -1289,10 +1297,10 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     );
   }
   private async remove(operation: Operation, token: string) {
-    const restore = operation.kind === 'REVOKE' && operation.restore && operation.productId
+    const restore = operation.kind === 'REVOKE' && operation.restore && (operation.productId || operation.profileId)
       ? await this.prisma.mediaOperation.findFirst({
           where: {
-            kind: 'PUBLISH', restore: true, productId: operation.productId,
+            kind: 'PUBLISH', restore: true, productId: operation.productId, profileId: operation.profileId,
             revisionId: operation.revisionId, generation: operation.generation,
             expectedRevisionAt: operation.expectedRevisionAt,
           },
@@ -1344,8 +1352,9 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
                           generation: operation.generation,
                           restore: true,
                           state: 'FAILED' as const,
-                          productId: operation.productId,
-                          product: { status: 'ARCHIVED' as const },
+                          ...(operation.productId
+                            ? { productId: operation.productId, product: { status: 'ARCHIVED' as const } }
+                            : { profileId: operation.profileId, profile: { status: 'SUSPENDED' as const } }),
                         }] : []),
                       ] } }
                     : {}),

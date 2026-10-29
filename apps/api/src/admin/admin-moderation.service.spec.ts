@@ -656,6 +656,7 @@ describe('AdminModerationService', () => {
       editingRevision,
     };
     const tx = {
+      listing: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(product),

@@ -735,7 +735,7 @@ export class AdminModerationService {
           (product.status === 'ARCHIVED' && input.status === 'APPROVED');
         if (
           this.media?.enabled &&
-          product.status === 'APPROVED' &&
+          ['APPROVED', 'ARCHIVED'].includes(product.status) &&
           input.status === 'APPROVED' &&
           input.target.kind === 'revision' &&
           product.publishedRevisionId === input.target.id
@@ -744,9 +744,10 @@ export class AdminModerationService {
             where: {
               identity: `publish:${input.target.id}:${new Date(input.target.updatedAt).toISOString()}`,
             },
-            select: { productId: true, state: true },
+            select: { productId: true, state: true, kind: true, restore: true },
           });
-          if (delivered?.productId === productId && delivered.state === 'DONE')
+          if (delivered?.productId === productId && delivered.state === 'DONE' &&
+              delivered.kind === 'PUBLISH' && !delivered.restore)
             return product;
         }
         this.assertFreshProductTarget(product, input);
@@ -768,6 +769,7 @@ export class AdminModerationService {
           );
 
           if (input.status === 'APPROVED') {
+            await assertProductNotInSale(tx, productId);
             if (
               (await selectedPendingProposalCount(tx, editingRevision.id)) > 0
             ) {
@@ -866,7 +868,6 @@ export class AdminModerationService {
         }
 
         if (input.status === 'ARCHIVED') {
-          await assertProductNotInSale(tx, productId);
           if (this.media?.enabled) await this.media.enqueueRevoke(tx, { productId });
         }
         if (

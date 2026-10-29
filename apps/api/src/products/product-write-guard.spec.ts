@@ -1,4 +1,4 @@
-import type { Prisma } from '@bidplace/database';
+import { Prisma } from '@bidplace/database';
 import { describe, expect, it, vi } from 'vitest';
 import {
   ConflictException,
@@ -30,7 +30,7 @@ function snapshot(
 
 function transaction(inSale = false) {
   return {
-    $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+    $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id', timeout: '0' }]),
     listing: {
       findFirst: vi
         .fn()
@@ -42,21 +42,40 @@ function transaction(inSale = false) {
 describe('product write guard', () => {
   it('locks the Product row with SELECT FOR UPDATE', async () => {
     const tx = {
-      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id', timeout: '0' }]),
     };
 
     await lockProductRowForUpdate(tx, 'product-id');
 
-    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(3);
     expect(
-      String(tx.$queryRaw.mock.calls[0]?.[0]?.strings?.join(' ') ?? ''),
+      String(tx.$queryRaw.mock.calls[1]?.[0]?.strings?.join(' ') ?? ''),
     ).toContain('FOR UPDATE');
+  });
+
+  it.each([
+    { code: 'P2010', sqlCode: '55P03', conflict: true },
+    { code: 'P2010', sqlCode: 'XX000', conflict: false },
+    { code: 'P2028', sqlCode: '55P03', conflict: false },
+  ])('maps only Product lock contention ($code/$sqlCode)', async ({ code, sqlCode, conflict }) => {
+    const error = new Prisma.PrismaClientKnownRequestError('synthetic failure', { code, clientVersion: '6.19.3', meta: { code: sqlCode } });
+    const query = vi.fn().mockResolvedValueOnce([{ timeout: '250ms' }]).mockRejectedValueOnce(error);
+    const result = lockProductRowForUpdate({ $queryRaw: query }, 'product-id');
+    if (conflict) await expect(result).rejects.toMatchObject({ apiCode: 'PRODUCT_STATE_CONFLICT', status: 409 });
+    else await expect(result).rejects.toBe(error);
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+
+  it('restores the previous transaction lock timeout after acquiring the Product', async () => {
+    const query = vi.fn().mockResolvedValueOnce([{ timeout: '250ms' }]).mockResolvedValueOnce([{ id: 'product-id' }]).mockResolvedValue([]);
+    await lockProductRowForUpdate({ $queryRaw: query }, 'product-id');
+    expect(query.mock.calls[2]?.[1]).toBe('250ms');
   });
 
   it('throws not found when the Product row is missing', async () => {
     await expect(
       lockProductRowForUpdate(
-        { $queryRaw: vi.fn().mockResolvedValue([]) },
+        { $queryRaw: vi.fn().mockResolvedValueOnce([{ timeout: '0' }]).mockResolvedValue([]) },
         'missing',
       ),
     ).rejects.toBeInstanceOf(NotFoundException);

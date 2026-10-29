@@ -557,6 +557,14 @@ describe('ImagesService', () => {
       isPublic: false,
     });
 
+    findPublic.mockClear();
+    findPublic.mockResolvedValue({ id: 'product-id' });
+    for (const [userId, role] of [['owner-id', 'user'], ['admin-id', 'admin']]) {
+      await expect(service.get('image-id', userId, role)).resolves.toMatchObject({ isPublic: false });
+    }
+    expect(findPublic).not.toHaveBeenCalled();
+    findPublic.mockResolvedValue(null);
+
     const pendingProduct = {
       ...wideRow,
       product: { ...wideRow.product, status: 'PENDING_REVIEW' },

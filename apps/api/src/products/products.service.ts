@@ -623,7 +623,6 @@ export class ProductsService {
         if (product.publishedRevisionId == null) {
           throw new ConflictException('Product has no published revision');
         }
-        if (nextStatus === 'ARCHIVED') await assertProductNotInSale(tx, id);
 
         if (this.media?.enabled) {
           if (nextStatus === 'ARCHIVED')

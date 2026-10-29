@@ -152,6 +152,7 @@ describe('media recovery scheduler', () => {
       $queryRaw: vi.fn(),
       mediaOperation: {
         findMany, updateMany,
+        count: vi.fn(async () => rows.filter((row) => row.state === 'FAILED' && row.attemptCount >= 20).length),
         findUnique: vi.fn(async ({ where }: { where: { id: string } }) => rows.find((row) => row.id === where.id)),
         findUniqueOrThrow: vi.fn(async ({ where }: { where: { id: string } }) => rows.find((row) => row.id === where.id)),
       },
@@ -230,7 +231,7 @@ describe('media recovery scheduler', () => {
       skipped: false,
       jobs: [{ name: 'media', processed: 0, failed: false }],
     });
-    expect(script.reads).toEqual(['operation.findMany']);
+    expect(script.reads).toEqual(['operation.count', 'operation.findMany']);
   });
 
   it('does not poll after a healthy empty startup', async () => {
