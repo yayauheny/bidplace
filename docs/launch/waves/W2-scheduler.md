@@ -1,20 +1,28 @@
-# W2 — Надёжный тик: Cron Worker → контейнер — план реализации
+# W2 — Надёжный тик: таймер в контейнере и Cron по настройке — план реализации
 
 > **Для агентов:** выполнять через superpowers `subagent-driven-development`
 > (рекомендуется) или `executing-plans`. Шаги — чекбоксы. Общие правила —
 > [AGENT-RULES.md](../AGENT-RULES.md).
 
 **Goal:** фоновая работа (медиа сейчас; закрытие аукционов, предложения,
-автозакрытие заказов и письма — с W3) выполняется, даже если контейнер спал или
-упал: Cloudflare Cron раз в минуту будит контейнер и вызывает один внутренний
-идемпотентный тик.
+напоминания по заказам и письма — с W3) выполняется одним идемпотентным тиком:
+пока контейнер не спит — внутренним таймером, а когда спит — по Cloudflare Cron,
+если он включён настройкой `TICK_CRON`.
 
 **Architecture:** у Worker появляется `scheduled()`; он вызывает через
 Durable Object `POST /api/internal/tick` с внутренним секретом. Внешние запросы
 к `/api/internal/*` Worker отбрасывает (404). В Nest — `TickService` со списком
 задач; каждая задача идемпотентна (условные переходы, лизы), поэтому двойной
-вызов безопасен. Существующие in-process таймеры медиа остаются как ускорение,
-тик — гарантия.
+вызов безопасен. `TickService` сам запускает тик каждые 30 с, пока процесс жив;
+Cron нужен только чтобы будить спящий контейнер. Существующие in-process таймеры
+медиа остаются как ускорение.
+
+**Расписание — настройка деплоя, по умолчанию выключено** (решение основателя
+2026-10-29): `TICK_CRON` пусто → `triggers` в конфиг Worker не попадают,
+контейнер спит без посетителей, просроченная работа (закрытие аукциона, письма)
+выполняется в первые 30 с после любого визита. Когда пойдут реальные аукционы —
+`TICK_CRON="*/5 * * * *"`. Переменная помечена ★ в
+[ENVIRONMENT.md](../../ops/ENVIRONMENT.md).
 
 **Spec:** [COMMERCE.md](../COMMERCE.md) §3.2, §4.4, §6.3, §9; `DEC-101`
 (срок отзыва при сне снят, восстановление после старта обязательно).
@@ -24,8 +32,10 @@ Durable Object `POST /api/internal/tick` с внутренним секрето�
 
 ## Global Constraints
 
-- Расписание `* * * * *` в `deploy/cloudflare/wrangler.jsonc` для `production`
-  (и `staging`, если блок остаётся).
+- Расписание — из `TICK_CRON` при сборке конфига Worker
+  (`scripts/cloudflare/config.mjs`); пусто или нет → без `triggers`; значение
+  проверяется как cron-выражение, мусор — ошибка деплоя. В `wrangler.jsonc`
+  расписание руками не пишется.
 - Секрет `INTERNAL_TICK_SECRET` — секрет Worker; передаётся в контейнер через
   `containerEnvironment`; в Nest проверяется в `serverEnvSchema` (обязателен в
   production). Значение агент не создаёт и не читает — только имя.
@@ -41,16 +51,17 @@ Durable Object `POST /api/internal/tick` с внутренним секрето�
   пользователей) и не останавливает другие; ответ тика содержит список упавших.
 - Новые зависимости не добавлять (`@nestjs/schedule` не нужен).
 
-**Цена решения.** Тик раз в минуту не даёт контейнеру уснуть (`sleepAfter = 10m`):
-контейнер работает постоянно. По тарифу Workers Paid это порядка нескольких
-долларов в месяц за `basic` и убирает холодный старт для посетителей по QR.
-Если важнее экономия — расписание `*/5` и `sleepAfter = '3m'` (итоги аукциона
-до 5 минут). Выбор записать в отчёте; по умолчанию — раз в минуту.
+**Цена решения.** Cron раз в 5 минут почти не даёт контейнеру уснуть
+(`sleepAfter = 10m`); раз в минуту — не даёт совсем. Поэтому на старте Cron
+выключен, а включается одной переменной, когда появятся реальные аукционы.
+`/api/admin/health` (W3 Task 3) показывает предупреждение «идут аукционы, а Cron
+выключен».
 
 ## Review Focus
 
 1. Кто-то снаружи вызывает `/api/internal/tick` — 404, контейнер не будится. → Task 1, шаг 1.
-2. Контейнер спал 2 часа — первый же тик выполняет просроченную работу. → Task 3, шаг 1.
+2. Контейнер спал 2 часа (Cron выключен) — первый визит будит его, и в течение
+   30 с внутренний тик выполняет просроченную работу. → Task 2, шаг 1; Task 3, шаг 1.
 3. Два тика наложились — работа не выполнена дважды. → Task 2, шаг 1.
 4. Одна задача падает каждый раз — остальные продолжают работать. → Task 2, шаг 1.
 5. Секрета нет в окружении production — сервер не стартует (а не тик открыт без секрета). → Task 2, шаг 4.
@@ -96,13 +107,28 @@ Durable Object `POST /api/internal/tick` с внутренним секрето�
   DO ровно раз с методом `POST`, путём `/api/internal/tick` и заголовком секрета.
   При `RELEASE_HOLD=closed` тик не вызывается. `environment.spec.ts`:
   `INTERNAL_TICK_SECRET` обязателен и попадает в `containerEnvironment`.
+  Тест сборки конфига: `TICK_CRON` пусто → `triggers` нет; `*/5 * * * *` →
+  `triggers.crons = ['*/5 * * * *']`; мусор → ошибка; то же значение уходит в
+  `vars.TICK_CRON` (необязательная настройка контейнера — по ней W3 показывает
+  в «Здоровье», что Cron выключен).
 - [ ] **Шаг 2:** FAIL.
-- [ ] **Шаг 3:** реализовать; в `wrangler.jsonc` — `"triggers": { "crons": ["* * * * *"] }` в env.
+- [ ] **Шаг 3:** реализовать; `scripts/cloudflare/config.mjs` подставляет `triggers` из `TICK_CRON`.
 - [ ] **Шаг 4:** `pnpm cloudflare:check` → PASS.
 - [ ] **Шаг 5:** `CLOUDFLARE-DEPLOYMENT.md`: расписание, секрет (только имя и как
-  задать: `wrangler secret put INTERNAL_TICK_SECRET --env production`), цена
-  «контейнер не спит», как отключить.
+  задать: `wrangler secret put INTERNAL_TICK_SECRET --env production`), `TICK_CRON`
+  (пусто по умолчанию, когда ставить `*/5`), цена «контейнер не спит».
+  Строки `INTERNAL_TICK_SECRET` и `TICK_CRON` — в `docs/ops/ENVIRONMENT.md`.
 - [ ] **Шаг 6:** коммит `feat: wake api with a cron tick`.
+- [ ] **Шаг 7: один контур и честный шаблон окружения.** `DEC-102` — только
+  production: удалить `env.staging` из `wrangler.jsonc` и ветки `staging` в
+  `scripts/cloudflare/{deploy,migrate,config,build-web}.mjs` и `package.json`
+  (`cloudflare:deploy:staging`, `cloudflare:build:staging`); путь без проверки
+  релизной ветки исчезает вместе с ними. `.env.example` и `scripts/doctor.mjs`
+  называют `JWT_SECRET`, который API не читает, — заменить на имена из
+  `apps/api/src/core/config/env.ts` (`SESSION_SECRET`, `OTP_HASH_SECRET`,
+  `ANALYTICS_WEB_ENABLED`); README — `SEED_ADMIN_PASSWORD` вместо
+  `SEED_ADMIN_PASSWORD_HASH`. Только имена, без значений. `pnpm cloudflare:check` →
+  PASS; коммит `chore: single production contour and accurate env template`.
 
 ### Task 2: Nest — внутренний тик
 
@@ -123,19 +149,31 @@ Durable Object `POST /api/internal/tick` с внутренним секрето�
 type TickJob = { name: string; run(now: Date, budget: { deadline: number }): Promise<number> } // число обработанных
 class TickService { register(job: TickJob): void; run(now?: Date): Promise<TickResult> }
 type TickResult = { skipped: boolean; jobs: { name: string; processed: number; failed: boolean }[] }
+TickService.lastSucceededAt(): Promise<Date | null>   // для /api/admin/health (W3)
 ```
+
+  Каждый запуск без `skipped` и без упавших задач делает `upsert` строки
+  `system_heartbeats(name = 'tick', at = now())` — новая таблица из двух колонок,
+  миграция в этой задаче. Без неё основатель не узнает, что тик молчит (OPERATIONS §1).
 
   `POST /api/internal/tick` → `200 TickResult`. Задачи регистрируют модули-владельцы
   в `onModuleInit` (медиа — Task 3; продажи и письма — W3 Task 3 и Task 8).
+  `TickService` в `onApplicationBootstrap` взводит один таймер `run()` каждые 30 с
+  (`unref`, снимается в `onModuleDestroy`); тот же флаг `running` защищает от
+  наложения с внешним вызовом.
 
 - [ ] **Шаг 1: падающие тесты** (`tick.service.spec.ts`): задачи вызываются по
   порядку регистрации с одним `now`; упавшая задача → `failed: true`, следующие
   выполнены, один `error`-лог с именем задачи; второй `run` во время первого →
   `skipped: true`, задачи не вызваны; превышение бюджета → оставшиеся задачи
-  пропущены и помечены `processed: 0`.
+  пропущены и помечены `processed: 0`; поддельные таймеры: после старта через
+  30 с `run` вызван сам, после `onModuleDestroy` — больше нет.
 - [ ] **Шаг 2:** FAIL → реализовать → PASS.
 - [ ] **Шаг 3: интеграция.** Без заголовка / с неверным → 404; с верным → 200
-  и `TickResult`; эндпоинт не требует сессии и не имеет rate limit.
+  и `TickResult`; эндпоинт не требует сессии и не имеет rate limit. CSRF-проверка
+  (Origin + `x-bidplace-request`) для этого маршрута отключена, проверка секрета —
+  нет. После успешного запуска `lastSucceededAt()` вернул его время; после
+  запуска с упавшей задачей — прежнее.
 - [ ] **Шаг 4:** `INTERNAL_TICK_SECRET` — обязателен при `NODE_ENV=production`
   (тест схемы env: отсутствие → ошибка запуска), ≥ 32 символов.
 - [ ] **Шаг 5:** коммит `feat: add internal tick endpoint`.

@@ -59,10 +59,16 @@
 **Files:** Create: `apps/mobile/e2e/launch-smoke.spec.ts`.
 
 - [ ] Один тест, Chromium и WebKit, на 390: автор выставляет аукцион на 1 день →
-  покупатель А ставит → покупатель Б перебивает → время лота сдвигается в
+  покупатель А ставит → покупатель Б без контактов попадает в форму контактов,
+  заполняет и перебивает → время лота сдвигается в
   прошлое (фикстура) и вызывается тик → Б видит заказ, код и контакты автора →
-  автор отмечает «Сделка состоялась» → на работе «Продано»; плюс фикс-цена:
-  покупка → «Забронировано». PASS 3 раза подряд → коммит `test: launch smoke scenario`.
+  автор отмечает «Сделка состоялась» → на работе «Продано», у Б кнопка «Чек»;
+  плюс фикс-цена: покупка → «Забронировано» → автор «Не состоялась» → работа
+  снова в продаже. PASS 3 раза подряд → коммит `test: launch smoke scenario`.
+- [ ] Репетиция для основателя на локальном стенде с сидом: пройти
+  [OPERATIONS.md](../OPERATIONS.md) §3.1–§3.4 (жалоба, снятие страйка, тик
+  остановлен и снова запущен, письмо `FAILED` → «Повторить»). Что не сработало
+  как написано — исправить инструкцию или код, записать в отчёт.
 
 ## Task 3: Чистка тестов
 
@@ -80,7 +86,27 @@
    не удалять.
 5. Auth-abuse в e2e (613 строк) — один браузерный тест; интеграция остаётся.
 6. Playwright-конфиги: объединить те, что отличаются только портом/набором
-   файлов, если скрипты CI не ломаются (`Ruling:` по каждому).
+   файлов, если скрипты CI не ломаются (`Ruling:` по каждому). Конфиги
+   stabilization, motion, field-focus, sheet-local и reuse повторяют файлы
+   основного набора; на них не ссылается ни один скрипт, кроме stabilization.
+7. CI: после чистки — один невизуальный e2e-шард на `pull_request` (сейчас
+   браузерные наборы только ручные: `browser-e2e.yml` 5, `portfolio-release-gate.yml` 3).
+8. Мёртвое: шаги `verify.yml` для веток `feat/portfolio-mvp-legal-ux` и
+   `feature/web-auth` (94, 122); `apps/mobile/e2e/run-close.mjs` (импортирует
+   несуществующие модули); дубль `test:e2e:all`. Два известных глубоких импорта
+   `usePreventRemove` (`AuthViewport.tsx` 3, `product-draft-navigation.ts` 3) свести в
+   одну обёртку `src/lib/use-prevent-remove.ts`; запрет ESLint расширить на
+   `expo-router/build/*` с исключением только этого файла через `overrides`
+   (без `eslint-disable`).
+9. Списки исключений `apps/mobile/.eslintrc.cjs`: убрать файлы, где нарушения уже
+   нет (hex: `FilterSheet.tsx`, `AuthorShare.tsx`, `product-draft-story.tsx`;
+   импорты: несуществующий `search-overlay-surface.tsx`, `product-draft-screen.tsx`,
+   спеки без запрещённых импортов) и запрет `lucide-react-native` (зависимости
+   нет). Удалить компоненты без потребителей — `OverlayDimmer`, `CreatorCard`,
+   `AuthorAtmosphere`, `AuthorIdentity` (имена остались только в типе
+   `ResilientRemoteImage.tsx` 30–39) — вместе с их style-файлами и спеками;
+   перед удалением `rg` по `src` и `e2e`. Описание `CreatorCard` в
+   `03-DESIGN-SYSTEM.md` остаётся — это макет, не код.
 
 Не трогать: `auth-abuse.integration.spec.ts`, `social-auth.integration.spec.ts`,
 `registration-consent.spec.ts`, `admin-moderation-pagination.integration.spec.ts`,

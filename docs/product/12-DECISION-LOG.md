@@ -3430,6 +3430,57 @@ Mechanics, data, races and open defaults C1–C6:
 [COMMERCE.md](../launch/COMMERCE.md). Order of work: [launch plan](../launch/README.md).
 Nothing here is implemented yet; runtime status lives in `11-PROJECT-STATUS.md`.
 
+## DEC-150 — Сделка под контролем автора, антифрод одним модулем, Cron по настройке
+
+Date: 2026-10-29
+Status: Confirmed
+Source: explicit founder answers in the launch-planning chat (rounds Q1–Q53)
+Revises: `DEC-149` (no automatic completion; second-chance window; scheduled work);
+  `DEC-039` step table extended with RUB
+Refines: `DEC-123` (orders, bids and reports survive account deletion)
+
+- «Продано» only after the author confirms the deal (or an admin resolving a
+  dispute). No timer completes an order: a fake purchase must not permanently
+  remove someone else's Work. A failed fixed-price order returns the Work to sale
+  automatically; after a failed auction the author chooses «Предложить следующему»
+  or «Выставить снова». There is no automatic hand-over to the next bidder.
+- The author sets the contact window per listing (1, 6, 24, 48 or 72 hours,
+  default 24); the buyer accepts it before bidding or buying. «Не вышел на связь»
+  and the next-bidder offer use this window instead of fixed 48 hours.
+- Reminders to the author after 24 and 48 hours without a mark; after 72 hours the
+  order appears in the admin attention list. Status does not change by itself.
+- The buyer can refuse with an explicit warning; the strike applies at once. An
+  author-marked strike counts after 72 hours and freezes while the buyer's report
+  is open. Two strikes block buying. Buyers must provide a phone or a social
+  contact before bidding or buying.
+- Contacts stay visible to both parties after a failed order; the author may hide
+  his own contacts from buyers (profile setting, default on). Reports are allowed
+  for 14 days after closing. Disputes are an admin list with both parties'
+  contacts and three actions (void strike, change outcome, ban); no dispute screens.
+- Anti-fraud lives in one API module (`apps/api/src/antifraud`) that owns auth
+  abuse, rate limits (persisted), strikes, purchase blocks, the 3-booking cap, bot
+  signals and bans. Automatic temporary block requires two different signals; a
+  ban voids the user's bids in live auctions and recomputes price and leader.
+  Cloudflare Turnstile runs in invisible mode on registration (still required),
+  purchases and the first bid in a session (failure is only a signal).
+- Receipt: a deal confirmation for `COMPLETED` orders, emailed to both parties and
+  available in the order as an image; marked as not a fiscal receipt.
+- Scheduled work: `TICK_CRON` deployment setting, empty by default (container
+  wakes only on visits; an in-process timer runs the tick while awake); `*/5`
+  once real auctions exist. Every environment variable is documented in
+  `docs/ops/ENVIRONMENT.md` with ★ on required ones.
+- Deal rules are published on the platform without a separate lawyer review;
+  agreed legal materials are assembled into a dedicated legal wave.
+- Personal analytics is collected from launch (first-party, no IP, no third
+  parties); the open legal-basis question is accepted as founder risk.
+- Header: on the author page only the top action bar stays pinned; on the Work
+  page the top bar shows back, favorite and a price button once photos scroll
+  away (founder Figma `6WWy0IkFqsajKxErNsH3bQ`, node `745:20634`).
+- One owner per logic: a cohesive module or file per topic (Java-style utility
+  file of named functions for pure logic, Nest service for stateful logic); no
+  stray helpers.
+
+Mechanics: [COMMERCE.md](../launch/COMMERCE.md) §14. Waves: [launch plan](../launch/README.md).
 
 ## DEC-151 — Story/Work photo limits unified
 

@@ -65,6 +65,17 @@
 
 ## Бэкенд
 
+### Task 0: Тесты API под проверкой типов
+
+**Files:** Modify: `apps/api/tsconfig.json` (или отдельный `tsconfig.spec.json`,
+подключённый в `typecheck`), `apps/api/.eslintrc.cjs`.
+
+- [ ] Сейчас `**/*.spec.ts` и `test/**` исключены из `typecheck`, а `src/**/*.spec.ts`
+  — из ESLint, хотя Vitest их запускает: тест с ошибкой типов проходит проверки.
+  Включить оба; найденные ошибки исправить в тестах, не подавлять. Если их
+  больше ~50 — `Ruling:` и отдельный коммит до Task 1. Коммит
+  `chore: typecheck and lint api tests`.
+
 ### Task 1: Модуль переходов `product-publication.ts`
 
 **Files:**
@@ -222,7 +233,7 @@ findSellerProductIdsInSale(tx: Prisma.TransactionClient, sellerId: string): Prom
 Прочитай AGENTS.md, docs/launch/AGENT-RULES.md, целиком
 docs/launch/waves/W1-publication-owner.md. Скиллы: implement, nest, security +
 superpowers subagent-driven-development (или executing-plans), test-driven-development.
-Задачи Task 1 → Task 5 по порядку, один коммит на задачу. Отчёт по AGENT-RULES §6.
+Задачи Task 0 → Task 5 по порядку, один коммит на задачу. Отчёт по AGENT-RULES §6.
 ```
 
 ## Промпт ревьюеру
