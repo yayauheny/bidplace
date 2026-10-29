@@ -30,9 +30,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { resolveClientIp } from '../antifraud';
+import { resolveClientIp, RateLimit, RateLimitGuard } from '../antifraud';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
-import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import { parseBody } from '../core/validation';
 import { AuthFlowService, authFailureRedirect } from './auth-flow.service';
 import { OidcProvidersService } from './oidc-providers.service';

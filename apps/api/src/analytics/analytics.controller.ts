@@ -27,7 +27,7 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser, OptionalSessionAuthGuard } from '../auth';
-import { RateLimit, RateLimitGuard } from '../core/rate-limit';
+import { RateLimit, RateLimitGuard } from '../antifraud';
 import { parseBody } from '../core/validation';
 import { AnalyticsService } from './analytics.service';
 

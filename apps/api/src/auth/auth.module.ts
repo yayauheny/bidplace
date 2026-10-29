@@ -10,7 +10,7 @@ import { PasswordHasherService } from './password-hasher.service';
 import { EmailProofService } from './email-proof.service';
 import { VerifiedEmailGuard } from './verified-email.guard';
 import { DatabaseModule } from '../core/database';
-import { RateLimitModule } from '../core/rate-limit';
+import { RateLimitModule } from '../antifraud';
 
 @Module({
   imports: [DatabaseModule, RateLimitModule],

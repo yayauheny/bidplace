@@ -42,9 +42,8 @@ import {
   type ServerEnv,
   requiresProductionSecurity,
 } from '../core/config';
-import { resolveClientIp } from '../antifraud';
+import { resolveClientIp, RateLimit, RateLimitGuard } from '../antifraud';
 import { parseBody } from '../core/validation';
-import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 
 type AuthCookieResponse = {
   clearCookie: (

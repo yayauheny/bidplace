@@ -27,9 +27,8 @@ function createService(prisma: unknown) {
   return new PasswordResetService(
     prisma as never,
     passwordHasher as never,
-    rateLimits as never,
     syntheticServerEnv(),
-    abuse as never,
+    { ...abuse, consumeRateLimit: rateLimits.consume } as never,
   );
 }
 

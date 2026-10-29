@@ -64,7 +64,6 @@
 | `API_PORT` | | Порт API в контейнере | 3001 | — |
 | `API_URL`, `CORS_ORIGIN`, `PASSWORD_RESET_URL_BASE` | ★ | Адрес сайта; три значения должны совпадать с доменом маршрута | — | Деплой отказывает; ссылки в письмах |
 | `TRUST_PROXY` | ★ | Брать IP клиента из заголовков Cloudflare | false | Лимиты и антифрод считают всех одним IP |
-| `RATE_LIMIT_MAX_BUCKETS`, `RATE_LIMIT_CLEANUP_INTERVAL_MS` | | Лимиты в памяти; удаляются в W2b (лимиты в базе) | 10000 / 60000 | — |
 | `LOT_IMAGE_MAX_FILES`, `LOT_IMAGE_MAX_FILE_BYTES`, `LOT_IMAGE_MAX_TOTAL_BYTES` | | Лимиты загрузки фото | 8 / 5 МБ / 40 МБ | — |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_AUTH_MODE`, `SMTP_FROM` | ★ | Почтовый сервер и адрес отправителя | — | Письма не уходят; API не стартует в проде |
 | `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT` | ★ | Владелец, контакт и текст правил сервиса (`core/rules.ts`) | — | Деплой и API не стартуют |

@@ -1005,3 +1005,12 @@ model SystemHeartbeat {
 
   @@map("system_heartbeats")
 }
+
+model RateLimitCounter {
+  key String @id @db.VarChar(200)
+  windowStart DateTime @map("window_start") @db.Timestamptz(3)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  count Int
+  @@index([windowStart])
+  @@map("rate_limit_counters")
+}

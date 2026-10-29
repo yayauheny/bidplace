@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../core/database';
-import { RateLimitModule } from '../core/rate-limit';
+import { RateLimitModule } from '../antifraud';
 import { AuthModule } from './auth.module';
 import { AuthFlowService } from './auth-flow.service';
 import { OidcProvidersService } from './oidc-providers.service';

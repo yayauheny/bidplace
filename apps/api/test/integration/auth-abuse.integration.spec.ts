@@ -790,10 +790,10 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
     const reset = new PasswordResetService(
       prisma as never,
       new PasswordHasherService(),
-      { consume: () => true } as never,
       syntheticServerEnv(),
       {
         sendPasswordReset: async () => undefined,
+        consumeRateLimit: async () => true,
         lockAbuseUser: AntifraudService.prototype.lockAbuseUser,
       } as never,
     );
@@ -2591,10 +2591,10 @@ describe.skipIf(!databaseUrl)('auth abuse legacy credential import', () => {
       const reset = new PasswordResetService(
         legacy as never,
         new PasswordHasherService(),
-        { consume: () => true } as never,
-        syntheticServerEnv(),
+          syntheticServerEnv(),
         {
           sendPasswordReset: async () => undefined,
+        consumeRateLimit: async () => true,
           lockAbuseUser: AntifraudService.prototype.lockAbuseUser,
         } as never,
       );

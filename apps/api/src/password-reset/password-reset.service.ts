@@ -11,7 +11,6 @@ import { PasswordHasherService } from '../auth/password-hasher.service';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService } from '../core/database';
 import { AppException } from '../core/errors';
-import { RateLimitService } from '../core/rate-limit';
 
 export type PasswordResetRequestContext = ClientIpRequest & {
   turnstileToken: string;
@@ -27,7 +26,6 @@ export class PasswordResetService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwordHasher: PasswordHasherService,
-    private readonly rateLimits: RateLimitService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
     private readonly abuse: AntifraudService,
   ) {}
@@ -37,7 +35,7 @@ export class PasswordResetService {
     context: PasswordResetRequestContext,
   ): Promise<void> {
     const ip = resolveClientIp(context, this.env.TRUST_PROXY);
-    if (!this.consumeForgotIpLimit(ip)) return;
+    if (!await this.consumeForgotIpLimit(ip)) return;
 
     await this.abuse.sendPasswordReset({
       email,
@@ -53,7 +51,7 @@ export class PasswordResetService {
     context?: ClientIpRequest,
   ): Promise<void> {
     const ip = resolveClientIp(context, this.env.TRUST_PROXY);
-    this.consumeResetLimits(ip);
+    await this.consumeResetLimits(ip);
 
     const tokenHash = hashToken(token.trim());
     const now = new Date();
@@ -165,16 +163,16 @@ export class PasswordResetService {
     }
   }
 
-  private consumeForgotIpLimit(ip: string): boolean {
-    return this.rateLimits.consume(
+  private consumeForgotIpLimit(ip: string): Promise<boolean> {
+    return this.abuse.consumeRateLimit(
       `password-reset:request:ip:${ip}`,
       10,
       60_000,
     );
   }
 
-  private consumeResetLimits(ip: string): void {
-    if (!this.rateLimits.consume(`password-reset:reset:ip:${ip}`, 20, 60_000)) {
+  private async consumeResetLimits(ip: string): Promise<void> {
+    if (!await this.abuse.consumeRateLimit(`password-reset:reset:ip:${ip}`, 20, 60_000)) {
       throw new AppException({
         status: HttpStatus.TOO_MANY_REQUESTS,
         code: ApiErrorCode.RATE_LIMITED,

@@ -30,8 +30,7 @@ import {
   VerifiedEmailGuard,
 } from '../auth';
 import { parseBody } from '../core/validation';
-import { RateLimit } from '../core/rate-limit/rate-limit.decorator';
-import { RateLimitGuard } from '../core/rate-limit/rate-limit.guard';
+import { RateLimit, RateLimitGuard } from '../antifraud';
 import {
   acceptSupportedUploadMimeType,
   getImageCacheControl,

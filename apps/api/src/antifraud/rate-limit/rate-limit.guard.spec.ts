@@ -1,13 +1,13 @@
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { RateLimitGuard } from './rate-limit.guard';
-import { RateLimitService } from './rate-limit.service';
+const limiter = () => { const counts = new Map<string, number>(); return { consumeRateLimit: vi.fn(async (key: string, limit: number) => { const count = (counts.get(key) ?? 0) + 1; counts.set(key, count); return count <= limit; }) }; };
 
 describe('RateLimitGuard', () => {
-  it('limits requests per user and resource', () => {
+  it('limits requests per user and resource', async () => {
     const reflector = {
       getAllAndOverride: () => ({
         keyPrefix: 'bids:place',
@@ -19,7 +19,7 @@ describe('RateLimitGuard', () => {
     } satisfies Pick<Reflector, 'getAllAndOverride'>;
     const guard = new RateLimitGuard(
       reflector,
-      new RateLimitService({ maxBuckets: 10, cleanupIntervalMs: 1_000 }),
+      limiter(),
     );
     const createContext = () =>
       new ExecutionContextHost([
@@ -34,9 +34,9 @@ describe('RateLimitGuard', () => {
         },
       ]);
 
-    expect(guard.canActivate(createContext())).toBe(true);
+    expect(await guard.canActivate(createContext())).toBe(true);
     try {
-      guard.canActivate(createContext());
+      await guard.canActivate(createContext());
       throw new Error('Expected rate limit exception');
     } catch (error: unknown) {
       expect(error).toBeInstanceOf(HttpException);
@@ -46,7 +46,7 @@ describe('RateLimitGuard', () => {
     }
   });
 
-  it('uses socket remote address when trust proxy is disabled', () => {
+  it('uses socket remote address when trust proxy is disabled', async () => {
     const reflector = {
       getAllAndOverride: () => ({
         keyPrefix: 'auth:login',
@@ -57,7 +57,7 @@ describe('RateLimitGuard', () => {
     } satisfies Pick<Reflector, 'getAllAndOverride'>;
     const guard = new RateLimitGuard(
       reflector,
-      new RateLimitService({ maxBuckets: 10, cleanupIntervalMs: 1_000 }),
+      limiter(),
       false,
     );
     const createContext = (forwardedFor: string) =>
@@ -73,13 +73,13 @@ describe('RateLimitGuard', () => {
         },
       ]);
 
-    expect(guard.canActivate(createContext('203.0.113.1'))).toBe(true);
-    expect(() => guard.canActivate(createContext('198.51.100.2'))).toThrow(
+    expect(await guard.canActivate(createContext('203.0.113.1'))).toBe(true);
+    await expect(guard.canActivate(createContext('198.51.100.2'))).rejects.toThrow(
       HttpException,
     );
   });
 
-  it('uses proxied request.ip when trust proxy is enabled', () => {
+  it('uses proxied request.ip when trust proxy is enabled', async () => {
     const reflector = {
       getAllAndOverride: () => ({
         keyPrefix: 'auth:login',
@@ -90,7 +90,7 @@ describe('RateLimitGuard', () => {
     } satisfies Pick<Reflector, 'getAllAndOverride'>;
     const guard = new RateLimitGuard(
       reflector,
-      new RateLimitService({ maxBuckets: 10, cleanupIntervalMs: 1_000 }),
+      limiter(),
       true,
     );
     const createContext = (ip: string) =>
@@ -105,11 +105,11 @@ describe('RateLimitGuard', () => {
         },
       ]);
 
-    expect(guard.canActivate(createContext('203.0.113.1'))).toBe(true);
-    expect(guard.canActivate(createContext('198.51.100.2'))).toBe(true);
+    expect(await guard.canActivate(createContext('203.0.113.1'))).toBe(true);
+    expect(await guard.canActivate(createContext('198.51.100.2'))).toBe(true);
   });
 
-  it('does not trust X-Forwarded-For when trust proxy is enabled but request.ip is missing', () => {
+  it('does not trust X-Forwarded-For when trust proxy is enabled but request.ip is missing', async () => {
     const reflector = {
       getAllAndOverride: () => ({
         keyPrefix: 'auth:login',
@@ -120,7 +120,7 @@ describe('RateLimitGuard', () => {
     } satisfies Pick<Reflector, 'getAllAndOverride'>;
     const guard = new RateLimitGuard(
       reflector,
-      new RateLimitService({ maxBuckets: 10, cleanupIntervalMs: 1_000 }),
+      limiter(),
       true,
     );
     const createContext = (forwardedFor: string) =>
@@ -136,9 +136,15 @@ describe('RateLimitGuard', () => {
         },
       ]);
 
-    expect(guard.canActivate(createContext('203.0.113.1'))).toBe(true);
-    expect(() => guard.canActivate(createContext('198.51.100.2'))).toThrow(
+    expect(await guard.canActivate(createContext('203.0.113.1'))).toBe(true);
+    await expect(guard.canActivate(createContext('198.51.100.2'))).rejects.toThrow(
       HttpException,
     );
   });
+  it('rejects when durable storage fails instead of allowing the request', async () => {
+    const failure = new Error('synthetic storage failure');
+    const guard = new RateLimitGuard({ getAllAndOverride: () => ({ keyPrefix: 'auth:login', limit: 1, windowMs: 60_000, scope: 'ip' }) }, { consumeRateLimit: vi.fn().mockRejectedValue(failure) });
+    await expect(guard.canActivate(new ExecutionContextHost([{ params: {}, socket: { remoteAddress: '127.0.0.1' } }]))).rejects.toBe(failure);
+  });
+
 });

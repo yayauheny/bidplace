@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 
+import { RateLimitService } from './rate-limit/rate-limit.service';
 import { AuthAbuseService } from './auth/auth-abuse.service';
 import { lockAbuseUser, otpCodeHash } from './auth/auth-abuse.store';
 import { classifyMailFailure } from './auth/mail-outcome';
 
 @Injectable()
 export class AntifraudService {
-  constructor(private readonly auth: AuthAbuseService) {}
+  constructor(private readonly auth: AuthAbuseService, private readonly rateLimits: RateLimitService) {}
+
+  consumeRateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+    return this.rateLimits.consume(key, limit, windowMs);
+  }
 
   lockAbuseUser(...args: Parameters<typeof lockAbuseUser>) {
     return lockAbuseUser(...args);
