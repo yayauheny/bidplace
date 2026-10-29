@@ -985,6 +985,42 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     return state;
   }
   private async publish(operation: Operation, token: string) {
+    if (operation.restore && operation.productId) {
+      // Persist before external writes; FAILED retries keep the same generation.
+      await runReadCommittedTransaction(this.prisma, async (tx) => {
+        await tx.$queryRaw`SELECT id FROM media_operations WHERE id = ${operation.id}::uuid FOR UPDATE`;
+        const current = await tx.mediaOperation.findUniqueOrThrow({ where: { id: operation.id } });
+        if (current.state !== 'RUNNING' || current.leaseToken !== token ||
+          current.generation !== operation.generation || !current.leaseUntil ||
+          current.leaseUntil.getTime() <= Date.now())
+          throw new Error('Publication lease was lost');
+        await tx.mediaOperation.upsert({
+          where: { identity: `restore-revoke:${operation.id}:${operation.generation}` },
+          create: {
+            kind: 'REVOKE',
+            identity: `restore-revoke:${operation.id}:${operation.generation}`,
+            productId: operation.productId,
+            revisionId: operation.revisionId,
+            expectedRevisionAt: operation.expectedRevisionAt,
+            generation: operation.generation,
+            restore: true,
+            objects: {
+              create: operation.objects.filter(({ object }) => object.tier === 'PUBLIC')
+                .map(({ objectId }) => ({ objectId })),
+            },
+          },
+          update: {
+            state: 'PENDING',
+            attemptCount: 0,
+            nextAttemptAt: new Date(),
+            errorCode: null,
+            leaseUntil: null,
+            leaseToken: null,
+          },
+        });
+      });
+      this.arm();
+    }
     for (const item of operation.objects) {
       const fresh = await this.prisma.mediaOperation.findUniqueOrThrow({
         where: { id: operation.id },
@@ -1253,6 +1289,18 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     );
   }
   private async remove(operation: Operation, token: string) {
+    const restore = operation.kind === 'REVOKE' && operation.restore && operation.productId
+      ? await this.prisma.mediaOperation.findFirst({
+          where: {
+            kind: 'PUBLISH', restore: true, productId: operation.productId,
+            revisionId: operation.revisionId, generation: operation.generation,
+            expectedRevisionAt: operation.expectedRevisionAt,
+          },
+          select: { id: true },
+        })
+      : null;
+    const compensating = restore &&
+      operation.identity === `restore-revoke:${restore.id}:${operation.generation}`;
     for (const item of operation.objects) {
       await runReadCommittedTransaction(this.prisma, async (tx) => {
         await tx.$queryRaw`SELECT id FROM media_operations WHERE id = ${operation.id}::uuid FOR UPDATE`;
@@ -1289,7 +1337,17 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
                   kind: 'PUBLISH',
                   state: { in: ['PENDING', 'FAILED'] },
                   ...(operation.kind === 'REVOKE' && item.object.tier === 'PUBLIC'
-                    ? { NOT: { restore: false, product: { status: 'ARCHIVED' } } }
+                    ? { NOT: { OR: [
+                        { restore: false, product: { status: 'ARCHIVED' } },
+                        ...(compensating ? [{
+                          id: restore.id,
+                          generation: operation.generation,
+                          restore: true,
+                          state: 'FAILED' as const,
+                          productId: operation.productId,
+                          product: { status: 'ARCHIVED' as const },
+                        }] : []),
+                      ] } }
                     : {}),
                 },
               ],

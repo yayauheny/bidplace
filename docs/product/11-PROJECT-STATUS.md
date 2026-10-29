@@ -16,6 +16,20 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — Failed Work restore compensation
+
+**Implemented locally / live Needs verification.** `media-lifecycle.service.ts`
+commits generation-bound PUBLIC REVOKE intent before restore delivery, checks the
+current source lease, and rearms cleanup for manual retries. Only its exact FAILED
+restore on ARCHIVED Work bypasses PUBLIC deletion blocking. PRIVATE originals,
+RUNNING leases and legitimate shared public references remain protected.
+`media-lifecycle.integration.spec.ts` covers partial two-image delivery, interrupted
+failure transition/fresh-service recovery, journal persistence outage, shared
+references, same-generation retry and later restore cycles. API media/publication
+integration, media unit, typecheck, lint and build checks pass locally.
+Compensation does not prevent brief exposure before cleanup/purge. Pre-existing
+FAILED restores without a journal require manual retry; live R2/CDN remains open.
+
 ## 2026-10-29 — Hidden Work media privacy (Opus P1)
 
 **Implemented locally / live Needs verification.** `core/media/media-lifecycle.service.ts`

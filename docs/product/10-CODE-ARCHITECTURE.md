@@ -52,6 +52,16 @@ transaction has a 65s timeout. This bounds the new per-object lock scope, with h
 waiting or failing under slow delivery rather than succeeding ahead of a late PUT.
 Profile publication and existing revocation/shared-asset rules retain their owners.
 
+Work restore commits a PUBLIC-only REVOKE journal before delivery, under the
+PUBLISH row lock and current lease/token/generation check. Its identity binds the
+source operation/generation; revision timestamp disambiguates later restore
+cycles. FAILED retries rearm that journal. Only its corresponding FAILED restore
+on an ARCHIVED Product is exempt from PUBLIC deletion blocking; active RUNNING,
+PRIVATE/CLEANUP and public-reference guards remain. Existing recovery handles
+partial writes and expired RUNNING restore attempts without automatically retrying
+ordinary FAILED/PENDING publications. Compensation permits brief exposure before
+cleanup/purge; strict privacy atomicity and live R2/CDN acceptance remain open.
+
 ## 2026-10-26 — Photo workflow (DEC-148)
 
 `product-draft-image-actions.ts` owns selection, sequential preparation/upload,

@@ -348,3 +348,20 @@ the main run and isolated reruns; API typecheck/lint/build; docs link check and
 `git diff --check`. Initial unit command exposed environment/tool ordering limits
 (dist rebuild overlap, sandbox loopback, explicit env-path override); each affected
 spec passed after correcting invocation. Live R2/CDN verification remains open.
+
+
+### 2026-10-29 — Failed restore compensation
+
+`media-lifecycle.service.ts` commits PUBLIC-only compensation before Work restore
+writes under the source PUBLISH row lock/current lease/token/generation. Journal
+identity binds source id/generation and revision timestamp identifies later cycles;
+FAILED retries rearm it. Cleanup bypass applies only to its corresponding FAILED
+restore on ARCHIVED Work, preserving RUNNING, PRIVATE/CLEANUP and shared-public
+reference protections. No schema, dependency or public API change. Regression:
+two-image partial delivery, failed failure-transition/restart, rejected journal
+persistence before any PUT, shared public bytes, same-generation rearm, later
+restore cycles and successful manual retry. Relevant API integration/media units,
+typecheck/lint/build, docs links and whitespace checks pass locally.
+Compensation permits brief exposure before delete/purge; strict privacy atomicity
+and live R2/CDN remain open. Older FAILED restores lacking a journal require
+manual retry; no automatic retry policy or historical backfill added.
