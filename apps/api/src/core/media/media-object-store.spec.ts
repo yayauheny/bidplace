@@ -54,6 +54,34 @@ describe('tiered S3 media transport', () => {
     ).rejects.toThrow('Invalid');
     expect(send).not.toHaveBeenCalled();
   });
+  it('rejects an aborted publication deadline before public writes or reads', async () => {
+    const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue(undefined);
+    const store = new S3MediaObjectStore(env());
+    const signal = AbortSignal.abort(new Error('Publication expired'));
+    await expect(store.get('PUBLIC', key, signal)).rejects.toThrow('Publication expired');
+    await expect(store.put('PUBLIC', key, { bytes: new Uint8Array([1]), mimeType: 'image/webp' }, {
+      sha256: 'a'.repeat(64), byteLength: 1, mimeType: 'image/webp',
+    }, signal)).rejects.toThrow('Publication expired');
+    expect(send).not.toHaveBeenCalled();
+  });
+  it('aborts an in-progress body read when publication expires', async () => {
+    const controller = new AbortController();
+    let started!: () => void;
+    let rejectRead!: (error: Error) => void;
+    const reading = new Promise<void>((resolve) => { started = resolve; });
+    const body = {
+      transformToByteArray: () => {
+        started();
+        return new Promise<Uint8Array>((_resolve, reject) => { rejectRead = reject; });
+      },
+      destroy: (error: Error) => { rejectRead(error); },
+    };
+    vi.spyOn(S3Client.prototype, 'send').mockImplementation(async () => ({ Body: body, ContentType: 'image/webp' }));
+    const read = new S3MediaObjectStore(env()).get('PUBLIC', key, controller.signal);
+    await reading;
+    controller.abort();
+    await expect(read).rejects.toThrow('Media read aborted');
+  });
   it('does not turn authentication/provider errors into a missing object', async () => {
     vi.spyOn(S3Client.prototype, 'send').mockRejectedValue({
       name: 'AccessDenied',

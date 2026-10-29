@@ -16,6 +16,22 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — Hidden Work media privacy (Opus P1)
+
+**Implemented locally / live Needs verification.** `core/media/media-lifecycle.service.ts`
+keeps ARCHIVED nonrestore revision approval in PRIVATE, advances the publication
+pointer/audit, and leaves unwritten PUBLIC manifests unready. Each Product PUBLIC
+write shares the hide row lock and rechecks operation lease/generation/status;
+PRIVATE reads remain outside the lock. `media-object-store.ts` propagates a 60s
+publication abort deadline through reads/body consumption/writes before the 65s
+transaction timeout. Hide may wait or fail under slow delivery; it cannot succeed
+then be followed by that approval's PUBLIC writes. Explicit restore still delivers
+from PRIVATE; profiles, shared-public-reference revoke guards and schema are unchanged.
+Regression evidence: `media-lifecycle.integration.spec.ts` checks zero hidden PUTs,
+known former URL absence, both deterministic delivery/hide orderings, and restore;
+`media-object-store.spec.ts` checks abort-before-write and body cancellation.
+Live R2/CDN acceptance remains Needs verification.
+
 ## 2026-10-29 — W1 publication state owner
 
 **Implemented locally / live and visual Needs verification.**

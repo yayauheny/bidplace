@@ -872,27 +872,32 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       mimeType: string;
     },
     bytes: Uint8Array,
+    signal?: AbortSignal,
   ) {
+    signal?.throwIfAborted();
     if (
       bytes.byteLength !== object.byteLength ||
       mediaChecksum(bytes) !== object.sha256
     )
       throw new Error('Media checksum mismatch');
-    const existing = await this.store.get(object.tier, object.objectKey);
+    const existing = await this.store.get(object.tier, object.objectKey, signal);
     if (!existing) {
       try {
+        signal?.throwIfAborted();
         await this.store.put(
           object.tier,
           object.objectKey,
           { bytes, mimeType: object.mimeType },
           object,
+          signal,
         );
       } catch (error) {
-        const written = await this.store.get(object.tier, object.objectKey);
+        signal?.throwIfAborted();
+        const written = await this.store.get(object.tier, object.objectKey, signal);
         if (!written) throw error;
       }
     }
-    const verified = await this.store.get(object.tier, object.objectKey);
+    const verified = await this.store.get(object.tier, object.objectKey, signal);
     if (
       !verified ||
       verified.mimeType !== object.mimeType ||
@@ -995,7 +1000,30 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       });
       const value = await this.store.get('PRIVATE', item.object.objectKey);
       if (!value) throw new Error('Private derivative is missing');
-      await this.writeVerified(item.object, value.bytes);
+      if (operation.productId) {
+        const signal = AbortSignal.timeout(60_000);
+        await this.prisma.$transaction(
+          async (tx) => {
+            await tx.$queryRaw`SELECT id FROM products WHERE id = ${operation.productId}::uuid FOR UPDATE`;
+            const product = await tx.product.findUniqueOrThrow({
+              where: { id: operation.productId! },
+              select: { status: true },
+            });
+            const current = await tx.mediaOperation.findUniqueOrThrow({
+              where: { id: operation.id },
+            });
+            if (
+              current.state !== 'RUNNING' ||
+              current.leaseToken !== token ||
+              current.generation !== operation.generation
+            ) return;
+            if (product.status === 'ARCHIVED' && !operation.restore) return;
+            // Hide shares this lock; delivery must abort before the transaction can release it.
+            await this.writeVerified(item.object, value.bytes, signal);
+          },
+          { isolationLevel: 'ReadCommitted', timeout: 65_000 },
+        );
+      } else await this.writeVerified(item.object, value.bytes);
     }
     await runReadCommittedTransaction(this.prisma, async (tx) => {
       if (operation.profileId)
@@ -1033,14 +1061,21 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         });
         return;
       }
-      await tx.mediaObject.updateMany({
-        where: { id: { in: operation.objects.map((x) => x.objectId) } },
-        data: { state: 'READY' },
-      });
-      await tx.mediaOperationObject.updateMany({
-        where: { operationId: operation.id },
-        data: { state: 'READY' },
-      });
+      const hidden = operation.productId &&
+        (await tx.product.findUniqueOrThrow({
+          where: { id: operation.productId },
+          select: { status: true },
+        })).status === 'ARCHIVED';
+      if (!hidden) {
+        await tx.mediaObject.updateMany({
+          where: { id: { in: operation.objects.map((x) => x.objectId) } },
+          data: { state: 'READY' },
+        });
+        await tx.mediaOperationObject.updateMany({
+          where: { operationId: operation.id },
+          data: { state: 'READY' },
+        });
+      }
       await tx.mediaOperation.update({
         where: { id: operation.id },
         data: {

@@ -40,6 +40,18 @@ legacy-timer/direct-call overlap. W3 commerce jobs, outbox and admin health UI
 remain planned. Live scheduled execution is **Needs verification**; setup and
 post-deploy checks belong to the [runbook](../ops/CLOUDFLARE-DEPLOYMENT.md).
 
+## 2026-10-29 — Hidden Work delivery lock
+
+Product PUBLIC delivery in `core/media/media-lifecycle.service.ts` takes the same
+Product row lock as hide for one derivative at a time, checking current operation
+lease/generation and visibility before external delivery. PRIVATE reads occur
+before the lock. ARCHIVED nonrestore approval updates the revision pointer/audit
+without PUBLIC writes or READY manifests; restore uses existing PRIVATE bytes.
+A 60s total abort signal reaches S3 requests and body consumption; the I/O-bearing
+transaction has a 65s timeout. This bounds the new per-object lock scope, with hide
+waiting or failing under slow delivery rather than succeeding ahead of a late PUT.
+Profile publication and existing revocation/shared-asset rules retain their owners.
+
 ## 2026-10-26 — Photo workflow (DEC-148)
 
 `product-draft-image-actions.ts` owns selection, sequential preparation/upload,

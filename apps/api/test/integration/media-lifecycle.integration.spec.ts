@@ -40,11 +40,18 @@ class MemoryStore extends MediaObjectStore {
   privateWritesBeforeFailure = Number.POSITIVE_INFINITY;
   privateWrites = 0;
   afterPublicPut?: () => Promise<void>;
+  afterPrivateGet?: () => Promise<void>;
   beforeDelete?: () => Promise<void>;
   async get(tier: MediaTier, key: string) {
     if (tier === 'PRIVATE' && this.failPrivateReads)
       throw new Error('Provider outage');
-    return this.objects.get(`${tier}:${key}`) ?? null;
+    const value = this.objects.get(`${tier}:${key}`) ?? null;
+    if (tier === 'PRIVATE' && this.afterPrivateGet) {
+      const hook = this.afterPrivateGet;
+      delete this.afterPrivateGet;
+      await hook();
+    }
+    return value;
   }
   async head() {
     return null;
@@ -1898,6 +1905,9 @@ describe('product publication caller integration', () => {
         where: { id: work.id },
         data: { editingRevisionId: next.id },
       });
+      const image = await prisma.productImage.findUniqueOrThrow({ where: { id: work.imageId } });
+      const publicWrites = vi.spyOn(s.store, 'put');
+      expect(await s.store.get('PUBLIC', image.objectKey!)).toBeNull();
       await moderation.updateProductStatus(f.user.id, work.id, {
         status: 'APPROVED',
         target: {
@@ -1912,6 +1922,17 @@ describe('product publication caller integration', () => {
       await expect(products.getPortfolio(work.publicId)).rejects.toThrow(
         'Work not found',
       );
+      expect(publicWrites.mock.calls.filter(([tier]) => tier === 'PUBLIC')).toHaveLength(0);
+      expect(await s.store.get('PUBLIC', image.objectKey!)).toBeNull();
+      if (enabled) {
+        const operation = await prisma.mediaOperation.findFirstOrThrow({
+          where: { productId: work.id, revisionId: next.id, kind: 'PUBLISH' },
+          include: { objects: true },
+        });
+        expect(operation.state).toBe('DONE');
+        expect(operation.objects.every((item) => item.state !== 'READY')).toBe(true);
+      }
+      publicWrites.mockRestore();
       await products.unhide(f.user.id, work.id);
       expect(await products.getPortfolio(work.publicId)).toMatchObject({
         product: { title: 'Replacement work' },
@@ -2053,7 +2074,7 @@ describe('product publication caller integration', () => {
       ).toBe(auditCount);
     },
   );
-  it('preserves approval when author hide commits during new revision delivery', async () => {
+  it.each(['PRIVATE', 'PUBLIC'] as const)('prevents public resurrection when hide races with %s revision delivery', async (barrier) => {
     const s = setup();
     const f = await author(s.media);
     await approve(s.media, f.profile, f.user.id);
@@ -2120,10 +2141,19 @@ describe('product publication caller integration', () => {
     const released = new Promise<void>((resolve) => {
       resume = resolve;
     });
-    s.store.afterPublicPut = async () => {
+    const pause = async () => {
       reached();
       await released;
     };
+    if (barrier === 'PRIVATE') s.store.afterPrivateGet = pause;
+    else s.store.afterPublicPut = pause;
+    let hideCompleted = false;
+    let latePublicWrites = 0;
+    const put = s.store.put.bind(s.store);
+    vi.spyOn(s.store, 'put').mockImplementation(async (tier, key, value) => {
+      if (tier === 'PUBLIC' && hideCompleted) latePublicWrites += 1;
+      await put(tier, key, value);
+    });
     const approval = Promise.allSettled([
       moderation.updateProductStatus(f.user.id, work.id, {
         status: 'APPROVED',
@@ -2135,15 +2165,32 @@ describe('product publication caller integration', () => {
       }),
     ]);
     await blocked;
+    const hiding = Promise.allSettled([products.hide(f.user.id, work.id)]);
     try {
-      const [hidden] = await Promise.allSettled([
-        products.hide(f.user.id, work.id),
-      ]);
+      if (barrier === 'PUBLIC') {
+        let waiting = false;
+        for (let attempt = 0; attempt < 100 && !waiting; attempt += 1) {
+          const locks = await prisma.$queryRaw<Array<{ waiting: boolean }>>`
+            SELECT EXISTS (
+              SELECT 1 FROM pg_locks l JOIN pg_class c ON c.oid = l.relation
+              JOIN pg_stat_activity a ON a.pid = l.pid
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE c.relname = 'products' AND n.nspname = current_schema()
+                AND a.wait_event_type = 'Lock'
+            ) AS waiting`;
+          waiting = locks[0]!.waiting;
+        }
+        expect(waiting).toBe(true);
+        expect((await prisma.product.findUniqueOrThrow({ where: { id: work.id } })).status).toBe('APPROVED');
+        resume();
+      }
+      const [hidden] = await hiding;
       if (hidden!.status === 'rejected')
         expect(hidden!.reason.getStatus()).toBe(409);
       expect(
         await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),
       ).toMatchObject({ status: 'ARCHIVED' });
+      hideCompleted = true;
       await expect(products.getPortfolio(work.publicId)).rejects.toThrow(
         'Work not found',
       );
@@ -2154,6 +2201,8 @@ describe('product publication caller integration', () => {
     }
     const [decision] = await approval;
     expect(decision!.status).toBe('fulfilled');
+    expect(latePublicWrites).toBe(0);
+    expect([...s.store.objects.keys()].some((key) => key.startsWith('PUBLIC:') && key.includes(asset.id))).toBe(false);
     await s.media.deliverOutstanding({ productId: work.id }, 'REVOKE');
     expect(
       await prisma.product.findUniqueOrThrow({ where: { id: work.id } }),

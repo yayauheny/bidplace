@@ -331,3 +331,20 @@ Task 0; отсутствие опций не считается green. Live R2/C
 Ruling: устаревшая фраза Runtime topology «no scheduler» исправлена на
 фактический global TickModule из уже реализованной W2 в той же ветке; это
 устраняет противоречие текущего architecture owner, без нового решения.
+
+### 2026-10-29 — Opus P1 hidden media privacy
+
+`media-lifecycle.service.ts` skips PUBLIC delivery for ARCHIVED nonrestore approval
+while preserving revision CAS, pointer/audit completion and PRIVATE restore bytes.
+Per-object Product row locks serialize PUBLIC delivery with hide; operation lease,
+generation and status are rechecked under lock. The total 60s I/O abort deadline
+propagates through S3 get/body/put before the 65s transaction timeout; slow hide can
+wait or fail instead of returning success ahead of a late PUBLIC PUT. No new
+schema, dependency, profile transition or product decision. Deterministic regressions
+cover zero hidden PUBLIC PUTs, known former URL absence, unwritten manifests,
+PRIVATE-read/hide and PUBLIC-put/blocked-hide orderings, explicit restore and retries.
+Local verification: 72 focused integration tests; 665 API unit cases green across
+the main run and isolated reruns; API typecheck/lint/build; docs link check and
+`git diff --check`. Initial unit command exposed environment/tool ordering limits
+(dist rebuild overlap, sandbox loopback, explicit env-path override); each affected
+spec passed after correcting invocation. Live R2/CDN verification remains open.
