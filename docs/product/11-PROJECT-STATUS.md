@@ -16,6 +16,19 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — Launch documents integration, stage B
+
+**Partial.** Stage A is merged through PR #71 at `95083515`; this supersedes
+the pending-main note below. `fix/launch-docs-integration` combines that main
+with the unchanged source `fix/launch-docs-review` (`54925364`). Both decision
+entries are retained verbatim: commerce `DEC-150` and photo `DEC-151`; the
+architecture keeps W0 facts and the planned logic-owner table. Launch README
+records the actual W0 state; W1's prompt includes its existing Task 0.
+No runtime, API, schema, workflows or product decisions change. Documentation
+acceptance uses byte comparisons, `pnpm docs:link-check` and `git diff --check`;
+the integration PR records their results and merge. Photo acceptance stays
+Partial (`DEC-112`, story CDN, native); W1 and production deploy are not started.
+
 ## 2026-10-29 — W0 integration into main, stage A
 
 **Needs verification.** Integration branch `fix/w0-main-integration` starts from
