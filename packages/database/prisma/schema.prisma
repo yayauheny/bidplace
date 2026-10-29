@@ -998,3 +998,10 @@ model AuthFlow {
   @@index([expiresAt])
   @@map("auth_flows")
 }
+
+model SystemHeartbeat {
+  name String @id
+  at   DateTime @db.Timestamptz(3)
+
+  @@map("system_heartbeats")
+}

@@ -21,6 +21,7 @@ export function syntheticProductionServerEnv(
     NODE_ENV: 'production',
     APP_ENV: 'production',
     SESSION_SECRET: 'synthetic-production-jwt-secret-32',
+    INTERNAL_TICK_SECRET: 'synthetic-internal-tick-test-key-32',
     SMTP_HOST: 'smtp.example.com',
     SMTP_PORT: '465',
     SMTP_SECURE: 'true',

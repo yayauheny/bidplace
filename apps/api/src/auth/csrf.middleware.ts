@@ -14,6 +14,8 @@ export class CsrfMiddleware implements NestMiddleware {
     if (request.originalUrl.startsWith('/api/auth'))
       response.setHeader('Cache-Control', 'no-store');
     if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return next();
+    if (request.method === 'POST' && request.path === '/api/internal/tick')
+      return next();
     const source = request.get('origin') ?? request.get('referer');
     let origin: string | undefined;
     try {

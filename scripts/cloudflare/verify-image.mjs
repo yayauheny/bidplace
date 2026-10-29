@@ -146,6 +146,7 @@ try {
     DATABASE_URL: `postgresql://smoke:local-smoke-only@${db}:5432/bidplace_cloudflare_smoke?connection_limit=3`,
     SESSION_SECRET: 'local-image-smoke-only-not-a-runtime-secret',
     OTP_HASH_SECRET: 'synthetic-image-otp-key-at-least-32-characters',
+    INTERNAL_TICK_SECRET: 'synthetic-image-tick-key-at-least-32-characters',
     CORS_ORIGIN: 'https://staging.bid.place',
     TRUST_PROXY: 'true',
     SMTP_HOST: 'smtp.example.invalid',
