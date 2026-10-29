@@ -118,6 +118,9 @@ model User {
   passwordResetTokens PasswordResetToken[]
   termsAcceptances   TermsAcceptance[]
   registrationLegalEvidence RegistrationLegalEvidence?
+  fraudSignals FraudSignal[]
+  purchaseHolds PurchaseHold[] @relation("HoldUser")
+  releasedPurchaseHolds PurchaseHold[] @relation("HoldReleaser")
   authAbuseOperations AuthAbuseOperation[]
   auditEvents       AuditEvent[]          @relation("AuditActor")
   curatorSelections CuratorSelection[]    @relation("CuratorSelectionActor")
@@ -1013,4 +1016,38 @@ model RateLimitCounter {
   count Int
   @@index([windowStart])
   @@map("rate_limit_counters")
+}
+
+model FraudSignal {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  kind FraudSignalKind
+  subjectId String? @map("subject_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@map("fraud_signals")
+}
+
+enum FraudSignalKind {
+  TURNSTILE_FAILED
+  BID_BURST
+  SHARED_BROWSER_WITH_SELLER
+  NEW_ACCOUNT_BURST
+}
+
+model PurchaseHold {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  reason String @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at")
+  releasedAt DateTime? @map("released_at")
+  releasedById String? @map("released_by_id") @db.Uuid
+  note String? @db.Text
+  user User @relation("HoldUser", fields: [userId], references: [id], onDelete: Restrict)
+  releasedBy User? @relation("HoldReleaser", fields: [releasedById], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@map("purchase_holds")
 }

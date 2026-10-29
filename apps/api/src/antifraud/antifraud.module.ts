@@ -1,3 +1,4 @@
+import { FraudSignalsService } from './signals/fraud-signals.service';
 import { Global, Module } from '@nestjs/common';
 
 import { DatabaseModule } from '../core/database';
@@ -10,7 +11,12 @@ import { AntifraudService } from './antifraud.service';
 @Global()
 @Module({
   imports: [AuthAbuseModule, DatabaseModule, TickModule],
-  providers: [AntifraudService, RateLimitService, RateLimitCleanupService],
+  providers: [
+    FraudSignalsService,
+    AntifraudService,
+    RateLimitService,
+    RateLimitCleanupService,
+  ],
   exports: [AntifraudService],
 })
 export class AntifraudModule {}

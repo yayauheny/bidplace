@@ -55,7 +55,7 @@ describe('AuthAbuseService', () => {
   ])('reports %s as a nonblocking %s signal', async (outcome, result) => {
     const { service, turnstile } = createService(vi.fn());
     turnstile.verify.mockResolvedValue({ outcome });
-    const facade = new AntifraudService(service, {} as never);
+    const facade = new AntifraudService(service, {} as never, {} as never);
     await expect(facade.verifySignal('sale', 'proof', '203.0.113.1')).resolves.toBe(result);
     expect(turnstile.verify).toHaveBeenCalledWith({ action: 'sale', token: 'proof', remoteIp: '203.0.113.1' });
   });
@@ -70,7 +70,7 @@ describe('AuthAbuseService', () => {
 
   it('keeps required verification blocking and preserves stable validation identity', async () => {
     const { service, turnstile } = createService(vi.fn());
-    const facade = new AntifraudService(service, {} as never);
+    const facade = new AntifraudService(service, {} as never, {} as never);
     await expect(facade.verifyRequired('register', '', '203.0.113.1')).rejects.toMatchObject({ apiCode: ApiErrorCode.TURNSTILE_REQUIRED });
     const validation = { operationKey: 'operation', contentHash: 'content' };
     await service.verifyRequired('register', 'proof', '203.0.113.1', validation);

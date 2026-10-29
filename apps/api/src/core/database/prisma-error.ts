@@ -25,5 +25,9 @@ export function prismaUniqueTargets(error: unknown): string[] {
 }
 
 export function isPrismaSerializableConflictError(error: unknown): boolean {
-  return hasPrismaErrorCode(error, PRISMA_SERIALIZABLE_CONFLICT_ERROR_CODE);
+  if (hasPrismaErrorCode(error, PRISMA_SERIALIZABLE_CONFLICT_ERROR_CODE))
+    return true;
+  if (!hasPrismaErrorCode(error, 'P2010')) return false;
+  const meta = (error as { meta?: { code?: unknown } }).meta;
+  return meta?.code === '40001';
 }

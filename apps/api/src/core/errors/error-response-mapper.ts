@@ -30,6 +30,7 @@ const defaultErrorMessages: Record<ApiErrorCodeValue, string> = {
   [ApiErrorCode.INTERNAL_ERROR]: 'Internal server error',
   [ApiErrorCode.PRODUCT_STATE_CONFLICT]: 'Product state changed',
   [ApiErrorCode.PRODUCT_IN_SALE]: 'Product is locked by an active sale',
+  [ApiErrorCode.BUYER_BLOCKED]: 'Purchases are blocked',
   [ApiErrorCode.BID_TOO_LOW]: 'Bid is below the minimum',
   [ApiErrorCode.LISTING_NOT_OPEN]: 'Listing is not open for bids',
   [ApiErrorCode.LISTING_NOT_FOUND]: 'Listing not found',

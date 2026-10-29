@@ -15,13 +15,31 @@ describe('prisma error helpers', () => {
   it('detects serializable conflict errors', () => {
     expect(isPrismaSerializableConflictError({ code: 'P2034' })).toBe(true);
     expect(isPrismaSerializableConflictError({ code: 'P2002' })).toBe(false);
+    expect(
+      isPrismaSerializableConflictError({
+        code: 'P2010',
+        meta: { code: '40001' },
+      }),
+    ).toBe(true);
+    expect(
+      isPrismaSerializableConflictError({
+        code: 'P2010',
+        meta: { code: '42P01' },
+      }),
+    ).toBe(false);
   });
 
   it('reads unique constraint targets without treating an unknown target as a field', () => {
-    expect(prismaUniqueTargets({ code: 'P2002', meta: { target: ['slug'] } })).toEqual(['slug']);
-    expect(prismaUniqueTargets({ code: 'P2002', meta: { target: 'user_id' } })).toEqual(['user_id']);
+    expect(
+      prismaUniqueTargets({ code: 'P2002', meta: { target: ['slug'] } }),
+    ).toEqual(['slug']);
+    expect(
+      prismaUniqueTargets({ code: 'P2002', meta: { target: 'user_id' } }),
+    ).toEqual(['user_id']);
     expect(prismaUniqueTargets({ code: 'P2002' })).toEqual([]);
-    expect(prismaUniqueTargets({ code: 'P2034', meta: { target: ['slug'] } })).toEqual([]);
+    expect(
+      prismaUniqueTargets({ code: 'P2034', meta: { target: ['slug'] } }),
+    ).toEqual([]);
   });
 
   it('returns false for non-prisma values', () => {
