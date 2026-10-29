@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { SERVER_ENV, type ServerEnv } from '../config';
 import { DatabaseModule } from '../database';
+import { TickModule } from '../tick/tick.module';
 import { ImageProcessor } from '../../images/image-processor';
 import { SharpImageProcessor } from './media-pipeline';
 import { MediaLifecycleService } from './media-lifecycle.service';
@@ -11,7 +12,7 @@ import {
 } from './public-media-cache';
 @Global()
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, TickModule],
   providers: [
     MediaLifecycleService,
     { provide: ImageProcessor, useClass: SharpImageProcessor },

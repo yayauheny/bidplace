@@ -1,3 +1,5 @@
+import { TickService } from '../../src/core/tick/tick.service';
+import { SystemClock } from '../../src/core/time';
 import { SharpImageProcessor } from '../../src/core/media/media-pipeline';
 import { randomUUID } from 'node:crypto';
 import {
@@ -104,9 +106,10 @@ function setup(store = new MemoryStore(), cache = new MemoryCache()) {
     CLOUDFLARE_ZONE_ID: 'a'.repeat(32),
     CLOUDFLARE_CACHE_TOKEN: 'test',
   });
-  const media = new MediaLifecycleService(prisma as never, store, cache, env, new SharpImageProcessor());
+  const tick = new TickService(prisma as never, new SystemClock());
+  const media = new MediaLifecycleService(prisma as never, store, cache, env, new SharpImageProcessor(), tick);
   mediaServices.add(media);
-  return { store, cache, media };
+  return { store, cache, media, tick };
 }
 async function author(media: MediaLifecycleService) {
   const user = await prisma.user.create({
@@ -204,6 +207,113 @@ async function approve(
   });
 }
 describe('durable media lifecycle on PostgreSQL', () => {
+  it('resumes a due revoke through the tick without starting in-process timers', async () => {
+    const s = setup();
+    const operation = await prisma.mediaOperation.create({
+      data: {
+        kind: 'REVOKE',
+        identity: `tick:${randomUUID()}`,
+        nextAttemptAt: new Date(0),
+      },
+    });
+    s.media.onModuleInit();
+    s.media.onModuleDestroy();
+    const result = await s.tick.run();
+    expect(result.jobs).toContainEqual({
+      name: 'media',
+      processed: 1,
+      failed: false,
+    });
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: operation.id },
+        })
+      ).state,
+    ).toBe('DONE');
+  });
+
+  it('stops before the next operation and orphan scan after the tick budget expires', async () => {
+    const s = setup();
+    const fixture = await author(s.media);
+    const object = await prisma.mediaObject.findFirstOrThrow({
+      where: { assetId: fixture.asset.id, tier: 'PRIVATE', variant: 'PREVIEW' },
+    });
+    const first = await prisma.mediaOperation.create({
+      data: {
+        kind: 'REVOKE',
+        identity: `budget-first:${randomUUID()}`,
+        createdAt: new Date(0),
+        objects: { create: [{ objectId: object.id }] },
+      },
+    });
+    const second = await prisma.mediaOperation.create({
+      data: {
+        kind: 'REVOKE',
+        identity: `budget-next:${randomUUID()}`,
+        createdAt: new Date(1),
+      },
+    });
+    const orphan = await prisma.mediaAsset.create({
+      data: {
+        ownerUserId: fixture.user.id,
+        purpose: 'WORK_IMAGE',
+        createdAt: new Date(0),
+      },
+    });
+    s.media.onModuleInit();
+    s.media.onModuleDestroy();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      s.store.beforeDelete = async () => {
+        vi.setSystemTime(Date.now() + 20_000);
+      };
+      expect((await s.tick.run()).jobs).toEqual([
+        { name: 'media', processed: 1, failed: false },
+      ]);
+      expect(
+        (
+          await prisma.mediaOperation.findUniqueOrThrow({
+            where: { id: first.id },
+          })
+        ).state,
+      ).toBe('DONE');
+      expect(
+        (
+          await prisma.mediaOperation.findUniqueOrThrow({
+            where: { id: second.id },
+          })
+        ).state,
+      ).toBe('PENDING');
+      expect(
+        (
+          await prisma.mediaAsset.findUniqueOrThrow({
+            where: { id: orphan.id },
+          })
+        ).state,
+      ).toBe('STAGING');
+      expect((await s.tick.run()).jobs).toEqual([
+        { name: 'media', processed: 2, failed: false },
+      ]);
+      expect(
+        (
+          await prisma.mediaOperation.findUniqueOrThrow({
+            where: { id: second.id },
+          })
+        ).state,
+      ).toBe('DONE');
+      expect(
+        (
+          await prisma.mediaAsset.findUniqueOrThrow({
+            where: { id: orphan.id },
+          })
+        ).state,
+      ).toBe('FAILED');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('imports all five legacy owners across bounded pages, preserves Bytes, refuses corruption and can resume after public delivery failure', async () => {
     const s = setup();
     const user = await prisma.user.create({
@@ -1524,4 +1634,160 @@ it('stops a revoke after its lease expires instead of deleting more objects', as
   expect([...s.store.objects.keys()].filter((key) => key.startsWith('PUBLIC:'))).toHaveLength(1);
   await s.media.deliver(revoke.id);
   expect([...s.store.objects.keys()].filter((key) => key.startsWith('PUBLIC:'))).toHaveLength(0);
+});
+
+describe('tick media recovery on PostgreSQL', () => {
+  it.each([
+    { state: 'RUNNING' as const, expired: true, changed: false, want: 'DONE' },
+    {
+      state: 'RUNNING' as const,
+      expired: true,
+      changed: true,
+      want: 'CANCELLED',
+    },
+    {
+      state: 'RUNNING' as const,
+      expired: false,
+      changed: false,
+      want: 'RUNNING',
+    },
+    {
+      state: 'PENDING' as const,
+      expired: true,
+      changed: false,
+      want: 'PENDING',
+    },
+    { state: 'FAILED' as const, expired: true, changed: false, want: 'FAILED' },
+  ])(
+    'recovers publication $state expired=$expired changed=$changed as $want',
+    async ({ state, expired, changed, want }) => {
+      const s = setup();
+      const fixture = await author(s.media);
+      s.store.failPublic = true;
+      await expect(
+        approve(s.media, fixture.profile, fixture.user.id),
+      ).rejects.toThrow('Media delivery failed');
+      const operation = await prisma.mediaOperation.findFirstOrThrow({
+        where: { profileId: fixture.profile.id, kind: 'PUBLISH' },
+      });
+      await prisma.mediaOperation.update({
+        where: { id: operation.id },
+        data: {
+          state,
+          nextAttemptAt: new Date(0),
+          leaseToken: randomUUID(),
+          leaseUntil: new Date(Date.now() + (expired ? -60_000 : 60_000)),
+        },
+      });
+      if (changed)
+        await prisma.sellerProfileRevision.update({
+          where: { id: fixture.profile.revision.id },
+          data: {
+            updatedAt: new Date(
+              fixture.profile.revision.updatedAt.getTime() + 1000,
+            ),
+          },
+        });
+      s.store.failPublic = false;
+      s.media.onModuleDestroy();
+      const restarted = setup(s.store, s.cache);
+      restarted.media.onModuleInit();
+      restarted.media.onModuleDestroy();
+      await restarted.tick.run();
+      expect(
+        (
+          await prisma.mediaOperation.findUniqueOrThrow({
+            where: { id: operation.id },
+          })
+        ).state,
+      ).toBe(want);
+      const profile = await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.profile.id },
+      });
+      expect(profile.publishedRevisionId).toBe(
+        want === 'DONE' ? fixture.profile.revision.id : null,
+      );
+      expect(profile.status).toBe(
+        want === 'DONE' ? 'APPROVED' : 'PENDING_REVIEW',
+      );
+    },
+  );
+
+  it('does not retry a publication that fails between selection and lease claim', async () => {
+    const s = setup();
+    const fixture = await author(s.media);
+    s.store.failPublic = true;
+    await expect(
+      approve(s.media, fixture.profile, fixture.user.id),
+    ).rejects.toThrow('Media delivery failed');
+    const operation = await prisma.mediaOperation.findFirstOrThrow({
+      where: { profileId: fixture.profile.id, kind: 'PUBLISH' },
+    });
+    await prisma.mediaOperation.update({
+      where: { id: operation.id },
+      data: { state: 'RUNNING', leaseUntil: new Date(0) },
+    });
+    s.store.failPublic = false;
+    s.media.onModuleInit();
+    s.media.onModuleDestroy();
+    const findMany = prisma.mediaOperation.findMany.bind(prisma.mediaOperation);
+    const selection = vi
+      .spyOn(prisma.mediaOperation, 'findMany')
+      .mockImplementationOnce(async (args) => {
+        const rows = await findMany(args);
+        await prisma.mediaOperation.update({
+          where: { id: operation.id },
+          data: { state: 'FAILED', leaseUntil: null },
+        });
+        return rows;
+      });
+    try {
+      await s.tick.run();
+      const fresh = await prisma.mediaOperation.findUniqueOrThrow({
+        where: { id: operation.id },
+      });
+      expect(fresh.state).toBe('FAILED');
+      expect(fresh.attemptCount).toBe(operation.attemptCount);
+      expect(
+        (
+          await prisma.sellerProfile.findUniqueOrThrow({
+            where: { id: fixture.profile.id },
+          })
+        ).publishedRevisionId,
+      ).toBeNull();
+    } finally {
+      selection.mockRestore();
+    }
+  });
+
+  it('reports persisted media failure to the tick instead of advancing its heartbeat', async () => {
+    const s = setup();
+    const fixture = await author(s.media);
+    await approve(s.media, fixture.profile, fixture.user.id);
+    await prisma.$transaction(async (tx) => {
+      await tx.sellerProfile.update({
+        where: { id: fixture.profile.id },
+        data: { status: 'SUSPENDED' },
+      });
+      await s.media.enqueueRevoke(tx, { profileId: fixture.profile.id });
+    });
+    s.cache.fail = true;
+    s.media.onModuleInit();
+    s.media.onModuleDestroy();
+    const before = await s.tick.lastSucceededAt();
+    expect((await s.tick.run()).jobs).toContainEqual({
+      name: 'media',
+      processed: 0,
+      failed: true,
+    });
+    expect(await s.tick.lastSucceededAt()).toEqual(before);
+    expect(
+      (
+        await prisma.mediaOperation.findFirstOrThrow({
+          where: { profileId: fixture.profile.id, kind: 'REVOKE' },
+          orderBy: { createdAt: 'desc' },
+        })
+      ).state,
+    ).toBe('FAILED');
+  });
 });

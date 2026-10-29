@@ -17,6 +17,7 @@ import {
   Prisma,
 } from '@bidplace/database';
 import { SERVER_ENV, type ServerEnv } from '../config';
+import { TickService } from '../tick/tick.service';
 import { PrismaService, runReadCommittedTransaction } from '../database';
 import type { RawImageUpload } from '../../images/image-policy';
 import { ImageProcessor } from '../../images/image-processor';
@@ -60,11 +61,21 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     private readonly cache: PublicMediaCache,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
     @Inject(ImageProcessor) private readonly imageProcessor: ImageProcessor,
+    private readonly ticks: TickService,
   ) {
     this.enabled = Boolean(env.S3_PUBLIC_BUCKET);
   }
   onModuleInit() {
-    if (this.enabled) this.arm();
+    if (!this.enabled) return;
+    this.ticks.register({
+      name: 'media',
+      run: async (now, { deadline }) => {
+        const result = await this.executeTick(now, deadline);
+        if (result.failed) throw new Error('Media recovery failed');
+        return result.processed;
+      },
+    });
+    this.arm();
   }
   onModuleDestroy() {
     this.stopped = true;
@@ -151,21 +162,40 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     this.orphanTimer = undefined;
   }
   async tick() {
-    const now = new Date();
+    await this.executeTick(new Date());
+  }
+  private async executeTick(now: Date, deadline = Infinity) {
+    let processed = 0;
+    let failed = false;
+    if (Date.now() >= deadline) return { processed, failed };
     const operations = await this.prisma.mediaOperation.findMany({
       where: {
-        kind: { in: ['REVOKE', 'CLEANUP'] },
-          attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
+        attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
         OR: [
-          { state: { in: ['PENDING', 'FAILED'] }, nextAttemptAt: { lte: now } },
-          { state: 'RUNNING', leaseUntil: { lt: now } },
+          {
+            kind: { in: ['REVOKE', 'CLEANUP'] },
+            OR: [
+              {
+                state: { in: ['PENDING', 'FAILED'] },
+                nextAttemptAt: { lte: now },
+              },
+              { state: 'RUNNING', leaseUntil: { lt: now } },
+            ],
+          },
+          { kind: 'PUBLISH', state: 'RUNNING', leaseUntil: { lt: now } },
         ],
       },
       orderBy: [{ kind: 'desc' }, { createdAt: 'asc' }],
       take: 8,
       select: { id: true },
     });
-    for (const operation of operations) await this.run(operation.id);
+    for (const operation of operations) {
+      if (Date.now() >= deadline) break;
+      const state = await this.executeOperation(operation.id, true);
+      if (state === 'FAILED') failed = true;
+      if (state === 'DONE' || state === 'CANCELLED') processed += 1;
+    }
+    if (Date.now() >= deadline) return { processed, failed };
     const abandoned = await this.prisma.mediaAsset.findMany({
       where: {
         state: 'STAGING',
@@ -174,16 +204,25 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       take: 16,
       select: { id: true },
     });
-    for (const asset of abandoned)
-      await runReadCommittedTransaction(this.prisma, async (tx) => {
-        if (!(await this.hasReference(tx, asset.id))) {
-          await this.enqueueCleanup(tx, [asset.id]);
-          await tx.mediaAsset.update({
-            where: { id: asset.id },
-            data: { state: 'FAILED' },
-          });
-        }
-      });
+    for (const asset of abandoned) {
+      if (Date.now() >= deadline) break;
+      const cleaned = await runReadCommittedTransaction(
+        this.prisma,
+        async (tx) => {
+          if (!(await this.hasReference(tx, asset.id))) {
+            await this.enqueueCleanup(tx, [asset.id]);
+            await tx.mediaAsset.update({
+              where: { id: asset.id },
+              data: { state: 'FAILED' },
+            });
+            return true;
+          }
+          return false;
+        },
+      );
+      if (cleaned) processed += 1;
+    }
+    return { processed, failed };
   }
   async stage(
     userId: string,
@@ -748,7 +787,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     });
     return this.store.get('PRIVATE', source.objectKey);
   }
-  private async claim(id: string) {
+  private async claim(id: string, recovering = false) {
     const now = new Date();
     const token = randomUUID();
     return runReadCommittedTransaction(this.prisma, async (tx) => {
@@ -771,6 +810,9 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         where: {
           id,
           attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
+          AND: recovering
+            ? [{ OR: [{ kind: { not: 'PUBLISH' } }, { state: 'RUNNING' }] }]
+            : [],
           OR: [
             { state: { in: ['PENDING', 'FAILED'] } },
             { state: 'RUNNING', leaseUntil: { lt: now } },
@@ -857,7 +899,11 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       throw new Error('Stored media identity mismatch');
   }
   async run(id: string) {
-    const token = await this.claim(id);
+    await this.executeOperation(id);
+  }
+  private async executeOperation(id: string, recovering = false) {
+    let state: MediaOperation['state'] | undefined;
+    const token = await this.claim(id, recovering);
     if (!token) return;
     const operation = await this.prisma.mediaOperation.findUniqueOrThrow({
       where: { id },
@@ -912,6 +958,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       const fresh = await this.prisma.mediaOperation.findUnique({
         where: { id },
       });
+      state = fresh?.state;
       if (operation.kind === 'PUBLISH' && fresh?.state === 'CANCELLED')
         await this.prisma.mediaOperation.upsert({
           where: { identity: `late-cancel:${id}:${token}` },
@@ -927,6 +974,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           update: {},
         });
     }
+    return state;
   }
   private async publish(operation: Operation, token: string) {
     for (const item of operation.objects) {

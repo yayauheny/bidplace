@@ -5,6 +5,8 @@ import type { PrismaClient } from '@bidplace/database';
 
 import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
 import { syntheticServerEnv } from '../../src/core/config/synthetic-server-env';
+import { TickService } from '../../src/core/tick/tick.service';
+import { SystemClock } from '../../src/core/time';
 import { SharpImageProcessor } from '../../src/core/media/media-pipeline';
 
 import { bootstrapCatalog } from '../../src/catalog/catalog-bootstrap';
@@ -199,7 +201,7 @@ describe('author story, catalog, and proposals', () => {
     const other = await storyAsset(owner.id, otherRevision.id);
     http.app.get(MediaLifecycleService).onModuleDestroy();
     const remove = vi.fn().mockResolvedValue(undefined);
-    const media = new MediaLifecycleService(prisma as never, { delete: remove } as never, { purge: vi.fn() } as never, syntheticServerEnv(), new SharpImageProcessor());
+    const media = new MediaLifecycleService(prisma as never, { delete: remove } as never, { purge: vi.fn() } as never, syntheticServerEnv(), new SharpImageProcessor(), new TickService(prisma as never, new SystemClock()));
     media.onModuleDestroy();
     try {
       const saved = await owner.client.put(`/products/${work.product.id}/creation`, {
@@ -274,6 +276,7 @@ describe('author story, catalog, and proposals', () => {
       { purge: vi.fn() } as never,
       syntheticServerEnv(),
       new SharpImageProcessor(),
+      new TickService(prisma as never, new SystemClock()),
     );
     media.onModuleDestroy();
     try {
