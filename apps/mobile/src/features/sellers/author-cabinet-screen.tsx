@@ -23,6 +23,7 @@ import {
   isAuthorCabinetAvailable,
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
+import { apiErrorMessage } from '../../lib/api-error-messages';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import {
@@ -245,7 +246,8 @@ export function AuthorCabinetScreen() {
         ) : null}
         {visibility.mutation.isError ? (
           <AppText role="bodySmall" tone="danger">
-            Не удалось изменить видимость работы. Попробуйте ещё раз.
+            {apiErrorMessage(visibility.mutation.error) ??
+              'Не удалось изменить видимость работы. Попробуйте ещё раз.'}
           </AppText>
         ) : null}
         <AppDialog

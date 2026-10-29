@@ -18,6 +18,7 @@ import {
   getUserFacingErrorMessage,
   readFormFailure,
 } from '../../errors';
+import { apiErrorMessage } from '../../lib/api-error-messages';
 import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
 import { persistedFieldOverrides } from './reconcile-saved-fields';
 import { invalidateOwnerWorks } from './owner-work-query';
@@ -231,7 +232,9 @@ export function useProductDraftSaveSession({
   const reportFailure = (error: unknown, fallbackMessage: string) => {
     const failure = readFormFailure(error, productDraftFieldOrder);
     if (failure.disposition === 'passthrough') {
-      setFormAlert(getUserFacingErrorMessage(error, fallbackMessage));
+      setFormAlert(
+        apiErrorMessage(error) ?? getUserFacingErrorMessage(error, fallbackMessage),
+      );
     } else {
       applyFormFailure(form, failure, productDraftFieldOrder);
       setFormAlert(failure.formMessage);

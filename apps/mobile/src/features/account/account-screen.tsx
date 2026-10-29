@@ -31,6 +31,7 @@ import {
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
+import { apiErrorMessage } from '../../lib/api-error-messages';
 import { useAppTheme } from '../../providers/theme-provider';
 import { OwnerWorkCard } from './owner-work-card';
 import { useAccountPublicIdentity } from './use-account-public-identity';
@@ -333,7 +334,8 @@ export function AccountScreen() {
             visibility.intent?.action === 'restore' ? (
               <View style={{ gap: designTokens.space.x2 }}>
                 <AppText role="bodySmall" tone="danger">
-                  Не удалось изменить видимость работы. Попробуйте ещё раз.
+                  {apiErrorMessage(visibility.mutation.error) ??
+                    'Не удалось изменить видимость работы. Попробуйте ещё раз.'}
                 </AppText>
                 <SecondaryButton label="Повторить" onPress={visibility.retry} />
               </View>
@@ -352,7 +354,8 @@ export function AccountScreen() {
       >
         {visibility.mutation.isError ? (
           <AppText role="bodySmall" tone="danger">
-            Не удалось скрыть работу. Попробуйте ещё раз.
+            {apiErrorMessage(visibility.mutation.error) ??
+              'Не удалось скрыть работу. Попробуйте ещё раз.'}
           </AppText>
         ) : null}
         <PrimaryButton

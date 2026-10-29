@@ -544,6 +544,27 @@ describe('account screen consumers', () => {
     view.unmount();
   });
 
+  it.each([
+    ['PRODUCT_IN_SALE', 'Работа сейчас в продаже. Снимите лот, чтобы изменить или скрыть её'],
+    ['PRODUCT_STATE_CONFLICT', 'Работа изменилась. Обновите страницу и попробуйте снова'],
+    ['conflict', 'Не удалось скрыть работу. Попробуйте ещё раз.'],
+  ] as const)('shows the hide failure for %s inside the existing dialog', async (code, message) => {
+    harness.getMyProfile.mockResolvedValue(sellerProfile('APPROVED'));
+    harness.hideWork.mockRejectedValue(new ApiClientError('Internal detail', {
+      kind: 'conflict', status: 409, code,
+    }));
+    const view = mount();
+    await until(view.container, () => view.container.textContent?.includes('Work title') === true, 'cabinet works');
+    clickButton(view.container, 'Скрыть');
+    await until(view.container, () => view.container.querySelector('[role="dialog"]') !== null, 'hide dialog');
+    const dialog = view.container.querySelector('[role="dialog"]') as HTMLElement;
+    clickButton(view.container, 'Скрыть', dialog);
+    await until(view.container, () => dialog.textContent?.includes(message) === true, 'work hide error');
+    expect(dialog.textContent).not.toContain('Internal detail');
+    expect(view.container.textContent).toContain('Work title');
+    view.unmount();
+  });
+
   it('failed hide keeps the dialog open with an in-dialog retry', async () => {
     harness.getMyProfile.mockResolvedValue(sellerProfile('APPROVED'));
     harness.hideWork.mockRejectedValue(new Error('network'));
