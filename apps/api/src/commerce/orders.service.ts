@@ -637,7 +637,7 @@ export class OrdersService {
     return user?.role === 'admin' && user.status === 'active';
   }
 
-  private async assertActiveAdmin(tx: Prisma.TransactionClient, adminId: string) {
+  async assertActiveAdmin(tx: Prisma.TransactionClient, adminId: string) {
     const admin = await tx.user.findUnique({
       where: { id: adminId },
       select: { role: true, status: true },
@@ -654,7 +654,15 @@ export class OrdersService {
   private async commitOutcome(
     input: CommitOutcomeInput & { card?: false },
   ): Promise<OrderDetail | null> {
-    return runReadCommittedTransaction(this.prisma, async (tx) => {
+    return runReadCommittedTransaction(this.prisma, (tx) =>
+      this.commitOutcomeInTransaction(tx, input),
+    );
+  }
+
+  async commitOutcomeInTransaction(
+    tx: Prisma.TransactionClient,
+    input: CommitOutcomeInput & { card?: false },
+  ): Promise<OrderDetail | null> {
       await lockProductRowForUpdate(tx, input.productId);
       const locked = await tx.order.findUnique({ where: { id: input.orderId } });
       if (!locked) throw new NotFoundException('Order not found');
@@ -721,7 +729,6 @@ export class OrdersService {
       }
       if (input.card === false) return null;
       return this.orderCard(tx, stored, input.viewerId);
-    });
   }
 
   private async enqueueOutcomeLetters(

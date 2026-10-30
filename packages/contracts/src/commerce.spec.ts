@@ -19,6 +19,7 @@ import {
   placeBidRequestSchema,
   publicLotSchema,
   purchaseRequestSchema,
+  adminReportSchema,
   reportSchema,
   resolveReportRequestSchema,
   trustSignalsSchema,
@@ -330,13 +331,35 @@ describe('commerce request and response schemas', () => {
       resolveReportRequestSchema.parse({
         status: 'UPHELD',
         faultSide: 'BUYER',
-        reason: 'Buyer never answered',
+        adminNote: 'Buyer never answered',
+        orderAction: { to: 'FAILED', failReason: 'ADMIN_CANCELLED' },
       }).status,
     ).toBe('UPHELD');
     expect(
       resolveReportRequestSchema.safeParse({
         status: 'UPHELD',
-        reason: 'Missing fault',
+        faultSide: 'BUYER',
+        orderAction: { to: 'COMPLETED' },
+      }).success,
+    ).toBe(false);
+    expect(
+      resolveReportRequestSchema.safeParse({
+        status: 'UPHELD',
+        adminNote: 'Missing fault',
+      }).success,
+    ).toBe(false);
+    expect(
+      resolveReportRequestSchema.safeParse({
+        status: 'REJECTED',
+        adminNote: 'Closed',
+        orderAction: { to: 'FAILED' },
+      }).success,
+    ).toBe(false);
+    expect(
+      resolveReportRequestSchema.safeParse({
+        status: 'REJECTED',
+        faultSide: 'SELLER',
+        adminNote: 'No fault on a rejection',
       }).success,
     ).toBe(false);
   });
@@ -395,19 +418,42 @@ describe('commerce request and response schemas', () => {
         ],
       }).items,
     ).toHaveLength(1);
+    const report = {
+      id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      targetType: 'ORDER' as const,
+      targetId: '3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      reason: 'FRAUD' as const,
+      text: null,
+      status: 'OPEN' as const,
+      faultSide: null,
+      createdAt: now,
+      resolvedAt: null,
+    };
+    expect(reportSchema.parse(report).status).toBe('OPEN');
     expect(
-      reportSchema.parse({
-        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-        targetType: 'ORDER',
-        targetId: '3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-        reason: 'FRAUD',
-        text: null,
-        status: 'OPEN',
-        faultSide: null,
-        createdAt: now,
-        resolvedAt: null,
-      }).status,
-    ).toBe('OPEN');
+      reportSchema.safeParse({ ...report, orderPublicId: 'q7Xf2Kd9aB1' }).success,
+    ).toBe(false);
+    expect(
+      adminReportSchema.parse({
+        ...report,
+        orderPublicId: 'q7Xf2Kd9aB1',
+        reporterUserId: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        buyerUserId: '5c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        sellerUserId: '6c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        adminNote: null,
+      }).orderPublicId,
+    ).toBe('q7Xf2Kd9aB1');
+    expect(
+      adminReportSchema.safeParse({
+        ...report,
+        orderPublicId: 'q7Xf2Kd9aB1',
+        reporterUserId: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        buyerUserId: '5c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        sellerUserId: '6c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        adminNote: null,
+        phone: '+1234567',
+      }).success,
+    ).toBe(false);
     expect(
       trustSignalsSchema.parse({
         completedAsSeller: 1,

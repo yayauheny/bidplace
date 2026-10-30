@@ -256,12 +256,22 @@ export const createReportRequestSchema = z
   })
   .strict();
 
+const reportOrderActionSchema = z.discriminatedUnion('to', [
+  z.object({ to: z.literal('COMPLETED') }).strict(),
+  z
+    .object({
+      to: z.literal('FAILED'),
+      failReason: z.enum(ORDER_FAIL_REASONS),
+    })
+    .strict(),
+]);
+
 export const resolveReportRequestSchema = z
   .object({
     status: z.enum(['UPHELD', 'REJECTED']),
     faultSide: z.enum(FAULT_SIDES).optional(),
-    adminNote: z.string().trim().max(2000).optional(),
-    reason: z.string().trim().min(1).max(2000),
+    adminNote: z.string().trim().min(1).max(2000),
+    orderAction: reportOrderActionSchema.optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -272,7 +282,20 @@ export const resolveReportRequestSchema = z
         message: 'An upheld report needs a fault side',
       });
     }
+    if (value.status === 'REJECTED' && value.faultSide !== undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['faultSide'],
+        message: 'A rejected report has no fault side',
+      });
+    }
   });
+
+export const adminReportsQuerySchema = z
+  .object({
+    status: z.enum(REPORT_STATUSES).optional(),
+  })
+  .strict();
 
 const viewerSchema = z
   .object({
@@ -392,6 +415,22 @@ export const reportSchema = z
   })
   .strict();
 
+export const adminReportSchema = reportSchema
+  .extend({
+    orderPublicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+    reporterUserId: uuidSchema,
+    buyerUserId: uuidSchema,
+    sellerUserId: uuidSchema,
+    adminNote: z.string().max(2000).nullable(),
+  })
+  .strict();
+
+export const adminReportsResponseSchema = z
+  .object({
+    reports: z.array(adminReportSchema),
+  })
+  .strict();
+
 export const trustSignalsSchema = z
   .object({
     completedAsSeller: z.number().int().nonnegative(),
@@ -418,4 +457,8 @@ export type FailOrderRequest = z.infer<typeof failOrderRequestSchema>;
 export type AdminOrderOutcomeRequest = z.infer<
   typeof adminOrderOutcomeRequestSchema
 >;
+export type CreateReportRequest = z.infer<typeof createReportRequestSchema>;
+export type ResolveReportRequest = z.infer<typeof resolveReportRequestSchema>;
+export type Report = z.infer<typeof reportSchema>;
+export type AdminReport = z.infer<typeof adminReportSchema>;
 export type TrustSignals = z.infer<typeof trustSignalsSchema>;
