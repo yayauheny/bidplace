@@ -342,12 +342,13 @@ repeating one kind only records. There is no automatic permanent ban.
 `recordSignal` and `assertCanAct` lock that user inside the caller transaction
 and hold the lock until the caller commits or rolls back. Supported isolation is
 Read Committed, or Serializable retried as a whole through
-`runSerializableTransaction`. Repeatable Read is unsupported. Signal time is
-`now()::timestamp(3)` in that transaction, with an inclusive 24-hour lower bound
-and no upper bound. `assertCanAct` allows only `bid | purchase | accept-offer`
-when the user is active, the email is verified, and no hold is active. A hold,
-inactive user, or missing user is `BUYER_BLOCKED`; a missing email proof is
-`EMAIL_VERIFICATION_REQUIRED`. `detectBidBurst` is policy only and has no bid
+`runSerializableTransaction`. Repeatable Read is still unsupported. Signal time
+is taken after the lock via `clock_timestamp`. Each `recordSignal` touches the
+user row so a stale Serializable snapshot conflicts and retries. The window has
+an inclusive 24-hour lower bound and no upper bound. `assertCanAct` allows only
+`bid | purchase | accept-offer` when the user is active, the email is verified,
+and no hold is active. A hold, inactive user, or missing user is
+`BUYER_BLOCKED`; a missing email proof is `EMAIL_VERIFICATION_REQUIRED`. `detectBidBurst` is policy only and has no bid
 caller. Strikes, contacts, and the 3-booking cap are W3.
 
 `releaseHold`, `banUser`, and `updateUserStatus` open their own serializable

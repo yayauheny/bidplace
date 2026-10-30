@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   ApiErrorCode,
   adminUserStatusUpdateRequestSchema,
@@ -41,10 +42,11 @@ export class FraudSignalsService {
   ) {}
 
   // Caller transaction: READ COMMITTED (default) or SERIALIZABLE retried as a
-  // whole via runSerializableTransaction. Repeatable Read is unsupported — its
-  // snapshot can miss a hold committed after the caller started. The user lock
-  // is held until that caller commits or rolls back. The signal window has no
-  // upper bound, so a transaction that waited still sees a later commit.
+  // whole via runSerializableTransaction. Repeatable Read is still unsupported.
+  // Each recordSignal touches the user row after this lock so a stale
+  // Serializable snapshot conflicts and retries. Signal time is taken after
+  // the lock via clock_timestamp. The lock is held until the caller commits
+  // or rolls back. The window lower bound is inclusive and has no upper bound.
   private async lockUsers(tx: Prisma.TransactionClient, userIds: string[]) {
     await tx.$queryRaw`SELECT id FROM users WHERE id IN (${Prisma.join(userIds.map((id) => Prisma.sql`${id}::uuid`))}) ORDER BY id FOR UPDATE`;
   }
@@ -54,6 +56,7 @@ export class FraudSignalsService {
     signal: { userId: string; kind: SignalKind; subjectId?: string },
   ): Promise<void> {
     await this.lockUsers(tx, [signal.userId]);
+    await tx.$executeRaw`UPDATE users SET updated_at = now() WHERE id = ${signal.userId}::uuid`;
     if (
       !(await tx.user.findUnique({
         where: { id: signal.userId },
@@ -61,13 +64,21 @@ export class FraudSignalsService {
       }))
     )
       throw new NotFoundException('User not found');
-    const [clock] = await tx.$queryRaw<
-      { now: Date }[]
-    >`SELECT now()::timestamp(3) AS now`;
-    await tx.fraudSignal.create({ data: { ...signal, createdAt: clock!.now } });
+    const [inserted] = await tx.$queryRaw<{ now: string }[]>`
+      INSERT INTO fraud_signals (id, user_id, kind, subject_id, created_at)
+      VALUES (
+        ${randomUUID()}::uuid,
+        ${signal.userId}::uuid,
+        CAST(${signal.kind} AS "FraudSignalKind"),
+        ${signal.subjectId ?? null}::uuid,
+        clock_timestamp()::timestamp(3)
+      )
+      RETURNING created_at::text AS now
+    `;
+    const signalAt = inserted!.now;
     const kinds = await tx.$queryRaw<{ kind: SignalKind }[]>`
       SELECT DISTINCT kind FROM fraud_signals WHERE user_id = ${signal.userId}::uuid
-      AND created_at >= now()::timestamp(3) - ${FRAUD_SIGNAL_WINDOW_MS} * interval '1 millisecond'
+      AND created_at >= ${signalAt}::timestamp(3) - ${FRAUD_SIGNAL_WINDOW_MS} * interval '1 millisecond'
     `;
     if (!shouldHold(kinds.map((row) => row.kind))) return;
     if (

@@ -53,6 +53,21 @@ async function hold(userId: string) {
   await signal(userId, 'TURNSTILE_FAILED');
   await signal(userId, 'BID_BURST');
 }
+function actionResult(error: unknown): string {
+  if (typeof error !== 'object' || error === null) throw error;
+  if ('apiCode' in error && typeof error.apiCode === 'string')
+    return error.apiCode;
+  if (
+    'response' in error &&
+    typeof error.response === 'object' &&
+    error.response !== null &&
+    'code' in error.response &&
+    typeof error.response.code === 'string'
+  )
+    return error.response.code;
+  if ('code' in error && typeof error.code === 'string') return error.code;
+  throw error;
+}
 async function login(account: { email: string }) {
   const client = new HttpTestClient(first.baseUrl, 'http://localhost:8081');
   expect(
@@ -181,6 +196,87 @@ describe('antifraud signals and administrative decisions', () => {
     });
   });
 
+  it('rejects a serializable action that waited for a hold committed after its snapshot', async () => {
+    const target = await user();
+    await signal(target.id, 'BID_BURST');
+    let release!: () => void;
+    let ready!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const locked = new Promise<void>((resolve) => {
+      ready = resolve;
+    });
+    const write = db.prisma.$transaction(async (tx) => {
+      await service().recordSignal(tx, {
+        userId: target.id,
+        kind: 'TURNSTILE_FAILED',
+      });
+      ready();
+      await gate;
+    });
+    let action: Promise<string> | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([locked, write]);
+      let markWaiting!: () => void;
+      const began = new Promise<void>((resolve) => {
+        markWaiting = resolve;
+      });
+      // Snapshot starts before the hold commits. assertCanAct only locks the
+      // user; recordSignal must update that row so the lock fails with 40001
+      // and the whole-transaction retry observes the hold.
+      action = runSerializableTransaction(
+        second.app.get(PrismaService),
+        async (tx) => {
+          await tx.$queryRaw`SELECT 1`;
+          markWaiting();
+          await second.app
+            .get(AntifraudService)
+            .assertCanAct(tx, target.id, 'purchase');
+          await tx.auditEvent.create({
+            data: {
+              targetType: 'USER',
+              targetId: target.id,
+              oldStatus: 'before',
+              newStatus: 'after',
+              action: 'REVIEW_ACTION',
+            },
+          });
+        },
+      ).then(
+        () => 'allowed',
+        (error: unknown) => actionResult(error),
+      );
+      await began;
+      expect(
+        await Promise.race([
+          action,
+          new Promise((resolve) => {
+            timer = setTimeout(() => resolve('waiting'), 100);
+          }),
+        ]),
+      ).toBe('waiting');
+      release();
+      await write;
+      expect(await action).toBe('BUYER_BLOCKED');
+      expect(
+        await db.prisma.purchaseHold.count({
+          where: { userId: target.id, releasedAt: null },
+        }),
+      ).toBe(1);
+      expect(
+        await db.prisma.auditEvent.count({
+          where: { targetId: target.id, action: 'REVIEW_ACTION' },
+        }),
+      ).toBe(0);
+    } finally {
+      clearTimeout(timer);
+      release();
+      await Promise.allSettled([write, ...(action ? [action] : [])]);
+    }
+  });
+
   it('enforces one active hold in PostgreSQL even for a writer outside the facade', async () => {
     const target = await user();
     await hold(target.id);
@@ -247,7 +343,12 @@ describe('antifraud signals and administrative decisions', () => {
   it('uses the database 24-hour boundary inclusively, excluding older signals', async () => {
     const target = await user();
     await db.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`INSERT INTO fraud_signals (id,user_id,kind,created_at) VALUES (${randomUUID()}::uuid,${target.id}::uuid,'BID_BURST',now()::timestamp(3) - interval '24 hours' - interval '1 millisecond')`;
+      // recordSignal samples clock_timestamp() after the user lock, later than
+      // this statement. now() is frozen at transaction start, so an exact
+      // now()-24h row can fall outside that later sample. One millisecond
+      // before this clock stays outside; fifteen milliseconds after it stays
+      // inside and still sits on the 24-hour bound.
+      await tx.$executeRaw`INSERT INTO fraud_signals (id,user_id,kind,created_at) VALUES (${randomUUID()}::uuid,${target.id}::uuid,'BID_BURST',clock_timestamp()::timestamp(3) - interval '24 hours' - interval '1 millisecond')`;
       await service().recordSignal(tx, {
         userId: target.id,
         kind: 'TURNSTILE_FAILED',
@@ -255,7 +356,7 @@ describe('antifraud signals and administrative decisions', () => {
       expect(
         await tx.purchaseHold.count({ where: { userId: target.id } }),
       ).toBe(0);
-      await tx.$executeRaw`UPDATE fraud_signals SET created_at=now()::timestamp(3) - interval '24 hours' WHERE user_id=${target.id}::uuid AND kind='BID_BURST'`;
+      await tx.$executeRaw`UPDATE fraud_signals SET created_at = clock_timestamp()::timestamp(3) - interval '24 hours' + interval '15 milliseconds' WHERE user_id=${target.id}::uuid AND kind='BID_BURST'`;
       await service().recordSignal(tx, {
         userId: target.id,
         kind: 'TURNSTILE_FAILED',
@@ -263,6 +364,28 @@ describe('antifraud signals and administrative decisions', () => {
       expect(
         await tx.purchaseHold.count({ where: { userId: target.id } }),
       ).toBe(1);
+    });
+  });
+
+  it('does not hold for a signal which expired while the caller transaction was open', async () => {
+    const target = await user();
+    await db.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`INSERT INTO fraud_signals (id,user_id,kind,created_at) VALUES (${randomUUID()}::uuid,${target.id}::uuid,'BID_BURST',now()::timestamp(3) - interval '24 hours' + interval '100 milliseconds')`;
+      await tx.$queryRaw`SELECT 1 AS waited FROM pg_sleep(0.3)`;
+      const [row] = await tx.$queryRaw<{ expired: boolean }[]>`
+        SELECT created_at < clock_timestamp()::timestamp(3) - interval '24 hours' AS expired
+        FROM fraud_signals WHERE user_id = ${target.id}::uuid
+      `;
+      expect(row?.expired).toBe(true);
+      await service().recordSignal(tx, {
+        userId: target.id,
+        kind: 'TURNSTILE_FAILED',
+      });
+      expect(
+        await tx.purchaseHold.count({
+          where: { userId: target.id, releasedAt: null },
+        }),
+      ).toBe(0);
     });
   });
 
