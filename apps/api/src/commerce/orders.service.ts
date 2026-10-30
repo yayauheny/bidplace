@@ -91,6 +91,20 @@ type PurchaseListing = Prisma.ListingGetPayload<{
   select: typeof purchaseListingSelect;
 }>;
 
+type CommitOutcomeInput = {
+  productId: string;
+  orderId: string;
+  actor: OrderActor;
+  actorUserId: string | null;
+  next: OrderTransition;
+  adminReason?: string;
+  viewerId: string;
+  checkAccept?: boolean;
+  requireFixedPurchase?: boolean;
+  requireAdmin?: boolean;
+  card?: false;
+};
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -508,6 +522,34 @@ export class OrdersService {
     }
   }
 
+  async expireOffered(orderId: string): Promise<boolean> {
+    const anchor = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, productId: true, sellerUserId: true },
+    });
+    if (!anchor) return false;
+    try {
+      await this.commitOutcome({
+        productId: anchor.productId,
+        orderId: anchor.id,
+        actor: 'system',
+        actorUserId: null,
+        next: { to: 'FAILED', failReason: 'OFFER_EXPIRED' },
+        viewerId: anchor.sellerUserId,
+        card: false,
+      });
+      return true;
+    } catch (error) {
+      if (
+        error instanceof AppException &&
+        error.apiCode === ApiErrorCode.ORDER_TRANSITION_NOT_ALLOWED
+      ) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
   async voidStrike(
     adminId: string,
     publicId: string,
@@ -605,18 +647,13 @@ export class OrdersService {
     }
   }
 
-  private async commitOutcome(input: {
-    productId: string;
-    orderId: string;
-    actor: OrderActor;
-    actorUserId: string | null;
-    next: OrderTransition;
-    adminReason?: string;
-    viewerId: string;
-    checkAccept?: boolean;
-    requireFixedPurchase?: boolean;
-    requireAdmin?: boolean;
-  }): Promise<OrderDetail> {
+  private async commitOutcome(
+    input: CommitOutcomeInput & { card: false },
+  ): Promise<null>;
+  private async commitOutcome(input: CommitOutcomeInput): Promise<OrderDetail>;
+  private async commitOutcome(
+    input: CommitOutcomeInput & { card?: false },
+  ): Promise<OrderDetail | null> {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       await lockProductRowForUpdate(tx, input.productId);
       const locked = await tx.order.findUnique({ where: { id: input.orderId } });
@@ -682,6 +719,7 @@ export class OrdersService {
           },
         });
       }
+      if (input.card === false) return null;
       return this.orderCard(tx, stored, input.viewerId);
     });
   }
@@ -996,7 +1034,7 @@ function letterPlan(
   if (status === 'ACTIVE' && source === 'AUCTION_WIN') {
     return [
       { party: 'buyer', kind: 'BID_WON' },
-      { party: 'seller', kind: 'LISTING_SOLD' },
+      { party: 'seller', kind: 'AUCTION_ENDED' },
     ];
   }
   if (status === 'OFFERED' && source === 'SECOND_CHANCE') {

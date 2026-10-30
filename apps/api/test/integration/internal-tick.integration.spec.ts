@@ -48,6 +48,10 @@ describe('private tick HTTP and database boundary', () => {
       jobs: [
         { name: 'antifraud-cleanup', processed: 0, failed: false },
         { name: 'notifications.send', processed: 0, failed: false },
+        { name: 'commerce.activate', processed: 0, failed: false },
+        { name: 'commerce.close', processed: 0, failed: false },
+        { name: 'commerce.offers', processed: 0, failed: false },
+        { name: 'commerce.reminders', processed: 0, failed: false },
       ],
     });
     const at = await tick.lastSucceededAt();
@@ -100,6 +104,10 @@ describe('private tick HTTP and database boundary', () => {
       jobs: [
         { name: 'antifraud-cleanup', processed: 0, failed: false },
         { name: 'notifications.send', processed: 0, failed: false },
+        { name: 'commerce.activate', processed: 0, failed: false },
+        { name: 'commerce.close', processed: 0, failed: false },
+        { name: 'commerce.offers', processed: 0, failed: false },
+        { name: 'commerce.reminders', processed: 0, failed: false },
         { name: 'broken', processed: 0, failed: true },
       ],
     });

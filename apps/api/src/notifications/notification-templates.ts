@@ -13,6 +13,10 @@ const COPY: Record<NotificationKind, { subject: string; lead: string }> = {
     subject: 'Работа забронирована',
     lead: 'Работа забронирована.',
   },
+  AUCTION_ENDED: {
+    subject: 'Аукцион завершён',
+    lead: 'Аукцион завершён.',
+  },
   AUCTION_ENDED_NO_BIDS: {
     subject: 'Аукцион завершён',
     lead: 'Аукцион завершён без ставок.',

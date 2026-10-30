@@ -46,6 +46,7 @@ const PAYLOAD_CONTRACT: Record<
   BID_WON: contract(['orderPublicId'], ORDER_FIELDS),
   PURCHASED: contract(['orderPublicId'], ORDER_FIELDS),
   LISTING_SOLD: contract(['orderPublicId'], ORDER_FIELDS),
+  AUCTION_ENDED: contract(['listingId'], [...ORDER_FIELDS, 'orderPublicId']),
   OFFER_RECEIVED: contract(['orderPublicId'], ORDER_FIELDS),
   DEAL_COMPLETED: contract(['orderPublicId'], ORDER_FIELDS),
   ORDER_FAILED: contract(['orderPublicId', 'failedAt'], ORDER_FIELDS),

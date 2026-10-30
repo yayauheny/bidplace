@@ -632,7 +632,8 @@ describe('notification settings and admin health', () => {
       },
     });
     const startsAt = new Date('2026-10-01T00:00:00.000Z');
-    const endsAt = new Date('2026-10-02T00:00:00.000Z');
+    // Still open when the tick runs; a past endsAt is closed by commerce.close.
+    const endsAt = new Date('2027-01-01T00:00:00.000Z');
     await database.prisma.listing.create({
       data: {
         productId: product.id,

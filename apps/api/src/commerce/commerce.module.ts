@@ -4,6 +4,7 @@ import { AdminGuard } from '../admin/admin.guard';
 import { AuthModule } from '../auth';
 import { BidsService } from './bids.service';
 import { CommerceGuards } from './commerce-guards';
+import { CommerceTickService } from './commerce-tick';
 import { ListingsController } from './listings.controller';
 import { OrdersController } from './orders.controller';
 import { ListingsService } from './listings.service';
@@ -16,6 +17,7 @@ import { OrdersService } from './orders.service';
     ListingsService,
     BidsService,
     OrdersService,
+    CommerceTickService,
     CommerceGuards,
     AdminGuard,
   ],
