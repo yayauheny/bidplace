@@ -1,3 +1,4 @@
+export { classifyMailFailure } from './auth/mail-outcome';
 export { AntifraudModule } from './antifraud.module';
 export { AntifraudService } from './antifraud.service';
 export type { MailDelivery } from './auth/auth-abuse.service';

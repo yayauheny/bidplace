@@ -30,6 +30,7 @@ import { ProductsModule } from './products/products.module';
 import { OtpModule } from './otp/otp.module';
 import { PasswordResetModule } from './password-reset/password-reset.module';
 import { AdminModule } from './admin/admin.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { ImagesModule } from './images/images.module';
 import { SellersModule } from './sellers/sellers.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
@@ -63,6 +64,7 @@ export class AppModule implements NestModule {
         OtpModule,
         PasswordResetModule,
         AdminModule,
+        NotificationsModule,
         ImagesModule,
         SellersModule,
         PortfolioModule,

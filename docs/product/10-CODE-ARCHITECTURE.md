@@ -3,6 +3,10 @@
 Последнее обновление: 2026-10-30
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-10-30 — Notification outbox
+
+`apps/api/src/notifications/` is on the API boot graph and owns transactional mail. `enqueueNotification` inserts `notification_outbox` inside the caller transaction and does not call `MailTransport`. The row id is a SHA-256 of the user, kind, and canonical payload. A repeat is `INSERT ... ON CONFLICT (id) DO NOTHING` and does not catch a unique violation, so the caller transaction stays open. That id is permanent for the same payload, so a kind that can fire again must carry a discriminator: `CONFIRM_DEAL_REMINDER.slot` is `24h` or `48h`, `OUTBID` requires `bidId`, `ORDER_REPORTED` requires `reportId`, `CONTACTS_CHANGED` requires `eventId`. Enqueue rejects any other key for that kind. `NotificationDeliveryService` registers tick job `notifications.send`. One run first marks due `PENDING` rows with `attempt_count >= 10` as `FAILED`, then claims at most 20 due rows whose user has `emailVerifiedAt` and `attempt_count < 10`, with `FOR UPDATE SKIP LOCKED`. The claim sets `attempt_count = attempt_count + 1` and leases `next_attempt_at` before the send. Each send is bounded to 10 seconds. Delivery is at-least-once: a crash or timeout after SMTP has already accepted the message can send it again. Unknown transport failures use a bounded backoff through attempt 10; `classifyMailFailure` `rejected` (SMTP 400–599 or a recipient that is not a single address) becomes `FAILED` immediately. Failure logs contain the outbox id and kind only. `GET/PUT /api/me/notification-settings` reads and upserts `outbid_email`. `POST /api/admin/notifications/retry-failed` is admin-only and, in one transaction, returns `FAILED` rows with `created_at` in the last 48 hours to `PENDING` (`attempt_count = 0`) and writes `audit_events` (`NOTIFICATION_RETRY`) only for rows that changed. There is no `failed_at`, so the window stays on `created_at`. `GET /api/admin/health` is admin-only: `TickService.lastSucceededAt()`, `cronConfigured` from optional `TICK_CRON`, live `listings`, failed outbox rows, and the oldest open report. The order link is `/account/orders/{publicId}` on `PASSWORD_RESET_URL_BASE` or the CORS origin. Commerce close jobs are still absent.
+
 ## 2026-10-30 — Commerce V2 persistence
 
 Sales tables follow COMMERCE §10: `Listing` (`FIXED`|`AUCTION`, minor units, contact window), `AuctionRules.stepTableCode`, `Bid` (`voidedAt`, idempotency unique on listing + bidder + key), `Order`, `Report`, `UserNotificationSettings`, `NotificationOutbox` and `FavoriteWork`. Partial unique indexes and currency/contact-window checks are raw SQL in `20261030130000_commerce_v2`. Deal contacts are optional `users.contact_*` columns; `users.phone` remains. Pure sale rules live in `apps/api/src/commerce/auction-pricing.ts`, `listing-state.ts` and `order-state.ts`. `bidStepMinor` is exported from `packages/contracts/src/commerce.ts`. The commerce HTTP module is not on the boot graph.
@@ -46,8 +50,9 @@ fail the job and prevent heartbeat success, including exhausted FAILED
 REVOKE/CLEANUP at the retry ceiling; these require manual intervention and are
 not automatically retried. The 30-second heartbeat continues while the Container
 is awake, so this runtime does not let its database idle then. Existing leases also arbitrate
-legacy-timer/direct-call overlap. W3 commerce jobs, outbox and admin health UI
-remain planned. Live scheduled execution is **Needs verification**; setup and
+legacy-timer/direct-call overlap. The notification outbox job and
+`GET /api/admin/health` are implemented. W3 commerce close jobs and the admin
+health UI remain planned. Live scheduled execution is **Needs verification**; setup and
 post-deploy checks belong to the [runbook](../ops/CLOUDFLARE-DEPLOYMENT.md).
 
 ## 2026-10-29 — Hidden Work delivery lock

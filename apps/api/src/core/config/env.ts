@@ -49,6 +49,11 @@ const serverEnvSchema = z
       (value) => (value === '' ? undefined : value),
       z.string().min(32).optional(),
     ),
+    TICK_CRON: z.preprocess(
+      (value) =>
+        typeof value === 'string' && value.trim() === '' ? undefined : value,
+      z.string().min(1).optional(),
+    ),
     GOOGLE_CLIENT_ID: optionalNonEmptyStringEnvSchema,
     GOOGLE_CLIENT_SECRET: optionalNonEmptyStringEnvSchema,
     GOOGLE_REDIRECT_URI: z.string().url().optional(),

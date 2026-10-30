@@ -3,6 +3,10 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed (engineering owner)
 
+## 2026-10-30 — Transactional notification outbox
+
+**Implemented locally.** Deal and account mail is inserted on `notification_outbox` in the caller transaction and sent later by tick job `notifications.send`. Delivery is at-least-once: the claim lease and a 10 second send bound stop a hung transport, and a crash or timeout after SMTP has accepted the message can send the same letter again. `attempt_count` increments when the row is claimed, so a poison row stops at 10. `OUTBID` honors `user_notification_settings.outbid_email`; other kinds cannot be turned off. A row is sent only to one verified address. Subjects and interpolated fields drop CR/LF, and a recipient that is not a single address is not handed to SMTP. Enqueue accepts only the keys for that kind, including the discriminator a repeated kind needs (`slot`, `bidId`, `reportId`, or `eventId`). `classifyMailFailure`: SMTP 400–599 is `FAILED` immediately; timeouts and other unknown transport errors retry with backoff up to 10 attempts, then `FAILED`. The error log is the outbox id and kind. Admin retry of `FAILED` rows from the last 48 hours (`created_at`; there is no `failed_at`) resets `attempt_count` and writes `audit_events` in the same transaction only when a row changes. Mail text does not include the other party's contacts. The order link is `PASSWORD_RESET_URL_BASE` or the CORS origin plus `/account/orders/{publicId}`.
+
 ## 2026-10-29 — PR73 recovery and publication review
 
 **Implemented locally / live Needs verification.** Exhausted FAILED REVOKE/CLEANUP
