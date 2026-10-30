@@ -1,6 +1,7 @@
 import type { AdminUserStatusUpdateRequest } from '@bidplace/contracts';
 import { Injectable } from '@nestjs/common';
 
+import { getTrustSignals } from './trust-signals';
 import {
   FraudSignalsService,
   type BanHook,
@@ -27,6 +28,16 @@ export class AntifraudService {
   }
   assertCanAct(...args: Parameters<FraudSignalsService['assertCanAct']>) {
     return this.signals.assertCanAct(...args);
+  }
+  isPurchaseBlocked(
+    ...args: Parameters<FraudSignalsService['isPurchaseBlocked']>
+  ) {
+    return this.signals.isPurchaseBlocked(...args);
+  }
+  getTrustSignals(
+    ...args: Parameters<typeof getTrustSignals>
+  ) {
+    return getTrustSignals(...args);
   }
   onBan(hook: BanHook): () => void {
     return this.signals.registerBanHook(hook);

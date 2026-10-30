@@ -31,6 +31,7 @@ import {
   hasBuyerContact,
   isActiveBuyerStrike,
   shouldHold,
+  strikeMark,
   type ActorAction,
   type SignalKind,
 } from '../antifraud.policy';
@@ -290,6 +291,35 @@ export class FraudSignalsService {
     }
   }
 
+  async isPurchaseBlocked(
+    tx: Prisma.TransactionClient,
+    userId: string,
+  ): Promise<boolean> {
+    await this.lockUsers(tx, [userId]);
+    const now = await dbNow(tx);
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: {
+        status: true,
+        role: true,
+        purchaseHolds: {
+          where: { releasedAt: null },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+    if (
+      !user ||
+      user.status !== 'active' ||
+      user.role === 'admin' ||
+      user.purchaseHolds.length > 0
+    ) {
+      return true;
+    }
+    return buyerStrikesBlock(await this.activeStrikeCount(tx, userId, now));
+  }
+
   private async activeStrikeCount(
     tx: Prisma.TransactionClient,
     userId: string,
@@ -302,7 +332,7 @@ export class FraudSignalsService {
         faultSide: 'BUYER',
         strikeVoidedAt: null,
       },
-      select: { id: true, failReason: true, failedAt: true },
+      select: { id: true, failReason: true, failedAt: true, failedBy: true },
     });
     if (orders.length === 0) return 0;
     const reports = await tx.report.findMany({
@@ -321,6 +351,7 @@ export class FraudSignalsService {
           failReason: order.failReason,
           failedAt: order.failedAt,
           buyerReportOpen: open.has(order.id),
+          markedBy: strikeMark(order.failedBy),
         },
         now,
       ),

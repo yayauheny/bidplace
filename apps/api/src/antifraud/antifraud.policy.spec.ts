@@ -78,5 +78,49 @@ describe('fraud signal policies', () => {
         now,
       ),
     ).toBe(true);
+    expect(
+      isActiveBuyerStrike(
+        {
+          failReason: 'BUYER_REFUSED',
+          failedAt: recent,
+          buyerReportOpen: false,
+          markedBy: 'seller',
+        },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isActiveBuyerStrike(
+        {
+          failReason: 'BUYER_REFUSED',
+          failedAt: aged,
+          buyerReportOpen: false,
+          markedBy: 'seller',
+        },
+        now,
+      ),
+    ).toBe(true);
+    expect(
+      isActiveBuyerStrike(
+        {
+          failReason: 'BUYER_REFUSED',
+          failedAt: aged,
+          buyerReportOpen: true,
+          markedBy: 'seller',
+        },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isActiveBuyerStrike(
+        {
+          failReason: 'BUYER_NO_CONTACT',
+          failedAt: recent,
+          buyerReportOpen: false,
+          markedBy: 'admin',
+        },
+        now,
+      ),
+    ).toBe(true);
   });
 });
