@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { SessionService } from './session.service';
 import { AuthController } from './auth.controller';
+import { ContactsController } from './contacts.controller';
 import { AuthService } from './auth.service';
 import { SessionAuthGuard } from './session-auth.guard';
 import { LogoutAuthGuard } from './logout-auth.guard';
@@ -14,7 +15,7 @@ import { RateLimitModule } from '../antifraud';
 
 @Module({
   imports: [DatabaseModule, RateLimitModule],
-  controllers: [AuthController],
+  controllers: [AuthController, ContactsController],
   providers: [
     AuthService,
     SessionService,

@@ -5,12 +5,13 @@ import { AuthModule } from '../auth';
 import { BidsService } from './bids.service';
 import { CommerceGuards } from './commerce-guards';
 import { ListingsController } from './listings.controller';
+import { OrdersController } from './orders.controller';
 import { ListingsService } from './listings.service';
 import { OrdersService } from './orders.service';
 
 @Module({
   imports: [AuthModule],
-  controllers: [ListingsController],
+  controllers: [ListingsController, OrdersController],
   providers: [
     ListingsService,
     BidsService,

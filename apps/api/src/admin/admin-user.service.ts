@@ -69,6 +69,28 @@ export class AdminUserService {
     return this.antifraud.releaseHold(adminId, userId, note);
   }
 
+  ban(adminId: string, userId: string, reason: string) {
+    return this.antifraud.banUser(adminId, userId, reason);
+  }
+
+  async card(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        status: true,
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return {
+      ...user,
+      trustSignals: await this.antifraud.getTrustSignals(this.prisma, userId),
+    };
+  }
+
   async revokeSessions(
     adminUserId: string,
     userId: string,
