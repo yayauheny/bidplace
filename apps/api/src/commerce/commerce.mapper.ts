@@ -1,8 +1,10 @@
 import {
   LOT_MARKS,
+  orderDetailSchema,
   publicLotSchema,
   type Currency,
   type ListingType,
+  type OrderDetail,
   type OrderStatus,
   type PublicLot,
 } from '@bidplace/contracts';
@@ -91,5 +93,83 @@ export function toPublicLot(input: {
     mark: lotMark(effectiveStatus, input.listing.type, input.orderStatus),
     serverNow: input.now.toISOString(),
     viewer: input.viewer,
+  });
+}
+
+export type AdminOrderRow = {
+  publicId: string;
+  dealCode: string;
+  status: string;
+  source: string;
+  amountMinor: number | bigint;
+  currency: string;
+  workTitle: string;
+  workPublicId: string;
+  createdAt: Date;
+  contactDeadlineAt: Date | null;
+  offerExpiresAt: Date | null;
+  buyerComment: string | null;
+  sellerNote: string | null;
+  failReason: string | null;
+  faultSide: string | null;
+  completedAt: Date | null;
+  failedAt: Date | null;
+  buyerEmail: string;
+  buyerPhone: string | null;
+  buyerTelegram: string | null;
+  buyerInstagram: string | null;
+  buyerVk: string | null;
+  sellerEmail: string;
+  sellerPhone: string | null;
+  sellerTelegram: string | null;
+  sellerInstagram: string | null;
+  sellerVk: string | null;
+};
+
+function iso(value: Date | null): string | null {
+  if (value === null) return null;
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    throw new Error('Order timestamp is missing');
+  }
+  return value.toISOString();
+}
+
+export function toAdminOrderDetail(row: AdminOrderRow): OrderDetail {
+  const createdAt = iso(row.createdAt);
+  if (!createdAt) throw new Error('Order timestamp is missing');
+  return orderDetailSchema.parse({
+    publicId: row.publicId,
+    dealCode: row.dealCode.trim(),
+    status: row.status,
+    source: row.source,
+    amountMinor: Number(row.amountMinor),
+    currency: currencyOf(row.currency.trim()),
+    workTitle: row.workTitle,
+    workPublicId: row.workPublicId,
+    role: 'admin',
+    createdAt,
+    contactDeadlineAt: iso(row.contactDeadlineAt),
+    offerExpiresAt: iso(row.offerExpiresAt),
+    buyerComment: row.buyerComment,
+    sellerNote: row.sellerNote,
+    failReason: row.failReason,
+    faultSide: row.faultSide,
+    completedAt: iso(row.completedAt),
+    failedAt: iso(row.failedAt),
+    buyerContacts: {
+      email: row.buyerEmail,
+      phone: row.buyerPhone,
+      telegram: row.buyerTelegram,
+      instagram: row.buyerInstagram,
+      vk: row.buyerVk,
+    },
+    sellerContacts: {
+      email: row.sellerEmail,
+      phone: row.sellerPhone,
+      telegram: row.sellerTelegram,
+      instagram: row.sellerInstagram,
+      vk: row.sellerVk,
+    },
+    sellerContactHint: null,
   });
 }
