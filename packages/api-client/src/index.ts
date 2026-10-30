@@ -14,6 +14,7 @@ export {
   type ApiClientErrorKind,
 } from './errors';
 import { createImagesClient } from './images';
+import { createCommerceClient } from './commerce';
 import { createProductsClient } from './products';
 import { createPortfolioClient } from './portfolio';
 import {
@@ -43,6 +44,7 @@ export function createApiClient(options: ApiClientOptions) {
     analytics: createAnalyticsClient(context),
     images: createImagesClient(context),
     products: createProductsClient(context),
+    commerce: createCommerceClient(context),
     portfolio: createPortfolioClient(context),
     sellers: createSellersClient(context),
     admin: createAdminClient(context),
