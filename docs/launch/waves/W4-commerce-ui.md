@@ -22,7 +22,8 @@
 Зависит от: W3 (API и клиент). Экран без узла в Figma не собирается молча:
 исполнитель пишет основателю «Пришлите экран <название> (Figma или скрин) или
 скажите собирать без него» и ждёт ответа по этому экрану, продолжая остальные
-(AGENT-RULES §3).
+(AGENT-RULES §3). До Task 3 сверить F1–F10 из DESIGN-BRIEF §13 с Figma (только
+чтение) и запросить все недостающие экраны одним сообщением.
 
 ## Global Constraints
 
@@ -316,7 +317,9 @@ idempotency-ключ создаётся при открытии листа/ди�
   ведёт маршруты); `11-PROJECT-STATUS.md`: запись.
 - [ ] Проверки: `typecheck`, `lint` `@bidplace/mobile`; mobile unit; e2e
   `commerce-lot`, `commerce-orders`, `work-header-motion`, `author-static-header`
-  (Chromium и WebKit); `pnpm --filter @bidplace/mobile build:web`; скриншоты 390
+  (Chromium и WebKit); сквозной сценарий W7 Task 2 создаётся здесь
+  (`e2e/launch-smoke.spec.ts`) и проходит 3 раза подряд;
+  `pnpm --filter @bidplace/mobile build:web`; скриншоты 390
   для каждого экрана из брифа в отчёт; `git diff --check`; `pnpm docs:link-check`.
 - [ ] Коммит `docs: record commerce ui`.
 
