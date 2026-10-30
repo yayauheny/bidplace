@@ -266,6 +266,13 @@ describe('commerce request and response schemas', () => {
       }).amountMinor,
     ).toBe(2_600);
     expect(
+      placeBidRequestSchema.parse({
+        amountMinor: 100_000_001,
+        idempotencyKey: 'bid-key-1',
+        turnstileToken: '',
+      }),
+    ).toMatchObject({ amountMinor: 100_000_001, turnstileToken: '' });
+    expect(
       placeBidRequestSchema.safeParse({
         amountMinor: 0,
         idempotencyKey: 'bid-key-1',

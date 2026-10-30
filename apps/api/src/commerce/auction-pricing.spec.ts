@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   bidStepMinor,
   minimumBidMinor,
+  minimumStepUnitMinor,
   resolveSoftCloseEndsAt,
 } from './auction-pricing';
 
@@ -36,6 +37,16 @@ describe('bid steps', () => {
       expect(bidStepMinor(currency, currentMinor)).toBe(step);
     },
   );
+});
+
+describe('minimum step unit', () => {
+  it('uses the smallest table step, so 26.50 BYN is valid above 25.50', () => {
+    expect(minimumStepUnitMinor('BYN')).toBe(50);
+    expect(minimumStepUnitMinor('RUB')).toBe(1_000);
+    expect(bidStepMinor('BYN', 2_550)).toBe(100);
+    expect(2_650 % minimumStepUnitMinor('BYN')).toBe(0);
+    expect(2_650 % bidStepMinor('BYN', 2_550)).not.toBe(0);
+  });
 });
 
 describe('minimum bid', () => {

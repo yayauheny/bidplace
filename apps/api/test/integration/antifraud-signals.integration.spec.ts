@@ -42,6 +42,7 @@ async function user(role = 'user', id = randomUUID()) {
       email: `${id}@signals.test`,
       role,
       emailVerifiedAt: new Date(),
+      contactPhone: '+375291112233',
       passwordHash: fixturePasswordHash,
     },
   });

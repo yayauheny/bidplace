@@ -5,4 +5,8 @@ export {
   isPrismaUniqueConstraintError,
   prismaUniqueTargets,
 } from './prisma-error';
-export { runReadCommittedTransaction, runSerializableTransaction } from './transaction';
+export {
+  RetryableTransactionConflict,
+  runReadCommittedTransaction,
+  runSerializableTransaction,
+} from './transaction';

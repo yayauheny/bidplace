@@ -35,7 +35,10 @@ function transaction() {
 describe('buyer eligibility locks', () => {
   it('does not lock the viewer while describing a public lot', async () => {
     const lockUsers = vi.fn();
-    const guards = new CommerceGuards({ lockUsers } as never);
+    const guards = new CommerceGuards({
+      lockUsers,
+      assertCanAct: vi.fn(),
+    } as never);
     const tx = transaction();
 
     await expect(
@@ -51,7 +54,10 @@ describe('buyer eligibility locks', () => {
 
   it('locks the buyer before deciding eligibility', async () => {
     const lockUsers = vi.fn(async () => undefined);
-    const guards = new CommerceGuards({ lockUsers } as never);
+    const guards = new CommerceGuards({
+      lockUsers,
+      assertCanAct: vi.fn(),
+    } as never);
     const tx = transaction();
 
     await guards.assertBuyerEligible(tx as unknown as Prisma.TransactionClient, {

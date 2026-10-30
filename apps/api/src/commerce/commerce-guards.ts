@@ -33,12 +33,24 @@ export class CommerceGuards {
 
   async assertBuyerEligible(
     tx: Prisma.TransactionClient,
-    input: { userId: string; listing: BuyerListing },
+    input: {
+      userId: string;
+      listing: BuyerListing;
+      now?: Date;
+      userLocked?: boolean;
+    },
   ): Promise<void> {
-    const now = await dbNow(tx);
-    await this.antifraud.lockUsers(tx, [input.userId]);
-    const view = await this.describeBuyer(tx, { ...input, now });
+    if (!input.userLocked) {
+      await this.antifraud.lockUsers(tx, [input.userId]);
+    }
+    const now = input.now ?? (await dbNow(tx));
+    const view = await this.describeBuyer(tx, {
+      userId: input.userId,
+      listing: input.listing,
+      now,
+    });
     if (view.blockedReason) throw buyerBlockException(view.blockedReason);
+    await this.antifraud.assertCanAct(tx, input.userId, 'bid');
   }
 
   async describeBuyer(

@@ -3,9 +3,17 @@
 Последнее обновление: 2026-10-30
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-10-30 — Bids
+
+`BidsService` places bids on `POST /api/listings/:id/bids` and lists them on `GET /api/listings/:id/bids`. Both are `Cache-Control: no-store`. The write is one Read Committed transaction. It locks the product row, then the bidder with `AntifraudService.lockUsers`, then reads `dbNow(tx)`. Idempotency is a pre-check under those locks: the same key and amount returns the stored bid, including a voided one, and a freshly read lot; a different amount throws `IDEMPOTENCY_KEY_REUSED` without relying on a unique-violation catch. Amounts above `COMMERCE_LIMITS.maxAmountMinor` or not a multiple of the currency's smallest step (`minimumStepUnitMinor`) are `BID_AMOUNT_INVALID`. A bid at or after `endsAt` is `LISTING_NOT_OPEN` even while `status` is still `LIVE`. Soft close and `createdAt` use that same `dbNow`. `OUTBID` carries `bidId`. History numbers every bidder by first bid, including voided bids, and returns the latest 20 non-voided rows as `Участник N`.
+
+`assertCanAct` (`bid`, `purchase`, `accept-offer`) still checks status, hold, and email, then a non-empty deal contact (`BUYER_CONTACTS_REQUIRED`), active buyer strikes (`BUYER_BLOCKED` at 2), and reservations (`BUYER_ORDER_LIMIT` at 3). A reservation is an `ACTIVE` order or a `SCHEDULED`/`LIVE` auction whose highest non-voided bid is that user. `describeBuyer` does not apply those three, so a public lot can show `blockedReason: null` for a buyer the next bid will refuse. `AntifraudService.recordBidSignals` runs after the bid insert. A failed or missing Turnstile token on the first bid of a session records `TURNSTILE_FAILED` and the bid still commits.
+
+`AntifraudService.onBan` runs inside the ban transaction. The ban runs ReadCommitted with row locks: product rows first, then the admin and user rows, so the void sees bids committed while it waited for the user lock. Phase 1 locks the products of running auctions where the user has a live bid, sorted. The ban then locks the admin and the user and updates status. Phase 2 voids those bids and recomputes `currentPriceMinor`, the leader, and `bidCount`. A product found only in phase 2 throws `RetryableTransactionConflict` and the transaction reruns. After three attempts that conflict is `conflict` (409). Ended auctions are left alone. Antifraud does not import commerce. Publication delivery still reads `user.status` in its own transaction: `switchPublication` refuses a profile whose user is not `active`, and `publishRevision` does the same for a work.
+
 ## 2026-10-30 — Listings
 
-`CommerceModule` (`apps/api/src/commerce/`) is on the API boot graph. It owns listing create, author cancel, admin remove and `GET /api/works/:publicId/lot`. It does not import `ProductsService`. Deal time is `dbNow(tx)` in `apps/api/src/core/time/db-now.ts`: `SELECT clock_timestamp()` inside the caller transaction, after `lockProductRowForUpdate`. `Clock` is not deal time. Author cancel uses `authorCancelWhere` and `updateMany` (`count === 1`). Admin remove writes `audit_events` in that same transaction and, for an auction, enqueues `LISTING_REMOVED` with `listingId` (and optional `workTitle`) for the seller and each non-voided bidder. A product is in sale in `product-write-guard.ts` when it has a `SCHEDULED` or `LIVE` listing or an `OFFERED` or `ACTIVE` order. Portfolio work JSON stays free of listing fields. `/lot` is `Cache-Control: no-store` and does not lock the viewer row. `assertBuyerEligible` locks that user before the same flags. The worker's 30s public cache matches `/api/works` and `/api/authors` only, so `/api/works/:id/lot` is not cached. Bid placement, purchase and order HTTP are not on the boot graph. The pre-W3 commerce application remains archived at `feature/commerce-runtime-archive` @ `19eb40e`.
+`CommerceModule` (`apps/api/src/commerce/`) is on the API boot graph. It owns listing create, author cancel, admin remove and `GET /api/works/:publicId/lot`. It does not import `ProductsService`. Deal time is `dbNow(tx)` in `apps/api/src/core/time/db-now.ts`: `SELECT clock_timestamp()` inside the caller transaction, after `lockProductRowForUpdate`. `Clock` is not deal time. Author cancel uses `authorCancelWhere` and `updateMany` (`count === 1`). Admin remove writes `audit_events` in that same transaction and, for an auction, enqueues `LISTING_REMOVED` with `listingId` (and optional `workTitle`) for the seller and each non-voided bidder. A product is in sale in `product-write-guard.ts` when it has a `SCHEDULED` or `LIVE` listing or an `OFFERED` or `ACTIVE` order. Portfolio work JSON stays free of listing fields. `/lot` is `Cache-Control: no-store` and does not lock the viewer row. `assertBuyerEligible` locks that user before the same flags. The worker's 30s public cache matches `/api/works` and `/api/authors` only, so `/api/works/:id/lot` is not cached. Bid placement and bid history are the Bids section. Purchase and order HTTP are not on the boot graph. The pre-W3 commerce application remains archived at `feature/commerce-runtime-archive` @ `19eb40e`.
 
 ## 2026-10-30 — Notification outbox
 
@@ -13,7 +21,7 @@
 
 ## 2026-10-30 — Commerce V2 persistence
 
-Sales tables follow COMMERCE §10: `Listing` (`FIXED`|`AUCTION`, minor units, contact window), `AuctionRules.stepTableCode`, `Bid` (`voidedAt`, idempotency unique on listing + bidder + key), `Order`, `Report`, `UserNotificationSettings`, `NotificationOutbox` and `FavoriteWork`. Partial unique indexes and currency/contact-window checks are raw SQL in `20261030130000_commerce_v2`. Deal contacts are optional `users.contact_*` columns; `users.phone` remains. Pure sale rules live in `apps/api/src/commerce/auction-pricing.ts`, `listing-state.ts` and `order-state.ts`. `bidStepMinor` is exported from `packages/contracts/src/commerce.ts`. Listing HTTP is `CommerceModule` (see Listings above). Bid and order HTTP are not on the boot graph.
+Sales tables follow COMMERCE §10: `Listing` (`FIXED`|`AUCTION`, minor units, contact window), `AuctionRules.stepTableCode`, `Bid` (`voidedAt`, idempotency unique on listing + bidder + key), `Order`, `Report`, `UserNotificationSettings`, `NotificationOutbox` and `FavoriteWork`. Partial unique indexes and currency/contact-window checks are raw SQL in `20261030130000_commerce_v2`. Deal contacts are optional `users.contact_*` columns; `users.phone` remains. Pure sale rules live in `apps/api/src/commerce/auction-pricing.ts`, `listing-state.ts` and `order-state.ts`. `bidStepMinor` is exported from `packages/contracts/src/commerce.ts`. Listing HTTP is `CommerceModule` (see Listings above). Bid HTTP is the Bids section. Order HTTP is not on the boot graph.
 
 ## 2026-10-29 — Scheduler tick (W2, local implementation)
 
@@ -313,11 +321,11 @@ facts; "Planned" owners are created by the named launch wave.
 
 | Topic | Owner | Status |
 | --- | --- | --- |
-| Whether a user may act (auth abuse, rate limits, Turnstile, signals and holds, ban) | `apps/api/src/antifraud/` (`AntifraudService`, `@RateLimit`) | Implemented locally — W2b. Strikes and the 3-booking cap remain W3 |
+| Whether a user may act (auth abuse, rate limits, Turnstile, signals and holds, ban, buyer contacts, strikes, reservation cap) | `apps/api/src/antifraud/` (`AntifraudService`, `@RateLimit`) | Implemented locally — W2b, plus W3 checks inside `assertCanAct` |
 | Product publication and visibility transitions | `apps/api/src/products/product-publication.ts` | Implemented locally — W1 |
 | Whether a Product is in sale | `apps/api/src/products/product-write-guard.ts` | Implemented locally — `SCHEDULED`/`LIVE` listing or `OFFERED`/`ACTIVE` order |
 | Public Product/image eligibility | `apps/api/src/products/public-visibility.ts` (`portfolioCatalogProductWhere`) | Implemented locally — W1 |
-| Lot and order transitions, pricing | `apps/api/src/commerce/` `listing-state.ts`, `order-state.ts`, `auction-pricing.ts`, `listings.service.ts` | Partial — listing create/cancel/public lot/admin remove implemented; bids and orders remain |
+| Lot and order transitions, pricing | `apps/api/src/commerce/` `listing-state.ts`, `order-state.ts`, `auction-pricing.ts`, `listings.service.ts`, `bids.service.ts` | Partial — listing HTTP and bid placement implemented; orders remain |
 | API errors | `apps/api/src/core/errors/` (`AppException` + mapper) | Implemented |
 | Business time | `apps/api/src/core/time/` (`dbNow(tx)` for deal time; `Clock` is the process clock) | Implemented locally — `dbNow` reads `clock_timestamp()` in the caller transaction |
 | Scheduled jobs | `apps/api/src/core/tick/TickService` | Implemented locally — W2; live Needs verification |
@@ -333,13 +341,14 @@ facts; "Planned" owners are created by the named launch wave.
 
 Public callers use `AntifraudService` and `@RateLimit`. ESLint rejects imports
 under `antifraud/` except the module itself and its `index.ts` barrel. The barrel
-exports the service, rate-limit decorator/guard, and the types `SignalKind` and
-`ActorAction`. Decision functions stay internal.
+exports the service, rate-limit decorator/guard, and the types `SignalKind`,
+`ActorAction`, and `BanHook`. `detectBidBurst` stays internal. Decision
+functions stay internal.
 
 Auth abuse lives in `antifraud/auth/` with the previous error contracts.
 `verifyRequired(action, token, ip)` still fails closed. `verifySignal(action, token, ip)`
-returns `passed | failed | missing` and does not throw; W2b does not record that
-result as a purchase signal. The client hook is `useInvisibleTurnstile` and
+returns `passed | failed | missing` and does not throw. Bid placement records
+`TURNSTILE_FAILED` when that result is `failed` or `missing`. The client hook is `useInvisibleTurnstile` and
 requests a token on submit. Rate limits are rows in `rate_limit_counters`
 (`key`, `window_start`, `expires_at`, `count`). `TickService` job
 `antifraud-cleanup` deletes expired rows with `FOR UPDATE SKIP LOCKED`.
@@ -362,14 +371,20 @@ non-UTC session TimeZone cannot shift the stored `timestamp(3)`. Each
 and retries. `updated_at` uses `GREATEST` against that same UTC timestamp.
 The window has an inclusive 24-hour lower bound and no upper bound. `assertCanAct` allows only
 `bid | purchase | accept-offer` when the user is active, the email is verified,
-and no hold is active. A hold, inactive user, or missing user is
-`BUYER_BLOCKED`; a missing email proof is `EMAIL_VERIFICATION_REQUIRED`. `detectBidBurst` is policy only and has no bid
-caller. Strikes, contacts, and the 3-booking cap are W3.
+a deal contact is present, fewer than 2 buyer strikes are active, fewer than 3
+reservations are open, and no hold is active. A hold, inactive user, missing
+user, or too many strikes is `BUYER_BLOCKED`; a missing email proof is
+`EMAIL_VERIFICATION_REQUIRED`; a blank contact is `BUYER_CONTACTS_REQUIRED`;
+the reservation cap is `BUYER_ORDER_LIMIT`. `recordBidSignals` is called from
+`BidsService` after the bid insert. `AntifraudService.onBan` runs registered
+hooks inside the ban transaction: product locks, then the user lock and status
+update, then void. `BidsService` registers that hook. Antifraud does not import commerce.
 
 `FraudSignalsService.lockUsers` is the only multi-user row lock. It selects
-`users.id` with `ORDER BY id FOR UPDATE`. `releaseHold`, `banUser`, and
-`updateUserStatus` call it on the admin and target before any user mutation or
-audit insert, inside their own serializable transactions. `AdminUserService.revokeSessions`
+`users.id` with `ORDER BY id FOR UPDATE`. `releaseHold` and an unban call it on
+the admin and target before any user mutation or audit insert, inside their own
+serializable transactions. A ban runs ReadCommitted with those row locks so the
+in-transaction void can see a bid that committed while the user lock waited. `AdminUserService.revokeSessions`
 calls the same helper through `AntifraudService` before its version bump and
 audit, so an audit actor foreign key cannot lock the admin after the target.
 The service requires an active admin, a reason or note, and rejects
@@ -422,7 +437,7 @@ wrapping, real focus/zoom and responsive screenshots remain Needs verification.
 
 ## Applications and shared boundaries
 
-- `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Antifraud, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers, Portfolio and Commerce; Categories and core database/mail/time/public-id/image-store modules support that graph. `AppModule` imports global `AntifraudModule` (`apps/api/src/antifraud/`). `CommerceModule` serves listing create, author cancel, admin remove and the public lot. Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.
+- `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Antifraud, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers, Portfolio and Commerce; Categories and core database/mail/time/public-id/image-store modules support that graph. `AppModule` imports global `AntifraudModule` (`apps/api/src/antifraud/`). `CommerceModule` serves listing create, author cancel, admin remove, the public lot, bid placement and bid history. Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.
 - First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating leftover Bid/Order tables. Legacy admin aggregates remain at `GET /api/admin/analytics/overview`. Expo admin `/(admin)/analytics` now reads only protected `GET /api/admin/analytics/foundation`, including opt-in daily sessions and server collection permission, through the existing service/query owners. Auction/bid/order marketplace metrics are not part of the active overview.
 - HTTP requests receive a server-generated `X-Request-Id`. An inbound `X-Request-Id` is not accepted. The same id is returned on the response and written to the request summary and unexpected-error log.
 - `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps, process-photo metadata and the latest non-null product moderation reason. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard, including `REJECTED` recovery on the same Product.
@@ -653,8 +668,9 @@ SellerProfile
   `ProductCreationStep` remains owner-only and is not a public History CMS;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
 - buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. Registration and forgot-password require Turnstile proof; login accepts an optional adaptive Turnstile token after challenge. **Idempotency keys are required only** on email OTP send, OTP verify, and forgot-password (`packages/contracts/src/auth.ts`, `packages/api-client/src/auth.ts`); register/login do not take idempotency keys. Email verification state exposes `serverNow`, `sendStatus`, and deadline fields from the API; mobile `use-email-verification.ts` drives copy and local countdown ticks only and does not auto-send mail. OTP send/verify and password-reset send delegate durable quotas, pauses, operation replay, and SMTP outcome classification to `AntifraudService` (`antifraud/auth/`); per-IP limits are PostgreSQL `rate_limit_counters` in `antifraud/rate-limit/`. Mail still flows through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass only for `NODE_ENV=test` and `APP_ENV=local`. Unverified email correction and OTP verify share the same user row lock and expiry recheck as reset completion. Policy numbers and SMTP/Turnstile rules are owned by [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md) (**DEC-109**);
-- Listing create, author cancel, admin remove and `GET /api/works/:publicId/lot`
-  are served by `CommerceModule`. Bid and order HTTP are absent. Hide/unhide and
+- Listing create, author cancel, admin remove, `POST /api/listings/:id/bids`,
+  `GET /api/listings/:id/bids` and `GET /api/works/:publicId/lot`
+  are served by `CommerceModule`. Order HTTP is absent. Hide/unhide and
   admin seller/product moderation fail closed when a `SCHEDULED` or `LIVE`
   listing or an `OFFERED` or `ACTIVE` order exists. There is no Socket.IO, no
   ScheduleModule lifecycle, and no `COMMERCE_ENABLED` gate. The pre-W3

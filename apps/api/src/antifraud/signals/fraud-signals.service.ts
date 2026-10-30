@@ -13,16 +13,39 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { PrismaService, runSerializableTransaction } from '../../core/database';
+import {
+  PrismaService,
+  runReadCommittedTransaction,
+  runSerializableTransaction,
+} from '../../core/database';
 import { AppException } from '../../core/errors';
 import { MediaLifecycleService } from '../../core/media/media-lifecycle.service';
+import { dbNow } from '../../core/time';
 import { parseBody } from '../../core/validation';
 import {
+  BID_BURST_WINDOW_MS,
   FRAUD_SIGNAL_WINDOW_MS,
+  buyerReservationLimitReached,
+  buyerStrikesBlock,
+  detectBidBurst,
+  hasBuyerContact,
+  isActiveBuyerStrike,
   shouldHold,
   type ActorAction,
   type SignalKind,
 } from '../antifraud.policy';
+
+export type BanHook = {
+  lockProducts(
+    tx: Prisma.TransactionClient,
+    userId: string,
+  ): Promise<readonly string[]>;
+  voidBids(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    lockedProductIds: ReadonlySet<string>,
+  ): Promise<void>;
+};
 
 const userSelect = {
   id: true,
@@ -38,6 +61,8 @@ const utcTimestamp3 = Prisma.sql`(clock_timestamp() AT TIME ZONE 'UTC')::timesta
 
 @Injectable()
 export class FraudSignalsService {
+  private readonly banHooks: BanHook[] = [];
+
   constructor(
     private readonly prisma: PrismaService,
     @Optional()
@@ -112,6 +137,65 @@ export class FraudSignalsService {
     });
   }
 
+  registerBanHook(hook: BanHook): () => void {
+    this.banHooks.push(hook);
+    return () => {
+      const index = this.banHooks.lastIndexOf(hook);
+      if (index >= 0) this.banHooks.splice(index, 1);
+    };
+  }
+
+  async recordBidSignals(
+    tx: Prisma.TransactionClient,
+    input: {
+      userId: string;
+      listingId: string;
+      sellerUserId: string;
+      bidCreatedAt: Date;
+      turnstile: 'passed' | 'failed' | 'missing' | 'skip';
+      browserId: string | null;
+    },
+  ): Promise<void> {
+    if (input.turnstile === 'failed' || input.turnstile === 'missing') {
+      await this.recordSignal(tx, {
+        userId: input.userId,
+        kind: 'TURNSTILE_FAILED',
+        subjectId: input.listingId,
+      });
+    }
+    const recent = await tx.bid.findMany({
+      where: {
+        bidderUserId: input.userId,
+        createdAt: {
+          gte: new Date(input.bidCreatedAt.getTime() - BID_BURST_WINDOW_MS),
+        },
+      },
+      select: { listingId: true, createdAt: true },
+    });
+    if (
+      detectBidBurst(
+        recent.map((row) => ({ listingId: row.listingId, at: row.createdAt })),
+        input.bidCreatedAt,
+      )
+    ) {
+      await this.recordSignal(tx, {
+        userId: input.userId,
+        kind: 'BID_BURST',
+        subjectId: input.listingId,
+      });
+    }
+    if (
+      input.browserId &&
+      (await sharesBrowser(tx, input.browserId, input.sellerUserId))
+    ) {
+      await this.recordSignal(tx, {
+        userId: input.userId,
+        kind: 'SHARED_BROWSER_WITH_SELLER',
+        subjectId: input.listingId,
+      });
+    }
+  }
+
   async assertCanAct(
     tx: Prisma.TransactionClient,
     userId: string,
@@ -120,11 +204,16 @@ export class FraudSignalsService {
     if (!(['bid', 'purchase', 'accept-offer'] as const).includes(action))
       throw new BadRequestException('Unknown actor action');
     await this.lockUsers(tx, [userId]);
+    const now = await dbNow(tx);
     const user = await tx.user.findUnique({
       where: { id: userId },
       select: {
         status: true,
         emailVerifiedAt: true,
+        contactPhone: true,
+        contactTelegram: true,
+        contactInstagram: true,
+        contactVk: true,
         purchaseHolds: {
           where: { releasedAt: null },
           select: { id: true },
@@ -145,6 +234,97 @@ export class FraudSignalsService {
         code: ApiErrorCode.EMAIL_VERIFICATION_REQUIRED,
         message: 'Email verification required',
       });
+    if (
+      !hasBuyerContact([
+        user.contactPhone,
+        user.contactTelegram,
+        user.contactInstagram,
+        user.contactVk,
+      ])
+    ) {
+      throw new AppException({
+        status: 403,
+        code: ApiErrorCode.BUYER_CONTACTS_REQUIRED,
+        message: 'Buyer contacts are required',
+      });
+    }
+    if (buyerStrikesBlock(await this.activeStrikeCount(tx, userId, now))) {
+      throw new AppException({
+        status: 403,
+        code: ApiErrorCode.BUYER_BLOCKED,
+        message: 'Purchases are blocked',
+      });
+    }
+    if (buyerReservationLimitReached(await this.reservationCount(tx, userId))) {
+      throw new AppException({
+        status: 403,
+        code: ApiErrorCode.BUYER_ORDER_LIMIT,
+        message: 'Buyer active order limit is reached',
+      });
+    }
+  }
+
+  private async activeStrikeCount(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    now: Date,
+  ): Promise<number> {
+    const orders = await tx.order.findMany({
+      where: {
+        buyerUserId: userId,
+        status: 'FAILED',
+        faultSide: 'BUYER',
+        strikeVoidedAt: null,
+      },
+      select: { id: true, failReason: true, failedAt: true },
+    });
+    if (orders.length === 0) return 0;
+    const reports = await tx.report.findMany({
+      where: {
+        targetType: 'ORDER',
+        targetId: { in: orders.map((order) => order.id) },
+        reporterUserId: userId,
+        status: 'OPEN',
+      },
+      select: { targetId: true },
+    });
+    const open = new Set(reports.map((report) => report.targetId));
+    return orders.filter((order) =>
+      isActiveBuyerStrike(
+        {
+          failReason: order.failReason,
+          failedAt: order.failedAt,
+          buyerReportOpen: open.has(order.id),
+        },
+        now,
+      ),
+    ).length;
+  }
+
+  private async reservationCount(
+    tx: Prisma.TransactionClient,
+    userId: string,
+  ): Promise<number> {
+    const [row] = await tx.$queryRaw<Array<{ reservations: number }>>`
+      SELECT (
+        (SELECT COUNT(*) FROM orders WHERE buyer_user_id = ${userId}::uuid AND status = 'ACTIVE'::"OrderStatus")
+        +
+        (SELECT COUNT(*) FROM listings l
+          WHERE l.type = 'AUCTION'::"ListingType"
+            AND l.status IN ('SCHEDULED'::"ListingStatus", 'LIVE'::"ListingStatus")
+            AND l.id IN (
+              SELECT b.listing_id FROM bids b
+              WHERE b.bidder_user_id = ${userId}::uuid AND b.voided_at IS NULL
+            )
+            AND (
+              SELECT b2.bidder_user_id FROM bids b2
+              WHERE b2.listing_id = l.id AND b2.voided_at IS NULL
+              ORDER BY b2.amount_minor DESC, b2.created_at ASC
+              LIMIT 1
+            ) = ${userId}::uuid)
+      )::int AS reservations
+    `;
+    return Number(row?.reservations ?? 0);
   }
 
   private async assertAdmin(tx: Prisma.TransactionClient, adminId: string) {
@@ -208,10 +388,23 @@ export class FraudSignalsService {
   ) {
     const input = parseBody(adminUserStatusUpdateRequestSchema, request);
     let profileId: string | undefined;
-    const updatedUser = await runSerializableTransaction(
+    const run =
+      input.status === 'banned'
+        ? runReadCommittedTransaction
+        : runSerializableTransaction;
+    const updatedUser = await run(
       this.prisma,
       async (tx) => {
         profileId = undefined;
+        const prepared: Array<{ hook: BanHook; ids: readonly string[] }> = [];
+        if (input.status === 'banned') {
+          for (const hook of this.banHooks) {
+            prepared.push({
+              hook,
+              ids: await hook.lockProducts(tx, userId),
+            });
+          }
+        }
         await this.lockUsers(tx, [adminId, userId]);
         await this.assertAdmin(tx, adminId);
         const user = await tx.user.findUnique({
@@ -227,7 +420,16 @@ export class FraudSignalsService {
           throw new ForbiddenException(
             'Admin accounts cannot be banned or unbanned through emergency controls',
           );
-        if (user.status === input.status) return user;
+        const voidAfterBan = async () => {
+          if (input.status !== 'banned') return;
+          for (const item of prepared) {
+            await item.hook.voidBids(tx, userId, new Set(item.ids));
+          }
+        };
+        if (user.status === input.status) {
+          await voidAfterBan();
+          return user;
+        }
         if (input.status === 'banned' && this.media?.enabled) {
           const profile = await tx.sellerProfile.findUnique({
             where: { userId },
@@ -258,6 +460,7 @@ export class FraudSignalsService {
             reason: input.reason,
           },
         });
+        await voidAfterBan();
         return updated;
       },
     );
@@ -273,4 +476,24 @@ export class FraudSignalsService {
   ): Promise<void> {
     await this.updateUserStatus(adminId, userId, { status: 'banned', reason });
   }
+}
+
+async function sharesBrowser(
+  tx: Prisma.TransactionClient,
+  browserId: string,
+  sellerUserId: string,
+): Promise<boolean> {
+  const event = await tx.analyticsEvent.findFirst({
+    where: { anonymousId: browserId, userId: sellerUserId },
+    select: { id: true },
+  });
+  if (event) return true;
+  const attribution = await tx.acquisitionAttribution.findFirst({
+    where: {
+      anonymousId: browserId,
+      OR: [{ registeredUserId: sellerUserId }, { userId: sellerUserId }],
+    },
+    select: { id: true },
+  });
+  return attribution !== null;
 }

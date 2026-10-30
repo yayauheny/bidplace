@@ -1,6 +1,10 @@
+import type { AdminUserStatusUpdateRequest } from '@bidplace/contracts';
 import { Injectable } from '@nestjs/common';
 
-import { FraudSignalsService } from './signals/fraud-signals.service';
+import {
+  FraudSignalsService,
+  type BanHook,
+} from './signals/fraud-signals.service';
 
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { AuthAbuseService } from './auth/auth-abuse.service';
@@ -24,16 +28,26 @@ export class AntifraudService {
   assertCanAct(...args: Parameters<FraudSignalsService['assertCanAct']>) {
     return this.signals.assertCanAct(...args);
   }
+  onBan(hook: BanHook): () => void {
+    return this.signals.registerBanHook(hook);
+  }
+  recordBidSignals(
+    ...args: Parameters<FraudSignalsService['recordBidSignals']>
+  ) {
+    return this.signals.recordBidSignals(...args);
+  }
   releaseHold(...args: Parameters<FraudSignalsService['releaseHold']>) {
     return this.signals.releaseHold(...args);
   }
-  banUser(...args: Parameters<FraudSignalsService['banUser']>) {
-    return this.signals.banUser(...args);
+  banUser(adminId: string, userId: string, reason: string) {
+    return this.updateUserStatus(adminId, userId, { status: 'banned', reason });
   }
   updateUserStatus(
-    ...args: Parameters<FraudSignalsService['updateUserStatus']>
+    adminId: string,
+    userId: string,
+    request: AdminUserStatusUpdateRequest,
   ) {
-    return this.signals.updateUserStatus(...args);
+    return this.signals.updateUserStatus(adminId, userId, request);
   }
 
   verifyRequired(...args: Parameters<AuthAbuseService['verifyRequired']>) {

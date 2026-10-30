@@ -1,6 +1,16 @@
-import { bidStepMinor, type Currency } from '@bidplace/contracts';
+import {
+  BID_STEP_TABLES,
+  bidStepMinor,
+  type Currency,
+} from '@bidplace/contracts';
 
 export { bidStepMinor };
+
+export function minimumStepUnitMinor(currency: Currency): number {
+  return Math.min(
+    ...BID_STEP_TABLES[currency].map((row) => row.stepMinor),
+  );
+}
 
 export function minimumBidMinor(input: {
   currency: Currency;

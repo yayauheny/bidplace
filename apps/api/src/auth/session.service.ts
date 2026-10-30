@@ -32,6 +32,7 @@ declare module 'express-session' {
       expiresAt: number;
     };
     flowId?: string;
+    commerceBidTurnstileChecked?: boolean;
   }
 }
 

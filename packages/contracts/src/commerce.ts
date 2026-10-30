@@ -191,9 +191,9 @@ export const createListingRequestSchema = z
 
 export const placeBidRequestSchema = z
   .object({
-    amountMinor: amountMinorSchema,
+    amountMinor: z.number().int().positive(),
     idempotencyKey: idempotencyKeySchema,
-    turnstileToken: turnstileTokenSchema.optional(),
+    turnstileToken: z.string().max(2048).optional(),
   })
   .strict();
 

@@ -5,35 +5,49 @@ import type {
 import {
   adminRemoveListingRequestSchema,
   createListingRequestSchema,
+  placeBidRequestSchema,
 } from '@bidplace/contracts';
 import {
   Body,
   Controller,
   Get,
   Header,
+  HttpCode,
+  HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Post,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 
 import { AdminGuard } from '../admin/admin.guard';
+import { analyticsBrowserId } from '../analytics/browser-attribution';
+import { RateLimit, RateLimitGuard, resolveClientIp } from '../antifraud';
 import {
   CurrentUser,
   OptionalSessionAuthGuard,
   SessionAuthGuard,
   VerifiedEmailGuard,
 } from '../auth';
+import type { SessionRequest } from '../auth/session.service';
+import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { parseBody } from '../core/validation';
+import { BidsService } from './bids.service';
 import { ListingsService } from './listings.service';
 
 const uuid = new ParseUUIDPipe({ version: '4' });
 
 @Controller()
 export class ListingsController {
-  constructor(private readonly listings: ListingsService) {}
+  constructor(
+    private readonly listings: ListingsService,
+    private readonly bids: BidsService,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
+  ) {}
 
   @Post('works/:productId/listings')
   @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
@@ -70,6 +84,41 @@ export class ListingsController {
       body,
     );
     return this.listings.removeByAdmin(auth.sub, id, input);
+  }
+
+  @Post('listings/:id/bids')
+  @HttpCode(HttpStatus.OK)
+  @Header('Cache-Control', 'no-store')
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'commerce:bid',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user-resource',
+    resourceParam: 'id',
+  })
+  async placeBid(
+    @CurrentUser() auth: AuthPrincipal,
+    @Param('id', uuid) id: string,
+    @Body() body: unknown,
+    @Req() request: SessionRequest,
+  ) {
+    const input = parseBody(placeBidRequestSchema, body);
+    const checkTurnstile = request.session.commerceBidTurnstileChecked !== true;
+    const result = await this.bids.placeBid(auth.sub, id, {
+      ...input,
+      ip: resolveClientIp(request, this.env.TRUST_PROXY),
+      browserId: analyticsBrowserId(request.headers.cookie, this.env),
+      checkTurnstile,
+    });
+    request.session.commerceBidTurnstileChecked = true;
+    return result;
+  }
+
+  @Get('listings/:id/bids')
+  @Header('Cache-Control', 'no-store')
+  listBids(@Param('id', uuid) id: string) {
+    return this.bids.list(id);
   }
 
   @Get('works/:publicId/lot')
