@@ -33,6 +33,7 @@ import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ImagesModule } from './images/images.module';
 import { SellersModule } from './sellers/sellers.module';
+import { CommerceModule } from './commerce/commerce.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 
 @Module({})
@@ -68,6 +69,7 @@ export class AppModule implements NestModule {
         ImagesModule,
         SellersModule,
         PortfolioModule,
+        CommerceModule,
       ],
       providers: [
         {

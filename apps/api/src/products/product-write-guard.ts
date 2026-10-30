@@ -12,18 +12,27 @@ import {
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 
+import { OPEN_LISTING_STATUSES } from '../commerce/listing-state';
 import { AppException } from '../core/errors/app.exception';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 
-export const PRODUCT_EDIT_LOCK_LISTING_STATUSES = [
-  'SCHEDULED',
-  'LIVE',
-] as const;
+export const PRODUCT_EDIT_LOCK_LISTING_STATUSES = OPEN_LISTING_STATUSES;
+
+export const OPEN_ORDER_STATUSES = ['OFFERED', 'ACTIVE'] as const;
 
 export const productInSaleWhere = {
-  listings: {
-    some: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
-  },
+  OR: [
+    {
+      listings: {
+        some: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
+      },
+    },
+    {
+      orders: {
+        some: { status: { in: [...OPEN_ORDER_STATUSES] } },
+      },
+    },
+  ],
 } satisfies Prisma.ProductWhereInput;
 
 export const productWriteGuardSelect = {
@@ -36,6 +45,9 @@ export const writableProductWhere = {
   status: { in: [...EDITABLE_PRODUCT_STATUSES] },
   listings: {
     none: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
+  },
+  orders: {
+    none: { status: { in: [...OPEN_ORDER_STATUSES] } },
   },
 } satisfies Prisma.ProductWhereInput;
 
@@ -140,12 +152,26 @@ export async function assertProductNotInSale(
     select: { id: true },
   });
   if (listing) {
-    throw new AppException({
-      status: 409,
-      code: ApiErrorCode.PRODUCT_IN_SALE,
-      message: 'Product is in sale',
-    });
+    throw productInSaleError();
   }
+  const order = await tx.order.findFirst({
+    where: {
+      productId,
+      status: { in: [...OPEN_ORDER_STATUSES] },
+    },
+    select: { id: true },
+  });
+  if (order) {
+    throw productInSaleError();
+  }
+}
+
+function productInSaleError(): AppException {
+  return new AppException({
+    status: 409,
+    code: ApiErrorCode.PRODUCT_IN_SALE,
+    message: 'Product is in sale',
+  });
 }
 
 export async function findSellerProductIdsInSale(

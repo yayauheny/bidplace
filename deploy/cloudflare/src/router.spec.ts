@@ -100,6 +100,15 @@ describe('Cloudflare application boundary', () => {
     expect(h.getByName).toHaveBeenCalledWith('portfolio-api');
   });
 
+  it('does not cache a public lot nested under a cached work', async () => {
+    const h = harness(() => Response.json({ public: true }, { headers: { Vary: 'Origin' } }));
+    await h.request('/api/works/x/lot');
+    await h.request('/api/works/x/lot');
+    expect(h.fetchApi).toHaveBeenCalledTimes(2);
+    expect(h.cache.match).not.toHaveBeenCalled();
+    expect(h.cache.put).not.toHaveBeenCalled();
+  });
+
   it('reuses anonymous public JSON without mixing query filters', async () => {
     const h = harness(() => Response.json({ public: true }, { headers: { Vary: 'Origin' } }));
     expect((await h.request('/api/works?page=1')).headers.get('X-Bidplace-Cache')).toBe('MISS');

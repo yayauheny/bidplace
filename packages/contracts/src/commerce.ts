@@ -147,6 +147,12 @@ const auctionListingSchema = z
   })
   .strict();
 
+export const adminRemoveListingRequestSchema = z
+  .object({
+    reason: z.string().trim().min(1).max(2000),
+  })
+  .strict();
+
 export const createListingRequestSchema = z
   .discriminatedUnion('type', [fixedListingSchema, auctionListingSchema])
   .superRefine((value, context) => {
@@ -359,6 +365,9 @@ export const trustSignalsSchema = z
   })
   .strict();
 
+export type AdminRemoveListingRequest = z.infer<
+  typeof adminRemoveListingRequestSchema
+>;
 export type CreateListingRequest = z.infer<typeof createListingRequestSchema>;
 export type PlaceBidRequest = z.infer<typeof placeBidRequestSchema>;
 export type PurchaseRequest = z.infer<typeof purchaseRequestSchema>;

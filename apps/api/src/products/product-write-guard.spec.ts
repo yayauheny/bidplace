@@ -8,6 +8,7 @@ import {
 
 import {
   assertProductWritable,
+  findSellerProductIdsInSale,
   lockProductRowForUpdate,
 } from './product-write-guard';
 
@@ -35,6 +36,9 @@ function transaction(inSale = false) {
       findFirst: vi
         .fn()
         .mockResolvedValue(inSale ? { id: 'listing-id' } : null),
+    },
+    order: {
+      findFirst: vi.fn().mockResolvedValue(null),
     },
   } as unknown as Prisma.TransactionClient;
 }
@@ -132,6 +136,43 @@ describe('product write guard', () => {
       ).rejects.toThrow('Product creation story is locked');
     },
   );
+
+  it('rejects writes when an open order exists without a live listing', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id', timeout: '0' }]),
+      listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue({ id: 'order-id' }) },
+    };
+
+    await expect(
+      assertProductWritable(
+        tx as unknown as Prisma.TransactionClient,
+        snapshot(),
+        'owner-id',
+        'edit',
+      ),
+    ).rejects.toMatchObject({ status: 409, apiCode: 'PRODUCT_IN_SALE' });
+  });
+
+  it('treats an open order as a work in sale', async () => {
+    const findMany = vi.fn().mockResolvedValue([{ id: 'product-id' }]);
+
+    await expect(
+      findSellerProductIdsInSale(
+        { product: { findMany } } as unknown as Prisma.TransactionClient,
+        'seller-id',
+      ),
+    ).resolves.toEqual(['product-id']);
+    expect(findMany.mock.calls[0]?.[0].where.OR).toEqual(
+      expect.arrayContaining([
+        {
+          orders: {
+            some: { status: { in: ['OFFERED', 'ACTIVE'] } },
+          },
+        },
+      ]),
+    );
+  });
 
   it('rejects writes when a SCHEDULED or LIVE Listing exists', async () => {
     await expect(

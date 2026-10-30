@@ -7,6 +7,7 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import {
+  authorCancelWhere,
   canAuthorCancel,
   effectiveListingState,
   type EffectiveListingState,
@@ -122,6 +123,17 @@ describe('author cancellation', () => {
         row.now,
       ),
     ).toBe(row.expected);
+  });
+
+  it('builds the conditional author-cancel filter from the listing type', () => {
+    expect(authorCancelWhere({ type: 'AUCTION' })).toEqual({
+      statuses: ['SCHEDULED', 'LIVE'],
+      bidCount: 0,
+    });
+    expect(authorCancelWhere({ type: 'FIXED' })).toEqual({
+      statuses: ['SCHEDULED', 'LIVE'],
+      bidCount: null,
+    });
   });
 
   it('refuses cancellation when the clock is invalid', () => {
