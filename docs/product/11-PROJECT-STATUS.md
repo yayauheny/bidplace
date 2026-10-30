@@ -14,7 +14,11 @@
 | Фото Work и автора (DEC-131/132) | Partial: `ImageProcessor`/Sharp и пофайловый upload объединены с release wizard; local verify/media E2E прошли. Live R2/CDN, устройства и Figma новых статусов — Needs verification. |
 | Удаление своей Work (DEC-123) | Not implemented: в `ProductsController` нет DELETE Work, в `Product` нет tombstone. Hide/unhide не удаляет работу. План — [W6 Task 2](../launch/waves/W6-launch-legal-ops.md). |
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
-| Commerce, избранное/подписки, смена email/password из settings | Partial: W3 schema and contracts only (`20261030130000_commerce_v2`, `packages/contracts/src/commerce.ts`). Sale services, favorites API and settings email/password are Not implemented. |
+| Commerce, избранное/подписки, смена email/password из settings | Partial: W3 schema, contracts, and pure pricing/listing/order rules (`20261030130000_commerce_v2`, `packages/contracts/src/commerce.ts`, `apps/api/src/commerce/`). Sale services, favorites API and settings email/password are Not implemented. |
+
+## 2026-10-30 — Commerce pricing and state rules
+
+**Partial.** `packages/contracts/src/commerce.ts` owns `bidStepMinor`. `apps/api/src/commerce/auction-pricing.ts` re-exports it and owns `minimumBidMinor` and soft close (`resolveSoftCloseEndsAt`: inside the window the next end is `now + extension`, capped at `originalEndsAt + max`, and never earlier than the current `endsAt`). `listing-state.ts` owns `effectiveListingState` and `canAuthorCancel`. `order-state.ts` owns `assertOrderTransition` (`ORDER_TRANSITION_NOT_ALLOWED`) and `faultOf`. Sale HTTP is still absent. `Clock.now()` remains the business clock; `dbNow` is still absent.
 
 ## 2026-10-30 — Commerce V2 schema and contracts
 

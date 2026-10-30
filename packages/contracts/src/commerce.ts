@@ -114,7 +114,7 @@ const contactWindowHoursSchema = z
   )
   .default(COMMERCE_LIMITS.defaultContactWindowHours);
 
-function bidStepMinor(currency: Currency, currentMinor: number): number {
+export function bidStepMinor(currency: Currency, currentMinor: number): number {
   const row = BID_STEP_TABLES[currency].find(
     (entry) => entry.belowMinor === null || currentMinor < entry.belowMinor,
   );

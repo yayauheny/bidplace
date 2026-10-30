@@ -5,7 +5,7 @@
 
 ## 2026-10-30 — Commerce V2 persistence
 
-Sales tables follow COMMERCE §10: `Listing` (`FIXED`|`AUCTION`, minor units, contact window), `AuctionRules.stepTableCode`, `Bid` (`voidedAt`, idempotency unique on listing + bidder + key), `Order`, `Report`, `UserNotificationSettings`, `NotificationOutbox` and `FavoriteWork`. Partial unique indexes and currency/contact-window checks are raw SQL in `20261030130000_commerce_v2`. Deal contacts are optional `users.contact_*` columns; `users.phone` remains. The commerce HTTP module is not on the boot graph.
+Sales tables follow COMMERCE §10: `Listing` (`FIXED`|`AUCTION`, minor units, contact window), `AuctionRules.stepTableCode`, `Bid` (`voidedAt`, idempotency unique on listing + bidder + key), `Order`, `Report`, `UserNotificationSettings`, `NotificationOutbox` and `FavoriteWork`. Partial unique indexes and currency/contact-window checks are raw SQL in `20261030130000_commerce_v2`. Deal contacts are optional `users.contact_*` columns; `users.phone` remains. Pure sale rules live in `apps/api/src/commerce/auction-pricing.ts`, `listing-state.ts` and `order-state.ts`. `bidStepMinor` is exported from `packages/contracts/src/commerce.ts`. The commerce HTTP module is not on the boot graph.
 
 ## 2026-10-29 — Scheduler tick (W2, local implementation)
 
@@ -308,7 +308,7 @@ facts; "Planned" owners are created by the named launch wave.
 | Product publication and visibility transitions | `apps/api/src/products/product-publication.ts` | Implemented locally — W1 |
 | Whether a Product is in sale | `apps/api/src/products/product-write-guard.ts` | Implemented locally — W1; orders remain W3 |
 | Public Product/image eligibility | `apps/api/src/products/public-visibility.ts` (`portfolioCatalogProductWhere`) | Implemented locally — W1 |
-| Lot and order transitions, pricing | `apps/api/src/commerce/` `listing-state.ts`, `order-state.ts`, `auction-pricing.ts` | Planned — W3 |
+| Lot and order transitions, pricing | `apps/api/src/commerce/` `listing-state.ts`, `order-state.ts`, `auction-pricing.ts` | Partial — pure rules implemented; sale services remain W3 |
 | API errors | `apps/api/src/core/errors/` (`AppException` + mapper) | Implemented |
 | Business time | `apps/api/src/core/time/` (`Clock`; `dbNow(tx)` added in W3) | Partial |
 | Scheduled jobs | `apps/api/src/core/tick/TickService` | Implemented locally — W2; live Needs verification |

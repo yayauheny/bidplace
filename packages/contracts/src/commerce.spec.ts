@@ -4,6 +4,7 @@ import { apiErrorCodeSchema } from './error';
 import { LISTING_STATUSES, LISTING_TYPES, ORDER_STATUSES } from './enums';
 import {
   BID_STEP_TABLES,
+  bidStepMinor,
   COMMERCE_CURRENCIES,
   COMMERCE_LIMITS,
   attentionResponseSchema,
@@ -20,7 +21,6 @@ import {
   reportSchema,
   resolveReportRequestSchema,
   trustSignalsSchema,
-  type Currency,
 } from './commerce';
 import {
   notificationSettingsSchema,
@@ -28,16 +28,6 @@ import {
 } from './user';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function stepMinor(currency: Currency, currentMinor: number): number {
-  const row = BID_STEP_TABLES[currency].find(
-    (entry) => entry.belowMinor === null || currentMinor < entry.belowMinor,
-  );
-  if (!row) {
-    throw new Error(`no bid step for ${currency} ${currentMinor}`);
-  }
-  return row.stepMinor;
-}
 
 function iso(offsetMs: number, origin = Date.now()): string {
   return new Date(origin + offsetMs).toISOString();
@@ -90,7 +80,7 @@ describe('bid step tables', () => {
   ] as const)(
     '%s current %i minor uses step %i',
     (currency, currentMinor, expected) => {
-      expect(stepMinor(currency, currentMinor)).toBe(expected);
+      expect(bidStepMinor(currency, currentMinor)).toBe(expected);
     },
   );
 
