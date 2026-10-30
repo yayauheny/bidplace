@@ -208,6 +208,28 @@ export const purchaseRequestSchema = z
 export const failOrderRequestSchema = z
   .object({
     reason: z.enum(ORDER_FAIL_REASONS),
+    confirm: z.literal(true).optional(),
+  })
+  .strict();
+
+export const ordersListQuerySchema = z
+  .object({
+    role: z.enum(['buyer', 'seller']),
+    state: z.enum(['open', 'closed']),
+  })
+  .strict();
+
+export const adminOrderReasonRequestSchema = z
+  .object({
+    reason: z.string().trim().min(1).max(2000),
+  })
+  .strict();
+
+export const adminOrderOutcomeRequestSchema = z
+  .object({
+    to: z.enum(['COMPLETED', 'FAILED']),
+    failReason: z.enum(ORDER_FAIL_REASONS).optional(),
+    reason: z.string().trim().min(1).max(2000),
   })
   .strict();
 
@@ -321,6 +343,13 @@ export const orderDetailSchema = orderSummarySchema
     failedAt: isoDateTimeSchema.nullable(),
     buyerContacts: orderContactsSchema.nullable(),
     sellerContacts: orderContactsSchema.nullable(),
+    sellerContactHint: z.string().nullable(),
+  })
+  .strict();
+
+export const ordersListResponseSchema = z
+  .object({
+    orders: z.array(orderSummarySchema),
   })
   .strict();
 
@@ -374,4 +403,9 @@ export type PurchaseRequest = z.infer<typeof purchaseRequestSchema>;
 export type PublicLot = z.infer<typeof publicLotSchema>;
 export type OrderSummary = z.infer<typeof orderSummarySchema>;
 export type OrderDetail = z.infer<typeof orderDetailSchema>;
+export type OrdersListQuery = z.infer<typeof ordersListQuerySchema>;
+export type FailOrderRequest = z.infer<typeof failOrderRequestSchema>;
+export type AdminOrderOutcomeRequest = z.infer<
+  typeof adminOrderOutcomeRequestSchema
+>;
 export type TrustSignals = z.infer<typeof trustSignalsSchema>;

@@ -1,6 +1,8 @@
 import { mediaDeliverySchema } from './media';
 import { z } from 'zod';
 
+import { trustSignalsSchema } from './commerce';
+
 import {
   authorApplicationStageSchema,
   userRoleSchema,
@@ -176,6 +178,12 @@ export const adminUserRevokeSessionsRequestSchema = z
   .strict();
 
 export const adminUserStatusResponseSchema = adminUserSchema;
+
+export const adminUserCardSchema = adminUserSchema
+  .extend({
+    trustSignals: trustSignalsSchema,
+  })
+  .strict();
 
 export const adminOkResponseSchema = z.object({ ok: z.literal(true) }).strict();
 

@@ -531,6 +531,7 @@ model Order {
   status                OrderStatus
   failReason            OrderFailReason? @map("fail_reason")
   faultSide             FaultSide?       @map("fault_side")
+  failedBy              String?          @map("failed_by") @db.VarChar(16)
   strikeVoidedAt        DateTime?        @map("strike_voided_at")
   completedBy           CompletedBy?     @map("completed_by")
   offerExpiresAt        DateTime?        @map("offer_expires_at")

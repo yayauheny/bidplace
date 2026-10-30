@@ -105,6 +105,16 @@ export const userContactsRequestSchema = z
   })
   .strict();
 
+export const userContactsResponseSchema = z
+  .object({
+    phone: z.string().nullable(),
+    telegram: z.string().nullable(),
+    instagram: z.string().nullable(),
+    vk: z.string().nullable(),
+    showToBuyer: z.boolean(),
+  })
+  .strict();
+
 export const notificationSettingsSchema = z
   .object({
     outbidEmail: z.boolean(),
@@ -113,6 +123,7 @@ export const notificationSettingsSchema = z
 
 export type User = z.infer<typeof userSchema>;
 export type UserContactsRequest = z.infer<typeof userContactsRequestSchema>;
+export type UserContactsResponse = z.infer<typeof userContactsResponseSchema>;
 export type NotificationSettings = z.infer<typeof notificationSettingsSchema>;
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type ClaimSlugRequest = z.infer<typeof claimSlugRequestSchema>;

@@ -347,6 +347,7 @@ describe('commerce request and response schemas', () => {
           vk: null,
         },
         sellerContacts: null,
+        sellerContactHint: null,
       }).buyerContacts?.phone,
     ).toBe('+1234567');
   });
