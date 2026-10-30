@@ -16,6 +16,34 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-30 — Antifraud lock order and UTC signal time
+
+**Implemented locally / live Needs verification.** `FraudSignalsService.lockUsers`
+locks the named user ids with `ORDER BY id` before any user mutation or audit
+insert. `releaseHold`, `updateUserStatus` / `banUser`, and
+`AdminUserService.revokeSessions` (through `AntifraudService.lockUsers`) all take
+that lock on the admin and the target. `recordSignal` writes
+`(clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3)` and keeps `users.updated_at`
+with `GREATEST`. `antifraud-signals.integration.spec.ts` covers concurrent
+session revoke against ban and against hold release when the admin id sorts
+first, an `updated_at` already an hour ahead, and a session `TimeZone` of
+`America/Los_Angeles`. Ban owner, guards, routes, and Turnstile action
+`email_login` in `13-APPLICATION-SECURITY.md` match the code.
+`RATE_LIMIT_MAX_BUCKETS` and `RATE_LIMIT_CLEANUP_INTERVAL_MS` are removed from
+`.env.example`; application code does not read them.
+
+**Open founder decision (before W3):** [COMMERCE](../launch/COMMERCE.md) still
+describes an admin ban as seller `SUSPENDED`. User status remains
+`active | banned`. `SellerProfile` `SUSPENDED` is a different model. This note
+does not change that commerce rule.
+
+Local this session: API unit 688 passed with `BIDPLACE_ENV_FILE` unset.
+PostgreSQL integrations passed one file at a time: signals 23, admin emergency
+4, rate limit 5, auth transport 24. Together those four files exceed the
+existing 10s `beforeAll` limit while waiting on the shared migrate lock; the
+limit was not raised. API typecheck and lint passed. Docs link check passed.
+Live Cloudflare, SMTP, R2/CDN, and Cron remain Needs verification.
+
 ## 2026-10-30 — W2b signal clock and serializable holds
 
 **Implemented locally / live Needs verification.** `FraudSignalsService.recordSignal`

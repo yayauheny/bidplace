@@ -18,6 +18,9 @@ export class AntifraudService {
   recordSignal(...args: Parameters<FraudSignalsService['recordSignal']>) {
     return this.signals.recordSignal(...args);
   }
+  lockUsers(...args: Parameters<FraudSignalsService['lockUsers']>) {
+    return this.signals.lockUsers(...args);
+  }
   assertCanAct(...args: Parameters<FraudSignalsService['assertCanAct']>) {
     return this.signals.assertCanAct(...args);
   }

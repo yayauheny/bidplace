@@ -105,13 +105,15 @@ Provider configuration and external acceptance are owned by [Web auth rollout](.
 | Control | Status | Modules / tests |
 | --- | --- | --- |
 | Lookup user by email | Implemented | `admin-user.service.ts` |
-| Ban/unban with reason; ban increments `sessionVersion` | Implemented | `admin-user.service.ts`, `admin-user-emergency.integration.spec.ts` |
-| Revoke all sessions (`sessionVersion++`) | Implemented | same |
+| Ban/unban with reason; ban increments `sessionVersion` | Implemented | Owner `FraudSignalsService.updateUserStatus` / `banUser` via `AntifraudService`. `AdminUserService.updateStatus` delegates. HTTP `PATCH /api/admin/users/:id/status`. Guards: `SessionAuthGuard`, `AdminGuard`. |
+| Revoke all sessions (`sessionVersion++`) | Implemented | `AdminUserService.revokeSessions` calls `AntifraudService.lockUsers` before the bump and audit. HTTP `POST /api/admin/users/:id/revoke-sessions`. Same guards. |
+| Release purchase hold | Implemented | `FraudSignalsService.releaseHold` via `AntifraudService`, same id-ordered user lock. HTTP `POST /api/admin/users/:id/release-hold` requires a note. Same guards. |
 | Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Implemented | `admin-listing-emergency.service.ts` |
 | Author hide vs live listing | Implemented | `POST /products/:id/hide` returns 409 when a `SCHEDULED` or `LIVE` Listing exists; Product, Listing and audit are unchanged. No automatic listing cancel. Coverage: `products.service.spec.ts`, `author-hide-listing.integration.spec.ts` |
 | Needs-order queue + manual Order create | Implemented | admin recovery routes + mobile Recovery tab |
 | Read-only leftover commerce inventory | Implemented | `scripts/ops/commerce-inventory.mjs`; refuses `--apply`; no secret URLs in report |
-| **Cannot ban/revoke self or other admins** | Implemented | `assertIncidentTargetAllowed` in `admin-user.service.ts` |
+| **Cannot ban self or another admin** | Implemented | `FraudSignalsService.updateUserStatus` rejects the acting admin and any `role = admin` target |
+| **Cannot revoke self or another admin** | Implemented | `assertSessionRevokeTargetAllowed` in `admin-user.service.ts` |
 | Revoke audit uses stable labels `session` / `revoked` | Implemented | `admin-user.service.ts` |
 
 **Pros:** founder can stop abuse without schema churn; guards prevent admin lockout.  
@@ -245,7 +247,7 @@ SID and reject a delayed write when the old SID was rotated or removed.
 
 **Turnstile:** server-side Siteverify only; `TURNSTILE_SECRET_KEY` and
 `TURNSTILE_HOSTNAME` are required on the production security profile. Each check
-binds `action` (`register`, `login`, `email_verification`, `password_reset`),
+binds `action` (`register`, `login`, `email_login`, `email_verification`, `password_reset`),
 hostname, challenge age, and stable validation identity for mail sends.
 Mismatch, expiry, or verifier outage fails closed (`TURNSTILE_*` API codes).
 The web client calls `useInvisibleTurnstile` (`apps/mobile/src/features/auth/turnstile-widget.tsx`)

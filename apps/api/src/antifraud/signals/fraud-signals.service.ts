@@ -32,6 +32,10 @@ const userSelect = {
   status: true,
 } as const;
 
+// Prisma stores timestamp(3) as UTC wall time. clock_timestamp() is
+// timestamptz; casting it directly follows the session TimeZone.
+const utcTimestamp3 = Prisma.sql`(clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3)`;
+
 @Injectable()
 export class FraudSignalsService {
   constructor(
@@ -45,12 +49,14 @@ export class FraudSignalsService {
   // whole via runSerializableTransaction. Repeatable Read is still unsupported.
   // Each recordSignal touches the user row after this lock so a stale
   // Serializable snapshot conflicts and retries. updated_at is
-  // GREATEST(updated_at, clock_timestamp()::timestamp(3)): now() is frozen at
-  // transaction start and can move the column backwards. Signal time is taken
-  // after the lock via clock_timestamp. The lock is held until the caller
+  // GREATEST(updated_at, utc timestamp(3)): now() is frozen at transaction
+  // start and can move the column backwards. Signal time is that same UTC
+  // timestamp(3), taken after the lock. The lock is held until the caller
   // commits or rolls back. The window lower bound is inclusive and has no
-  // upper bound.
-  private async lockUsers(tx: Prisma.TransactionClient, userIds: string[]) {
+  // upper bound. Ids are locked in ascending order. Status changes, hold
+  // release, and session revoke take this lock on the admin and the target
+  // before any user mutation or audit insert.
+  async lockUsers(tx: Prisma.TransactionClient, userIds: string[]) {
     await tx.$queryRaw`SELECT id FROM users WHERE id IN (${Prisma.join(userIds.map((id) => Prisma.sql`${id}::uuid`))}) ORDER BY id FOR UPDATE`;
   }
 
@@ -59,7 +65,7 @@ export class FraudSignalsService {
     signal: { userId: string; kind: SignalKind; subjectId?: string },
   ): Promise<void> {
     await this.lockUsers(tx, [signal.userId]);
-    await tx.$executeRaw`UPDATE users SET updated_at = GREATEST(updated_at, clock_timestamp()::timestamp(3)) WHERE id = ${signal.userId}::uuid`;
+    await tx.$executeRaw`UPDATE users SET updated_at = GREATEST(updated_at, ${utcTimestamp3}) WHERE id = ${signal.userId}::uuid`;
     if (
       !(await tx.user.findUnique({
         where: { id: signal.userId },
@@ -74,14 +80,14 @@ export class FraudSignalsService {
         ${signal.userId}::uuid,
         CAST(${signal.kind} AS "FraudSignalKind"),
         ${signal.subjectId ?? null}::uuid,
-        clock_timestamp()::timestamp(3)
+        ${utcTimestamp3}
       )
-      RETURNING created_at::text AS now
+      RETURNING to_char((created_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS.MS') AS now
     `;
     const signalAt = inserted!.now;
     const kinds = await tx.$queryRaw<{ kind: SignalKind }[]>`
       SELECT DISTINCT kind FROM fraud_signals WHERE user_id = ${signal.userId}::uuid
-      AND created_at >= ${signalAt}::timestamp(3) - ${FRAUD_SIGNAL_WINDOW_MS} * interval '1 millisecond'
+      AND created_at >= ((${signalAt}::timestamp(3) AT TIME ZONE 'UTC') AT TIME ZONE 'UTC') - ${FRAUD_SIGNAL_WINDOW_MS} * interval '1 millisecond'
     `;
     if (!shouldHold(kinds.map((row) => row.kind))) return;
     if (

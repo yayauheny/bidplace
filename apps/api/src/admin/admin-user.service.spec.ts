@@ -1,12 +1,14 @@
 import { ForbiddenException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AntifraudService } from '../antifraud';
-
 import { AdminUserService } from './admin-user.service';
 
 function createService(prisma: unknown) {
-  return new AdminUserService(prisma as never, {} as AntifraudService);
+  const lockUsers = vi.fn().mockResolvedValue(undefined);
+  return {
+    service: new AdminUserService(prisma as never, { lockUsers } as never),
+    lockUsers,
+  };
 }
 
 describe('AdminUserService', () => {
@@ -18,7 +20,7 @@ describe('AdminUserService', () => {
     };
 
     await expect(
-      createService(prisma).lookupByEmail('missing@example.com'),
+      createService(prisma).service.lookupByEmail('missing@example.com'),
     ).resolves.toEqual({ users: [] });
   });
 
@@ -52,10 +54,15 @@ describe('AdminUserService', () => {
       ),
     };
 
-    await createService(prisma).revokeSessions('admin-1', 'user-1', {
+    const { service, lockUsers } = createService(prisma);
+    await service.revokeSessions('admin-1', 'user-1', {
       reason: 'Compromised account',
     });
 
+    expect(lockUsers).toHaveBeenCalledWith(tx, ['admin-1', 'user-1']);
+    expect(lockUsers.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.user.update.mock.invocationCallOrder[0] ?? 0,
+    );
     expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: 'user-1' },
       data: { sessionVersion: { increment: 1 } },
@@ -95,10 +102,13 @@ describe('AdminUserService', () => {
       ),
     };
 
+    const { service, lockUsers } = createService(prisma);
     await expect(
-      createService(prisma).revokeSessions('admin-1', 'admin-1', {
+      service.revokeSessions('admin-1', 'admin-1', {
         reason: 'Self revoke',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(lockUsers).toHaveBeenCalledWith(tx, ['admin-1', 'admin-1']);
+    expect(tx.user.update).not.toHaveBeenCalled();
   });
 });

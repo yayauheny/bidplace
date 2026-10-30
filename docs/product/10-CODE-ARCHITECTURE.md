@@ -343,22 +343,30 @@ repeating one kind only records. There is no automatic permanent ban.
 and hold the lock until the caller commits or rolls back. Supported isolation is
 Read Committed, or Serializable retried as a whole through
 `runSerializableTransaction`. Repeatable Read is still unsupported. Signal time
-is taken after the lock via `clock_timestamp`. Each `recordSignal` touches the
-user row so a stale Serializable snapshot conflicts and retries. The window has
-an inclusive 24-hour lower bound and no upper bound. `assertCanAct` allows only
+is `(clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3)` after the lock, so a
+non-UTC session TimeZone cannot shift the stored `timestamp(3)`. Each
+`recordSignal` touches the user row so a stale Serializable snapshot conflicts
+and retries. `updated_at` uses `GREATEST` against that same UTC timestamp.
+The window has an inclusive 24-hour lower bound and no upper bound. `assertCanAct` allows only
 `bid | purchase | accept-offer` when the user is active, the email is verified,
 and no hold is active. A hold, inactive user, or missing user is
 `BUYER_BLOCKED`; a missing email proof is `EMAIL_VERIFICATION_REQUIRED`. `detectBidBurst` is policy only and has no bid
 caller. Strikes, contacts, and the 3-booking cap are W3.
 
-`releaseHold`, `banUser`, and `updateUserStatus` open their own serializable
-transactions. The service requires an active admin, a reason or note, and rejects
+`FraudSignalsService.lockUsers` is the only multi-user row lock. It selects
+`users.id` with `ORDER BY id FOR UPDATE`. `releaseHold`, `banUser`, and
+`updateUserStatus` call it on the admin and target before any user mutation or
+audit insert, inside their own serializable transactions. `AdminUserService.revokeSessions`
+calls the same helper through `AntifraudService` before its version bump and
+audit, so an audit actor foreign key cannot lock the admin after the target.
+The service requires an active admin, a reason or note, and rejects
 self and admin-account status changes. `sessionVersion` increments only on the
 transition to `banned`. Media revocation is enqueued in that transaction and
 delivered after commit; object-store delivery is not rolled back with the ban.
-`AdminUserService` delegates those writes. HTTP release is
+`AdminUserService` delegates ban, unban, and hold release. HTTP release is
 `POST /api/admin/users/:id/release-hold` behind the existing session and admin
-guards.
+guards. Ban/unban is `PATCH /api/admin/users/:id/status`. Session revoke is
+`POST /api/admin/users/:id/revoke-sessions`.
 
 ## Work publication owner — 2026-10-29 (W1)
 
@@ -639,7 +647,7 @@ SellerProfile
   Ops leftover inventory is `scripts/ops/commerce-inventory.mjs`. The removed
   application code stays on `feature/commerce-runtime-archive` @ `19eb40e`.
 - password recovery lives in `apps/api/src/password-reset/`: forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup; durable reset-send ledger, cooldowns, and Turnstile run through `AuthAbuseService`; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically under the user lock; `MailTransport` sends reset links; `core/email/smtp-transport.ts` builds Nodemailer options with single-address recipient guard; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
-- admin emergency controls live in `apps/api/src/admin/admin-user.service.ts`: exact email user lookup and session revoke stay there. Reasoned ban/unban and purchase-hold release delegate to `AntifraudService` (`sessionVersion++` only when status becomes `banned`). `POST /api/admin/users/:id/release-hold` requires a note. Listing emergency cancel, needs-order recovery and order replacement HTTP are not on the active boot graph.
+- admin emergency controls live in `apps/api/src/admin/admin-user.service.ts`: exact email user lookup and session revoke stay there. Revoke locks the admin and target through `AntifraudService.lockUsers` before the version bump and audit. Reasoned ban/unban and purchase-hold release delegate to `AntifraudService` (`sessionVersion++` only when status becomes `banned`) and use that same id-ordered lock. `POST /api/admin/users/:id/release-hold` requires a note. Listing emergency cancel, needs-order recovery and order replacement HTTP are not on the active boot graph.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 

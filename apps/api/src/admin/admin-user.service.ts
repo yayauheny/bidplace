@@ -75,6 +75,7 @@ export class AdminUserService {
     input: AdminUserRevokeSessionsRequest,
   ) {
     return runSerializableTransaction(this.prisma, async (tx) => {
+      await this.antifraud.lockUsers(tx, [adminUserId, userId]);
       const user = await tx.user.findUnique({
         where: { id: userId },
         select: {

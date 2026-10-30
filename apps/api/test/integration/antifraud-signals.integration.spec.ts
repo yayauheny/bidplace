@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { AdminUserService } from '../../src/admin/admin-user.service';
 import {
   AntifraudService,
   type ActorAction,
@@ -34,10 +35,11 @@ afterAll(async () => {
   await second?.close();
   await db?.cleanup();
 });
-async function user(role = 'user') {
+async function user(role = 'user', id = randomUUID()) {
   return db.prisma.user.create({
     data: {
-      email: `${randomUUID()}@signals.test`,
+      id,
+      email: `${id}@signals.test`,
       role,
       emailVerifiedAt: new Date(),
       passwordHash: fixturePasswordHash,
@@ -385,6 +387,29 @@ describe('antifraud signals and administrative decisions', () => {
     );
   });
 
+  it('does not decrease users.updated_at when it is already later than the database clock', async () => {
+    const target = await user();
+    await db.prisma.$executeRaw`
+      UPDATE users
+      SET updated_at = (clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3) + interval '1 hour'
+      WHERE id = ${target.id}::uuid
+    `;
+    const before = (
+      await db.prisma.user.findUniqueOrThrow({
+        where: { id: target.id },
+        select: { updatedAt: true },
+      })
+    ).updatedAt;
+    await signal(target.id, 'BID_BURST');
+    const after = (
+      await db.prisma.user.findUniqueOrThrow({
+        where: { id: target.id },
+        select: { updatedAt: true },
+      })
+    ).updatedAt;
+    expect(after.getTime()).toBe(before.getTime());
+  });
+
   it('keeps three signals of one kind as evidence without holding', async () => {
     const target = await user();
     for (let i = 0; i < 3; i++) await signal(target.id, 'BID_BURST');
@@ -653,5 +678,159 @@ describe('antifraud signals and administrative decisions', () => {
         })
       ).status,
     ).toBe(400);
+  });
+
+  it('finishes session revoke and ban together when the admin id sorts first', async () => {
+    const adminId = '10000000-0000-4000-8000-000000000001';
+    const userId = 'f0000000-0000-4000-8000-000000000002';
+    const [order] = await db.prisma.$queryRaw<{ admin_first: boolean }[]>`
+      SELECT ${adminId}::uuid < ${userId}::uuid AS admin_first
+    `;
+    expect(order?.admin_first).toBe(true);
+    const admin = await user('admin', adminId);
+    const target = await user('user', userId);
+    await Promise.all([
+      first.app.get(AdminUserService).revokeSessions(admin.id, target.id, {
+        reason: 'Compromised',
+      }),
+      second.app.get(AntifraudService).banUser(admin.id, target.id, 'Abuse'),
+    ]);
+    const after = await db.prisma.user.findUniqueOrThrow({
+      where: { id: target.id },
+    });
+    expect(after).toMatchObject({
+      status: 'banned',
+      sessionVersion: target.sessionVersion + 2,
+    });
+    const audits = await db.prisma.auditEvent.findMany({
+      where: { targetId: target.id },
+    });
+    expect(audits).toHaveLength(2);
+    expect(audits).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actorUserId: admin.id,
+          oldStatus: 'session',
+          newStatus: 'revoked',
+          reason: 'Compromised',
+        }),
+        expect.objectContaining({
+          actorUserId: admin.id,
+          oldStatus: 'active',
+          newStatus: 'banned',
+          reason: 'Abuse',
+        }),
+      ]),
+    );
+  });
+
+  it('finishes session revoke and hold release together when the admin id sorts first', async () => {
+    const adminId = '20000000-0000-4000-8000-000000000003';
+    const userId = 'e0000000-0000-4000-8000-000000000004';
+    const [order] = await db.prisma.$queryRaw<{ admin_first: boolean }[]>`
+      SELECT ${adminId}::uuid < ${userId}::uuid AS admin_first
+    `;
+    expect(order?.admin_first).toBe(true);
+    const admin = await user('admin', adminId);
+    const target = await user('user', userId);
+    await hold(target.id);
+    await Promise.all([
+      first.app.get(AdminUserService).revokeSessions(admin.id, target.id, {
+        reason: 'Compromised',
+      }),
+      second.app
+        .get(AntifraudService)
+        .releaseHold(admin.id, target.id, 'Reviewed'),
+    ]);
+    const after = await db.prisma.user.findUniqueOrThrow({
+      where: { id: target.id },
+    });
+    expect(after).toMatchObject({
+      status: 'active',
+      sessionVersion: target.sessionVersion + 1,
+    });
+    expect(
+      await db.prisma.purchaseHold.findFirstOrThrow({
+        where: { userId: target.id },
+      }),
+    ).toMatchObject({
+      releasedById: admin.id,
+      note: 'Reviewed',
+      releasedAt: expect.any(Date),
+    });
+    const audits = await db.prisma.auditEvent.findMany({
+      where: { targetId: target.id },
+    });
+    expect(audits).toHaveLength(3);
+    expect(audits).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ action: 'FRAUD_HOLD', newStatus: 'held' }),
+        expect.objectContaining({
+          actorUserId: admin.id,
+          action: 'FRAUD_HOLD_RELEASE',
+          oldStatus: 'held',
+          newStatus: 'released',
+          reason: 'Reviewed',
+        }),
+        expect.objectContaining({
+          actorUserId: admin.id,
+          oldStatus: 'session',
+          newStatus: 'revoked',
+          reason: 'Compromised',
+        }),
+      ]),
+    );
+  });
+
+  it('keeps the signal window and updated_at in UTC when the session TimeZone is not UTC', async () => {
+    const target = await user();
+    await db.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT set_config('TimeZone', 'America/Los_Angeles', true)`;
+      const [skew] = await tx.$queryRaw<{ hours: number }[]>`
+        SELECT EXTRACT(EPOCH FROM (
+          clock_timestamp()::timestamp(3) - (clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3)
+        )) / 3600 AS hours
+      `;
+      expect(Math.abs(Number(skew?.hours))).toBeGreaterThan(1);
+      await tx.$executeRaw`
+        INSERT INTO fraud_signals (id, user_id, kind, created_at)
+        VALUES (
+          ${randomUUID()}::uuid,
+          ${target.id}::uuid,
+          'BID_BURST',
+          (clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3) - interval '24 hours' - interval '1 millisecond'
+        )
+      `;
+      await service().recordSignal(tx, {
+        userId: target.id,
+        kind: 'TURNSTILE_FAILED',
+      });
+      expect(
+        await tx.purchaseHold.count({ where: { userId: target.id } }),
+      ).toBe(0);
+      await tx.$executeRaw`
+        UPDATE fraud_signals
+        SET created_at = (clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3) - interval '24 hours' + interval '15 milliseconds'
+        WHERE user_id = ${target.id}::uuid AND kind = 'BID_BURST'
+      `;
+      await service().recordSignal(tx, {
+        userId: target.id,
+        kind: 'TURNSTILE_FAILED',
+      });
+      expect(
+        await tx.purchaseHold.count({ where: { userId: target.id } }),
+      ).toBe(1);
+      const stored = await tx.user.findUniqueOrThrow({
+        where: { id: target.id },
+        select: { updatedAt: true },
+      });
+      const [clock] = await tx.$queryRaw<{ now: Date }[]>`
+        SELECT (clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3) AS now
+      `;
+      if (!(clock?.now instanceof Date)) throw new Error('UTC clock missing');
+      expect(
+        Math.abs(stored.updatedAt.getTime() - clock.now.getTime()),
+      ).toBeLessThan(5_000);
+    });
   });
 });
