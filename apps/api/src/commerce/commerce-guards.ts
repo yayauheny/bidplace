@@ -7,7 +7,7 @@ import {
 import { Prisma } from '@bidplace/database';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { AntifraudService } from '../antifraud';
+import { AntifraudService, type ActorAction } from '../antifraud';
 import { AppException } from '../core/errors';
 import { dbNow } from '../core/time';
 import { effectiveListingState } from './listing-state';
@@ -38,6 +38,7 @@ export class CommerceGuards {
       listing: BuyerListing;
       now?: Date;
       userLocked?: boolean;
+      action?: ActorAction;
     },
   ): Promise<void> {
     if (!input.userLocked) {
@@ -50,7 +51,7 @@ export class CommerceGuards {
       now,
     });
     if (view.blockedReason) throw buyerBlockException(view.blockedReason);
-    await this.antifraud.assertCanAct(tx, input.userId, 'bid');
+    await this.antifraud.assertCanAct(tx, input.userId, input.action ?? 'bid');
   }
 
   async describeBuyer(

@@ -102,7 +102,7 @@ function orderLink(
   publicId: string,
   origin: string | undefined,
 ): string | undefined {
-  if (!/^[A-Za-z0-9]{1,16}$/.test(publicId)) return undefined;
+  if (!/^[A-Za-z0-9_-]{1,16}$/.test(publicId)) return undefined;
   const path = `/account/orders/${publicId}`;
   if (!origin) return path;
   return `${origin.replace(/\/$/, '')}${path}`;

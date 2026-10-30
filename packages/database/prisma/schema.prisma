@@ -540,6 +540,7 @@ model Order {
   completedAt           DateTime?        @map("completed_at")
   failedAt              DateTime?        @map("failed_at")
   buyerComment          String?          @map("buyer_comment") @db.VarChar(500)
+  idempotencyKey        String?          @map("idempotency_key") @db.VarChar(80)
   sellerNote            String?          @map("seller_note") @db.VarChar(1000)
   workTitleSnapshot     String           @map("work_title_snapshot") @db.VarChar(200)
   workPublicIdSnapshot  String           @map("work_public_id_snapshot") @db.VarChar(16)
@@ -553,6 +554,7 @@ model Order {
   buyer                 User             @relation("OrderBuyer", fields: [buyerUserId], references: [id], onDelete: Restrict)
   sourceBid             Bid?             @relation(fields: [sourceBidId], references: [id], onDelete: Restrict)
 
+  @@unique([listingId, buyerUserId, idempotencyKey])
   @@index([buyerUserId, status])
   @@index([sellerUserId, status])
   @@index([status, activatedAt])

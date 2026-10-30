@@ -145,6 +145,19 @@ export class FraudSignalsService {
     };
   }
 
+  async recordPurchaseSignals(
+    tx: Prisma.TransactionClient,
+    input: {
+      userId: string;
+      listingId: string;
+      sellerUserId: string;
+      turnstile: 'passed' | 'failed' | 'missing' | 'skip';
+      browserId: string | null;
+    },
+  ): Promise<void> {
+    await this.recordTurnstileAndSharedBrowser(tx, input);
+  }
+
   async recordBidSignals(
     tx: Prisma.TransactionClient,
     input: {
@@ -156,13 +169,7 @@ export class FraudSignalsService {
       browserId: string | null;
     },
   ): Promise<void> {
-    if (input.turnstile === 'failed' || input.turnstile === 'missing') {
-      await this.recordSignal(tx, {
-        userId: input.userId,
-        kind: 'TURNSTILE_FAILED',
-        subjectId: input.listingId,
-      });
-    }
+    await this.recordTurnstileAndSharedBrowser(tx, input);
     const recent = await tx.bid.findMany({
       where: {
         bidderUserId: input.userId,
@@ -181,6 +188,25 @@ export class FraudSignalsService {
       await this.recordSignal(tx, {
         userId: input.userId,
         kind: 'BID_BURST',
+        subjectId: input.listingId,
+      });
+    }
+  }
+
+  private async recordTurnstileAndSharedBrowser(
+    tx: Prisma.TransactionClient,
+    input: {
+      userId: string;
+      listingId: string;
+      sellerUserId: string;
+      turnstile: 'passed' | 'failed' | 'missing' | 'skip';
+      browserId: string | null;
+    },
+  ): Promise<void> {
+    if (input.turnstile === 'failed' || input.turnstile === 'missing') {
+      await this.recordSignal(tx, {
+        userId: input.userId,
+        kind: 'TURNSTILE_FAILED',
         subjectId: input.listingId,
       });
     }

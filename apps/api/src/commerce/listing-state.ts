@@ -32,6 +32,20 @@ export function effectiveListingState(
   return 'SCHEDULED';
 }
 
+export function canPurchaseFixed(
+  listing: {
+    type: ListingType;
+    status: ListingStatus;
+    startsAt: Date;
+    endsAt: Date | null;
+  },
+  now: Date,
+): boolean {
+  return (
+    listing.type === 'FIXED' && effectiveListingState(listing, now) === 'LIVE'
+  );
+}
+
 export function canAuthorCancel(
   listing: { type: ListingType; status: ListingStatus; bidCount: number },
   now: Date,

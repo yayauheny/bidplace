@@ -36,6 +36,11 @@ export class AntifraudService {
   ) {
     return this.signals.recordBidSignals(...args);
   }
+  recordPurchaseSignals(
+    ...args: Parameters<FraudSignalsService['recordPurchaseSignals']>
+  ) {
+    return this.signals.recordPurchaseSignals(...args);
+  }
   releaseHold(...args: Parameters<FraudSignalsService['releaseHold']>) {
     return this.signals.releaseHold(...args);
   }

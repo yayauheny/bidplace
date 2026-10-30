@@ -135,7 +135,7 @@ export function assertNotificationPayload(
       continue;
     }
     if (typeof value !== 'string' || value.length === 0) invalidPayload();
-    if (key === 'orderPublicId' && !/^[A-Za-z0-9]{1,16}$/.test(value)) {
+    if (key === 'orderPublicId' && !/^[A-Za-z0-9_-]{1,16}$/.test(value)) {
       invalidPayload();
     }
     if (key === 'slot' && value !== '24h' && value !== '48h') invalidPayload();

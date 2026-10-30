@@ -162,6 +162,16 @@ describe('notification payload contract', () => {
       }),
     ).toThrow(AppException);
   });
+
+  it('accepts an order public id that includes the PublicIdService alphabet', () => {
+    const orderPublicId = 'aB3_d-E9f0g';
+    expect(() =>
+      assertNotificationPayload('PURCHASED', { orderPublicId }),
+    ).not.toThrow();
+    expect(renderNotification('PURCHASED', { orderPublicId }).text).toContain(
+      `/account/orders/${orderPublicId}`,
+    );
+  });
 });
 
 describe('notification delivery outcome', () => {

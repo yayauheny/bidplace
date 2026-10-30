@@ -6,6 +6,7 @@ import {
   adminRemoveListingRequestSchema,
   createListingRequestSchema,
   placeBidRequestSchema,
+  purchaseRequestSchema,
 } from '@bidplace/contracts';
 import {
   Body,
@@ -38,6 +39,7 @@ import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { parseBody } from '../core/validation';
 import { BidsService } from './bids.service';
 import { ListingsService } from './listings.service';
+import { OrdersService } from './orders.service';
 
 const uuid = new ParseUUIDPipe({ version: '4' });
 
@@ -46,6 +48,7 @@ export class ListingsController {
   constructor(
     private readonly listings: ListingsService,
     private readonly bids: BidsService,
+    private readonly orders: OrdersService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
@@ -113,6 +116,25 @@ export class ListingsController {
     });
     request.session.commerceBidTurnstileChecked = true;
     return result;
+  }
+
+  @Post('listings/:id/purchase')
+  @HttpCode(HttpStatus.OK)
+  @Header('Cache-Control', 'no-store')
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
+  async purchase(
+    @CurrentUser() auth: AuthPrincipal,
+    @Param('id', uuid) id: string,
+    @Body() body: unknown,
+    @Req() request: SessionRequest,
+  ) {
+    const input = parseBody(purchaseRequestSchema, body);
+    return this.orders.purchase(auth.sub, id, {
+      ...input,
+      ip: resolveClientIp(request, this.env.TRUST_PROXY),
+      browserId: analyticsBrowserId(request.headers.cookie, this.env),
+      checkTurnstile: true,
+    });
   }
 
   @Get('listings/:id/bids')
