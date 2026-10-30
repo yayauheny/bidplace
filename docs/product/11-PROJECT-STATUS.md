@@ -32,8 +32,8 @@ first, an `updated_at` already an hour ahead, and a session `TimeZone` of
 `RATE_LIMIT_MAX_BUCKETS` and `RATE_LIMIT_CLEANUP_INTERVAL_MS` are removed from
 `.env.example`; application code does not read them.
 
-**Resolved 2026-10-30 (`DEC-152`):** account ban is `User.status = banned`;
-`SellerProfile` `SUSPENDED` stays a separate author status. **Not implemented**
+**Proposed 2026-10-30 (`DEC-152`, founder confirmation pending):** account ban is `User.status = banned`;
+`SellerProfile` `SUSPENDED` stays a separate author status. **Gap if approved**
 on `feature/commerce-backend` (`d8df946c`): bid, fixed purchase and the tick
 auction close do not check a banned seller
 ([W3 audit](../launch/waves/W3-commerce-backend.md#аудит-плана-2026-10-30)).

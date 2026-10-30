@@ -3512,8 +3512,8 @@ Owners: [RFC §10](05-MVP-RFC.md#10-создание-work),
 ## DEC-152 — Бан аккаунта отделён от статуса автора; критерии закрытого пилота
 
 Date: 2026-10-30
-Status: Confirmed
-Source: explicit founder answers to the W3–W7 launch-plan audit
+Status: Proposed — pending explicit founder confirmation
+Source: recommendations from the W3–W7 launch-plan audit; founder approval not yet recorded
 Refines: `DEC-150` (ban voids bids); [COMMERCE §7](../launch/COMMERCE.md#7-защита-от-срыва-и-обмана) «Бан»
 
 - Account ban is `User.status = banned`. `SellerProfile.SUSPENDED` is a separate

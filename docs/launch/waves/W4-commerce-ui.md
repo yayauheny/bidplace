@@ -317,8 +317,10 @@ idempotency-ключ создаётся при открытии листа/ди�
   ведёт маршруты); `11-PROJECT-STATUS.md`: запись.
 - [ ] Проверки: `typecheck`, `lint` `@bidplace/mobile`; mobile unit; e2e
   `commerce-lot`, `commerce-orders`, `work-header-motion`, `author-static-header`
-  (Chromium и WebKit); сквозной сценарий W7 Task 2 создаётся здесь
-  (`e2e/launch-smoke.spec.ts`) и проходит 3 раза подряд;
+  (Chromium и WebKit); ранний сквозной сценарий продаж создаётся здесь
+  (`e2e/launch-smoke.spec.ts`) и проходит 3 раза подряд: ставка → закрытие
+  аукциона тиком → заказ → подтверждение; фиксированная покупка → срыв →
+  возврат лота в продажу. Чек W5 и согласие W6 проверяются позднее в W7;
   `pnpm --filter @bidplace/mobile build:web`; скриншоты 390
   для каждого экрана из брифа в отчёт; `git diff --check`; `pnpm docs:link-check`.
 - [ ] Коммит `docs: record commerce ui`.
