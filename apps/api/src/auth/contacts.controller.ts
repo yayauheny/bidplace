@@ -17,9 +17,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { AntifraudService } from '../antifraud';
+import { AntifraudService, RateLimit, RateLimitGuard } from '../antifraud';
 import { PrismaService, runReadCommittedTransaction } from '../core/database';
-import { dbNow } from '../core/time';
 import { parseBody } from '../core/validation';
 import { enqueueNotification } from '../notifications/notification-outbox';
 import { CurrentUser } from './current-user.decorator';
@@ -28,6 +27,12 @@ import type { SessionRequest } from './session.service';
 import { VerifiedEmailGuard } from './verified-email.guard';
 
 const CONTACT_FRESHNESS_MS = 5 * 60_000;
+
+function storedTelegram(value: string): string {
+  const link = /^https:\/\/t\.me\/([A-Za-z0-9_]{5,32})$/.exec(value);
+  if (link?.[1]) return `@${link[1]}`;
+  return value;
+}
 
 @Controller('me')
 @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
@@ -38,6 +43,13 @@ export class ContactsController {
   ) {}
 
   @Put('contacts')
+  @UseGuards(RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'auth:contacts',
+    limit: 10,
+    windowMs: 60 * 60_000,
+    scope: 'user',
+  })
   @Header('Cache-Control', 'private, no-store')
   async update(
     @CurrentUser() auth: AuthPrincipal,
@@ -57,7 +69,6 @@ export class ContactsController {
     }
     const stored = await runReadCommittedTransaction(this.prisma, async (tx) => {
       await this.antifraud.lockUsers(tx, [auth.sub]);
-      await dbNow(tx);
       const profile = await tx.sellerProfile.findUnique({
         where: { userId: auth.sub },
         select: { userId: true },
@@ -67,7 +78,10 @@ export class ContactsController {
       }
       const data: Prisma.UserUpdateInput = {};
       if (input.phone !== undefined) data.contactPhone = input.phone;
-      if (input.telegram !== undefined) data.contactTelegram = input.telegram;
+      if (input.telegram !== undefined) {
+        data.contactTelegram =
+          input.telegram === null ? null : storedTelegram(input.telegram);
+      }
       if (input.instagram !== undefined) data.contactInstagram = input.instagram;
       if (input.vk !== undefined) data.contactVk = input.vk;
       if (Object.keys(data).length > 0) {
@@ -111,7 +125,7 @@ export class ContactsController {
         telegram: user.contactTelegram,
         instagram: user.contactInstagram,
         vk: user.contactVk,
-        showToBuyer: seller?.showContactsToBuyer ?? true,
+        showToBuyer: seller ? seller.showContactsToBuyer : null,
       };
     });
     return userContactsResponseSchema.parse(stored);

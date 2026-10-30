@@ -174,6 +174,43 @@ function productInSaleError(): AppException {
   });
 }
 
+/**
+ * Caller holds the product row lock. A completed order means the work is sold.
+ * A scheduled or live listing means it is already on sale again.
+ */
+export async function assertWorkCanTakeNextOffer(
+  tx: Prisma.TransactionClient,
+  productId: string,
+): Promise<void> {
+  const sold = await tx.order.findFirst({
+    where: { productId, status: 'COMPLETED' },
+    select: { id: true },
+  });
+  if (sold) {
+    throw new AppException({
+      status: 409,
+      code: ApiErrorCode.PRODUCT_ALREADY_SOLD,
+      message: 'Product is already sold',
+    });
+  }
+  await assertNoOpenListing(tx, productId);
+}
+
+/** Caller holds the product row lock. */
+export async function assertNoOpenListing(
+  tx: Prisma.TransactionClient,
+  productId: string,
+): Promise<void> {
+  const listing = await tx.listing.findFirst({
+    where: {
+      productId,
+      status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] },
+    },
+    select: { id: true },
+  });
+  if (listing) throw productInSaleError();
+}
+
 export async function findSellerProductIdsInSale(
   tx: Prisma.TransactionClient,
   sellerId: string,

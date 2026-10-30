@@ -9,7 +9,7 @@ export async function getTrustSignals(
   db: Prisma.TransactionClient | PrismaClient,
   userId: string,
 ): Promise<TrustSignals> {
-  const now = await dbNow(db as Prisma.TransactionClient);
+  const now = await dbNow(db);
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { createdAt: true, emailVerifiedAt: true },
@@ -59,18 +59,24 @@ export async function getTrustSignals(
     ),
   ).length;
 
-  const upheldOrders = await db.report.findMany({
-    where: { status: 'UPHELD', targetType: 'ORDER' },
-    select: { targetId: true, faultSide: true },
+  const partyOrders = await db.order.findMany({
+    where: {
+      OR: [{ buyerUserId: userId }, { sellerUserId: userId }],
+    },
+    select: { id: true, buyerUserId: true, sellerUserId: true },
   });
-  const related =
-    upheldOrders.length === 0
+  const upheldOrders =
+    partyOrders.length === 0
       ? []
-      : await db.order.findMany({
-          where: { id: { in: upheldOrders.map((report) => report.targetId) } },
-          select: { id: true, buyerUserId: true, sellerUserId: true },
+      : await db.report.findMany({
+          where: {
+            status: 'UPHELD',
+            targetType: 'ORDER',
+            targetId: { in: partyOrders.map((order) => order.id) },
+          },
+          select: { targetId: true, faultSide: true },
         });
-  const byId = new Map(related.map((order) => [order.id, order]));
+  const byId = new Map(partyOrders.map((order) => [order.id, order]));
   const upheldOnOrders = upheldOrders.filter((report) => {
     const order = byId.get(report.targetId);
     if (!order) return false;

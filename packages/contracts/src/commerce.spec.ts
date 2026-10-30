@@ -11,6 +11,7 @@ import {
   bidHistoryResponseSchema,
   createListingRequestSchema,
   createReportRequestSchema,
+  adminOrderOutcomeRequestSchema,
   failOrderRequestSchema,
   orderDetailSchema,
   orderNoteRequestSchema,
@@ -190,6 +191,35 @@ describe('deal contact and notification contracts', () => {
     ['phone longer than 15 digits', { phone: '+1234567890123456' }],
   ])('rejects %s', (_label, contacts) => {
     expect(userContactsRequestSchema.safeParse(contacts).success).toBe(false);
+  });
+
+  it('requires a fail reason only when an admin marks the order failed', () => {
+    expect(
+      adminOrderOutcomeRequestSchema.safeParse({
+        to: 'FAILED',
+        reason: 'Duplicate reservation',
+      }).success,
+    ).toBe(false);
+    expect(
+      adminOrderOutcomeRequestSchema.safeParse({
+        to: 'COMPLETED',
+        failReason: 'ADMIN_CANCELLED',
+        reason: 'Handed over',
+      }).success,
+    ).toBe(false);
+    expect(
+      adminOrderOutcomeRequestSchema.parse({
+        to: 'FAILED',
+        failReason: 'ADMIN_CANCELLED',
+        reason: 'Duplicate reservation',
+      }),
+    ).toMatchObject({ failReason: 'ADMIN_CANCELLED' });
+    expect(
+      adminOrderOutcomeRequestSchema.parse({
+        to: 'COMPLETED',
+        reason: 'Handed over',
+      }),
+    ).toMatchObject({ to: 'COMPLETED' });
   });
 
   it('accepts the outbid email setting and rejects extra keys', () => {

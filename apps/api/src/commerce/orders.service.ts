@@ -26,7 +26,11 @@ import {
   enqueueNotification,
   type NotificationKind,
 } from '../notifications/notification-outbox';
-import { lockProductRowForUpdate } from '../products/product-write-guard';
+import {
+  assertNoOpenListing,
+  assertWorkCanTakeNextOffer,
+  lockProductRowForUpdate,
+} from '../products/product-write-guard';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import { type BuyerListing, CommerceGuards } from './commerce-guards';
 import { toPublicLot, visibleOrderStatus } from './commerce.mapper';
@@ -415,6 +419,15 @@ export class OrdersService {
     try {
       return await runReadCommittedTransaction(this.prisma, async (tx) => {
         await lockProductRowForUpdate(tx, anchor.productId);
+        const seller = await tx.sellerProfile.findUnique({
+          where: { userId: sellerUserId },
+          select: { status: true },
+        });
+        if (!seller) {
+          throw new ForbiddenException('Approved SellerProfile is required');
+        }
+        assertApprovedSeller(seller.status);
+        await assertWorkCanTakeNextOffer(tx, anchor.productId);
         const order = await tx.order.findUnique({ where: { id: anchor.id } });
         if (!order || order.sellerUserId !== sellerUserId) {
           throw new NotFoundException('Order not found');
@@ -553,7 +566,7 @@ export class OrdersService {
       actorUserId: adminId,
       next: {
         to: input.to,
-        ...(input.failReason ? { failReason: input.failReason } : {}),
+        ...(input.to === 'FAILED' ? { failReason: input.failReason } : {}),
       },
       adminReason: input.reason,
       viewerId: adminId,
@@ -639,6 +652,7 @@ export class OrdersService {
           select: { id: true },
         });
         if (other) throw orderTransitionNotAllowed();
+        await assertNoOpenListing(tx, order.productId);
       }
       const updated = await tx.order.updateMany({
         where: { id: order.id, status: order.status },
@@ -652,24 +666,6 @@ export class OrdersService {
         listing.status === 'ENDED'
       ) {
         await restoreFixedPriceListing(tx, listing.id);
-      }
-      if (
-        input.next.to === 'COMPLETED' &&
-        order.source === 'FIXED_PURCHASE' &&
-        listing.type === 'FIXED' &&
-        listing.status === 'LIVE'
-      ) {
-        const ended = await tx.listing.updateMany({
-          where: { id: listing.id, type: 'FIXED', status: 'LIVE' },
-          data: { status: 'ENDED', endedAt: now },
-        });
-        if (ended.count !== 1) {
-          throw new AppException({
-            status: 409,
-            code: ApiErrorCode.LISTING_CHANGED,
-            message: 'Listing changed',
-          });
-        }
       }
       const stored = await tx.order.findUniqueOrThrow({ where: { id: order.id } });
       await this.enqueueOutcomeLetters(tx, stored, listing.type, input.actor, input.next);
@@ -719,12 +715,14 @@ export class OrdersService {
       return;
     }
     if (next.to !== 'FAILED' || !next.failReason) return;
+    if (!order.failedAt) throw new Error('Failed order has no time');
     const payload = {
       orderPublicId: order.publicId,
       workTitle: order.workTitleSnapshot,
       amountMinor: order.amountMinor,
       currency: order.currency,
       failReason: next.failReason,
+      failedAt: order.failedAt.toISOString(),
       listingType,
       listingId: order.listingId,
     };
@@ -777,6 +775,7 @@ export class OrdersService {
             : null;
     if (!role) throw new NotFoundException('Order not found');
     const showSeller = profile?.showContactsToBuyer !== false;
+    const revealContacts = role === 'admin' || order.activatedAt !== null;
     return {
       ...orderSummary(order, role),
       contactDeadlineAt: order.contactDeadlineAt?.toISOString() ?? null,
@@ -788,13 +787,15 @@ export class OrdersService {
       completedAt: order.completedAt?.toISOString() ?? null,
       failedAt: order.failedAt?.toISOString() ?? null,
       buyerContacts:
-        role === 'seller' || role === 'admin' ? partyContacts(buyer) : null,
+        revealContacts && (role === 'seller' || role === 'admin')
+          ? partyContacts(buyer)
+          : null,
       sellerContacts:
-        role === 'admin' || (role === 'buyer' && showSeller)
+        revealContacts && (role === 'admin' || (role === 'buyer' && showSeller))
           ? partyContacts(seller)
           : null,
       sellerContactHint:
-        role === 'buyer' && !showSeller
+        revealContacts && role === 'buyer' && !showSeller
           ? `Автор свяжется с вами сам в течение ${listing?.contactWindowHours ?? 24} ч`
           : null,
     };

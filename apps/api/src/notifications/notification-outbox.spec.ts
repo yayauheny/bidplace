@@ -114,6 +114,10 @@ describe('notification payload contract', () => {
     ['OUTBID', { workTitle: 'Ваза' }],
     ['ORDER_REPORTED', { orderPublicId: 'ordrpublic0001' }],
     ['CONTACTS_CHANGED', {}],
+    [
+      'ORDER_FAILED',
+      { orderPublicId: 'ordrpublic0001', failReason: 'BUYER_REFUSED' },
+    ],
   ] as const)(
     'requires a discriminator for %s',
     (kind, payload) => {
@@ -143,6 +147,14 @@ describe('notification payload contract', () => {
     [
       'CONTACTS_CHANGED',
       { eventId: '6f0c1c4a-6c3e-4b7a-9c1d-2a9e0f5b7c33' },
+    ],
+    [
+      'ORDER_FAILED',
+      {
+        orderPublicId: 'ordrpublic0001',
+        failReason: 'BUYER_REFUSED',
+        failedAt: '2026-10-30T12:00:00.000Z',
+      },
     ],
   ] as const)('accepts %s when its discriminator is present', (kind, payload) => {
     expect(() => assertNotificationPayload(kind, payload)).not.toThrow();

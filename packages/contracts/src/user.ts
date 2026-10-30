@@ -111,7 +111,7 @@ export const userContactsResponseSchema = z
     telegram: z.string().nullable(),
     instagram: z.string().nullable(),
     vk: z.string().nullable(),
-    showToBuyer: z.boolean(),
+    showToBuyer: z.boolean().nullable(),
   })
   .strict();
 

@@ -230,24 +230,7 @@ export class FraudSignalsService {
   ): Promise<void> {
     if (!(['bid', 'purchase', 'accept-offer'] as const).includes(action))
       throw new BadRequestException('Unknown actor action');
-    await this.lockUsers(tx, [userId]);
-    const now = await dbNow(tx);
-    const user = await tx.user.findUnique({
-      where: { id: userId },
-      select: {
-        status: true,
-        emailVerifiedAt: true,
-        contactPhone: true,
-        contactTelegram: true,
-        contactInstagram: true,
-        contactVk: true,
-        purchaseHolds: {
-          where: { releasedAt: null },
-          select: { id: true },
-          take: 1,
-        },
-      },
-    });
+    const { user, strikes } = await this.readBuyerGate(tx, userId);
     if (!user || user.status !== 'active' || user.purchaseHolds.length > 0) {
       throw new AppException({
         status: 403,
@@ -275,7 +258,7 @@ export class FraudSignalsService {
         message: 'Buyer contacts are required',
       });
     }
-    if (buyerStrikesBlock(await this.activeStrikeCount(tx, userId, now))) {
+    if (buyerStrikesBlock(strikes)) {
       throw new AppException({
         status: 403,
         code: ApiErrorCode.BUYER_BLOCKED,
@@ -295,20 +278,7 @@ export class FraudSignalsService {
     tx: Prisma.TransactionClient,
     userId: string,
   ): Promise<boolean> {
-    await this.lockUsers(tx, [userId]);
-    const now = await dbNow(tx);
-    const user = await tx.user.findUnique({
-      where: { id: userId },
-      select: {
-        status: true,
-        role: true,
-        purchaseHolds: {
-          where: { releasedAt: null },
-          select: { id: true },
-          take: 1,
-        },
-      },
-    });
+    const { user, strikes } = await this.readBuyerGate(tx, userId);
     if (
       !user ||
       user.status !== 'active' ||
@@ -317,7 +287,34 @@ export class FraudSignalsService {
     ) {
       return true;
     }
-    return buyerStrikesBlock(await this.activeStrikeCount(tx, userId, now));
+    return buyerStrikesBlock(strikes);
+  }
+
+  private async readBuyerGate(tx: Prisma.TransactionClient, userId: string) {
+    await this.lockUsers(tx, [userId]);
+    const now = await dbNow(tx);
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: {
+        status: true,
+        role: true,
+        emailVerifiedAt: true,
+        contactPhone: true,
+        contactTelegram: true,
+        contactInstagram: true,
+        contactVk: true,
+        purchaseHolds: {
+          where: { releasedAt: null },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+    return {
+      now,
+      user,
+      strikes: user ? await this.activeStrikeCount(tx, userId, now) : 0,
+    };
   }
 
   private async activeStrikeCount(

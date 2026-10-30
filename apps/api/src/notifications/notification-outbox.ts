@@ -33,6 +33,7 @@ const ORDER_FIELDS = [
   'amountMinor',
   'currency',
   'completedAt',
+  'failedAt',
   'failReason',
   'listingType',
   'listingId',
@@ -47,7 +48,7 @@ const PAYLOAD_CONTRACT: Record<
   LISTING_SOLD: contract(['orderPublicId'], ORDER_FIELDS),
   OFFER_RECEIVED: contract(['orderPublicId'], ORDER_FIELDS),
   DEAL_COMPLETED: contract(['orderPublicId'], ORDER_FIELDS),
-  ORDER_FAILED: contract(['orderPublicId'], ORDER_FIELDS),
+  ORDER_FAILED: contract(['orderPublicId', 'failedAt'], ORDER_FIELDS),
   CONFIRM_DEAL_REMINDER: contract(['orderPublicId', 'slot'], ORDER_FIELDS),
   ORDER_REPORTED: contract(
     ['orderPublicId', 'reportId'],

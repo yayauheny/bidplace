@@ -408,12 +408,23 @@ describe('order access', () => {
       telegram: '@bidplace_buyer',
     });
     expect(changed.status).toBe(200);
+    expect(await changed.json()).toMatchObject({
+      telegram: '@bidplace_buyer',
+      showToBuyer: null,
+    });
+    const canonical = await bought.buyer.put('/me/contacts', {
+      telegram: 'https://t.me/bidplace_buyer',
+    });
+    expect(canonical.status).toBe(200);
+    expect(await canonical.json()).toMatchObject({ telegram: '@bidplace_buyer' });
     const letters = await prisma.notificationOutbox.findMany({
       where: { userId: fixture.buyer.id, kind: 'CONTACTS_CHANGED' },
     });
-    expect(letters).toHaveLength(1);
-    expect(JSON.stringify(letters[0]?.payload)).not.toContain('+375291119900');
-    expect(JSON.stringify(letters[0]?.payload)).toContain('eventId');
+    expect(letters).toHaveLength(2);
+    for (const letter of letters) {
+      expect(JSON.stringify(letter.payload)).not.toContain('+375291119900');
+      expect(JSON.stringify(letter.payload)).toContain('eventId');
+    }
     const seen = (await (await bought.seller.get(`/orders/${bought.publicId}`)).json()) as Card;
     expect(seen.buyerContacts?.phone).toBe('+375291119900');
     const revoked = await admin.client.post(
@@ -422,6 +433,62 @@ describe('order access', () => {
     );
     expect(revoked.status).toBe(201);
     expect((await bought.buyer.get(`/orders/${bought.publicId}`)).status).toBe(401);
+  });
+
+  it.each([
+    {
+      label: 'an open offer',
+      status: 'OFFERED' as const,
+      failReason: undefined,
+      faultSide: undefined,
+    },
+    {
+      label: 'a declined offer',
+      status: 'FAILED' as const,
+      failReason: 'OFFER_DECLINED',
+      faultSide: 'NONE' as const,
+    },
+    {
+      label: 'an expired offer',
+      status: 'FAILED' as const,
+      failReason: 'OFFER_EXPIRED',
+      faultSide: 'NONE' as const,
+    },
+  ])('hides contacts on $label until the order was activated', async (row) => {
+    const fixture = await createPermissionFixture(prisma);
+    await giveContact(fixture.buyer.id);
+    await giveContact(fixture.sellers.approved.id, '+375291110099');
+    const order = await insertOrder(fixture, {
+      buyerId: fixture.buyer.id,
+      status: row.status,
+      source: 'SECOND_CHANCE',
+      listingType: 'AUCTION',
+      ...(row.failReason
+        ? {
+            failReason: row.failReason,
+            faultSide: row.faultSide,
+            failedBy: 'system',
+            failedAt: await databaseNow(),
+          }
+        : {}),
+    });
+    const seller = await signedIn(fixture.sellers.approved.email);
+    const buyer = await signedIn(fixture.buyer.email);
+    const admin = await adminUser();
+    const sellerCard = (await (
+      await seller.get(`/orders/${order.publicId}`)
+    ).json()) as Card;
+    const buyerCard = (await (
+      await buyer.get(`/orders/${order.publicId}`)
+    ).json()) as Card;
+    const adminCard = (await (
+      await admin.client.get(`/orders/${order.publicId}`)
+    ).json()) as Card;
+    expect(sellerCard.buyerContacts).toBeNull();
+    expect(buyerCard.sellerContacts).toBeNull();
+    expect(buyerCard.sellerContactHint).toBeNull();
+    expect(adminCard.buyerContacts?.phone).toBe('+375291112233');
+    expect(adminCard.sellerContacts?.phone).toBe('+375291110099');
   });
 
   it('lists open orders without contacts and lets only the author write the note', async () => {
@@ -636,9 +703,18 @@ describe('order transitions', () => {
       where: { kind: 'ORDER_FAILED', userId: fixture.sellers.approved.id },
     });
     expect(failure).toHaveLength(1);
-    const payload = failure[0]?.payload as { failReason?: string; listingType?: string };
+    const payload = failure[0]?.payload as {
+      failReason?: string;
+      listingType?: string;
+      failedAt?: string;
+    };
     expect(payload.failReason).toBe('BUYER_REFUSED');
     expect(payload.listingType).toBe('FIXED');
+    expect(payload.failedAt).toBe(
+      (
+        await prisma.order.findUniqueOrThrow({ where: { publicId: second.publicId } })
+      ).failedAt?.toISOString(),
+    );
     expect(JSON.stringify(payload)).not.toContain('+37529');
     expect(
       await prisma.listing.findUniqueOrThrow({ where: { id: second.listingId } }),
@@ -657,6 +733,11 @@ describe('order transitions', () => {
       failReason: 'ADMIN_CANCELLED',
     });
     expect(missing.status).toBe(400);
+    const missingReason = await admin.client.post(
+      `/admin/orders/${bought.publicId}/outcome`,
+      { to: 'FAILED', reason: 'Need a fail reason too' },
+    );
+    expect(missingReason.status).toBe(400);
     const changed = await admin.client.post(`/admin/orders/${bought.publicId}/outcome`, {
       to: 'FAILED',
       failReason: 'ADMIN_CANCELLED',
@@ -684,10 +765,11 @@ describe('order transitions', () => {
       to: 'COMPLETED',
       reason: 'The work was handed over',
     });
-    expect(restored.status).toBe(200);
+    expect(restored.status).toBe(409);
+    expect(await errorBody(restored)).toMatchObject({ code: 'PRODUCT_IN_SALE' });
     expect(
       await prisma.order.findUniqueOrThrow({ where: { id: order.id } }),
-    ).toMatchObject({ status: 'COMPLETED', failReason: null, completedBy: 'ADMIN' });
+    ).toMatchObject({ status: 'FAILED', failReason: 'ADMIN_CANCELLED' });
   });
 });
 
@@ -835,6 +917,109 @@ describe('next participant', () => {
       endsAt: new Date(now.getTime() + 3 * DAY_MS).toISOString(),
     });
     expect(again.status).toBe(201);
+  });
+
+  it('refuses the next offer when the work already has a completed order', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const bidders = [
+      await extraBuyer('sold-win', 3_000),
+      await extraBuyer('sold-next', 2_000),
+    ];
+    const auction = await auctionWithBids(fixture, bidders);
+    const failed = await insertOrder(fixture, {
+      buyerId: bidders[0]!.id,
+      status: 'FAILED',
+      source: 'AUCTION_WIN',
+      listingType: 'AUCTION',
+      listingId: auction.listingId,
+      productId: auction.productId,
+      failReason: 'BUYER_REFUSED',
+      faultSide: 'BUYER',
+      failedBy: 'buyer',
+      failedAt: await databaseNow(),
+      sourceBidId: auction.bids[0],
+      amountMinor: 3_000,
+    });
+    await insertOrder(fixture, {
+      buyerId: fixture.buyer.id,
+      status: 'COMPLETED',
+      listingId: auction.listingId,
+      productId: auction.productId,
+      source: 'FIXED_PURCHASE',
+    });
+    const seller = await signedIn(fixture.sellers.approved.email);
+    const response = await seller.post(`/orders/${failed.publicId}/offer-next`);
+    expect(response.status).toBe(409);
+    expect(await errorBody(response)).toMatchObject({ code: 'PRODUCT_ALREADY_SOLD' });
+  });
+
+  it('refuses the next offer when the work is listed again', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const bidders = [
+      await extraBuyer('relist-win', 3_000),
+      await extraBuyer('relist-next', 2_000),
+    ];
+    const auction = await auctionWithBids(fixture, bidders);
+    const failed = await insertOrder(fixture, {
+      buyerId: bidders[0]!.id,
+      status: 'FAILED',
+      source: 'AUCTION_WIN',
+      listingType: 'AUCTION',
+      listingId: auction.listingId,
+      productId: auction.productId,
+      failReason: 'BUYER_REFUSED',
+      faultSide: 'BUYER',
+      failedBy: 'buyer',
+      failedAt: await databaseNow(),
+      sourceBidId: auction.bids[0],
+      amountMinor: 3_000,
+    });
+    await prisma.listing.create({
+      data: {
+        productId: auction.productId,
+        sellerUserId: fixture.sellers.approved.id,
+        type: 'FIXED',
+        status: 'LIVE',
+        currency: 'BYN',
+        priceMinor: 1_500,
+        startsAt: new Date('2026-10-01T00:00:00.000Z'),
+        contactWindowHours: 24,
+      },
+    });
+    const seller = await signedIn(fixture.sellers.approved.email);
+    const response = await seller.post(`/orders/${failed.publicId}/offer-next`);
+    expect(response.status).toBe(409);
+    expect(await errorBody(response)).toMatchObject({ code: 'PRODUCT_IN_SALE' });
+  });
+
+  it('refuses the next offer when the author is not approved', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const bidders = [
+      await extraBuyer('suspended-win', 3_000),
+      await extraBuyer('suspended-next', 2_000),
+    ];
+    const auction = await auctionWithBids(fixture, bidders);
+    const failed = await insertOrder(fixture, {
+      buyerId: bidders[0]!.id,
+      status: 'FAILED',
+      source: 'AUCTION_WIN',
+      listingType: 'AUCTION',
+      listingId: auction.listingId,
+      productId: auction.productId,
+      failReason: 'BUYER_REFUSED',
+      faultSide: 'BUYER',
+      failedBy: 'buyer',
+      failedAt: await databaseNow(),
+      sourceBidId: auction.bids[0],
+      amountMinor: 3_000,
+    });
+    await prisma.sellerProfile.update({
+      where: { userId: fixture.sellers.approved.id },
+      data: { status: 'SUSPENDED' },
+    });
+    const seller = await signedIn(fixture.sellers.approved.email);
+    const response = await seller.post(`/orders/${failed.publicId}/offer-next`);
+    expect(response.status).toBe(403);
   });
 });
 
@@ -993,6 +1178,55 @@ describe('strikes and trust', () => {
     expect(body.trustSignals.completedAsBuyer).toBe(1);
     expect(body.trustSignals.emailVerified).toBe(true);
     expect(JSON.stringify(body)).not.toContain('contactPhone');
+  });
+
+  it('blocks bids and purchases after two aged author marks until an admin removes one', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    await giveContact(fixture.buyer.id);
+    const buyer = await signedIn(fixture.buyer.email);
+    const aged = new Date((await databaseNow()).getTime() - 73 * HOUR_MS);
+    const first = await insertOrder(fixture, {
+      buyerId: fixture.buyer.id,
+      status: 'FAILED',
+      failReason: 'BUYER_NO_CONTACT',
+      faultSide: 'BUYER',
+      failedBy: 'seller',
+      failedAt: aged,
+    });
+    await insertOrder(fixture, {
+      buyerId: fixture.buyer.id,
+      status: 'FAILED',
+      failReason: 'BUYER_INVALID_CONTACTS',
+      faultSide: 'BUYER',
+      failedBy: 'seller',
+      failedAt: aged,
+    });
+    const auction = await liveAuction(fixture, 'Aged strikes');
+    const bid = await buyer.post(`/listings/${auction}/bids`, {
+      amountMinor: 1_000,
+      idempotencyKey: 'aged-blocked',
+      turnstileToken: 'XXXX.DUMMY.TOKEN.XXXX',
+    });
+    expect(bid.status).toBe(403);
+    expect(await errorBody(bid)).toMatchObject({ code: 'BUYER_BLOCKED' });
+    const { listingId } = await fixedOnApproved(fixture);
+    const purchase = await buyer.post(`/listings/${listingId}/purchase`, {
+      idempotencyKey: 'aged-buy',
+      turnstileToken: 'XXXX.DUMMY.TOKEN.XXXX',
+    });
+    expect(purchase.status).toBe(403);
+    expect(await errorBody(purchase)).toMatchObject({ code: 'BUYER_BLOCKED' });
+    const admin = await adminUser();
+    const voided = await admin.client.post(`/admin/orders/${first.publicId}/void-strike`, {
+      reason: 'The author marked too soon',
+    });
+    expect(voided.status).toBe(200);
+    const again = await buyer.post(`/listings/${auction}/bids`, {
+      amountMinor: 1_000,
+      idempotencyKey: 'aged-after-void',
+      turnstileToken: 'XXXX.DUMMY.TOKEN.XXXX',
+    });
+    expect(again.status).toBe(200);
   });
 });
 

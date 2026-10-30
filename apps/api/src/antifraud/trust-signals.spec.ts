@@ -31,6 +31,14 @@ function matches(
   where: Record<string, unknown>,
 ): boolean {
   return Object.entries(where).every(([key, expected]) => {
+    if (key === 'OR' && Array.isArray(expected)) {
+      return expected.some(
+        (branch) =>
+          branch !== null &&
+          typeof branch === 'object' &&
+          matches(row, branch as Record<string, unknown>),
+      );
+    }
     if (
       expected !== null &&
       typeof expected === 'object' &&

@@ -225,13 +225,23 @@ export const adminOrderReasonRequestSchema = z
   })
   .strict();
 
-export const adminOrderOutcomeRequestSchema = z
-  .object({
-    to: z.enum(['COMPLETED', 'FAILED']),
-    failReason: z.enum(ORDER_FAIL_REASONS).optional(),
-    reason: z.string().trim().min(1).max(2000),
-  })
-  .strict();
+const adminOutcomeReason = z.string().trim().min(1).max(2000);
+
+export const adminOrderOutcomeRequestSchema = z.discriminatedUnion('to', [
+  z
+    .object({
+      to: z.literal('COMPLETED'),
+      reason: adminOutcomeReason,
+    })
+    .strict(),
+  z
+    .object({
+      to: z.literal('FAILED'),
+      failReason: z.enum(ORDER_FAIL_REASONS),
+      reason: adminOutcomeReason,
+    })
+    .strict(),
+]);
 
 export const orderNoteRequestSchema = z
   .object({
