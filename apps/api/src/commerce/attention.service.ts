@@ -64,7 +64,7 @@ export class AttentionService {
       `),
       this.adminOrders(Prisma.sql`
         o.status = 'ACTIVE'::"OrderStatus"
-        AND o.activated_at <= ${now} - (${hours} * interval '1 hour')
+        AND o.activated_at <= (${now}::timestamptz AT TIME ZONE 'UTC') - (${hours} * interval '1 hour')
       `),
       this.antifraud.listActiveHolds(),
     ]);

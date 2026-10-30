@@ -8,6 +8,7 @@ import {
 import { type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { AttentionService } from '../../src/commerce/attention.service';
 import { PrismaService } from '../../src/core/database';
 import {
   createHttpTestApp,
@@ -535,6 +536,46 @@ describe('admin attention', () => {
     expect(afterRelease.blocks).toEqual([]);
   });
 
+  it('includes a 72h UTC activation and excludes 71h when the session zone is not UTC', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    await giveContact(fixture.buyer.id, BUYER_PHONE);
+    const stale = await insertOrder(fixture, {
+      buyerId: fixture.buyer.id,
+      status: 'ACTIVE',
+    });
+    const fresh = await insertOrder(fixture, {
+      buyerId: fixture.buyer.id,
+      status: 'ACTIVE',
+    });
+    await prisma.$executeRaw`
+      UPDATE orders
+      SET activated_at = (clock_timestamp() AT TIME ZONE 'UTC') - interval '72 hours'
+      WHERE id = ${stale.id}::uuid
+    `;
+    await prisma.$executeRaw`
+      UPDATE orders
+      SET activated_at = (clock_timestamp() AT TIME ZONE 'UTC') - interval '71 hours'
+      WHERE id = ${fresh.id}::uuid
+    `;
+
+    const unmarked = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT set_config('TimeZone', 'America/Los_Angeles', true)`;
+      const [skew] = await tx.$queryRaw<Array<{ hours: number }>>`
+        SELECT EXTRACT(EPOCH FROM (
+          clock_timestamp()::timestamp(3) - (clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3)
+        )) / 3600 AS hours
+      `;
+      expect(Math.abs(Number(skew?.hours))).toBeGreaterThan(1);
+      const service = new AttentionService(tx as never, {
+        listActiveHolds: async () => [],
+      } as never);
+      const body = await service.forAdmin();
+      return body.unmarkedOrders.map((order) => order.publicId);
+    });
+
+    expect(unmarked).toEqual([stale.publicId]);
+  });
+
   it('keeps the same query count for one offer and for many', async () => {
     const fixture = await createPermissionFixture(prisma);
     await giveContact(fixture.buyer.id, BUYER_PHONE);
@@ -548,7 +589,8 @@ describe('admin attention', () => {
     PrismaService.queryCount = 0;
     expect((await readAttention(actor)).items.filter((row) => row.kind === 'OFFER')).toHaveLength(1);
     const once = PrismaService.queryCount;
-    expect(once).toBeGreaterThan(0);
+    // Session user, verified email, then one read for each attention kind.
+    expect(once).toBe(2 + 5);
 
     for (let index = 0; index < 4; index += 1) {
       await insertOrder(fixture, {
@@ -561,7 +603,6 @@ describe('admin attention', () => {
     PrismaService.queryCount = 0;
     expect((await readAttention(actor)).items.filter((row) => row.kind === 'OFFER')).toHaveLength(5);
     expect(PrismaService.queryCount).toBe(once);
-    expect(once).toBeLessThan(20);
   });
 });
 
