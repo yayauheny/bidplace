@@ -322,9 +322,6 @@ async function createApprovedAuthor({
       profilePhotoByteLength: photo.byteLength,
       profilePhotoChecksum: photo.checksum,
       profilePhotoData: photo.data,
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: handle,
-      handoffInitiator: 'BUYER_CONTACTS_SELLER',
       status: 'APPROVED',
       createdAt,
     },
@@ -340,7 +337,10 @@ async function main() {
   await prisma.auditEvent.deleteMany();
   await prisma.termsAcceptance.deleteMany();
   await prisma.emailVerificationCode.deleteMany();
-  await prisma.phoneVerificationCode.deleteMany();
+  await prisma.report.deleteMany();
+  await prisma.notificationOutbox.deleteMany();
+  await prisma.favoriteWork.deleteMany();
+  await prisma.userNotificationSettings.deleteMany();
   await prisma.order.deleteMany();
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
@@ -420,9 +420,7 @@ async function main() {
       profilePhotoByteLength: pendingPhoto.byteLength,
       profilePhotoChecksum: pendingPhoto.checksum,
       profilePhotoData: pendingPhoto.data,
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: '@pending_seller',
-      handoffInitiator: 'BUYER_CONTACTS_SELLER',
+      telegramUrl: 'https://t.me/pending_seller',
       status: 'PENDING_REVIEW',
     },
   });

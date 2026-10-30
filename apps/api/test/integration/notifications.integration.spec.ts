@@ -424,6 +424,7 @@ describe('notification outbox', () => {
           workTitle: 'Ваза',
           listingType: 'FIXED',
           failReason: 'BUYER_REFUSED',
+          failedAt: '2026-10-30T12:00:00.000Z',
         },
       }),
     );
