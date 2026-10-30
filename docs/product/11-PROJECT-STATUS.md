@@ -32,10 +32,11 @@ first, an `updated_at` already an hour ahead, and a session `TimeZone` of
 `RATE_LIMIT_MAX_BUCKETS` and `RATE_LIMIT_CLEANUP_INTERVAL_MS` are removed from
 `.env.example`; application code does not read them.
 
-**Open founder decision (before W3):** [COMMERCE](../launch/COMMERCE.md) still
-describes an admin ban as seller `SUSPENDED`. User status remains
-`active | banned`. `SellerProfile` `SUSPENDED` is a different model. This note
-does not change that commerce rule.
+**Resolved 2026-10-30 (`DEC-152`):** account ban is `User.status = banned`;
+`SellerProfile` `SUSPENDED` stays a separate author status. **Not implemented**
+on `feature/commerce-backend` (`d8df946c`): bid, fixed purchase and the tick
+auction close do not check a banned seller
+([W3 audit](../launch/waves/W3-commerce-backend.md#аудит-плана-2026-10-30)).
 
 Local this session: API unit 688 passed with `BIDPLACE_ENV_FILE` unset.
 PostgreSQL integrations passed one file at a time: signals 23, admin emergency
