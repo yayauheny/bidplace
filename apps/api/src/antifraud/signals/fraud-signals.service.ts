@@ -44,9 +44,12 @@ export class FraudSignalsService {
   // Caller transaction: READ COMMITTED (default) or SERIALIZABLE retried as a
   // whole via runSerializableTransaction. Repeatable Read is still unsupported.
   // Each recordSignal touches the user row after this lock so a stale
-  // Serializable snapshot conflicts and retries. Signal time is taken after
-  // the lock via clock_timestamp. The lock is held until the caller commits
-  // or rolls back. The window lower bound is inclusive and has no upper bound.
+  // Serializable snapshot conflicts and retries. updated_at is
+  // GREATEST(updated_at, clock_timestamp()::timestamp(3)): now() is frozen at
+  // transaction start and can move the column backwards. Signal time is taken
+  // after the lock via clock_timestamp. The lock is held until the caller
+  // commits or rolls back. The window lower bound is inclusive and has no
+  // upper bound.
   private async lockUsers(tx: Prisma.TransactionClient, userIds: string[]) {
     await tx.$queryRaw`SELECT id FROM users WHERE id IN (${Prisma.join(userIds.map((id) => Prisma.sql`${id}::uuid`))}) ORDER BY id FOR UPDATE`;
   }
@@ -56,7 +59,7 @@ export class FraudSignalsService {
     signal: { userId: string; kind: SignalKind; subjectId?: string },
   ): Promise<void> {
     await this.lockUsers(tx, [signal.userId]);
-    await tx.$executeRaw`UPDATE users SET updated_at = now() WHERE id = ${signal.userId}::uuid`;
+    await tx.$executeRaw`UPDATE users SET updated_at = GREATEST(updated_at, clock_timestamp()::timestamp(3)) WHERE id = ${signal.userId}::uuid`;
     if (
       !(await tx.user.findUnique({
         where: { id: signal.userId },

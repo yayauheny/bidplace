@@ -73,13 +73,13 @@
 Create `apps/api/src/antifraud/antifraud.module.ts`, `antifraud.service.ts`;
 Modify потребителей (импорты), `app.module.ts`, `apps/api/.eslintrc.cjs`.
 
-- [ ] **Шаг 1:** перенести файлами (история сохраняется), `AntifraudModule`
+- [x] **Шаг 1:** перенести файлами (история сохраняется), `AntifraudModule`
   импортирует и реэкспортирует нынешний сервис; потребители импортируют из
   `antifraud`.
-- [ ] **Шаг 2:** правило ESLint на внутренние пути модуля.
-- [ ] **Шаг 3:** все существующие тесты входа (unit + `auth-abuse`,
+- [x] **Шаг 2:** правило ESLint на внутренние пути модуля.
+- [x] **Шаг 3:** все существующие тесты входа (unit + `auth-abuse`,
   `social-auth`, `auth-transport` интеграция) зелёные без правки ожиданий.
-- [ ] **Шаг 4:** коммит `refactor: move auth abuse into antifraud module`.
+- [x] **Шаг 4:** коммит `refactor: move auth abuse into antifraud module`.
 
 ### Task 2: Лимиты частоты в базе
 
@@ -92,14 +92,14 @@ Modify потребителей.
 устаревшего окна; `@RateLimit` и guard — те же параметры. Старые строки чистит
 задача тика `antifraud-cleanup` (окно старше суток).
 
-- [ ] **Шаг 1: падающие тесты:** интеграция — лимит исчерпан, новый экземпляр
+- [x] **Шаг 1: падающие тесты:** интеграция — лимит исчерпан, новый экземпляр
   сервиса (имитация рестарта) всё ещё отказывает; 20 параллельных `consume` при
   лимите 10 → ровно 10 `true`; окно истекло → снова можно.
-- [ ] **Шаг 2:** реализовать; вызовы `consume` стали `await`; PASS.
+- [x] **Шаг 2:** реализовать; вызовы `consume` стали `await`; PASS.
   Переменные памяти `RATE_LIMIT_MAX_BUCKETS` и `RATE_LIMIT_CLEANUP_INTERVAL_MS`
   удалить из `env.ts`, `containerVariables`, `wrangler.jsonc` и
   [ENVIRONMENT.md](../../ops/ENVIRONMENT.md), если код их больше не читает.
-- [ ] **Шаг 3:** коммит `feat: persist rate limits`.
+- [x] **Шаг 3:** коммит `feat: persist rate limits`.
 
 ### Task 3: Невидимый Turnstile
 
@@ -113,15 +113,16 @@ Modify потребителей.
 `getToken(): Promise<string | null>`; виджет без видимой разметки, вызывается при
 отправке формы.
 
-- [ ] **Шаг 1: падающие тесты:** форма регистрации не рендерит видимого блока
+- [x] **Шаг 1: падающие тесты:** форма регистрации не рендерит видимого блока
   Turnstile; при отправке токен запрашивается; провал → текст «Попробуйте ещё
   раз», без поломки раскладки; `verifySignal` не бросает.
-- [ ] **Шаг 2:** реализовать; e2e регистрации на 390 — раскладка без виджета.
+- [x] **Шаг 2:** реализовать; e2e регистрации на 390 — раскладка без виджета.
 - [ ] **Шаг 3:** в отчёт — действие основателя: в Cloudflare переключить
   виджет Turnstile в режим Invisible (или создать новый и заменить
   `TURNSTILE_SITE_KEY` и секрет `TURNSTILE_SECRET_KEY`) — строки в
   [ENVIRONMENT.md](../../ops/ENVIRONMENT.md). Имена переменных не меняются.
-- [ ] **Шаг 4:** коммит `feat: invisible turnstile`.
+  Не закрыто: режим Invisible в панели Cloudflare переключает только основатель.
+- [x] **Шаг 4:** коммит `feat: invisible turnstile`.
 
 ### Task 4: Сигналы, временный блок, бан, фасад для продаж
 
@@ -147,24 +148,24 @@ shouldHold(kindsInWindow: SignalKind[]): boolean
 detectBidBurst(bids: { listingId: string; at: Date }[], now: Date): boolean
 ```
 
-- [ ] **Шаг 1: падающие тесты:** `it.each` по `shouldHold` (один вид ×3 → нет;
+- [x] **Шаг 1: падающие тесты:** `it.each` по `shouldHold` (один вид ×3 → нет;
   два разных → да); `detectBidBurst` на границах порогов; интеграция — два
   параллельных `recordSignal` разных видов → ровно один активный блок;
   `assertCanAct` при активном блоке → `BUYER_BLOCKED` (код добавить в
   `packages/contracts/src/error.ts`); `banUser` без `reason` → 400, с причиной → статус
   `SUSPENDED`, сессии недействительны, `auditEvent` записан.
-- [ ] **Шаг 2:** реализовать; PASS.
-- [ ] **Шаг 3:** коммит `feat: antifraud signals, holds and ban`.
+- [x] **Шаг 2:** реализовать; PASS.
+- [x] **Шаг 3:** коммит `feat: antifraud signals, holds and ban`.
 
 ### Task 5: Документы и проверки
 
-- [ ] `10-CODE-ARCHITECTURE.md` «Владельцы логики»: строка антифрода;
+- [x] `10-CODE-ARCHITECTURE.md` «Владельцы логики»: строка антифрода;
   `docs/ops/ENVIRONMENT.md` — переменные Turnstile; `TECH-DEBT.md` — B4 удалить;
   `11-PROJECT-STATUS.md` — запись.
-- [ ] Проверки: `typecheck`/`lint` `@bidplace/api` и `@bidplace/mobile`; unit и
+- [x] Проверки: `typecheck`/`lint` `@bidplace/api` и `@bidplace/mobile`; unit и
   интеграция API (вход, OTP, сброс, лимиты, сигналы); e2e регистрации;
   `git diff --check`; `pnpm docs:link-check`.
-- [ ] Коммит `docs: record antifraud module`.
+- [x] Коммит `docs: record antifraud module`.
 
 ## Промпт исполнителю
 
@@ -191,3 +192,16 @@ security, nest. Прогони тесты входа и лимитов, пров
 Красные флаги: проверки антифрода внутри `commerce`/`auth` в обход фасада; числа
 порогов вне `antifraud.policy.ts`; постоянный бан автоматикой; видимый виджет
 Turnstile; пустой `catch` вокруг проверки.
+
+## Журнал исполнения 2026-10-30
+
+**Implemented локально; live Needs verification.** Код Tasks 1–5 есть в ветке;
+исходный план выше не переписывался. Бан пользователя — статус `banned`, как в
+[статусе проекта](../../product/11-PROJECT-STATUS.md), а не `SUSPENDED` из
+черновика шага 1 Task 4.
+
+Не закрыто, только основатель на живом контуре:
+
+- режим Cloudflare Invisible (Task 3, шаг 3);
+- выкат миграций: остановить писателей, применить миграции, выкатить сборку, дождаться drain;
+- live Turnstile, SMTP, R2/CDN и Cron.

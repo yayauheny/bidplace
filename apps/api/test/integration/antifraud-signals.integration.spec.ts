@@ -332,6 +332,59 @@ describe('antifraud signals and administrative decisions', () => {
     ).toBe(1);
   });
 
+  it('does not move users.updated_at backwards after an earlier transaction records a signal', async () => {
+    const target = await user();
+    let started!: () => void;
+    const startedGate = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    let release!: () => void;
+    const releaseGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const earlier = db.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT 1`;
+      started();
+      await releaseGate;
+      await service().recordSignal(tx, {
+        userId: target.id,
+        kind: 'TURNSTILE_FAILED',
+      });
+    });
+    let afterLater: Date | undefined;
+    try {
+      await startedGate;
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      await second.app.get(PrismaService).$transaction((tx) =>
+        second.app.get(AntifraudService).recordSignal(tx, {
+          userId: target.id,
+          kind: 'BID_BURST',
+        }),
+      );
+      afterLater = (
+        await db.prisma.user.findUniqueOrThrow({
+          where: { id: target.id },
+          select: { updatedAt: true },
+        })
+      ).updatedAt;
+    } finally {
+      release();
+    }
+    await earlier;
+    const afterEarlier = (
+      await db.prisma.user.findUniqueOrThrow({
+        where: { id: target.id },
+        select: { updatedAt: true },
+      })
+    ).updatedAt;
+    // T1 started first, so now() is earlier than the value T2 committed.
+    if (!(afterLater instanceof Date))
+      throw new Error('later updated_at missing');
+    expect(afterEarlier.getTime()).toBeGreaterThanOrEqual(
+      afterLater.getTime(),
+    );
+  });
+
   it('keeps three signals of one kind as evidence without holding', async () => {
     const target = await user();
     for (let i = 0; i < 3; i++) await signal(target.id, 'BID_BURST');
