@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { Prisma, type PrismaClient } from '@bidplace/database';
+import { type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { normalizeCatalogName } from '../../src/catalog/catalog-data';
@@ -119,14 +119,11 @@ async function createListings() {
       profilePhotoChecksum: '0'.repeat(64),
       profilePhotoData: png,
       shortDescription: 'Inventory seller',
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: '@owner',
       status: 'APPROVED',
     },
   });
   const startsAt = new Date('2026-09-07T10:00:00.000Z');
   const endsAt = new Date('2026-09-07T12:00:00.000Z');
-  const price = new Prisma.Decimal(10);
 
   async function createProduct(label: string) {
     return prisma.product.create({
@@ -151,37 +148,52 @@ async function createListings() {
     prisma.listing.create({
       data: {
         productId: scheduledProduct.id,
+        sellerUserId: owner.id,
+        type: 'AUCTION',
         status: 'SCHEDULED',
+        currency: 'BYN',
         startsAt,
         originalEndsAt: endsAt,
         endsAt,
-        currentPrice: price,
-        auctionRules: { create: { startPrice: price } },
+        currentPriceMinor: 1_000,
+        auctionRules: {
+          create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+        },
       },
       select: { id: true, status: true, productId: true },
     }),
     prisma.listing.create({
       data: {
         productId: liveProduct.id,
+        sellerUserId: owner.id,
+        type: 'AUCTION',
         status: 'LIVE',
+        currency: 'BYN',
         startsAt,
         originalEndsAt: endsAt,
         endsAt,
-        currentPrice: price,
-        auctionRules: { create: { startPrice: price } },
+        currentPriceMinor: 1_000,
+        auctionRules: {
+          create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+        },
       },
       select: { id: true, status: true, productId: true },
     }),
     prisma.listing.create({
       data: {
         productId: endedProduct.id,
+        sellerUserId: owner.id,
+        type: 'AUCTION',
         status: 'ENDED',
+        currency: 'BYN',
         startsAt,
         originalEndsAt: endsAt,
         endsAt,
-        currentPrice: price,
-        closedAt: endsAt,
-        auctionRules: { create: { startPrice: price } },
+        currentPriceMinor: 1_000,
+        endedAt: endsAt,
+        auctionRules: {
+          create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+        },
       },
       select: { id: true, status: true },
     }),

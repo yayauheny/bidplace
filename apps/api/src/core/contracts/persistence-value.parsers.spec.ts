@@ -6,4 +6,5 @@ describe('persistence value parsers', () => {
   it.each(PRODUCT_STATUSES)('parses Product status %s', (value) => expect(parseProductStatus(value)).toBe(value));
   it.each(LISTING_STATUSES)('parses Listing status %s', (value) => expect(parseListingStatus(value)).toBe(value));
   it('rejects an invalid Listing status', () => expect(() => parseListingStatus('ACTIVE', 'listing-1')).toThrow(InvalidPersistenceValueError));
+  it('rejects the removed draft Listing status', () => expect(() => parseListingStatus('DRAFT', 'listing-1')).toThrow(InvalidPersistenceValueError));
 });

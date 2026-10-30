@@ -1979,8 +1979,8 @@ describe('product publication caller integration', () => {
     await prisma.product.update({ where: { id: work.id }, data: { editingRevisionId: next.id } });
     const endsAt = new Date(Date.now() + 60_000);
     await prisma.listing.create({ data: {
-      productId: work.id, status: 'LIVE', startsAt: new Date(), endsAt, originalEndsAt: endsAt,
-      currentPrice: 10, auctionRules: { create: { startPrice: 10 } },
+      productId: work.id, sellerUserId: f.user.id, type: 'AUCTION', status: 'LIVE', currency: 'BYN', startsAt: new Date(), endsAt, originalEndsAt: endsAt,
+      currentPriceMinor: 1_000, auctionRules: { create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' } },
     } });
     const before = await prisma.product.findUniqueOrThrow({ where: { id: work.id } });
     const audits = await prisma.auditEvent.count({ where: { targetId: work.id } });
@@ -2303,12 +2303,17 @@ describe('product publication caller integration', () => {
       await prisma.listing.create({
         data: {
           productId: work.id,
+          sellerUserId: f.user.id,
+          type: 'AUCTION',
           status: 'LIVE',
-          currentPrice: '10',
+          currency: 'BYN',
+          currentPriceMinor: 1_000,
           startsAt: new Date(),
           endsAt: new Date(Date.now() + 60_000),
           originalEndsAt: new Date(Date.now() + 60_000),
-          auctionRules: { create: { startPrice: '10' } },
+          auctionRules: {
+            create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+          },
         },
       });
       await expect(

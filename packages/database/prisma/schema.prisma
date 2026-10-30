@@ -47,40 +47,73 @@ enum ProductStatus {
 }
 
 enum ListingType {
+  FIXED
   AUCTION
 }
 
 enum ListingStatus {
-  DRAFT
   SCHEDULED
   LIVE
   ENDED
   CANCELLED
 }
 
-enum OrderStatus {
-  PENDING_CONTACT
-  CONTACTED
-  COMPLETED
-  HANDOFF_FAILED
-  CANCELLED
+enum ListingCancelReason {
+  AUTHOR_WITHDREW
+  ADMIN_REMOVED
 }
 
-enum OrderCancellationReason {
-  BUYER_DECLINED
-  BUYER_UNREACHABLE
+enum OrderSource {
+  AUCTION_WIN
+  SECOND_CHANCE
+  FIXED_PURCHASE
+}
+
+enum OrderStatus {
+  OFFERED
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+enum OrderFailReason {
+  BUYER_REFUSED
+  BUYER_NO_CONTACT
+  BUYER_INVALID_CONTACTS
+  SELLER_REFUSED
+  OFFER_DECLINED
+  OFFER_EXPIRED
   ADMIN_CANCELLED
 }
 
-enum HandoffContactType {
-  TELEGRAM
-  PHONE
-  INSTAGRAM
+enum FaultSide {
+  BUYER
+  SELLER
+  NONE
 }
 
-enum HandoffInitiator {
-  BUYER_CONTACTS_SELLER
-  SELLER_CONTACTS_BUYER
+enum CompletedBy {
+  SELLER
+  ADMIN
+}
+
+enum ReportTarget {
+  ORDER
+  WORK
+  AUTHOR
+  USER
+}
+
+enum ReportStatus {
+  OPEN
+  UPHELD
+  REJECTED
+}
+
+enum NotificationOutboxStatus {
+  PENDING
+  SENT
+  FAILED
 }
 
 enum AuditTargetType {
@@ -90,6 +123,7 @@ enum AuditTargetType {
   LISTING
   USER
   CATALOG
+  REPORT
 }
 
 model User {
@@ -99,6 +133,10 @@ model User {
   phone             String?               @unique @db.VarChar(32)
   emailVerifiedAt   DateTime?             @map("email_verified_at")
   phoneVerifiedAt   DateTime?             @map("phone_verified_at")
+  contactTelegram   String?               @map("contact_telegram") @db.VarChar(255)
+  contactInstagram  String?               @map("contact_instagram") @db.VarChar(255)
+  contactVk         String?               @map("contact_vk") @db.VarChar(255)
+  contactPhone      String?               @map("contact_phone") @db.VarChar(32)
   displayName       String?               @map("display_name") @db.VarChar(120)
   slug              String?               @unique @db.VarChar(120)
   role              String                @default("user")
@@ -110,9 +148,14 @@ model User {
   registeredAcquisition AcquisitionAttribution? @relation("RegisteredAcquisition")
   sellerProfile     SellerProfile?
   bids              Bid[]
+  listings          Listing[]             @relation("ListingSeller")
   buyerOrders       Order[]               @relation("OrderBuyer")
   sellerOrders      Order[]               @relation("OrderSeller")
-  phoneCodes        PhoneVerificationCode[]
+  reports           Report[]              @relation("ReportReporter")
+  resolvedReports   Report[]              @relation("ReportResolver")
+  notificationSettings UserNotificationSettings?
+  notificationOutbox NotificationOutbox[]
+  favoriteWorks     FavoriteWork[]
   externalIdentities ExternalIdentity[]
   emailCodes        EmailVerificationCode[]
   passwordResetTokens PasswordResetToken[]
@@ -152,9 +195,7 @@ model SellerProfile {
   websiteUrl          String?             @map("website_url") @db.VarChar(255)
   publicEmail         String?             @map("public_email") @db.VarChar(254)
   shortDescription    String?             @map("short_description") @db.Text
-  handoffContactType  HandoffContactType? @map("handoff_contact_type")
-  handoffContactValue String?             @map("handoff_contact_value") @db.VarChar(255)
-  handoffInitiator    HandoffInitiator?   @map("handoff_initiator")
+  showContactsToBuyer Boolean             @default(true) @map("show_contacts_to_buyer")
   status              SellerProfileStatus @default(DRAFT)
   applicationStage    AuthorApplicationStage? @map("application_stage")
   editingRevisionId   String?             @unique @map("editing_revision_id") @db.Uuid
@@ -293,6 +334,8 @@ model Product {
   images          ProductImage[]
   creationSteps   ProductCreationStep[]
   listings        Listing[]
+  orders          Order[]
+  favoriteWorks   FavoriteWork[]
   revisions       ProductRevision[] @relation("ProductRevisions")
   editingRevision ProductRevision? @relation("ProductEditingRevision", fields: [editingRevisionId], references: [id], onDelete: Restrict)
   publishedRevision ProductRevision? @relation("ProductPublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict)
@@ -414,101 +457,165 @@ model ProductCreationStep {
 }
 
 model Listing {
-  id             String        @id @default(uuid()) @db.Uuid
-  productId      String        @map("product_id") @db.Uuid
-  type           ListingType   @default(AUCTION)
-  status         ListingStatus @default(DRAFT)
-  currency       String        @default("BYN") @db.Char(3)
-  startsAt       DateTime      @map("starts_at")
-  originalEndsAt DateTime      @map("original_ends_at")
-  endsAt         DateTime      @map("ends_at")
-  currentPrice   Decimal       @map("current_price") @db.Decimal(12, 2)
-  bidCount       Int           @default(0) @map("bid_count")
-  closedAt       DateTime?     @map("closed_at")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  product        Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
-  auctionRules   AuctionRules?
-  bids           Bid[]
-  orders         Order[]
+  id                 String               @id @default(uuid()) @db.Uuid
+  productId          String               @map("product_id") @db.Uuid
+  sellerUserId       String               @map("seller_user_id") @db.Uuid
+  type               ListingType
+  status             ListingStatus
+  currency           String               @db.Char(3)
+  priceMinor         Int?                 @map("price_minor")
+  startsAt           DateTime             @map("starts_at")
+  endsAt             DateTime?            @map("ends_at")
+  originalEndsAt     DateTime?            @map("original_ends_at")
+  contactWindowHours Int                  @default(24) @map("contact_window_hours")
+  currentPriceMinor  Int?                 @map("current_price_minor")
+  bidCount           Int                  @default(0) @map("bid_count")
+  cancelReason       ListingCancelReason? @map("cancel_reason")
+  endedAt            DateTime?            @map("ended_at")
+  cancelledAt        DateTime?            @map("cancelled_at")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  product            Product              @relation(fields: [productId], references: [id], onDelete: Restrict)
+  seller             User                 @relation("ListingSeller", fields: [sellerUserId], references: [id], onDelete: Restrict)
+  auctionRules       AuctionRules?
+  bids               Bid[]
+  orders             Order[]
 
   @@index([status, startsAt])
   @@index([status, endsAt])
+  @@index([productId])
   @@map("listings")
 }
 
 model AuctionRules {
-  listingId                    String   @id @map("listing_id") @db.Uuid
-  startPrice                   Decimal  @map("start_price") @db.Decimal(12, 2)
-  incrementPolicyCode          String   @default("MVP_BYN_V1") @map("increment_policy_code") @db.VarChar(40)
-  softCloseWindowSeconds       Int      @default(60) @map("soft_close_window_seconds")
-  softCloseExtensionSeconds    Int      @default(60) @map("soft_close_extension_seconds")
-  softCloseMaxTotalSeconds     Int      @default(600) @map("soft_close_max_total_seconds")
-  listing                      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId                 String  @id @map("listing_id") @db.Uuid
+  startPriceMinor           Int     @map("start_price_minor")
+  stepTableCode             String  @map("step_table_code") @db.VarChar(20)
+  softCloseWindowSeconds    Int     @default(60) @map("soft_close_window_seconds")
+  softCloseExtensionSeconds Int     @default(60) @map("soft_close_extension_seconds")
+  softCloseMaxTotalSeconds  Int     @default(600) @map("soft_close_max_total_seconds")
+  listing                   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@map("auction_rules")
 }
 
 model Bid {
-  id             String   @id @default(uuid()) @db.Uuid
-  listingId      String   @map("listing_id") @db.Uuid
-  bidderUserId   String   @map("bidder_user_id") @db.Uuid
-  idempotencyKey String   @map("idempotency_key") @db.VarChar(80)
-  amount         Decimal  @db.Decimal(12, 2)
-  createdAt      DateTime @default(now()) @map("created_at")
-  listing        Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  bidderUser     User     @relation(fields: [bidderUserId], references: [id], onDelete: Restrict)
+  id             String    @id @default(uuid()) @db.Uuid
+  listingId      String    @map("listing_id") @db.Uuid
+  bidderUserId   String    @map("bidder_user_id") @db.Uuid
+  amountMinor    Int       @map("amount_minor")
+  idempotencyKey String    @map("idempotency_key") @db.VarChar(100)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  voidedAt       DateTime? @map("voided_at")
+  voidReason     String?   @map("void_reason") @db.VarChar(40)
+  listing        Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  bidderUser     User      @relation(fields: [bidderUserId], references: [id], onDelete: Restrict)
   sourceOrder    Order?
 
-  @@unique([bidderUserId, idempotencyKey])
-  @@index([listingId, amount, createdAt, id])
-  @@index([listingId, createdAt])
+  @@unique([listingId, bidderUserId, idempotencyKey])
+  @@index([listingId, amountMinor])
   @@map("bids")
 }
 
 model Order {
-  id                 String                   @id @default(uuid()) @db.Uuid
-  publicId           String                   @unique @map("public_id") @db.VarChar(16)
-  listingId          String                   @map("listing_id") @db.Uuid
-  sellerId           String                   @map("seller_id") @db.Uuid
-  buyerId            String                   @map("buyer_id") @db.Uuid
-  sourceBidId        String                   @unique @map("source_bid_id") @db.Uuid
-  finalAmount        Decimal                  @map("final_amount") @db.Decimal(12, 2)
-  contactDueAt       DateTime                 @map("contact_due_at")
-  sellerHandoffType  HandoffContactType       @map("seller_handoff_type")
-  sellerHandoffValue String                   @map("seller_handoff_value") @db.VarChar(255)
-  buyerEmailAtClose  String                   @map("buyer_email_at_close") @db.VarChar(255)
-  handoffInitiator   HandoffInitiator         @map("handoff_initiator")
-  snapshotTitle      String?                  @map("snapshot_title") @db.VarChar(200)
-  snapshotCurrency   String?                  @map("snapshot_currency") @db.Char(3)
-  snapshotProductPublicId String?             @map("snapshot_product_public_id") @db.VarChar(16)
-  status             OrderStatus              @default(PENDING_CONTACT)
-  cancellationReason OrderCancellationReason? @map("cancellation_reason")
-  createdAt          DateTime                 @default(now()) @map("created_at")
-  updatedAt          DateTime                 @updatedAt @map("updated_at")
-  listing            Listing                  @relation(fields: [listingId], references: [id], onDelete: Restrict)
-  seller             User                     @relation("OrderSeller", fields: [sellerId], references: [id], onDelete: Restrict)
-  buyer              User                     @relation("OrderBuyer", fields: [buyerId], references: [id], onDelete: Restrict)
-  sourceBid          Bid                      @relation(fields: [sourceBidId], references: [id], onDelete: Restrict)
+  id                    String           @id @default(uuid()) @db.Uuid
+  publicId              String           @unique @map("public_id") @db.VarChar(16)
+  dealCode              String           @map("deal_code") @db.Char(6)
+  productId             String           @map("product_id") @db.Uuid
+  listingId             String           @map("listing_id") @db.Uuid
+  sellerUserId          String           @map("seller_user_id") @db.Uuid
+  buyerUserId           String           @map("buyer_user_id") @db.Uuid
+  source                OrderSource
+  sourceBidId           String?          @unique @map("source_bid_id") @db.Uuid
+  amountMinor           Int              @map("amount_minor")
+  currency              String           @db.Char(3)
+  status                OrderStatus
+  failReason            OrderFailReason? @map("fail_reason")
+  faultSide             FaultSide?       @map("fault_side")
+  strikeVoidedAt        DateTime?        @map("strike_voided_at")
+  completedBy           CompletedBy?     @map("completed_by")
+  offerExpiresAt        DateTime?        @map("offer_expires_at")
+  activatedAt           DateTime?        @map("activated_at")
+  contactDeadlineAt     DateTime?        @map("contact_deadline_at")
+  sellerRemindersSent   Int              @default(0) @map("seller_reminders_sent")
+  completedAt           DateTime?        @map("completed_at")
+  failedAt              DateTime?        @map("failed_at")
+  buyerComment          String?          @map("buyer_comment") @db.VarChar(500)
+  sellerNote            String?          @map("seller_note") @db.VarChar(1000)
+  workTitleSnapshot     String           @map("work_title_snapshot") @db.VarChar(200)
+  workPublicIdSnapshot  String           @map("work_public_id_snapshot") @db.VarChar(16)
+  coverImageIdSnapshot  String?          @map("cover_image_id_snapshot") @db.Uuid
+  sellerNameSnapshot    String           @map("seller_name_snapshot") @db.VarChar(160)
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+  product               Product          @relation(fields: [productId], references: [id], onDelete: Restrict)
+  listing               Listing          @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  seller                User             @relation("OrderSeller", fields: [sellerUserId], references: [id], onDelete: Restrict)
+  buyer                 User             @relation("OrderBuyer", fields: [buyerUserId], references: [id], onDelete: Restrict)
+  sourceBid             Bid?             @relation(fields: [sourceBidId], references: [id], onDelete: Restrict)
 
-  @@index([listingId])
-  @@index([sellerId, status])
-  @@index([buyerId, status])
+  @@index([buyerUserId, status])
+  @@index([sellerUserId, status])
+  @@index([status, activatedAt])
+  @@index([status, offerExpiresAt])
   @@map("orders")
 }
 
-model PhoneVerificationCode {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  codeHash  String   @map("code_hash") @db.Char(64)
-  expiresAt DateTime @map("expires_at")
-  usedAt    DateTime? @map("used_at")
-  attempts  Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Report {
+  id             String        @id @default(uuid()) @db.Uuid
+  targetType     ReportTarget  @map("target_type")
+  targetId       String        @map("target_id") @db.Uuid
+  reporterUserId String        @map("reporter_user_id") @db.Uuid
+  reason         String        @db.VarChar(40)
+  text           String?       @db.VarChar(1000)
+  status         ReportStatus  @default(OPEN)
+  faultSide      FaultSide?    @map("fault_side")
+  adminNote      String?       @map("admin_note") @db.VarChar(2000)
+  resolvedAt     DateTime?     @map("resolved_at")
+  resolvedById   String?       @map("resolved_by_id") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+  reporter       User          @relation("ReportReporter", fields: [reporterUserId], references: [id], onDelete: Restrict)
+  resolvedBy     User?         @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: Restrict)
 
-  @@index([userId, createdAt])
-  @@map("phone_verification_codes")
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@map("reports")
+}
+
+model UserNotificationSettings {
+  userId      String   @id @map("user_id") @db.Uuid
+  outbidEmail Boolean  @default(true) @map("outbid_email")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("user_notification_settings")
+}
+
+model NotificationOutbox {
+  id            String                   @id @default(uuid()) @db.Uuid
+  userId        String                   @map("user_id") @db.Uuid
+  kind          String                   @db.VarChar(40)
+  payload       Json
+  status        NotificationOutboxStatus @default(PENDING)
+  attemptCount  Int                      @default(0) @map("attempt_count")
+  nextAttemptAt DateTime                 @map("next_attempt_at")
+  sentAt        DateTime?                @map("sent_at")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  user          User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([status, nextAttemptAt])
+  @@map("notification_outbox")
+}
+
+model FavoriteWork {
+  userId    String   @map("user_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@id([userId, productId])
+  @@index([productId])
+  @@map("favorite_works")
 }
 
 model EmailVerificationCode {

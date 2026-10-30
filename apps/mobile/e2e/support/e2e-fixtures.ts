@@ -250,9 +250,6 @@ export async function createAuctionFixture(options?: {
       profilePhotoData: photo,
       socialLink: 'https://example.com/e2e',
       shortDescription: 'E2E seller',
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: privateContact,
-      handoffInitiator: 'BUYER_CONTACTS_SELLER',
       status: 'APPROVED',
     },
   });
@@ -293,12 +290,17 @@ export async function createAuctionFixture(options?: {
     const listing = await prisma.listing.create({
       data: {
         productId: product.id,
+        sellerUserId: seller.id,
+        type: 'AUCTION',
         status: options?.live === false ? 'SCHEDULED' : 'LIVE',
+        currency: 'BYN',
         startsAt,
         originalEndsAt: endsAt,
         endsAt,
-        currentPrice: 10,
-        auctionRules: { create: { startPrice: 10 } },
+        currentPriceMinor: 1_000,
+        auctionRules: {
+          create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+        },
       },
     });
     return { product, listing };
@@ -316,19 +318,19 @@ export async function createAuctionFixture(options?: {
           listingId: listing.id,
           bidderUserId: buyerA.id,
           idempotencyKey: `a-${suffix}`,
-          amount: 11,
+          amountMinor: 1_100,
         },
         {
           listingId: listing.id,
           bidderUserId: buyerB.id,
           idempotencyKey: `b-${suffix}`,
-          amount: 15,
+          amountMinor: 1_500,
         },
       ],
     });
     await prisma.listing.update({
       where: { id: listing.id },
-      data: { currentPrice: 15, bidCount: 2 },
+      data: { currentPriceMinor: 1_500, bidCount: 2 },
     });
   }
 
@@ -387,8 +389,6 @@ export async function createSellerFixture(
       profilePhotoData: photo,
       socialLink: 'https://example.com/e2e',
       shortDescription: 'E2E seller',
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: `@seller_${suffix}`,
       status: options.status ?? 'APPROVED',
     },
   });
@@ -564,9 +564,6 @@ export async function createAdminModerationFixture(): Promise<AdminModerationFix
       profilePhotoData: photo,
       socialLink: 'https://example.com/pending-seller',
       shortDescription: 'Pending moderation fixture',
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: `@pending_${suffix}`,
-      handoffInitiator: 'BUYER_CONTACTS_SELLER',
       status: 'PENDING_REVIEW',
     },
   });

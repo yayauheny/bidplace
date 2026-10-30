@@ -192,7 +192,6 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       fullName: 'Applicant Creator',
       country: 'BY',
       shortDescription: 'Applicant description',
-      handoffContactValue: null,
       status: 'DRAFT',
     });
     expect(persisted.profilePhotoByteLength).toBe(

@@ -14,7 +14,11 @@
 | Фото Work и автора (DEC-131/132) | Partial: `ImageProcessor`/Sharp и пофайловый upload объединены с release wizard; local verify/media E2E прошли. Live R2/CDN, устройства и Figma новых статусов — Needs verification. |
 | Удаление своей Work (DEC-123) | Not implemented: в `ProductsController` нет DELETE Work, в `Product` нет tombstone. Hide/unhide не удаляет работу. План — [W6 Task 2](../launch/waves/W6-launch-legal-ops.md). |
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
-| Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
+| Commerce, избранное/подписки, смена email/password из settings | Partial: W3 schema and contracts only (`20261030130000_commerce_v2`, `packages/contracts/src/commerce.ts`). Sale services, favorites API and settings email/password are Not implemented. |
+
+## 2026-10-30 — Commerce V2 schema and contracts
+
+**Partial.** Migration `20261030130000_commerce_v2` recreates sales tables in integer minor units (`BYN`|`RUB`) and adds deal contacts, reports, notification settings/outbox and favorites. Step tables and sale request/response schemas are in `packages/contracts/src/commerce.ts`; contact and notification schemas are in `packages/contracts/src/user.ts`. No sale HTTP yet. `users.phone` stays. `phone_verification_codes` is removed; that model had no readers.
 
 ## 2026-10-30 — Antifraud lock order and UTC signal time
 

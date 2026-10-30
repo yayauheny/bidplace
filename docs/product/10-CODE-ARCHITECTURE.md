@@ -1,7 +1,11 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-29
+Последнее обновление: 2026-10-30
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
+
+## 2026-10-30 — Commerce V2 persistence
+
+Sales tables follow COMMERCE §10: `Listing` (`FIXED`|`AUCTION`, minor units, contact window), `AuctionRules.stepTableCode`, `Bid` (`voidedAt`, idempotency unique on listing + bidder + key), `Order`, `Report`, `UserNotificationSettings`, `NotificationOutbox` and `FavoriteWork`. Partial unique indexes and currency/contact-window checks are raw SQL in `20261030130000_commerce_v2`. Deal contacts are optional `users.contact_*` columns; `users.phone` remains. The commerce HTTP module is not on the boot graph.
 
 ## 2026-10-29 — Scheduler tick (W2, local implementation)
 
@@ -536,7 +540,7 @@ SellerProfile
             └─ Order[]
 ```
 
-`Product` and `Order` use immutable 11-character cryptographically random public IDs; internal writes use UUIDs. MVP has only `ListingType.AUCTION` and currency `BYN`. PostgreSQL enforces one active (`SCHEDULED`/`LIVE`) Listing per Product and one non-cancelled Order per Listing with partial unique indexes.
+`Product` and `Order` use immutable 11-character cryptographically random public IDs; internal writes use UUIDs. Listing currency is `BYN` or `RUB` in integer minor units. PostgreSQL enforces one `SCHEDULED`/`LIVE` Listing per Product, one `OFFERED`/`ACTIVE` Order per Product, and one `COMPLETED` Order per Product with partial unique indexes.
 
 ## Confirmed current MVP implementation boundary
 
