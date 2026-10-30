@@ -64,10 +64,13 @@ describe('ban void hook', () => {
     };
 
     await expect(
-      runReadCommittedTransaction(prisma, async (transaction) => {
-        const locked = await hook.lockProducts(transaction, 'user-1');
-        await hook.voidBids(transaction, 'user-1', new Set(locked));
-      }),
+      runReadCommittedTransaction(
+        prisma as Parameters<typeof runReadCommittedTransaction>[0],
+        async (transaction) => {
+          const locked = await hook.lockProducts(transaction, 'user-1');
+          await hook.voidBids(transaction, 'user-1', new Set(locked));
+        },
+      ),
     ).rejects.toMatchObject({
       apiCode: ApiErrorCode.CONFLICT,
       status: 409,

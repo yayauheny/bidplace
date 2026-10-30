@@ -227,6 +227,9 @@ async function insertOrder(
           select: { id: true },
         });
   const now = await databaseNow();
+  if (product.publicId == null || product.title == null) {
+    throw new Error('product snapshot fields missing');
+  }
   return prisma.order.create({
     data: {
       publicId: `o${randomUUID().replace(/-/g, '').slice(0, 10)}`,
@@ -236,14 +239,18 @@ async function insertOrder(
       sellerUserId: fixture.sellers.approved.id,
       buyerUserId: input.buyerId,
       source: input.source ?? 'FIXED_PURCHASE',
-      sourceBidId: input.sourceBidId,
       amountMinor: input.amountMinor ?? 1_500,
       currency: 'BYN',
       status: input.status,
-      failReason: input.failReason as never,
-      faultSide: input.faultSide,
-      failedBy: input.failedBy,
-      failedAt: input.failedAt,
+      ...(input.sourceBidId === undefined
+        ? {}
+        : { sourceBidId: input.sourceBidId }),
+      ...(input.failReason === undefined
+        ? {}
+        : { failReason: input.failReason as never }),
+      ...(input.faultSide === undefined ? {} : { faultSide: input.faultSide }),
+      ...(input.failedBy === undefined ? {} : { failedBy: input.failedBy }),
+      ...(input.failedAt === undefined ? {} : { failedAt: input.failedAt }),
       offerExpiresAt:
         input.offerExpiresAt === undefined
           ? input.status === 'OFFERED'
@@ -257,7 +264,9 @@ async function insertOrder(
             ? new Date(now.getTime() + (input.contactWindowHours ?? 24) * HOUR_MS)
             : null
           : input.contactDeadlineAt,
-      sellerNote: input.sellerNote,
+      ...(input.sellerNote === undefined
+        ? {}
+        : { sellerNote: input.sellerNote }),
       workTitleSnapshot: product.title,
       workPublicIdSnapshot: product.publicId,
       sellerNameSnapshot: 'Wave 3 APPROVED',
@@ -795,7 +804,7 @@ describe('next participant', () => {
       failedBy: 'buyer',
       failedAt: await databaseNow(),
       amountMinor: 4_000,
-      sourceBidId: auction.bids[0],
+      sourceBidId: seededBid(auction.bids, 0),
     });
     expect(
       await prisma.order.count({ where: { listingId: auction.listingId } }),
@@ -847,7 +856,7 @@ describe('next participant', () => {
       data: { status: 'banned' },
     });
     await prisma.bid.update({
-      where: { id: auction.bids[3] },
+      where: { id: seededBid(auction.bids, 3) },
       data: { voidedAt: new Date('2026-09-02T00:00:00.000Z'), voidReason: 'BANNED' },
     });
     const failed = await insertOrder(fixture, {
@@ -860,7 +869,7 @@ describe('next participant', () => {
       faultSide: 'BUYER',
       failedBy: 'seller',
       failedAt: new Date('2026-09-03T00:00:00.000Z'),
-      sourceBidId: auction.bids[0],
+      sourceBidId: seededBid(auction.bids, 0),
       listingType: 'AUCTION',
     });
     const seller = await signedIn(fixture.sellers.approved.email);
@@ -937,7 +946,7 @@ describe('next participant', () => {
       faultSide: 'BUYER',
       failedBy: 'buyer',
       failedAt: await databaseNow(),
-      sourceBidId: auction.bids[0],
+      sourceBidId: seededBid(auction.bids, 0),
       amountMinor: 3_000,
     });
     await insertOrder(fixture, {
@@ -971,7 +980,7 @@ describe('next participant', () => {
       faultSide: 'BUYER',
       failedBy: 'buyer',
       failedAt: await databaseNow(),
-      sourceBidId: auction.bids[0],
+      sourceBidId: seededBid(auction.bids, 0),
       amountMinor: 3_000,
     });
     await prisma.listing.create({
@@ -1010,7 +1019,7 @@ describe('next participant', () => {
       faultSide: 'BUYER',
       failedBy: 'buyer',
       failedAt: await databaseNow(),
-      sourceBidId: auction.bids[0],
+      sourceBidId: seededBid(auction.bids, 0),
       amountMinor: 3_000,
     });
     await prisma.sellerProfile.update({
@@ -1249,6 +1258,12 @@ async function extraBuyer(label: string, amount = 0) {
     select: { id: true, email: true },
   });
   return { ...user, amount, client: await signedIn(email) };
+}
+
+function seededBid(bids: readonly string[], index: number): string {
+  const id = bids[index];
+  if (!id) throw new Error(`seeded bid ${index} is missing`);
+  return id;
 }
 
 async function auctionWithBids(

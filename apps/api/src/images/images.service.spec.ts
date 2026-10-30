@@ -58,6 +58,7 @@ function createPrismaForAdd(options: {
 
   const tx = {
     listing: { findFirst: vi.fn().mockResolvedValue(productPayload?.listings[0] ?? null) },
+    order: { findFirst: vi.fn().mockResolvedValue(null) },
     $queryRaw: vi
       .fn()
       .mockResolvedValue(productPayload ? [{ id: 'product-id' }] : []),
@@ -70,6 +71,7 @@ function createPrismaForAdd(options: {
   const prisma = {
     $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
     listing: { findFirst: vi.fn().mockResolvedValue(productPayload?.listings[0] ?? null) },
+    order: { findFirst: vi.fn().mockResolvedValue(null) },
     product: {
       findUnique: vi.fn().mockResolvedValue(productPayload),
     },
@@ -618,12 +620,14 @@ describe('ImagesService', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: {
         findUnique: vi.fn().mockResolvedValue(productRow),
       },
       $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
         callback({
           listing: { findFirst: vi.fn().mockResolvedValue(null) },
+          order: { findFirst: vi.fn().mockResolvedValue(null) },
           $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
           product: { findUnique: vi.fn().mockResolvedValue(productRow) },
           productImage: {
@@ -677,10 +681,12 @@ describe('ImagesService', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: { findUnique: vi.fn().mockResolvedValue(productRow) },
       $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
         callback({
           listing: { findFirst: vi.fn().mockResolvedValue(null) },
+          order: { findFirst: vi.fn().mockResolvedValue(null) },
           $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
           product: { findUnique: vi.fn().mockResolvedValue(productRow) },
           productImage: { update: productImageUpdate },
@@ -724,12 +730,14 @@ describe('ImagesService', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: {
         findUnique: vi.fn().mockResolvedValue(productRow),
       },
       $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
         callback({
           listing: { findFirst: vi.fn().mockResolvedValue(null) },
+          order: { findFirst: vi.fn().mockResolvedValue(null) },
           $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
           product: { findUnique: vi.fn().mockResolvedValue(productRow) },
           productImage: {
@@ -799,12 +807,14 @@ describe('ImagesService', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: {
         findUnique: vi.fn().mockResolvedValue(outerProduct),
       },
       $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
         callback({
           listing: { findFirst: vi.fn().mockResolvedValue(null) },
+          order: { findFirst: vi.fn().mockResolvedValue(null) },
           $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
           product: { findUnique: vi.fn().mockResolvedValue(lockedProduct) },
           productImage: {
@@ -859,12 +869,14 @@ describe('ImagesService', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: {
         findUnique: vi.fn().mockResolvedValue(outerProduct),
       },
       $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
         callback({
           listing: { findFirst: vi.fn().mockResolvedValue(null) },
+          order: { findFirst: vi.fn().mockResolvedValue(null) },
           $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
           product: { findUnique: vi.fn().mockResolvedValue(lockedProduct) },
           productImage: { delete: deleteImage },
@@ -908,12 +920,14 @@ describe('ImagesService', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: {
         findUnique: vi.fn().mockResolvedValue(outerProduct),
       },
       $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
         callback({
           listing: { findFirst: vi.fn().mockResolvedValue(null) },
+          order: { findFirst: vi.fn().mockResolvedValue(null) },
           $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
           product: { findUnique: vi.fn().mockResolvedValue(lockedProduct) },
           productImage: { update },
@@ -936,6 +950,7 @@ describe('ImagesService', () => {
     const order: string[] = [];
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
     $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue({
@@ -961,6 +976,7 @@ describe('ImagesService', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'product-id',
@@ -1092,6 +1108,7 @@ describe('ImagesService media gallery admission', () => {
     const create = vi.fn().mockResolvedValue({ id: 'image-id' });
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
     $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: { findUnique: vi.fn().mockResolvedValue(locked) },
       productImage: {
@@ -1104,6 +1121,7 @@ describe('ImagesService media gallery admission', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: { findUnique: vi.fn().mockResolvedValue(product) },
       mediaOperation: {
         findUnique: vi.fn().mockResolvedValue(options.operation ?? null),
@@ -1172,6 +1190,7 @@ describe('ImagesService media gallery admission', () => {
     const stage = vi.fn().mockResolvedValue({ id: 'story-asset' });
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
     $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: { findUnique: vi.fn().mockResolvedValue(product) },
       mediaOperation: {
@@ -1185,6 +1204,7 @@ describe('ImagesService media gallery admission', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: { findUnique: vi.fn().mockResolvedValue(product) },
       productRevisionStoryAsset: { count: vi.fn().mockResolvedValue(concurrent ? 4 : 5) },
       mediaOperation: {
@@ -1217,6 +1237,7 @@ describe('ImagesService media gallery admission', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: { findUnique: vi.fn().mockResolvedValue(product) },
       mediaOperation: {
         findUnique: vi.fn().mockResolvedValue({ revisionId: 'old-revision' }),
@@ -1241,6 +1262,7 @@ describe('ImagesService media gallery admission', () => {
     const stage = vi.fn().mockResolvedValue({ id: 'story-asset' });
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
     $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: { findUnique: vi.fn().mockResolvedValue(locked) },
       productRevisionStoryAsset: { create },
@@ -1248,6 +1270,7 @@ describe('ImagesService media gallery admission', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       product: { findUnique: vi.fn().mockResolvedValue(product) },
       productRevisionStoryAsset: { count: vi.fn().mockResolvedValue(0) },
       mediaOperation: {
@@ -1365,6 +1388,7 @@ describe('Story image release safety', () => {
     const release = vi.fn();
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
     $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(createApprovedProduct([])),

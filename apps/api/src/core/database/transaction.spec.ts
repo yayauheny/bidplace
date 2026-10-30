@@ -7,16 +7,9 @@ import {
   runReadCommittedTransaction,
 } from './transaction';
 
-function fakePrisma(
-  run: (attempt: number) => Promise<unknown>,
-): {
+function fakePrisma(run: (attempt: number) => Promise<unknown>): {
   calls: number;
-  client: {
-    $transaction: (
-      callback: (tx: object) => Promise<unknown>,
-      options: { isolationLevel: string },
-    ) => Promise<unknown>;
-  };
+  client: Parameters<typeof runReadCommittedTransaction>[0];
 } {
   const state = { calls: 0 };
   return {
@@ -24,15 +17,18 @@ function fakePrisma(
       return state.calls;
     },
     client: {
-      $transaction: async (callback, options) => {
+      $transaction: async (
+        callback: (tx: object) => Promise<unknown>,
+        options?: { isolationLevel?: string },
+      ) => {
         state.calls += 1;
         void callback;
-        if (options.isolationLevel !== 'ReadCommitted') {
-          throw new Error(options.isolationLevel);
+        if (options?.isolationLevel !== 'ReadCommitted') {
+          throw new Error(options?.isolationLevel ?? 'missing isolation');
         }
         return run(state.calls);
       },
-    },
+    } as Parameters<typeof runReadCommittedTransaction>[0],
   };
 }
 

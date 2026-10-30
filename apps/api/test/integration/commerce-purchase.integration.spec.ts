@@ -242,9 +242,13 @@ async function orderOn(
       amountMinor: 1_500,
       currency: 'BYN',
       status,
-      failReason: fail?.reason,
-      faultSide: fail ? 'BUYER' : undefined,
-      failedAt: fail?.failedAt,
+      ...(fail
+        ? {
+            failReason: fail.reason,
+            faultSide: 'BUYER' as const,
+            failedAt: fail.failedAt,
+          }
+        : {}),
       workTitleSnapshot: titleOf(product.publicId),
       workPublicIdSnapshot: product.publicId,
       sellerNameSnapshot: 'Wave 3 APPROVED',
