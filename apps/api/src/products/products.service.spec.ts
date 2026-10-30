@@ -96,7 +96,15 @@ function createWritePrisma(options: {
         .map(({ id }) => ({ imageId: id })) ?? [],
   };
   const tx = {
-    listing: { findFirst: vi.fn().mockResolvedValue((options.product?.listings as Array<{ id: string }> | undefined)?.[0] ?? null) },
+    listing: {
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          (
+            options.product?.listings as Array<{ id: string }> | undefined
+          )?.[0] ?? null,
+        ),
+    },
     order: { findFirst: vi.fn().mockResolvedValue(null) },
     $queryRaw: vi
       .fn()
@@ -1238,7 +1246,7 @@ describe('ProductsService', () => {
       product: { status: 'ARCHIVED' },
     });
     expect(tx.product.updateMany).toHaveBeenCalledWith({
-      where: { id: product.id, status: { in: ['APPROVED'] } },
+      where: { id: product.id, deletedAt: null, status: { in: ['APPROVED'] } },
       data: { status: 'ARCHIVED' },
     });
     expect(tx.auditEvent.create).toHaveBeenCalled();

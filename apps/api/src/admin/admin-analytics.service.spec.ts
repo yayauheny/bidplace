@@ -127,6 +127,7 @@ describe('AdminAnalyticsService', () => {
     expect(sqlText(activeQuery!)).not.toContain('created_at" AT TIME ZONE');
     expect(prisma.product.count).toHaveBeenCalledWith({
       where: {
+        deletedAt: null,
         status: 'PENDING_REVIEW',
         updatedAt: { lt: new Date('2026-08-13T15:00:00.000Z') },
       },

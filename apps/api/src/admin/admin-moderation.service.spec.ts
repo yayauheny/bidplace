@@ -25,7 +25,8 @@ function moderationService(prisma: object) {
 function transactionPrisma(tx: object) {
   return {
     $transaction: vi.fn(
-      async (callback: (client: object) => Promise<unknown>) => callback({ $queryRaw: vi.fn().mockResolvedValue([]), ...tx }),
+      async (callback: (client: object) => Promise<unknown>) =>
+        callback({ $queryRaw: vi.fn().mockResolvedValue([]), ...tx }),
     ),
   };
 }
@@ -492,7 +493,9 @@ describe('AdminModerationService', () => {
     expect(
       tx.sellerProfile.update.mock.calls[0]?.[0].data.profilePhotoObjectKey,
     ).not.toBe('seller-photo:published-a');
-    expect(tx.sellerProfile.update.mock.calls[0]?.[0].data).not.toHaveProperty('slug');
+    expect(tx.sellerProfile.update.mock.calls[0]?.[0].data).not.toHaveProperty(
+      'slug',
+    );
   });
 
   it.each(
@@ -643,6 +646,7 @@ describe('AdminModerationService', () => {
     };
     const product = {
       id: 'product-id',
+      deletedAt: null,
       status: 'PENDING_REVIEW',
       updatedAt: now,
       sellerProfile: { status: 'APPROVED', user: { status: 'active' } },

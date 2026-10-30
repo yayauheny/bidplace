@@ -1,10 +1,7 @@
 import { z } from 'zod';
 
 import { idempotencyKeySchema } from './auth';
-import {
-  listingTypeSchema,
-  orderStatusSchema,
-} from './enums';
+import { listingTypeSchema, orderStatusSchema } from './enums';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
 import { turnstileTokenSchema } from './user';
 
@@ -107,9 +104,7 @@ const contactWindowHoursSchema = z
   .int()
   .refine(
     (value): value is (typeof COMMERCE_LIMITS.contactWindowHours)[number] =>
-      (COMMERCE_LIMITS.contactWindowHours as readonly number[]).includes(
-        value,
-      ),
+      (COMMERCE_LIMITS.contactWindowHours as readonly number[]).includes(value),
     { message: 'Contact window must be 1, 6, 24, 48 or 72 hours' },
   )
   .default(COMMERCE_LIMITS.defaultContactWindowHours);
@@ -157,10 +152,7 @@ export const createListingRequestSchema = z
   .discriminatedUnion('type', [fixedListingSchema, auctionListingSchema])
   .superRefine((value, context) => {
     const start = Date.parse(value.startsAt);
-    if (
-      start >
-      Date.now() + COMMERCE_LIMITS.scheduleMaxDays * DAY_MS
-    ) {
+    if (start > Date.now() + COMMERCE_LIMITS.scheduleMaxDays * DAY_MS) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['startsAt'],
@@ -180,7 +172,11 @@ export const createListingRequestSchema = z
         message: 'Auction length must be from 1 to 14 days',
       });
     }
-    if (value.startPriceMinor % bidStepMinor(value.currency, value.startPriceMinor) !== 0) {
+    if (
+      value.startPriceMinor %
+        bidStepMinor(value.currency, value.startPriceMinor) !==
+      0
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['startPriceMinor'],
@@ -348,6 +344,7 @@ const orderSummaryFields = {
   currency: currencySchema,
   workTitle: z.string().trim().min(1).max(200),
   workPublicId: z.string().trim().min(1).max(16),
+  coverImageUrl: z.string().nullable(),
   role: z.enum(['buyer', 'seller', 'admin']),
   createdAt: isoDateTimeSchema,
 };

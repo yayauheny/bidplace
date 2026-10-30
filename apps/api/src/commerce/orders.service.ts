@@ -589,7 +589,9 @@ export class OrdersService {
           action: 'ORDER_VOID_STRIKE',
         },
       });
-      const stored = await tx.order.findUniqueOrThrow({ where: { id: order.id } });
+      const stored = await tx.order.findUniqueOrThrow({
+        where: { id: order.id },
+      });
       return this.orderCard(tx, stored, adminId);
     });
   }
@@ -663,72 +665,89 @@ export class OrdersService {
     tx: Prisma.TransactionClient,
     input: CommitOutcomeInput & { card?: false },
   ): Promise<OrderDetail | null> {
-      await lockProductRowForUpdate(tx, input.productId);
-      const locked = await tx.order.findUnique({ where: { id: input.orderId } });
-      if (!locked) throw new NotFoundException('Order not found');
-      const userIds = [locked.buyerUserId, locked.sellerUserId];
-      if (input.actorUserId) userIds.push(input.actorUserId);
-      await this.antifraud.lockUsers(tx, [...new Set(userIds)]);
-      const now = await dbNow(tx);
-      if (input.requireAdmin && input.actorUserId) {
-        await this.assertActiveAdmin(tx, input.actorUserId);
-      }
-      const order = await tx.order.findUnique({ where: { id: input.orderId } });
-      if (!order) throw new NotFoundException('Order not found');
-      if (input.requireFixedPurchase && order.source !== 'FIXED_PURCHASE') {
-        throw new Error('Only a fixed-price order restores its listing');
-      }
-      assertOrderTransition(order, input.actor, input.next, now);
-      if (input.checkAccept) {
-        await this.antifraud.assertCanAct(tx, order.buyerUserId, 'accept-offer');
-      }
-      const listing = await tx.listing.findUnique({
-        where: { id: order.listingId },
-        select: { id: true, type: true, status: true, contactWindowHours: true },
+    await lockProductRowForUpdate(tx, input.productId);
+    const locked = await tx.order.findUnique({ where: { id: input.orderId } });
+    if (!locked) throw new NotFoundException('Order not found');
+    const userIds = [locked.buyerUserId, locked.sellerUserId];
+    if (input.actorUserId) userIds.push(input.actorUserId);
+    await this.antifraud.lockUsers(tx, [...new Set(userIds)]);
+    const now = await dbNow(tx);
+    if (input.requireAdmin && input.actorUserId) {
+      await this.assertActiveAdmin(tx, input.actorUserId);
+    }
+    const order = await tx.order.findUnique({ where: { id: input.orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (input.requireFixedPurchase && order.source !== 'FIXED_PURCHASE') {
+      throw new Error('Only a fixed-price order restores its listing');
+    }
+    assertOrderTransition(order, input.actor, input.next, now);
+    if (input.checkAccept) {
+      await this.antifraud.assertCanAct(tx, order.buyerUserId, 'accept-offer');
+    }
+    const listing = await tx.listing.findUnique({
+      where: { id: order.listingId },
+      select: { id: true, type: true, status: true, contactWindowHours: true },
+    });
+    if (!listing) throw new Error('Order listing is missing');
+    if (input.next.to === 'COMPLETED') {
+      const other = await tx.order.findFirst({
+        where: {
+          productId: order.productId,
+          id: { not: order.id },
+          status: { in: ['OFFERED', 'ACTIVE', 'COMPLETED'] },
+        },
+        select: { id: true },
       });
-      if (!listing) throw new Error('Order listing is missing');
-      if (input.next.to === 'COMPLETED') {
-        const other = await tx.order.findFirst({
-          where: {
-            productId: order.productId,
-            id: { not: order.id },
-            status: { in: ['OFFERED', 'ACTIVE', 'COMPLETED'] },
-          },
-          select: { id: true },
-        });
-        if (other) throw orderTransitionNotAllowed();
-        await assertNoOpenListing(tx, order.productId);
-      }
-      const updated = await tx.order.updateMany({
-        where: { id: order.id, status: order.status },
-        data: outcomeData(input.next, input.actor, now, listing.contactWindowHours),
+      if (other) throw orderTransitionNotAllowed();
+      await assertNoOpenListing(tx, order.productId);
+    }
+    const updated = await tx.order.updateMany({
+      where: { id: order.id, status: order.status },
+      data: outcomeData(
+        input.next,
+        input.actor,
+        now,
+        listing.contactWindowHours,
+      ),
+    });
+    if (updated.count !== 1) throw orderTransitionNotAllowed();
+    if (
+      input.next.to === 'FAILED' &&
+      order.source === 'FIXED_PURCHASE' &&
+      listing.type === 'FIXED' &&
+      listing.status === 'ENDED'
+    ) {
+      const product = await tx.product.findUniqueOrThrow({
+        where: { id: order.productId },
+        select: { deletedAt: true },
       });
-      if (updated.count !== 1) throw orderTransitionNotAllowed();
-      if (
-        input.next.to === 'FAILED' &&
-        order.source === 'FIXED_PURCHASE' &&
-        listing.type === 'FIXED' &&
-        listing.status === 'ENDED'
-      ) {
-        await restoreFixedPriceListing(tx, listing.id);
-      }
-      const stored = await tx.order.findUniqueOrThrow({ where: { id: order.id } });
-      await this.enqueueOutcomeLetters(tx, stored, listing.type, input.actor, input.next);
-      if (input.actor === 'admin') {
-        await tx.auditEvent.create({
-          data: {
-            actorUserId: input.actorUserId,
-            targetType: 'ORDER',
-            targetId: order.id,
-            oldStatus: statusLabel(order.status, order.failReason),
-            newStatus: statusLabel(input.next.to, input.next.failReason ?? null),
-            reason: `${order.publicId}: ${input.adminReason ?? input.next.failReason ?? 'admin'}`,
-            action: 'ORDER_OUTCOME',
-          },
-        });
-      }
-      if (input.card === false) return null;
-      return this.orderCard(tx, stored, input.viewerId);
+      if (!product.deletedAt) await restoreFixedPriceListing(tx, listing.id);
+    }
+    const stored = await tx.order.findUniqueOrThrow({
+      where: { id: order.id },
+    });
+    await this.enqueueOutcomeLetters(
+      tx,
+      stored,
+      listing.type,
+      input.actor,
+      input.next,
+    );
+    if (input.actor === 'admin') {
+      await tx.auditEvent.create({
+        data: {
+          actorUserId: input.actorUserId,
+          targetType: 'ORDER',
+          targetId: order.id,
+          oldStatus: statusLabel(order.status, order.failReason),
+          newStatus: statusLabel(input.next.to, input.next.failReason ?? null),
+          reason: `${order.publicId}: ${input.adminReason ?? input.next.failReason ?? 'admin'}`,
+          action: 'ORDER_OUTCOME',
+        },
+      });
+    }
+    if (input.card === false) return null;
+    return this.orderCard(tx, stored, input.viewerId);
   }
 
   private async enqueueOutcomeLetters(
@@ -755,7 +774,11 @@ export class OrdersService {
         completedAt: order.completedAt.toISOString(),
       };
       for (const userId of [order.buyerUserId, order.sellerUserId]) {
-        await enqueueNotification(tx, { userId, kind: 'DEAL_COMPLETED', payload });
+        await enqueueNotification(tx, {
+          userId,
+          kind: 'DEAL_COMPLETED',
+          payload,
+        });
       }
       return;
     }
@@ -906,10 +929,7 @@ const contactSelect = {
   contactVk: true,
 } satisfies Prisma.UserSelect;
 
-function orderSummary(
-  order: StoredOrder,
-  role: 'buyer' | 'seller' | 'admin',
-) {
+function orderSummary(order: StoredOrder, role: 'buyer' | 'seller' | 'admin') {
   return {
     publicId: order.publicId,
     dealCode: order.dealCode,
@@ -919,6 +939,9 @@ function orderSummary(
     currency: currencyOf(order.currency),
     workTitle: order.workTitleSnapshot,
     workPublicId: order.workPublicIdSnapshot,
+    coverImageUrl: order.coverImageIdSnapshot
+      ? `/api/images/${order.coverImageIdSnapshot}`
+      : null,
     role,
     createdAt: order.createdAt.toISOString(),
   };
@@ -991,7 +1014,10 @@ function partyContacts(
   };
 }
 
-function statusLabel(status: string, failReason: string | null | undefined): string {
+function statusLabel(
+  status: string,
+  failReason: string | null | undefined,
+): string {
   return failReason ? `${status}:${failReason}` : status;
 }
 

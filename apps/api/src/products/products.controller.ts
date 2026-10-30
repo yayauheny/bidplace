@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Delete,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -20,6 +22,16 @@ import { ProductsService } from './products.service';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly products: ProductsService) {}
+
+  @Delete(':id')
+  @HttpCode(204)
+  @UseGuards(SessionAuthGuard)
+  remove(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.products.remove(auth.sub, id);
+  }
 
   @Post()
   @UseGuards(SessionAuthGuard, VerifiedEmailGuard)

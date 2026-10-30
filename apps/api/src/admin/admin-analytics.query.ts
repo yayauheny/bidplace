@@ -116,7 +116,13 @@ export function sellerCreationDaySql(from: Date, to: Date): Prisma.Sql {
 }
 
 export function publishedWorkDaySql(from: Date, to: Date): Prisma.Sql {
-  return utcDayCounts(products, publishedAt, from, to);
+  return utcDayCounts(
+    products,
+    publishedAt,
+    from,
+    to,
+    Prisma.sql`"deleted_at" IS NULL`,
+  );
 }
 
 export function inUtcWindow(
@@ -147,6 +153,7 @@ export function foundationCountsSql(
       SELECT p.*, a.status AS author_status, a.user_status, r.status::text AS review_status, r.submitted_at
       FROM products p JOIN authors a ON a.id = p.seller_profile_id
       LEFT JOIN product_revisions r ON r.id = p.editing_revision_id
+      WHERE p.deleted_at IS NULL
     ), pending_authors AS (
       SELECT * FROM authors WHERE review_status = 'PENDING_REVIEW' OR (editing_revision_id IS NULL AND status::text = 'PENDING_REVIEW')
     ), pending_works AS (
@@ -212,7 +219,7 @@ export function foundationGrowthSql(
         WHERE ${inUtcWindow(Prisma.sql`first_published_at`, from, to)} GROUP BY 1
       UNION ALL
       SELECT published_at::date, 0, 0, 0, 0, 0, COUNT(*) FROM products
-        WHERE ${inUtcWindow(Prisma.sql`published_at`, from, to)} GROUP BY 1
+        WHERE deleted_at IS NULL AND ${inUtcWindow(Prisma.sql`published_at`, from, to)} GROUP BY 1
     ) SELECT to_char(d.day, 'YYYY-MM-DD') AS date,
       COALESCE(SUM(c.views), 0)::bigint AS views, COALESCE(SUM(c.visitors), 0)::bigint AS visitors,
       COALESCE(SUM(c.sessions), 0)::bigint AS sessions,

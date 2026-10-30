@@ -863,6 +863,7 @@ describe('SellersService', () => {
       expect.objectContaining({
         where: {
           id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+          deletedAt: null,
           sellerProfile: { userId: 'owner-id' },
         },
       }),

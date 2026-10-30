@@ -5,6 +5,10 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-10-31 — Work deletion
+
+**Partial / Needs verification.** `Product.deletedAt`, `ProductsController.remove`, `product-publication.ts`, read filters and `MediaLifecycleService` implement the W6 tombstone path; `product-delete.integration.spec.ts` and `media-lifecycle.integration.spec.ts` exercise owner access, sale guards, races, retained order cover and purge retry. Full checks and independent review remain pending.
+
 | Область | Статус и основание |
 | --- | --- |
 | Portfolio discovery, author/Work lifecycle и moderation | Implemented для проверенного локального среза: `portfolio`, `products`, `sellers`, `admin-moderation` в `apps/api/src`; revision/public guards и HTTP/media tests. Live acceptance остаётся отдельной. |
@@ -12,7 +16,7 @@
 | Author Story / каталоги / история Work | Implemented для проверенного client/API cutover: `use-product-story-editor.ts` вызывает `api.products.replaceCreation`, `ProductsController` → `ProductsService.replaceCreationStory`, revision-owned blocks; UI completion, review. Архивное «B6 не начат» — исторический checkpoint. |
 | Responsive UI, account/settings, author/header/footer | Partial: реализация и browser evidence есть; настройки имеют исключённое смещение заголовка, физические устройства/zoom и точный desktop parity не закрыты. [Design status](../design/04-DESIGN-STATUS.md). |
 | Фото Work и автора (DEC-131/132) | Partial: `ImageProcessor`/Sharp и пофайловый upload объединены с release wizard; local verify/media E2E прошли. Live R2/CDN, устройства и Figma новых статусов — Needs verification. |
-| Удаление своей Work (DEC-123) | Not implemented: в `ProductsController` нет DELETE Work, в `Product` нет tombstone. Hide/unhide не удаляет работу. План — [W6 Task 2](../launch/waves/W6-launch-legal-ops.md). |
+| Удаление своей Work (DEC-123) | Partial / Needs verification: `DELETE /api/products/:id` и `Product.deletedAt` реализованы локально; доступ и отзыв медиа, история заказов и гонки проверяются в `product-delete.integration.spec.ts` и `media-lifecycle.integration.spec.ts`. Полные проверки и review ещё не завершены; edge JSON остаётся кэшированным до 30–60 секунд. |
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Partial: listings, bids, fixed-price purchase, order lifecycle HTTP, the commerce tick, and order reports are Implemented locally (card, accept/decline/complete/fail, next participant, contacts, strikes, admin outcome/void/ban, activate/close/offer expiry/reminders, report create/list/resolve). Trust signals are Partial: the admin user card counts them; the author order card and admin order/report views still do not return the signals. Favorites API, settings email/password, and the 72h admin attention query are Not implemented. |
 

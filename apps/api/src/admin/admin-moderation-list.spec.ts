@@ -145,15 +145,20 @@ describe('admin moderation list queries', () => {
         null,
       ),
     ).toEqual({
-      AND: [{ editingRevision: { is: { status: 'PENDING_REVIEW' } } }],
+      AND: [
+        { deletedAt: null },
+        { editingRevision: { is: { status: 'PENDING_REVIEW' } } },
+      ],
     });
     expect(
       productModerationWhere(
         adminModerationListQuerySchema.parse({ filter: 'APPROVED' }),
         null,
       ),
-    ).toEqual({ AND: [{ status: 'APPROVED' }] });
-    expect(productModerationWhere(query, null)).toEqual({});
+    ).toEqual({ AND: [{ deletedAt: null }, { status: 'APPROVED' }] });
+    expect(productModerationWhere(query, null)).toEqual({
+      AND: [{ deletedAt: null }],
+    });
   });
 
   it('searches the joined display text with literal LIKE wildcards', () => {
@@ -182,9 +187,9 @@ describe('admin moderation list queries', () => {
     expect(sellerText).not.toContain('Alpha%');
     expect(sellerSql.values).toContain('%Alpha\\%\\_\\\\ parent%');
     expect(
-      [sellerModerationWhere(sellers, null).AND].flat().some((filter) =>
-        JSON.stringify(filter).includes('contains'),
-      ),
+      [sellerModerationWhere(sellers, null).AND]
+        .flat()
+        .some((filter) => JSON.stringify(filter).includes('contains')),
     ).toBe(false);
 
     const products = adminModerationListQuerySchema.parse({

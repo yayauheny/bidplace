@@ -24,10 +24,7 @@ import {
   resolveReportRequestSchema,
   trustSignalsSchema,
 } from './commerce';
-import {
-  notificationSettingsSchema,
-  userContactsRequestSchema,
-} from './user';
+import { notificationSettingsSchema, userContactsRequestSchema } from './user';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -35,10 +32,7 @@ function iso(offsetMs: number, origin = Date.now()): string {
   return new Date(origin + offsetMs).toISOString();
 }
 
-function auction(
-  overrides: Record<string, unknown> = {},
-  origin = Date.now(),
-) {
+function auction(overrides: Record<string, unknown> = {}, origin = Date.now()) {
   return {
     type: 'AUCTION' as const,
     currency: 'BYN' as const,
@@ -138,13 +132,31 @@ describe('createListingRequestSchema', () => {
     ['currency', fixed({ currency: 'USD' })],
     ['zero price', fixed({ priceMinor: 0 })],
     ['negative price', fixed({ priceMinor: -1 })],
-    ['price above the limit', fixed({ priceMinor: COMMERCE_LIMITS.maxAmountMinor + 1 })],
-    ['auction shorter than 1 day', auction({ endsAt: iso(60_000 + DAY_MS - 1) })],
-    ['auction longer than 14 days', auction({ endsAt: iso(60_000 + 14 * DAY_MS + 1) })],
-    ['startsAt further than 30 days', auction({ startsAt: iso(30 * DAY_MS + 60_000), endsAt: iso(30 * DAY_MS + 60_000 + 2 * DAY_MS) })],
+    [
+      'price above the limit',
+      fixed({ priceMinor: COMMERCE_LIMITS.maxAmountMinor + 1 }),
+    ],
+    [
+      'auction shorter than 1 day',
+      auction({ endsAt: iso(60_000 + DAY_MS - 1) }),
+    ],
+    [
+      'auction longer than 14 days',
+      auction({ endsAt: iso(60_000 + 14 * DAY_MS + 1) }),
+    ],
+    [
+      'startsAt further than 30 days',
+      auction({
+        startsAt: iso(30 * DAY_MS + 60_000),
+        endsAt: iso(30 * DAY_MS + 60_000 + 2 * DAY_MS),
+      }),
+    ],
     ['priceMinor on an auction', auction({ priceMinor: 2_500 })],
     ['contact window outside the list', fixed({ contactWindowHours: 12 })],
-    ['start price not a multiple of the step', auction({ startPriceMinor: 2_499 })],
+    [
+      'start price not a multiple of the step',
+      auction({ startPriceMinor: 2_499 }),
+    ],
   ])('rejects %s', (_label, input) => {
     expect(createListingRequestSchema.safeParse(input).success).toBe(false);
   });
@@ -374,6 +386,7 @@ describe('commerce request and response schemas', () => {
       currency: 'BYN',
       workTitle: 'Bowl',
       workPublicId: 'workpublic01',
+      coverImageUrl: null,
       role: 'buyer',
       createdAt: now,
     };
@@ -431,7 +444,8 @@ describe('commerce request and response schemas', () => {
     };
     expect(reportSchema.parse(report).status).toBe('OPEN');
     expect(
-      reportSchema.safeParse({ ...report, orderPublicId: 'q7Xf2Kd9aB1' }).success,
+      reportSchema.safeParse({ ...report, orderPublicId: 'q7Xf2Kd9aB1' })
+        .success,
     ).toBe(false);
     expect(
       adminReportSchema.parse({

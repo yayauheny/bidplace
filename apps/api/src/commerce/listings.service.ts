@@ -44,6 +44,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const saleProductSelect = {
   id: true,
+  deletedAt: true,
   publicId: true,
   title: true,
   status: true,
@@ -57,7 +58,9 @@ const saleProductSelect = {
   },
 } satisfies Prisma.ProductSelect;
 
-type SaleProduct = Prisma.ProductGetPayload<{ select: typeof saleProductSelect }>;
+type SaleProduct = Prisma.ProductGetPayload<{
+  select: typeof saleProductSelect;
+}>;
 
 export type CreatedListing = {
   id: string;
@@ -309,7 +312,8 @@ export class ListingsService {
     product: SaleProduct | null,
     userId: string,
   ): asserts product is SaleProduct {
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product || product.deletedAt)
+      throw new NotFoundException('Product not found');
     if (product.sellerProfile.userId !== userId) {
       throw new ForbiddenException('Product is not owned by user');
     }

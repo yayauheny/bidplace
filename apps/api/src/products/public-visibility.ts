@@ -5,6 +5,7 @@ export const publicAuthorCityWhere = {
 } satisfies Prisma.SellerProfileWhereInput['city'];
 
 export const portfolioProductContentWhere = {
+  deletedAt: null,
   publishedRevisionId: { not: null },
   publishedAt: { not: null },
   publishedRevision: {
@@ -17,7 +18,8 @@ export const portfolioProductContentWhere = {
 } satisfies Prisma.ProductWhereInput;
 
 export const portfolioProductContentSql: Prisma.Sql = Prisma.sql`
-  p."published_revision_id" IS NOT NULL
+  p."deleted_at" IS NULL
+  AND p."published_revision_id" IS NOT NULL
   AND p."published_at" IS NOT NULL
   AND EXISTS (
     SELECT 1

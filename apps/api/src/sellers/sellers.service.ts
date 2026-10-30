@@ -839,7 +839,7 @@ export class SellersService {
     }
 
     const products = await this.prisma.product.findMany({
-      where: { sellerProfileId: sellerProfile.id },
+      where: { sellerProfileId: sellerProfile.id, deletedAt: null },
       select: productSelect,
       orderBy: { createdAt: 'desc' },
     });
@@ -851,7 +851,7 @@ export class SellersService {
 
   async getProduct(userId: string, productId: string) {
     const product = await this.prisma.product.findFirst({
-      where: { id: productId, sellerProfile: { userId } },
+      where: { id: productId, deletedAt: null, sellerProfile: { userId } },
       select: {
         ...productSelect,
         editingRevision: { select: productRevisionOwnerSelect },

@@ -652,6 +652,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         const works = await tx.product.findMany({
           where: {
             sellerProfileId: target.profileId,
+            deletedAt: null,
             status: 'APPROVED',
             publishedRevisionId: { not: null },
           },
@@ -996,13 +997,21 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       // Persist before external writes; FAILED retries keep the same generation.
       await runReadCommittedTransaction(this.prisma, async (tx) => {
         await tx.$queryRaw`SELECT id FROM media_operations WHERE id = ${operation.id}::uuid FOR UPDATE`;
-        const current = await tx.mediaOperation.findUniqueOrThrow({ where: { id: operation.id } });
-        if (current.state !== 'RUNNING' || current.leaseToken !== token ||
-          current.generation !== operation.generation || !current.leaseUntil ||
-          current.leaseUntil.getTime() <= Date.now())
+        const current = await tx.mediaOperation.findUniqueOrThrow({
+          where: { id: operation.id },
+        });
+        if (
+          current.state !== 'RUNNING' ||
+          current.leaseToken !== token ||
+          current.generation !== operation.generation ||
+          !current.leaseUntil ||
+          current.leaseUntil.getTime() <= Date.now()
+        )
           throw new Error('Publication lease was lost');
         await tx.mediaOperation.upsert({
-          where: { identity: `restore-revoke:${operation.id}:${operation.generation}` },
+          where: {
+            identity: `restore-revoke:${operation.id}:${operation.generation}`,
+          },
           create: {
             kind: 'REVOKE',
             identity: `restore-revoke:${operation.id}:${operation.generation}`,
@@ -1029,6 +1038,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       });
       this.arm();
     }
+    const skipped = new Set<string>();
     for (const item of operation.objects) {
       const fresh = await this.prisma.mediaOperation.findUniqueOrThrow({
         where: { id: operation.id },
@@ -1051,7 +1061,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
             await tx.$queryRaw`SELECT id FROM products WHERE id = ${operation.productId}::uuid FOR UPDATE`;
             const product = await tx.product.findUniqueOrThrow({
               where: { id: operation.productId! },
-              select: { status: true },
+              select: { status: true, deletedAt: true },
             });
             const current = await tx.mediaOperation.findUniqueOrThrow({
               where: { id: operation.id },
@@ -1060,13 +1070,62 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
               current.state !== 'RUNNING' ||
               current.leaseToken !== token ||
               current.generation !== operation.generation
-            ) return;
-            if (product.status === 'ARCHIVED' && !operation.restore) return;
+            )
+              return;
+            if (
+              product.deletedAt ||
+              (product.status === 'ARCHIVED' && !operation.restore)
+            )
+              return;
             // Hide shares this lock; delivery must abort before the transaction can release it.
             await this.writeVerified(item.object, value.bytes, signal);
           },
           { isolationLevel: 'ReadCommitted', timeout: 65_000 },
         );
+      } else if (operation.profileId && operation.restore) {
+        const profileId = operation.profileId;
+        const signal = AbortSignal.timeout(60_000);
+        const written = await this.prisma.$transaction(async (tx) => {
+          const asset = await tx.mediaAsset.findUniqueOrThrow({
+            where: { id: item.object.assetId },
+            select: { purpose: true },
+          });
+          if (asset.purpose === 'WORK_IMAGE' || asset.purpose === 'STORY_IMAGE') {
+            const references = await tx.product.findMany({
+              where: { OR: [
+                { images: { some: { mediaAssetId: item.object.assetId } } },
+                { revisions: { some: { storyBlocks: { some: { mediaAssetId: item.object.assetId } } } } },
+              ] },
+              select: { id: true },
+              orderBy: { id: 'asc' },
+            });
+            for (const reference of references) {
+              await tx.$queryRaw`SELECT id FROM products WHERE id = ${reference.id}::uuid FOR UPDATE`;
+            }
+            const eligible = await tx.product.findFirst({
+              where: {
+                id: { in: references.map(({ id }) => id) },
+                deletedAt: null,
+                status: 'APPROVED',
+                OR: [
+                  { sellerProfileId: profileId },
+                  { sellerProfile: { status: 'APPROVED', user: { status: 'active' } } },
+                ],
+                publishedRevision: { is: { OR: [
+                  { images: { some: { image: { mediaAssetId: item.object.assetId } } } },
+                  { storyBlocks: { some: { mediaAssetId: item.object.assetId } } },
+                ] } },
+              },
+              select: { id: true },
+            });
+            if (!eligible) return false;
+          }
+          const current = await tx.mediaOperation.findUniqueOrThrow({ where: { id: operation.id } });
+          if (current.state !== 'RUNNING' || current.leaseToken !== token || current.generation !== operation.generation) return false;
+          await this.writeVerified(item.object, value.bytes, signal);
+          return true;
+        }, { isolationLevel: 'ReadCommitted', timeout: 65_000 });
+        if (!written) skipped.add(item.objectId);
       } else await this.writeVerified(item.object, value.bytes);
     }
     await runReadCommittedTransaction(this.prisma, async (tx) => {
@@ -1112,11 +1171,11 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         })).status === 'ARCHIVED';
       if (!hidden) {
         await tx.mediaObject.updateMany({
-          where: { id: { in: operation.objects.map((x) => x.objectId) } },
+          where: { id: { in: operation.objects.map((x) => x.objectId).filter((id) => !skipped.has(id)) } },
           data: { state: 'READY' },
         });
         await tx.mediaOperationObject.updateMany({
-          where: { operationId: operation.id },
+          where: { operationId: operation.id, objectId: { notIn: [...skipped] } },
           data: { state: 'READY' },
         });
       }
@@ -1254,6 +1313,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
             some: {
               revision: {
                 publishedFor: {
+                  deletedAt: null,
                   status: 'APPROVED',
                   sellerProfile: {
                     status: 'APPROVED',
@@ -1285,6 +1345,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           type: 'IMAGE',
           revision: {
             publishedFor: {
+              deletedAt: null,
               status: 'APPROVED',
               sellerProfile: {
                 status: 'APPROVED',
@@ -1344,19 +1405,38 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
                 {
                   kind: 'PUBLISH',
                   state: { in: ['PENDING', 'FAILED'] },
-                  ...(operation.kind === 'REVOKE' && item.object.tier === 'PUBLIC'
-                    ? { NOT: { OR: [
-                        { restore: false, product: { status: 'ARCHIVED' } },
-                        ...(compensating ? [{
-                          id: restore.id,
-                          generation: operation.generation,
-                          restore: true,
-                          state: 'FAILED' as const,
-                          ...(operation.productId
-                            ? { productId: operation.productId, product: { status: 'ARCHIVED' as const } }
-                            : { profileId: operation.profileId, profile: { status: 'SUSPENDED' as const } }),
-                        }] : []),
-                      ] } }
+                  ...(operation.kind === 'REVOKE' &&
+                  item.object.tier === 'PUBLIC'
+                    ? {
+                        NOT: {
+                          OR: [
+                            { restore: false, product: { status: 'ARCHIVED' } },
+                            ...(compensating
+                              ? [
+                                  {
+                                    id: restore.id,
+                                    generation: operation.generation,
+                                    restore: true,
+                                    state: 'FAILED' as const,
+                                    ...(operation.productId
+                                      ? {
+                                          productId: operation.productId,
+                                          product: {
+                                            status: 'ARCHIVED' as const,
+                                          },
+                                        }
+                                      : {
+                                          profileId: operation.profileId,
+                                          profile: {
+                                            status: 'SUSPENDED' as const,
+                                          },
+                                        }),
+                                  },
+                                ]
+                              : []),
+                          ],
+                        },
+                      }
                     : {}),
                 },
               ],
@@ -1478,9 +1558,10 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     if (!operation.productId) return false;
     const product = await this.prisma.product.findUnique({
       where: { id: operation.productId },
-      select: { publishedRevisionId: true, status: true },
+      select: { publishedRevisionId: true, status: true, deletedAt: true },
     });
     return (
+      !product?.deletedAt &&
       product?.publishedRevisionId === operation.revisionId &&
       (product.status === 'APPROVED' ||
         (!operation.restore && product.status === 'ARCHIVED'))

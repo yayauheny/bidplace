@@ -69,6 +69,7 @@ function fixture(status: ProductStatus = 'PENDING_REVIEW') {
   };
   const product = {
     id: 'product',
+    deletedAt: null,
     status,
     editingRevisionId: 'revision',
     publishedRevisionId: null as string | null,
@@ -120,7 +121,7 @@ describe('product publication owner', () => {
       await expect(result).resolves.toBeUndefined();
       expect(db.$queryRaw).toHaveBeenCalledTimes(3);
       expect(db.product.updateMany).toHaveBeenCalledWith({
-        where: { id: 'product', status: { in: [from] } },
+        where: { id: 'product', deletedAt: null, status: { in: [from] } },
         data: { status: to },
       });
     } else {
@@ -132,7 +133,14 @@ describe('product publication owner', () => {
   it('rejects an in-sale archive at the publication owner before mutation', async () => {
     const { tx, db } = fixture('APPROVED');
     db.listing.findFirst.mockResolvedValue({ id: 'listing' });
-    await expect(transitionProductVisibility(tx, { productId: 'product', expected: ['APPROVED'], next: 'ARCHIVED', actor: 'author' })).rejects.toMatchObject({ apiCode: 'PRODUCT_IN_SALE', status: 409 });
+    await expect(
+      transitionProductVisibility(tx, {
+        productId: 'product',
+        expected: ['APPROVED'],
+        next: 'ARCHIVED',
+        actor: 'author',
+      }),
+    ).rejects.toMatchObject({ apiCode: 'PRODUCT_IN_SALE', status: 409 });
     expect(db.product.updateMany).not.toHaveBeenCalled();
   });
 
