@@ -2,13 +2,13 @@ import { ApiErrorCode } from '@bidplace/contracts';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 
 import {
-  AuthAbuseService,
+  AntifraudService,
   type MailDelivery,
-} from '../auth-abuse/auth-abuse.service';
-import { resolveClientIp, type ClientIpRequest } from '../auth-abuse/client-ip';
+  resolveClientIp,
+  type ClientIpRequest,
+} from '../antifraud';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { AppException } from '../core/errors';
-import { RateLimitService } from '../core/rate-limit';
 
 export type OtpRequestContext = ClientIpRequest & {
   flowId?: string;
@@ -24,8 +24,7 @@ export type OtpVerifyContext = ClientIpRequest & {
 @Injectable()
 export class OtpService {
   constructor(
-    private readonly rateLimits: RateLimitService,
-    private readonly abuse: AuthAbuseService,
+    private readonly abuse: AntifraudService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
@@ -34,7 +33,7 @@ export class OtpService {
     context: OtpRequestContext,
   ): Promise<{ delivery: MailDelivery }> {
     const ip = resolveClientIp(context, this.env.TRUST_PROXY);
-    if (!this.rateLimits.consume(`email-otp:request:ip:${ip}`, 10, 60_000)) {
+    if (!await this.abuse.consumeRateLimit(`email-otp:request:ip:${ip}`, 10, 60_000)) {
       throw new AppException({
         status: HttpStatus.TOO_MANY_REQUESTS,
         code: ApiErrorCode.RATE_LIMITED,
@@ -57,7 +56,7 @@ export class OtpService {
     context: OtpVerifyContext,
   ): Promise<void> {
     const ip = resolveClientIp(context, this.env.TRUST_PROXY);
-    if (!this.rateLimits.consume(`email-otp:verify:ip:${ip}`, 20, 60_000)) {
+    if (!await this.abuse.consumeRateLimit(`email-otp:verify:ip:${ip}`, 20, 60_000)) {
       throw new AppException({
         status: HttpStatus.TOO_MANY_REQUESTS,
         code: ApiErrorCode.RATE_LIMITED,

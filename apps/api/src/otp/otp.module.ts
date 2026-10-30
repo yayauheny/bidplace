@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth';
 import { DatabaseModule } from '../core/database';
 import { MailModule } from '../core/mail';
-import { RateLimitModule } from '../core/rate-limit';
+import { RateLimitModule } from '../antifraud';
 import { OtpController } from './otp.controller';
 import { OtpService } from './otp.service';
 

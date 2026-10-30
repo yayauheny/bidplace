@@ -5,9 +5,9 @@ import {
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 
-import { readClientIpContext, type ClientIpRequest } from '../auth-abuse/client-ip';
+import { readClientIpContext, type ClientIpRequest } from '../antifraud';
 import { parseBody } from '../core/validation';
-import { RateLimit, RateLimitGuard } from '../core/rate-limit';
+import { RateLimit, RateLimitGuard } from '../antifraud';
 import { PasswordResetService } from './password-reset.service';
 
 const okResponseSchema = z.object({ ok: z.literal(true) });

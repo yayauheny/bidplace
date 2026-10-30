@@ -41,7 +41,7 @@ export function useAuthFlowAction() {
     else if (!flight.current || flight.current.signal.aborted) setBusy(false);
   }, [focused]);
   async function run<T>(
-    work: (signal: AbortSignal) => Promise<T>,
+    work: (signal: AbortSignal, isCurrent: () => boolean) => Promise<T>,
     accept: (result: T, isCurrent: () => boolean) => void | Promise<void>,
   ) {
     if (flight.current && !flight.current.signal.aborted) return;
@@ -56,7 +56,7 @@ export function useAuthFlowAction() {
       !controller.signal.aborted &&
       flight.current === controller;
     try {
-      const result = await work(controller.signal);
+      const result = await work(controller.signal, () => owns() && currentAuthEpoch(queryClient) === epoch);
       if (!owns()) return;
       const canAccept = () => {
         if (!owns()) return false;

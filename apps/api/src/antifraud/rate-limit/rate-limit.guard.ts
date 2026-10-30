@@ -14,7 +14,7 @@ import {
   RATE_LIMIT_METADATA_KEY,
   type RateLimitOptions,
 } from './rate-limit.decorator';
-import { RateLimitService } from './rate-limit.service';
+import { AntifraudService } from '../antifraud.service';
 
 type RateLimitedRequest = {
   auth?: AuthPrincipal;
@@ -30,7 +30,7 @@ export class RateLimitGuard implements CanActivate {
   constructor(
     @Inject(Reflector)
     private readonly reflector: Pick<Reflector, 'getAllAndOverride'>,
-    private readonly rateLimitService: RateLimitService,
+    @Inject(AntifraudService) private readonly antifraud: Pick<AntifraudService, 'consumeRateLimit'>,
     @Optional() @Inject('RATE_LIMIT_TRUST_PROXY') trustProxy?: boolean,
   ) {
     this.trustProxy = trustProxy ?? false;
@@ -38,9 +38,9 @@ export class RateLimitGuard implements CanActivate {
 
   private readonly trustProxy: boolean;
 
-  canActivate(
+  async canActivate(
     context: Pick<ExecutionContext, 'getHandler' | 'getClass' | 'switchToHttp'>,
-  ): boolean {
+  ): Promise<boolean> {
     const options = this.reflector.getAllAndOverride<
       RateLimitOptions | undefined
     >(RATE_LIMIT_METADATA_KEY, [context.getHandler(), context.getClass()]);
@@ -51,7 +51,7 @@ export class RateLimitGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<RateLimitedRequest>();
     const key = this.buildKey(request, options);
-    const allowed = this.rateLimitService.consume(
+    const allowed = await this.antifraud.consumeRateLimit(
       key,
       options.limit,
       options.windowMs,

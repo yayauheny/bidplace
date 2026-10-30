@@ -16,6 +16,73 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-30 — Antifraud lock order and UTC signal time
+
+**Implemented locally / live Needs verification.** `FraudSignalsService.lockUsers`
+locks the named user ids with `ORDER BY id` before any user mutation or audit
+insert. `releaseHold`, `updateUserStatus` / `banUser`, and
+`AdminUserService.revokeSessions` (through `AntifraudService.lockUsers`) all take
+that lock on the admin and the target. `recordSignal` writes
+`(clock_timestamp() AT TIME ZONE 'UTC')::timestamp(3)` and keeps `users.updated_at`
+with `GREATEST`. `antifraud-signals.integration.spec.ts` covers concurrent
+session revoke against ban and against hold release when the admin id sorts
+first, an `updated_at` already an hour ahead, and a session `TimeZone` of
+`America/Los_Angeles`. Ban owner, guards, routes, and Turnstile action
+`email_login` in `13-APPLICATION-SECURITY.md` match the code.
+`RATE_LIMIT_MAX_BUCKETS` and `RATE_LIMIT_CLEANUP_INTERVAL_MS` are removed from
+`.env.example`; application code does not read them.
+
+**Open founder decision (before W3):** [COMMERCE](../launch/COMMERCE.md) still
+describes an admin ban as seller `SUSPENDED`. User status remains
+`active | banned`. `SellerProfile` `SUSPENDED` is a different model. This note
+does not change that commerce rule.
+
+Local this session: API unit 688 passed with `BIDPLACE_ENV_FILE` unset.
+PostgreSQL integrations passed one file at a time: signals 23, admin emergency
+4, rate limit 5, auth transport 24. Together those four files exceed the
+existing 10s `beforeAll` limit while waiting on the shared migrate lock; the
+limit was not raised. API typecheck and lint passed. Docs link check passed.
+Live Cloudflare, SMTP, R2/CDN, and Cron remain Needs verification.
+
+## 2026-10-30 — W2b signal clock and serializable holds
+
+**Implemented locally / live Needs verification.** `FraudSignalsService.recordSignal`
+touches `users.updated_at` after the user lock and inserts `fraud_signals.created_at`
+from post-lock `clock_timestamp()` (`apps/api/src/antifraud/signals/fraud-signals.service.ts`).
+That same timestamp is the inclusive 24-hour lower bound. A stale Serializable
+`assertCanAct` then conflicts on `SELECT … FOR UPDATE`, and
+`runSerializableTransaction` retries to `BUYER_BLOCKED`.
+`antifraud-signals.integration.spec.ts` covers that wait and a signal that
+expires while the caller transaction is open. Repeatable Read remains
+unsupported. This session: that file passed 18 tests three times; API typecheck
+and lint passed. Live Cloudflare, SMTP, R2/CDN, and Cron remain Needs verification.
+
+## 2026-10-29 — W2b antifraud module
+
+**Implemented locally / live Needs verification.** `AntifraudService`
+(`apps/api/src/antifraud/`) owns auth abuse, durable `rate_limit_counters`,
+invisible Turnstile proof, `fraud_signals`, `purchase_holds`, and canonical
+ban/unban. Migration `20261029210000_fraud_signals`. Two distinct signal kinds
+in 24 database hours create one hold (`BUYER_BLOCKED`); one kind does not.
+Caller transactions are Read Committed, or Serializable with whole-transaction
+retry. Signal time is taken after the lock via clock_timestamp. Each
+recordSignal touches the user row so stale Serializable snapshots conflict and
+retry. Repeatable Read is still unsupported. `POST /api/admin/users/:id/release-hold`
+releases a hold. Ban keeps user status `banned`, increments `sessionVersion`
+in the transaction, and delivers media revocation after commit. Strikes, the
+3-booking cap, bid voiding, and purchase runtime remain W3.
+`RATE_LIMIT_MAX_BUCKETS` and `RATE_LIMIT_CLEANUP_INTERVAL_MS` are not read.
+
+Local this session: API unit 686 passed and 2 env-path tests passed in a
+separate mocked run (688 total); PostgreSQL integrations 173 passed and 1
+browser-smoke opt-in skipped across auth transport, social auth, password
+reset, rate limit, signals, admin emergency, and media lifecycle, plus 28
+auth-abuse tests; contracts 50 passed. API and mobile typecheck/lint passed.
+Direct builds passed for contracts, database, api-client, API, design tokens,
+and the mobile web export. Docs link check passed (105 files). Registration
+browser at 390 was Chromium and WebKit 1+1 in Task 3 and was not repeated.
+Live Cloudflare Invisible mode, SMTP, R2/CDN, and Cron remain Needs verification.
+
 ## 2026-10-29 — PR73 review fixes
 
 **Implemented locally / live Needs verification.** Media recovery reports exhausted

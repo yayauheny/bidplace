@@ -6,7 +6,7 @@
     "deleteOutDir": true,
     "assets": [
       {
-        "include": "auth-abuse/vendor/**/*",
+        "include": "antifraud/auth/vendor/**/*",
         "watchAssets": true
       }
     ]

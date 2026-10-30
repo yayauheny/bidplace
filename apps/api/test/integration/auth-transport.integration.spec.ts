@@ -10,8 +10,7 @@ import { readPublishedLegalDocuments } from '../../src/auth/legal-documents';
 import { createHash, randomUUID } from 'node:crypto';
 import { EmailProofService } from '../../src/auth/email-proof.service';
 import { SessionService, type SessionRequest } from '../../src/auth/session.service';
-import { AuthAbuseService } from '../../src/auth-abuse/auth-abuse.service';
-import { MAIL_BUDGET_PURPOSES, MAIL_SPEND_STATUSES } from '../../src/auth-abuse/auth-abuse.policy';
+import { AntifraudService, MAIL_BUDGET_PURPOSES, MAIL_SPEND_STATUSES } from '../../src/antifraud';
 import { SERVER_ENV } from '../../src/core/config';
 import { PrismaService } from '../../src/core/database';
 
@@ -459,7 +458,7 @@ describe('auth HTTP transport', () => {
     const mail = http.app.get(MailTransport);
     const spy = vi.spyOn(mail, 'send').mockResolvedValue(undefined);
     const service = new EmailProofService(
-      http.app.get(PrismaService), mail, http.app.get(AuthAbuseService), http.app.get(SessionService),
+      http.app.get(PrismaService), mail, http.app.get(AntifraudService), http.app.get(SessionService),
       { ...http.app.get(SERVER_ENV), AUTH_MAIL_DAILY_BUDGET: spent },
     );
     try {

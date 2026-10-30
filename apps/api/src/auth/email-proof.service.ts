@@ -24,9 +24,8 @@ import {
   MAIL_SPEND_STATUSES,
   MAIL_MONTH_WINDOW_MS,
   PERSONAL_MAIL_WINDOW_MS,
-} from '../auth-abuse/auth-abuse.policy';
-import { classifyMailFailure } from '../auth-abuse/mail-outcome';
-import { AuthAbuseService } from '../auth-abuse/auth-abuse.service';
+  AntifraudService,
+} from '../antifraud';
 import type { SessionRequest } from './session.service';
 import { SessionService } from './session.service';
 
@@ -43,7 +42,7 @@ export class EmailProofService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailTransport,
-    private readonly abuse: AuthAbuseService,
+    private readonly abuse: AntifraudService,
     private readonly sessions: SessionService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
@@ -342,7 +341,7 @@ export class EmailProofService {
           text: `Код подтверждения почты bidplace: ${result.code}. Если вы не запрашивали код, проигнорируйте письмо.`,
         });
       } catch (error) {
-        outcome = classifyMailFailure(error);
+        outcome = this.abuse.classifyMailFailure(error);
       }
       if (outcome === 'rejected') {
         await this.prisma.$transaction(async (tx) => {

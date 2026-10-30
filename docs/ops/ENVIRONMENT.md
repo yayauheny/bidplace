@@ -32,7 +32,7 @@
 | Переменная | Состояние |
 | --- | --- |
 | `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT` | В production пусто в файле; подставляются скриптом деплоя из окружения машины — без них деплой падает |
-| `TURNSTILE_SITE_KEY` | Пусто в файле; передаётся при сборке. После W2b — ключ в режиме Invisible |
+| `TURNSTILE_SITE_KEY` | Пусто в файле; передаётся при сборке. Клиент уже запрашивает токен при отправке. Перед продом основатель включает Invisible у текущего виджета Cloudflare или создаёт новый и подставляет те же имена `TURNSTILE_SITE_KEY` и `TURNSTILE_SECRET_KEY` |
 | `ANALYTICS_WEB_ENABLED`, `EXPO_PUBLIC_ANALYTICS_WEB_ENABLED` | Нет в `vars` → аналитика выключена. Решение основателя: включить (`true`) к запуску |
 | `INTERNAL_TICK_SECRET`, `TICK_CRON` | Worker/Container контракт и workflow поддерживают; секрет обязателен, Cron по умолчанию выключен |
 | `SUPPORT_TELEGRAM_URL`, `SUPPORT_EMAIL` | Появятся в W3/W4 |
@@ -47,7 +47,7 @@
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | ★ | Доступ к R2 (фото) | Загрузка и показ фото |
 | `SMTP_USERNAME`, `SMTP_PASSWORD` | ★ | Отправка писем через Cloudflare Email | Коды входа, письма сделок |
 | `CLOUDFLARE_CACHE_TOKEN` | ★ | Очистка кэша CDN при скрытии/удалении фото | Скрытое фото ещё отдаётся по старой ссылке |
-| `TURNSTILE_SECRET_KEY` | ★ | Проверка Turnstile на сервере | Регистрация не проходит |
+| `TURNSTILE_SECRET_KEY` | ★ | Проверка Turnstile на сервере (Siteverify). Имя не менялось | Регистрация не проходит |
 | `INTERNAL_TICK_SECRET` | ★ | Авторизация внутреннего тика; secret Environment `prod` → Worker → контейнер | Worker deployment и старт контейнера отклоняются |
 
 ## Секрет только Worker
@@ -64,7 +64,6 @@
 | `API_PORT` | | Порт API в контейнере | 3001 | — |
 | `API_URL`, `CORS_ORIGIN`, `PASSWORD_RESET_URL_BASE` | ★ | Адрес сайта; три значения должны совпадать с доменом маршрута | — | Деплой отказывает; ссылки в письмах |
 | `TRUST_PROXY` | ★ | Брать IP клиента из заголовков Cloudflare | false | Лимиты и антифрод считают всех одним IP |
-| `RATE_LIMIT_MAX_BUCKETS`, `RATE_LIMIT_CLEANUP_INTERVAL_MS` | | Лимиты в памяти; удаляются в W2b (лимиты в базе) | 10000 / 60000 | — |
 | `LOT_IMAGE_MAX_FILES`, `LOT_IMAGE_MAX_FILE_BYTES`, `LOT_IMAGE_MAX_TOTAL_BYTES` | | Лимиты загрузки фото | 8 / 5 МБ / 40 МБ | — |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_AUTH_MODE`, `SMTP_FROM` | ★ | Почтовый сервер и адрес отправителя | — | Письма не уходят; API не стартует в проде |
 | `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT` | ★ | Владелец, контакт и текст правил сервиса (`core/rules.ts`) | — | Деплой и API не стартуют |
@@ -89,7 +88,7 @@
 
 | Имя | ★ | Откуда | Что сломается |
 | --- | --- | --- | --- |
-| `TURNSTILE_SITE_KEY` → `EXPO_PUBLIC_TURNSTILE_SITE_KEY` | ★ | Окружение машины деплоя или `vars`; сборка падает без него | Регистрация |
+| `TURNSTILE_SITE_KEY` → `EXPO_PUBLIC_TURNSTILE_SITE_KEY` | ★ | Окружение машины деплоя или `vars`; сборка падает без него. Публичный ключ виджета; режим Invisible задаётся в Cloudflare, не этим именем | Регистрация |
 | `EXPO_PUBLIC_ANALYTICS_WEB_ENABLED` | ★ | `vars`; `true` только если там ровно `true` | Браузер не шлёт аналитику, даже если сервер принимает |
 | `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_ANALYTICS_ENABLED` | | Выводятся из `API_URL`, цели и `ANALYTICS_INGEST_ENABLED` | — |
 
@@ -120,4 +119,6 @@
 `BIDPLACE_ENV_FILE`, `TEST_EMAIL_FILE`, `OIDC_TEST_ISSUER`, `TURNSTILE_VERIFIER`
 (`test` запрещён в проде), `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV` (скрипт
 ставит `false`). `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBAPP_URL` объявлены в схеме,
-но кодом не читаются — кандидаты на удаление.
+но кодом не читаются — кандидаты на удаление. `RATE_LIMIT_MAX_BUCKETS` и
+`RATE_LIMIT_CLEANUP_INTERVAL_MS` схема сервера и контейнер больше не читают:
+счётчики частоты лежат в `rate_limit_counters`.

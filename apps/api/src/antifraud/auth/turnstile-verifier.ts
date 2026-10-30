@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { type ServerEnv, isExplicitLocalTestProfile } from '../core/config';
+import { type ServerEnv, isExplicitLocalTestProfile } from '../../core/config';
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const TOKEN_TTL_MS = 300_000;

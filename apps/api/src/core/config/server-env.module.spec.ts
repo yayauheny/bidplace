@@ -24,10 +24,7 @@ import { PasswordResetService } from '../../password-reset/password-reset.servic
 import { PrismaService } from '../database';
 import { ImageStore, PostgresImageStore, S3ImageStore } from '../image-store';
 import { LocalMailTransport, MailTransport, SmtpMailTransport } from '../mail';
-import { RATE_LIMIT_METADATA_KEY } from '../rate-limit/rate-limit.decorator';
-import { RateLimitModule } from '../rate-limit/rate-limit.module';
-import { RateLimitGuard } from '../rate-limit/rate-limit.guard';
-import { RateLimitService } from '../rate-limit/rate-limit.service';
+import { RATE_LIMIT_METADATA_KEY, RateLimitModule, RateLimitGuard, AntifraudService } from '../../antifraud';
 import { SERVER_ENV, loadServerEnv } from './env';
 import {
   syntheticProductionServerEnv,
@@ -213,7 +210,6 @@ describe('server env ownership', () => {
     });
     const productionEnv = syntheticProductionServerEnv({
       SESSION_SECRET: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-      RATE_LIMIT_MAX_BUCKETS: '1',
     });
     const localApp = await NestFactory.createApplicationContext(
       AppModule.forRoot(localEnv),
@@ -281,6 +277,8 @@ describe('server env ownership', () => {
         expect.objectContaining({ secure: true }),
       );
 
+      const counts = new Map<string, number>();
+      vi.spyOn(localApp.get(AntifraudService), 'consumeRateLimit').mockImplementation(async (key, limit) => { const count = (counts.get(key) ?? 0) + 1; counts.set(key, count); return count <= limit; });
       const guard = localApp
         .select(RateLimitModule)
         .get(RateLimitGuard, { strict: true });
@@ -291,18 +289,12 @@ describe('server env ownership', () => {
           RateLimitProbe.prototype.handle,
         );
 
-      expect(guard.canActivate(context('203.0.113.5'))).toBe(true);
-      expect(guard.canActivate(context('198.51.100.9'))).toBe(true);
-      expect(() => guard.canActivate(context('203.0.113.5'))).toThrow(
+      expect(await guard.canActivate(context('203.0.113.5'))).toBe(true);
+      expect(await guard.canActivate(context('198.51.100.9'))).toBe(true);
+      await expect(guard.canActivate(context('203.0.113.5'))).rejects.toThrow(
         HttpException,
       );
 
-      const limits = productionApp
-        .select(RateLimitModule)
-        .get(RateLimitService, { strict: true });
-      expect(limits.consume('bucket-a', 1, 60_000, 1_000)).toBe(true);
-      expect(limits.consume('bucket-b', 1, 60_000, 1_000)).toBe(true);
-      expect(limits.consume('bucket-a', 1, 60_000, 1_000)).toBe(true);
     } finally {
       await productionApp.close();
       await localApp.close();

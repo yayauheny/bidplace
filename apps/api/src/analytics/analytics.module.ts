@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth';
 import { DatabaseModule } from '../core/database';
-import { RateLimitModule } from '../core/rate-limit';
+import { RateLimitModule } from '../antifraud';
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 

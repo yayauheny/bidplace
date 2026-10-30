@@ -20,7 +20,7 @@ describe('DisposableEmailList', () => {
   });
 
   it('loads the packaged list from the built module in a clean directory', () => {
-    const built = resolve(__dirname, '../../dist/auth-abuse/disposable-email.js');
+    const built = resolve(__dirname, '../../../dist/antifraud/auth/disposable-email.js');
     expect(existsSync(built)).toBe(true);
     const cwd = mkdtempSync(join(tmpdir(), 'bidplace-disposable-'));
     execFileSync(

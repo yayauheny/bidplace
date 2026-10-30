@@ -1,8 +1,9 @@
 import { ApiErrorCode } from '@bidplace/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
-import { syntheticServerEnv } from '../core/config/synthetic-server-env';
+import { turnstileToken as syntheticTurnstileToken } from '../../../test/integration/abuse-request';
+import { syntheticServerEnv } from '../../core/config/synthetic-server-env';
+import { AntifraudService } from '..';
 import { AuthAbuseService } from './auth-abuse.service';
 import { mailContentHash, resetContentHash } from './auth-abuse.store';
 
@@ -47,6 +48,34 @@ function createService(mailSend: ReturnType<typeof vi.fn>) {
 describe('AuthAbuseService', () => {
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it.each([
+    ['accepted', 'passed'], ['rejected', 'failed'], ['unavailable', 'failed'],
+  ])('reports %s as a nonblocking %s signal', async (outcome, result) => {
+    const { service, turnstile } = createService(vi.fn());
+    turnstile.verify.mockResolvedValue({ outcome });
+    const facade = new AntifraudService(service, {} as never, {} as never);
+    await expect(facade.verifySignal('sale', 'proof', '203.0.113.1')).resolves.toBe(result);
+    expect(turnstile.verify).toHaveBeenCalledWith({ action: 'sale', token: 'proof', remoteIp: '203.0.113.1' });
+  });
+
+  it('returns missing without a verifier call and converts a thrown signal failure', async () => {
+    const { service, turnstile } = createService(vi.fn());
+    await expect(service.verifySignal('sale', '', '203.0.113.1')).resolves.toBe('missing');
+    expect(turnstile.verify).not.toHaveBeenCalled();
+    turnstile.verify.mockRejectedValue(new Error('offline'));
+    await expect(service.verifySignal('sale', 'proof', '203.0.113.1')).resolves.toBe('failed');
+  });
+
+  it('keeps required verification blocking and preserves stable validation identity', async () => {
+    const { service, turnstile } = createService(vi.fn());
+    const facade = new AntifraudService(service, {} as never, {} as never);
+    await expect(facade.verifyRequired('register', '', '203.0.113.1')).rejects.toMatchObject({ apiCode: ApiErrorCode.TURNSTILE_REQUIRED });
+    const validation = { operationKey: 'operation', contentHash: 'content' };
+    await service.verifyRequired('register', 'proof', '203.0.113.1', validation);
+    await service.verifyRequired('register', 'proof', '203.0.113.1', validation);
+    expect(turnstile.verify.mock.calls[0]?.[0]).toEqual(turnstile.verify.mock.calls[1]?.[0]);
   });
 
   it('replays an accepted send without Turnstile or SMTP', async () => {

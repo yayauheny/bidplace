@@ -100,8 +100,6 @@
         "API_URL": "https://bid.place",
         "CORS_ORIGIN": "https://bid.place",
         "TRUST_PROXY": "true",
-        "RATE_LIMIT_MAX_BUCKETS": "10000",
-        "RATE_LIMIT_CLEANUP_INTERVAL_MS": "60000",
         "LOT_IMAGE_MAX_FILES": "8",
         "LOT_IMAGE_MAX_FILE_BYTES": "5242880",
         "LOT_IMAGE_MAX_TOTAL_BYTES": "41943040",

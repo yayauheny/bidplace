@@ -7,12 +7,12 @@ import {
   type ServerEnv,
   isTestEmailBypassEnabled,
   resolveCorsOrigin,
-} from '../core/config';
-import { PrismaService } from '../core/database';
-import { AppException } from '../core/errors';
-import { MailTransport } from '../core/mail';
-import { safeFailureLocation } from '../core/request-context/safe-request-log';
-import { buildPasswordResetLink } from '../password-reset/password-reset-link';
+} from '../../core/config';
+import { PrismaService } from '../../core/database';
+import { AppException } from '../../core/errors';
+import { MailTransport } from '../../core/mail';
+import { safeFailureLocation } from '../../core/request-context/safe-request-log';
+import { buildPasswordResetLink } from '../../password-reset/password-reset-link';
 import {
   cooldownAfterSends,
   normalizeEmail,
@@ -63,7 +63,7 @@ export class AuthAbuseService {
     turnstileToken: string;
     ip: string;
   }): Promise<void> {
-    await this.requireTurnstile('register', input.turnstileToken, input.ip);
+    await this.verifyRequired('register', input.turnstileToken, input.ip);
     this.assertRegistrationEmail(input.email);
   }
 
@@ -72,7 +72,7 @@ export class AuthAbuseService {
     turnstileToken: string;
     ip: string;
   }): Promise<void> {
-    await this.requireTurnstile(
+    await this.verifyRequired(
       'email_verification',
       input.turnstileToken,
       input.ip,
@@ -185,7 +185,7 @@ export class AuthAbuseService {
       return { delivery: 'already_verified' };
     }
 
-    await this.requireTurnstile(
+    await this.verifyRequired(
       'email_verification',
       input.turnstileToken,
       input.ip,
@@ -245,7 +245,7 @@ export class AuthAbuseService {
     ip: string;
   }): Promise<Date> {
     this.assertIdempotencyKey(input.idempotencyKey);
-    await this.requireTurnstile('email_login', input.turnstileToken, input.ip, {
+    await this.verifyRequired('email_login', input.turnstileToken, input.ip, {
       operationKey: input.idempotencyKey,
       contentHash: resetContentHash(input.email),
     });
@@ -521,7 +521,7 @@ export class AuthAbuseService {
       return;
     }
 
-    await this.requireTurnstile(
+    await this.verifyRequired(
       'password_reset',
       input.turnstileToken,
       input.ip,
@@ -624,7 +624,17 @@ export class AuthAbuseService {
     }
   }
 
-  private async requireTurnstile(
+  async verifySignal(action: string, token: string | null | undefined, ip: string): Promise<'passed' | 'failed' | 'missing'> {
+    if (!token) return 'missing';
+    try {
+      const decision = await this.turnstile.verify({ token, action, remoteIp: ip });
+      return decision.outcome === 'accepted' ? 'passed' : 'failed';
+    } catch {
+      return 'failed';
+    }
+  }
+
+  async verifyRequired(
     action: string,
     token: string,
     ip: string,

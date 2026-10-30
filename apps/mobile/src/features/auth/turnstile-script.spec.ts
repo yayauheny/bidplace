@@ -8,6 +8,7 @@ import type { TurnstileApi } from './turnstile-script';
 const EXPLICIT_API = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
 const provider: TurnstileApi = {
+  execute: () => undefined,
   render: () => 'widget',
   remove: () => undefined,
   reset: () => undefined,

@@ -32,12 +32,6 @@ const serverEnvSchema = z
     API_URL: z.string().url().optional(),
     CORS_ORIGIN: z.string().url().optional(),
     TRUST_PROXY: booleanEnvSchema,
-    RATE_LIMIT_MAX_BUCKETS: z.coerce.number().int().positive().default(10_000),
-    RATE_LIMIT_CLEANUP_INTERVAL_MS: z.coerce
-      .number()
-      .int()
-      .positive()
-      .default(60_000),
     LOT_IMAGE_MAX_FILES: z.coerce.number().int().positive().default(8),
     LOT_IMAGE_MAX_FILE_BYTES: z.coerce
       .number()

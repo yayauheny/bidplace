@@ -11,6 +11,7 @@ import {
   adminProductStatusUpdateRequestSchema,
   adminSellerStatusUpdateRequestSchema,
   adminUserRevokeSessionsRequestSchema,
+  adminReleaseHoldRequestSchema,
   adminUserStatusResponseSchema,
   adminUserStatusUpdateRequestSchema,
   adminUsersLookupQuerySchema,
@@ -222,6 +223,18 @@ export class AdminController {
         parseBody(adminUserStatusUpdateRequestSchema, body),
       ),
     );
+  }
+
+  @Post('users/:id/release-hold')
+  @Header('Cache-Control', 'private, no-store')
+  async releaseUserHold(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const { note } = parseBody(adminReleaseHoldRequestSchema, body);
+    await this.users.releaseHold(auth.sub, id, note);
+    return adminOkResponseSchema.parse({ ok: true });
   }
 
   @Post('users/:id/revoke-sessions')

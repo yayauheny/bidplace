@@ -1,6 +1,6 @@
 import { Prisma } from '@bidplace/database';
 import { Inject, Injectable } from '@nestjs/common';
-import { SERVER_ENV, type ServerEnv } from '../core/config';
+import { SERVER_ENV, type ServerEnv } from '../../core/config';
 import {
   createHash,
   createHmac,
@@ -9,8 +9,8 @@ import {
   randomUUID,
 } from 'node:crypto';
 
-import { PrismaService } from '../core/database';
-import { Clock } from '../core/time';
+import { PrismaService } from '../../core/database';
+import { Clock } from '../../core/time';
 import {
   LOGIN_PAIR_PAUSE_AFTER,
   LOGIN_PAUSE_MS,

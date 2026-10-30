@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth';
 import { DatabaseModule } from '../core/database';
 import { ImageStoreModule } from '../core/image-store';
-import { RateLimitModule } from '../core/rate-limit';
+import { RateLimitModule } from '../antifraud';
 import { ImagesController } from './images.controller';
 import { ImagesService } from './images.service';
 

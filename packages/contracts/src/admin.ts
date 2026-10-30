@@ -165,6 +165,10 @@ export const adminUserStatusUpdateRequestSchema = z
   })
   .strict();
 
+export const adminReleaseHoldRequestSchema = z
+  .object({ note: z.string().trim().min(1, 'Укажите причину') })
+  .strict();
+
 export const adminUserRevokeSessionsRequestSchema = z
   .object({
     reason: z.string().trim().min(1, 'Укажите причину'),

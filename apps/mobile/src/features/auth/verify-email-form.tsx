@@ -1,18 +1,16 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { useIsFocused, usePathname, useRouter, type Href } from 'expo-router';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText, PrimaryButton, SecondaryButton, TextButton, TextField } from '../../components/ui';
-import { AUTH_TURNSTILE_UNAVAILABLE_COPY } from '../../errors';
-import { getTurnstileSiteKey } from '../../lib/environment';
 import { useAuth } from '../../providers/auth-provider';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AuthCodeField } from './auth-code-field';
 import { type SafeRedirect } from './auth-redirect';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
 import { verificationDestination } from './author-email-verification';
-import { TurnstileWidget, type TurnstileAvailability } from './turnstile-widget';
+import { useInvisibleTurnstile } from './turnstile-widget';
 import { useEmailVerification } from './use-email-verification';
 import {
   verificationReasonCopy,
@@ -24,10 +22,6 @@ type VerifyEmailFormProps = { redirectTo: SafeRedirect };
 
 const VERIFY_EMAIL_ROUTE = '/verify-email';
 
-function canChallenge(): boolean {
-  return Platform.OS === 'web' && Boolean(getTurnstileSiteKey());
-}
-
 export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
   const auth = useAuth();
   const router = useRouter();
@@ -38,11 +32,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
   const focusedRef = useRef(focused);
   pathnameRef.current = pathname;
   focusedRef.current = focused;
-  const [proof, setProof] = useState<string | null>(null);
-  const [availability, setAvailability] = useState<TurnstileAvailability>('ready');
-  const [widgetGeneration, setWidgetGeneration] = useState(0);
-  const onProof = useCallback((token: string | null) => setProof(token), []);
-  const onAvailability = useCallback((next: TurnstileAvailability) => setAvailability(next), []);
+  const { getToken } = useInvisibleTurnstile('email_verification');
   const onVerified = useCallback(() => {
     if (!focusedRef.current || !pathnameRef.current.startsWith(VERIFY_EMAIL_ROUTE)) return;
     const destination = verificationDestination(true, redirectTo);
@@ -52,7 +42,6 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
   }, [complete, redirectTo, router]);
   const verification = useEmailVerification({ focused, onVerified });
   const email = auth.user?.email ?? verification.serverState?.email ?? null;
-  const clientUnavailable = !canChallenge() || availability === 'unavailable';
   const ready = verification.readStatus === 'ready';
   const busy = verification.reading || verification.sending || verification.verifying || verification.correcting;
   const waitSeconds = Math.max(verification.remaining.resend, verification.remaining.quota);
@@ -75,15 +64,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
   const send = (freshIntent: boolean) => {
     if (!ready || busy) return;
     if (freshIntent && waitSeconds > 0) return;
-    if (clientUnavailable) return;
-    if (!proof) {
-      void verification.send('', false);
-      return;
-    }
-    const token = proof;
-    setProof(null);
-    setWidgetGeneration((generation) => generation + 1);
-    void verification.send(token, freshIntent);
+    void verification.send(getToken, freshIntent);
   };
 
   const sendLabel = verificationSendLabel({
@@ -160,19 +141,6 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
           {banner}
         </AppText>
       ) : null}
-      {clientUnavailable && ready ? (
-        <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
-          {AUTH_TURNSTILE_UNAVAILABLE_COPY}
-        </AppText>
-      ) : null}
-      {canChallenge() && ready ? (
-        <TurnstileWidget
-          key={widgetGeneration}
-          action="email_verification"
-          onToken={onProof}
-          onAvailability={onAvailability}
-        />
-      ) : null}
       {ready ? (
         <PrimaryButton
           label="Завершить"
@@ -188,7 +156,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
           label="Повторить тот же запрос"
           size="auth"
           width="full"
-          disabled={busy || clientUnavailable}
+          disabled={busy}
           onPress={() => send(false)}
         />
       ) : null}
@@ -197,7 +165,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
           label={sendLabel}
           size="auth"
           width="full"
-          disabled={busy || waitSeconds > 0 || clientUnavailable}
+          disabled={busy || waitSeconds > 0}
           onPress={() => send(true)}
         />
       ) : null}

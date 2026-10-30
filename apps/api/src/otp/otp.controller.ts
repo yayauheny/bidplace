@@ -13,7 +13,7 @@ import { AuthService, SessionAuthGuard, CurrentUser } from '../auth';
 import {
   readClientIpContext,
   type ClientIpRequest,
-} from '../auth-abuse/client-ip';
+} from '../antifraud';
 import { parseBody } from '../core/validation';
 import { OtpService } from './otp.service';
 

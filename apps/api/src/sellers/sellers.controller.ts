@@ -26,7 +26,7 @@ import {
   OptionalSessionAuthGuard,
   VerifiedEmailGuard,
 } from '../auth';
-import { RateLimit, RateLimitGuard } from '../core/rate-limit';
+import { RateLimit, RateLimitGuard } from '../antifraud';
 import {
   getImageCacheControl,
   productImageUploadLimits,

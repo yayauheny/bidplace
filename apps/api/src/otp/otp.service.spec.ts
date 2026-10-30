@@ -24,8 +24,7 @@ describe('OtpService', () => {
 
   it('keeps the IP gate and delegates a send', async () => {
     const service = new OtpService(
-      rateLimits as never,
-      abuse as never,
+      { ...abuse, consumeRateLimit: rateLimits.consume } as never,
       syntheticServerEnv(),
     );
 
@@ -49,8 +48,7 @@ describe('OtpService', () => {
   it('does not send when the request IP limit is exhausted', async () => {
     rateLimits.consume.mockReturnValueOnce(false);
     const service = new OtpService(
-      rateLimits as never,
-      abuse as never,
+      { ...abuse, consumeRateLimit: rateLimits.consume } as never,
       syntheticServerEnv(),
     );
 
@@ -77,8 +75,7 @@ describe('OtpService', () => {
 
   it('keeps the verify IP gate and delegates the code', async () => {
     const service = new OtpService(
-      rateLimits as never,
-      abuse as never,
+      { ...abuse, consumeRateLimit: rateLimits.consume } as never,
       syntheticServerEnv(),
     );
 
@@ -98,8 +95,7 @@ describe('OtpService', () => {
   it('does not verify when the verify IP limit is exhausted', async () => {
     rateLimits.consume.mockReturnValueOnce(false);
     const service = new OtpService(
-      rateLimits as never,
-      abuse as never,
+      { ...abuse, consumeRateLimit: rateLimits.consume } as never,
       syntheticServerEnv(),
     );
 

@@ -105,13 +105,15 @@ Provider configuration and external acceptance are owned by [Web auth rollout](.
 | Control | Status | Modules / tests |
 | --- | --- | --- |
 | Lookup user by email | Implemented | `admin-user.service.ts` |
-| Ban/unban with reason; ban increments `sessionVersion` | Implemented | `admin-user.service.ts`, `admin-user-emergency.integration.spec.ts` |
-| Revoke all sessions (`sessionVersion++`) | Implemented | same |
+| Ban/unban with reason; ban increments `sessionVersion` | Implemented | Owner `FraudSignalsService.updateUserStatus` / `banUser` via `AntifraudService`. `AdminUserService.updateStatus` delegates. HTTP `PATCH /api/admin/users/:id/status`. Guards: `SessionAuthGuard`, `AdminGuard`. |
+| Revoke all sessions (`sessionVersion++`) | Implemented | `AdminUserService.revokeSessions` calls `AntifraudService.lockUsers` before the bump and audit. HTTP `POST /api/admin/users/:id/revoke-sessions`. Same guards. |
+| Release purchase hold | Implemented | `FraudSignalsService.releaseHold` via `AntifraudService`, same id-ordered user lock. HTTP `POST /api/admin/users/:id/release-hold` requires a note. Same guards. |
 | Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Implemented | `admin-listing-emergency.service.ts` |
 | Author hide vs live listing | Implemented | `POST /products/:id/hide` returns 409 when a `SCHEDULED` or `LIVE` Listing exists; Product, Listing and audit are unchanged. No automatic listing cancel. Coverage: `products.service.spec.ts`, `author-hide-listing.integration.spec.ts` |
 | Needs-order queue + manual Order create | Implemented | admin recovery routes + mobile Recovery tab |
 | Read-only leftover commerce inventory | Implemented | `scripts/ops/commerce-inventory.mjs`; refuses `--apply`; no secret URLs in report |
-| **Cannot ban/revoke self or other admins** | Implemented | `assertIncidentTargetAllowed` in `admin-user.service.ts` |
+| **Cannot ban self or another admin** | Implemented | `FraudSignalsService.updateUserStatus` rejects the acting admin and any `role = admin` target |
+| **Cannot revoke self or another admin** | Implemented | `assertSessionRevokeTargetAllowed` in `admin-user.service.ts` |
 | Revoke audit uses stable labels `session` / `revoked` | Implemented | `admin-user.service.ts` |
 
 **Pros:** founder can stop abuse without schema churn; guards prevent admin lockout.  
@@ -137,7 +139,7 @@ Provider configuration and external acceptance are owned by [Web auth rollout](.
 | Byte/file caps | Partial acceptance | Gallery input25 MiB, story input10 MiB, stored master5 MiB; no separate story aggregate budget (`DEC-151`). `WORK_PHOTO_LIMITS` and `STORY_LIMITS` own counts. Locked save releases only unused story-purpose holds; cleanup rechecks references, including a story asset still held by another revision. Story POST requires `X-Photo-Revision` and binds that revision; a replay for a different revision is 409 before a new hold. Rejected client encodings are deleted; the source and an accepted URI stay. Verification gaps: W0 journal. |
 | Decode outside TX | Implemented | Normalize outside the persist TX; short locked TX for status/listing/capacity check + insert |
 | Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
-| Upload rate limit | Implemented | `@RateLimit` 20/min per user on gallery upload POSTs; 10/min on creation-step uploads, author achievement upload/delete, and profile photo create/update. Author, achievement, and work decode share one process-local admission of two operations. |
+| Upload rate limit | Implemented | `@RateLimit` counters persist in PostgreSQL: 20/min per user on gallery upload POSTs; 10/min on creation-step uploads, author achievement upload/delete, and profile photo create/update. Author, achievement, and work decode share one process-local admission of two operations. |
 | Achievement / revision photo visibility | Implemented | Public achievement GET only from the published revision; owner/admin can read draft; anonymous/stranger draft reads 404. Owner application photo is private `no-store`. |
 | Work publication/sale integrity (W1) | Implemented locally | `product-publication.ts` is the only Product status/published-pointer writer, under transaction row locks and checked CAS. `product-write-guard.ts` owns active-sale rejection for author/image/admin mutation and seller suspension. Hidden revision approval preserves ARCHIVED and performs no PUBLIC PUT; unwritten PUBLIC manifests are not marked READY. Product PUBLIC delivery shares hide’s row lock with lease/generation/status checks and a 60s I/O abort deadline before its 65s transaction timeout. Hide preserves nonrestore approval intent while revoking public copies. PENDING/FAILED nonrestore approval does not block PUBLIC revoke for ARCHIVED Work; PRIVATE and RUNNING protections remain. Work restore durably journals PUBLIC-only compensation before delivery, guarded by its current lease/token/generation. Exact failed-restore compensation can revoke ARCHIVED bytes while retaining PRIVATE sources and legitimate public references; retries rearm cleanup. Partial delivery/restart/journal-outage/shared-reference regressions pass locally. Compensation permits brief exposure before deletion/purge; strict privacy atomicity and live R2/CDN remain unverified. Real DB/transport regressions: `media-lifecycle.integration.spec.ts`, `author-hide-listing.integration.spec.ts`, `product-write-atomicity.integration.spec.ts`. |
 | Active author visibility | Implemented | Public Work/Author queries, catalogs and binary media require active author user in addition to existing APPROVED/published-revision guards. Work image GET reuses `portfolioCatalogProductWhere` plus published-image membership, including publication-date/content eligibility. Admin private photo reads use `private, no-store`; `work-media-http.integration.spec.ts` + `sellers.controller.spec.ts`. |
@@ -156,34 +158,36 @@ Tests: `image-policy.spec.ts`, `image-processing-admission.spec.ts`, `sellers.pr
 
 | Surface | Pattern | Status |
 | --- | --- | --- |
-| Register / login | Process-local IP buckets on controllers plus durable login counters in PostgreSQL | Implemented (`auth.controller.ts`, `auth-abuse/`) |
-| OTP send / verify | Process-local IP buckets plus durable mail ledger, cooldowns, OTP pause | Implemented (`otp.service.ts` → `AuthAbuseService`) |
-| Forgot / reset password | Process-local IP buckets plus durable reset ledger and quotas | Implemented (`password-reset/` → `AuthAbuseService`) |
+| Register / login | PostgreSQL IP buckets in `rate_limit_counters` plus durable login counters | Implemented (`auth.controller.ts` → `AntifraudService`) |
+| OTP send / verify | PostgreSQL IP buckets plus durable mail ledger, cooldowns, OTP pause | Implemented (`otp.service.ts` → `AntifraudService`) |
+| Forgot / reset password | PostgreSQL IP buckets plus durable reset ledger and quotas | Implemented (`password-reset/` → `AntifraudService`) |
 | Bid place | User + listing resource | Not on active API (commerce runtime archived; leftover Prisma only) |
 | Image upload | User, 10/min | Implemented (`images.controller.ts`, profile photo in `sellers.controller.ts`, achievement in `portfolio.controller.ts`) |
 | Forgot password response | `{ ok: true }` for accepted valid requests and account-specific suppression; typed errors for validation/Turnstile | Implemented |
 
-Cheap per-IP gates stay in `RateLimitService` (process-local). Mail sends, login
-abuse counters, idempotent operations, OTP verify pause, and reset send quotas
-are durable in PostgreSQL through `apps/api/src/auth-abuse/` (**DEC-109**). Policy
-numbers live in `auth-abuse.policy.ts`.
+Per-IP `@RateLimit` counters are rows in `rate_limit_counters`, owned by
+`apps/api/src/antifraud/rate-limit/` and reached through `AntifraudService` or
+the guard. The tick job `antifraud-cleanup` deletes expired rows. Mail sends,
+login abuse counters, idempotent operations, OTP verify pause, and reset send
+quotas stay in PostgreSQL through `apps/api/src/antifraud/auth/` (**DEC-109**).
+Auth-abuse policy numbers live in `antifraud/auth/auth-abuse.policy.ts`. Fraud
+thresholds live in `antifraud.policy.ts`.
 
-**Pros:** raises cost of spray attacks; mail spend and replay bind to one ledger.
+**Pros:** raises cost of spray attacks; mail spend, replay, and IP windows survive a process restart.
 
-**Cons:** process-local IP gates still assume per-replica memory until a shared
-store is chosen (**DEC-069**, revised for auth mail/login by **DEC-109**).
+**Cons:** image decode admission remains process-local. Live PostgreSQL contention under many replicas is not yet measured.
 
-**Revisit when:** multi-instance deployment needs shared cheap gates or high
-contention; durable quotas and idempotency must stay atomic in PostgreSQL.
+**Revisit when:** high-contention IP spray needs another store; durable quotas and idempotency stay atomic in PostgreSQL.
 
 ### 5.1 Auth abuse ledger, mail truth, Turnstile, disposable email (2026-10-10)
 
 Status: Implemented in code; production SMTP delivery, live Turnstile hostname,
 WAF, and coordinated migration rollout remain **Needs verification**.
 
-`AuthAbuseModule` is the single server owner for registration checks, login
-assessment, email-verification send/verify/correction, and password-reset send
-quotas. `auth_abuse_operations` stores purpose, owner user, normalized email,
+`AntifraudService` is the public server owner. `AuthAbuseService` in
+`apps/api/src/antifraud/auth/` remains the internal owner for registration checks,
+login assessment, email-verification send/verify/correction, and password-reset
+send quotas. `auth_abuse_operations` stores purpose, owner user, normalized email,
 idempotency key, content hash, status, and secret linkage; `auth_abuse_counters`
 stores scoped failure/pause state. Short transactions take row locks; SMTP runs
 outside the database transaction.
@@ -243,18 +247,22 @@ SID and reject a delayed write when the old SID was rotated or removed.
 
 **Turnstile:** server-side Siteverify only; `TURNSTILE_SECRET_KEY` and
 `TURNSTILE_HOSTNAME` are required on the production security profile. Each check
-binds `action` (`register`, `login`, `email_verification`, `password_reset`),
+binds `action` (`register`, `login`, `email_login`, `email_verification`, `password_reset`),
 hostname, challenge age, and stable validation identity for mail sends.
 Mismatch, expiry, or verifier outage fails closed (`TURNSTILE_*` API codes).
-Mobile loads the public widget only when `EXPO_PUBLIC_TURNSTILE_SITE_KEY` is set;
-missing script/site key shows unavailable copy and blocks submit — not a claim
-of native Turnstile completeness.
+The web client calls `useInvisibleTurnstile` (`apps/mobile/src/features/auth/turnstile-widget.tsx`)
+and requests a token on submit. There is no visible challenge block. Required
+registration, code login, and password reset still fail closed without a valid
+proof. `verifySignal` does not throw and is not connected to purchases in W2b.
+A missing site key or script blocks those required submits. Native completeness
+is not claimed. Cloudflare Invisible mode, or a replacement widget using the
+same configured names, remains a founder action.
 
 **Disposable email:** registration and unverified email correction consult a
 pinned local list (**9222** domains, commit
 `81a8976e63879a11bf4301a28c14e0eb7a7855cf`, SHA-256
 `14f873c136310a4e9e8f25a692c67b211aa049eca7642f0c4a435a38b2af8b21`, CC0).
-Source, license, and update command: `apps/api/src/auth-abuse/vendor/SOURCE.md`.
+Source, license, and update command: `apps/api/src/antifraud/auth/vendor/SOURCE.md`.
 Login and password recovery do not use the list.
 
 Coverage: `auth-abuse.service.spec.ts`, `auth-abuse.policy.spec.ts`,
@@ -304,10 +312,10 @@ Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-m
 ## 8. Deferred ops/security (post-pilot)
 
 - **Backup encryption at rest:** `BACKUP_GPG_RECIPIENT` is supported by `scripts/ops/backup-db.sh`; production key management and rotation are not automated yet. See [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md).
-- **Multi-instance rate limits:** upload limits and cheap auth IP gates remain
-  process-local per replica (**DEC-069**). Durable auth-abuse quotas, pauses, and
-  mail idempotency stay in PostgreSQL and do not require Redis today (**DEC-109**).
-  Revisit Redis only for shared cheap gates or high-contention IP spray without
+- **Multi-instance rate limits:** `@RateLimit` counters are PostgreSQL
+  `rate_limit_counters` (W2b). Image decode admission remains process-local.
+  Durable auth-abuse quotas, pauses, and mail idempotency stay in PostgreSQL
+  (**DEC-109**). Revisit another store only for high-contention IP spray, without
   moving atomic quota/idempotency out of PostgreSQL.
 
 ### Registration consent boundary —2026-10-20

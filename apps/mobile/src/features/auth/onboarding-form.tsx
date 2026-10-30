@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -28,15 +28,13 @@ import { LegalDocumentViewer } from './legal-document-viewer';
 import { createOperationKey } from './recovery-operation';
 import { useAuthFlowAction } from './use-auth-flow-action';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
-import {
-  TurnstileWidget,
-  type TurnstileAvailability,
-} from './turnstile-widget';
+import { useInvisibleTurnstile } from './turnstile-widget';
 import { useAuthFlowCompletion } from './use-auth-flow-completion';
 import { getSafeRedirect } from './auth-redirect';
 
 export function OnboardingForm() {
   const api = useApiClient();
+  const { getToken } = useInvisibleTurnstile('email_verification');
   const auth = useAuth();
   const router = useRouter();
   const complete = useAuthSheetComplete();
@@ -46,10 +44,7 @@ export function OnboardingForm() {
   const [slug, setSlug] = useState('');
   const [consent, setConsent] = useState(false);
   const [code, setCode] = useState('');
-  const [proof, setProof] = useState<string | null>(null);
-  const [availability, setAvailability] =
-    useState<TurnstileAvailability>('ready');
-  const [generation, setGeneration] = useState(0);
+
   const [now, setNow] = useState(Date.now());
   const [legalOpen, setLegalOpen] = useState<LegalDocumentId | null>(null);
   const [documents, setDocuments] = useState<LegalDocumentsResponse | null>(
@@ -87,11 +82,6 @@ export function OnboardingForm() {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-  const onProof = useCallback((token: string | null) => setProof(token), []);
-  const onAvailability = useCallback(
-    (value: TurnstileAvailability) => setAvailability(value),
-    [],
-  );
   useAuthSheetGuard({
     busy: action.busy,
     dirty: Boolean(email || slug || consent || code),
@@ -136,16 +126,15 @@ export function OnboardingForm() {
     );
   };
   const send = () => {
-    if (!proof) {
-      action.setError('Пройдите проверку безопасности.');
-      return;
-    }
-    const token = proof;
-    setProof(null);
-    setGeneration((value) => value + 1);
     sendKey.current ??= createOperationKey();
     void action.run(
-      async (signal) => {
+      async (signal, isCurrent) => {
+        const token = await getToken(signal);
+        if (!isCurrent()) return null;
+        if (!token) {
+          action.setError('Попробуйте ещё раз');
+          return null;
+        }
         try {
           return await api.auth.requestOnboardingEmail(
             { turnstileToken: token, idempotencyKey: sendKey.current! },
@@ -169,7 +158,8 @@ export function OnboardingForm() {
           throw failure;
         }
       },
-      async () => {
+      async (result) => {
+        if (!result) return;
         sendKey.current = null;
         await verification.refetch();
       },
@@ -317,12 +307,6 @@ export function OnboardingForm() {
             disabled={code.length !== 6 || paused || action.busy}
             onPress={verify}
           />
-          <TurnstileWidget
-            key={generation}
-            action="email_verification"
-            onToken={onProof}
-            onAvailability={onAvailability}
-          />
           <TextButton
             label={
               resendSeconds > 0
@@ -332,8 +316,7 @@ export function OnboardingForm() {
             disabled={
               action.busy ||
               resendSeconds > 0 ||
-              !server ||
-              availability === 'unavailable'
+              !server
             }
             onPress={send}
           />

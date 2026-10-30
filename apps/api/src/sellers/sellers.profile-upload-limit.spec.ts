@@ -4,8 +4,8 @@ import 'reflect-metadata';
 import { Reflector } from '@nestjs/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { RateLimitGuard } from '../core/rate-limit/rate-limit.guard';
-import { RateLimitService } from '../core/rate-limit/rate-limit.service';
+import { RateLimitGuard } from '../antifraud';
+
 import * as imagePolicy from '../images/image-policy';
 import { SellersController } from './sellers.controller';
 
@@ -35,9 +35,10 @@ describe('profile photo upload rate limit', () => {
     create: vi.fn().mockResolvedValue({ ok: true }),
     update: vi.fn().mockResolvedValue({ ok: true }),
   };
+  const counts = new Map<string, number>();
   const guard = new RateLimitGuard(
     new Reflector(),
-    new RateLimitService({ maxBuckets: 10, cleanupIntervalMs: 1_000 }),
+    { consumeRateLimit: async (key, limit) => { const count = (counts.get(key) ?? 0) + 1; counts.set(key, count); return count <= limit; } },
   );
   const controller = new SellersController(sellers as never);
 
@@ -65,7 +66,7 @@ describe('profile photo upload rate limit', () => {
   }
 
   async function submit(method: 'create' | 'update', userId = 'user-1') {
-    guard.canActivate(context(method, userId));
+    await guard.canActivate(context(method, userId));
     if (method === 'create') {
       return controller.create({ sub: userId }, jsonRequest, profileBody, [
         file,
@@ -83,6 +84,6 @@ describe('profile photo upload rate limit', () => {
     await expect(submit('update')).rejects.toThrow('Too many requests');
     expect(validateProductImageUploads).toHaveBeenCalledTimes(10);
     expect(sellers.update).toHaveBeenCalledTimes(5);
-    expect(guard.canActivate(context('create', 'user-2'))).toBe(true);
+    expect(await guard.canActivate(context('create', 'user-2'))).toBe(true);
   });
 });

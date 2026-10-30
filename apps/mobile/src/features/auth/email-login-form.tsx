@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { designTokens } from '@bidplace/design-tokens';
@@ -17,24 +17,19 @@ import { createOperationKey } from './recovery-operation';
 import { useAuthFlowCompletion } from './use-auth-flow-completion';
 import { useAuthFlowAction } from './use-auth-flow-action';
 import { useAuthSheetGuard } from './auth-sheet-context';
-import {
-  TurnstileWidget,
-  type TurnstileAvailability,
-} from './turnstile-widget';
+import { useInvisibleTurnstile } from './turnstile-widget';
 import type { SafeRedirect } from './auth-redirect';
 
 export function EmailLoginForm({ redirectTo }: { redirectTo: SafeRedirect }) {
   const api = useApiClient();
+  const { getToken } = useInvisibleTurnstile('email_login');
   const auth = useAuth();
   const action = useAuthFlowAction();
   const queueCompletion = useAuthFlowCompletion(action.busy);
   const [email, setEmail] = useState('');
   const [requested, setRequested] = useState(false);
   const [code, setCode] = useState('');
-  const [proof, setProof] = useState<string | null>(null);
-  const [availability, setAvailability] =
-    useState<TurnstileAvailability>('ready');
-  const [generation, setGeneration] = useState(0);
+
   const [deadline, setDeadline] = useState(0);
   const [now, setNow] = useState(Date.now());
   const emailEdited = useRef(false);
@@ -73,11 +68,6 @@ export function EmailLoginForm({ redirectTo }: { redirectTo: SafeRedirect }) {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-  const onProof = useCallback((token: string | null) => setProof(token), []);
-  const onAvailability = useCallback(
-    (value: TurnstileAvailability) => setAvailability(value),
-    [],
-  );
   useAuthSheetGuard({ busy: action.busy, dirty: Boolean(email || code) });
   const send = () => {
     const parsed = emailAddressSchema.safeParse(email);
@@ -85,16 +75,15 @@ export function EmailLoginForm({ redirectTo }: { redirectTo: SafeRedirect }) {
       action.setError('Введите корректную электронную почту.');
       return;
     }
-    if (!proof) {
-      action.setError('Пройдите проверку безопасности.');
-      return;
-    }
-    const token = proof;
-    setProof(null);
-    setGeneration((value) => value + 1);
     sendKey.current ??= createOperationKey();
     void action.run(
-      async (signal) => {
+      async (signal, isCurrent) => {
+        const token = await getToken(signal);
+        if (!isCurrent()) return null;
+        if (!token) {
+          action.setError('Попробуйте ещё раз');
+          return null;
+        }
         try {
           return await api.auth.requestLoginCode(
             {
@@ -115,6 +104,7 @@ export function EmailLoginForm({ redirectTo }: { redirectTo: SafeRedirect }) {
         }
       },
       (result) => {
+        if (!result) return;
         setRequested(true);
         setDeadline(
           Date.now() +
@@ -208,12 +198,6 @@ export function EmailLoginForm({ redirectTo }: { redirectTo: SafeRedirect }) {
           />
         </>
       ) : null}
-      <TurnstileWidget
-        key={generation}
-        action="email_login"
-        onToken={onProof}
-        onAvailability={onAvailability}
-      />
       <TextButton
         label={
           remaining > 0
@@ -223,7 +207,7 @@ export function EmailLoginForm({ redirectTo }: { redirectTo: SafeRedirect }) {
               : 'Получить код'
         }
         disabled={
-          action.busy || remaining > 0 || availability === 'unavailable'
+          action.busy || remaining > 0
         }
         onPress={send}
       />
