@@ -27,5 +27,18 @@ describe('parseMoneyInput', () => {
     expect(parseMoneyInput('abc', 'BYN')).toBeNull();
     expect(parseMoneyInput('', 'RUB')).toBeNull();
     expect(parseMoneyInput('12.555', 'BYN')).toBeNull();
+    expect(parseMoneyInput('-1', 'BYN')).toBeNull();
+    expect(parseMoneyInput('NaN', 'RUB')).toBeNull();
+    expect(parseMoneyInput('Infinity', 'BYN')).toBeNull();
+  });
+
+  it('keeps exact minor units inside the safe integer range and rejects the rest', () => {
+    expect(parseMoneyInput('90071992547409.90', 'BYN')).toBe(9007199254740990);
+    expect(parseMoneyInput('90071992547409.91', 'RUB')).toBe(
+      Number.MAX_SAFE_INTEGER,
+    );
+    expect(parseMoneyInput('90071992547409.92', 'BYN')).toBeNull();
+    expect(parseMoneyInput('9'.repeat(307), 'RUB')).toBeNull();
+    expect(parseMoneyInput('0', 'BYN')).toBe(0);
   });
 });

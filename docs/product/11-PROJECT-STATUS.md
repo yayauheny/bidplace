@@ -5,6 +5,14 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-10-31 — W4 Task 1 foundation fixes
+
+**Implemented** for these four helpers only. W4 screens (Tasks 2–11) stay Not implemented.
+
+`parseMoneyInput` in `apps/mobile/src/lib/money.ts` builds minor units from the whole and fractional digit strings and returns `null` above `Number.MAX_SAFE_INTEGER`. `money.spec.ts`: `90071992547409.90` is `9007199254740990`, `90071992547409.91` is the max safe integer, `90071992547409.92` and 307 nines are `null`. `BUYER_BLOCKED` in `apps/mobile/src/lib/api-error-messages.ts` is «Ставки и покупки для вашего аккаунта ограничены.» (`api-error-messages.spec.ts`); the code still covers antifraud, a ban, and two strikes. `useNow` samples the clock when it turns on (`use-now.spec.ts`). A late lot or contacts response from session A does not replace session B (`query-cache.spec.ts`); `authEpoch` was not rewritten.
+
+Local checks on `fix/w4-foundation-review`: the helper specs plus logout, refresh, draft save, and profile submit — 13 files, 177 passed. Mobile `tsc --noEmit` and `eslint .` exited 0. `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`.
+
 ## 2026-10-31 — New-account bid burst
 
 **Implemented.** `NEW_ACCOUNT_MAX_AGE_MS` and `isNewAccount` in `apps/api/src/antifraud/antifraud.policy.ts`. When `detectBidBurst` matches, `FraudSignalsService.recordBidSignals` writes `BID_BURST` and, if `User.createdAt` is younger than 24 hours at the transaction `bidCreatedAt`, also `NEW_ACCOUNT_BURST`. Both signals and the single `FRAUD_REVIEW` hold share the bid transaction. The current bid stays accepted; the next bid is `BUYER_BLOCKED`. An older account still records only `BID_BURST` and is not held for that one series. Tests: `antifraud.policy.spec.ts`, `commerce-bids.integration.spec.ts`.

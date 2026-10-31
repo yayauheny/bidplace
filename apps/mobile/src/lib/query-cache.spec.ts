@@ -123,6 +123,63 @@ describe('query cache auth boundaries', () => {
     expect(queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
     expect(canWritePrivateCache(queryClient)).toBe(true);
   });
+
+  it('drops a late private response after the next session is installed', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    await replaceAuthenticatedSession(queryClient, { id: 'user-a' });
+    const epoch = currentAuthEpoch(queryClient);
+    let resolveLot: (value: { bid: number }) => void = () => undefined;
+    let resolveContacts: (value: { phone: string }) => void = () => undefined;
+    const readPrivate = <T>(
+      queryKey: readonly unknown[],
+      wait: (resolve: (value: T) => void) => void,
+    ) =>
+      queryClient
+        .fetchQuery({
+          queryKey: [...queryKey],
+          queryFn: async () => {
+            const value = await new Promise<T>((resolve) => {
+              wait(resolve);
+            });
+            if (!canWritePrivateCache(queryClient, epoch)) {
+              throw new Error('Private cache is closed');
+            }
+            return value;
+          },
+        })
+        .catch((error: unknown) => error);
+
+    const lotA = readPrivate(
+      commerceKeys.lot('work-1', 'user-a'),
+      (resolve) => {
+        resolveLot = resolve;
+      },
+    );
+    const contactsA = readPrivate(commerceKeys.contacts(), (resolve) => {
+      resolveContacts = resolve;
+    });
+
+    await clearAuthenticatedSession(queryClient);
+    await replaceAuthenticatedSession(queryClient, { id: 'user-b' });
+    queryClient.setQueryData(commerceKeys.lot('work-1', 'user-b'), { bid: 2 });
+    queryClient.setQueryData(commerceKeys.contacts(), { phone: 'b' });
+
+    resolveLot({ bid: 1 });
+    resolveContacts({ phone: 'a' });
+    await Promise.all([lotA, contactsA]);
+
+    expect(
+      queryClient.getQueryData(commerceKeys.lot('work-1', 'user-b')),
+    ).toEqual({ bid: 2 });
+    expect(
+      queryClient.getQueryData(commerceKeys.lot('work-1', 'user-a')),
+    ).toBeUndefined();
+    expect(queryClient.getQueryData(commerceKeys.contacts())).toEqual({
+      phone: 'b',
+    });
+  });
 });
 
 describe('draft write lease', () => {

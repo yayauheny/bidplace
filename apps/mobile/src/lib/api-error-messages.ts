@@ -11,7 +11,7 @@ export function apiErrorMessage(error: unknown): string | null {
     case 'BID_TOO_LOW':
       return 'Ставка ниже минимальной.';
     case 'BUYER_BLOCKED':
-      return 'Автор ограничил для вас ставки и покупки.';
+      return 'Ставки и покупки для вашего аккаунта ограничены.';
     case 'LISTING_NOT_OPEN':
       return 'Лот сейчас не принимает ставки.';
     case 'LISTING_NOT_FOUND':

@@ -5,6 +5,7 @@ export function useNow(intervalMs: number, enabled: boolean): number {
 
   useEffect(() => {
     if (!enabled) return;
+    setNow(Date.now());
     const id = setInterval(() => {
       setNow(Date.now());
     }, intervalMs);

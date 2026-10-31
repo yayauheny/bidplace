@@ -32,14 +32,18 @@ describe('useNow', () => {
     vi.useRealTimers();
   });
 
-  function mount(enabled: boolean) {
+  function mount(enabled: boolean, intervalMs = 1000, time = 1_000) {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    vi.setSystemTime(time);
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
+    render(enabled, intervalMs);
+  }
+
+  function render(enabled: boolean, intervalMs = 1000) {
     act(() => {
-      root?.render(createElement(Probe, { intervalMs: 1000, enabled }));
+      root?.render(createElement(Probe, { intervalMs, enabled }));
     });
   }
 
@@ -65,5 +69,30 @@ describe('useNow', () => {
     });
     expect(Number(stamp())).toBe(first + 1000);
     expect(vi.getTimerCount()).toBe(1);
+  });
+
+  it('reads the current time as soon as the clock is enabled', () => {
+    mount(false, 1000, 1000);
+    expect(stamp()).toBe('1000');
+    vi.setSystemTime(61000);
+    render(true);
+    expect(stamp()).toBe('61000');
+    expect(vi.getTimerCount()).toBe(1);
+  });
+
+  it('clears the timer when disabled, changed, re-enabled, or unmounted', () => {
+    mount(true, 1000, 1000);
+    expect(vi.getTimerCount()).toBe(1);
+    render(false);
+    expect(vi.getTimerCount()).toBe(0);
+    render(true, 500);
+    expect(vi.getTimerCount()).toBe(1);
+    render(true, 250);
+    expect(vi.getTimerCount()).toBe(1);
+    act(() => {
+      root?.unmount();
+    });
+    root = undefined;
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

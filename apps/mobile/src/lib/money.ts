@@ -13,7 +13,7 @@ export function formatMoney(minor: number, currency: 'BYN' | 'RUB'): string {
   return `${formatted} ${currencyLabel[currency]}`;
 }
 
-const moneyInput = /^(?:\d+)(?:[.,]\d{1,2})?$/;
+const moneyInput = /^(\d+)(?:[.,](\d{1,2}))?$/;
 const minorPerMajor = { BYN: 100, RUB: 100 } as const;
 
 export function parseMoneyInput(
@@ -21,8 +21,16 @@ export function parseMoneyInput(
   currency: 'BYN' | 'RUB',
 ): number | null {
   const compact = text.replace(/[\s\u00a0\u202f]/g, '');
-  if (!moneyInput.test(compact)) return null;
-  const major = Number(compact.replace(',', '.'));
-  if (!Number.isFinite(major)) return null;
-  return Math.round(major * minorPerMajor[currency]);
+  const match = moneyInput.exec(compact);
+  if (!match) return null;
+  const places = String(minorPerMajor[currency]).length - 1;
+  const digits = `${match[1]}${(match[2] ?? '').padEnd(places, '0')}`.replace(
+    /^0+(?=\d)/,
+    '',
+  );
+  const minor = BigInt(digits);
+  if (minor > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+  const value = Number(minor);
+  if (!Number.isSafeInteger(value)) return null;
+  return value;
 }
