@@ -5,6 +5,10 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-10-31 — New-account bid burst
+
+**Implemented.** `NEW_ACCOUNT_MAX_AGE_MS` and `isNewAccount` in `apps/api/src/antifraud/antifraud.policy.ts`. When `detectBidBurst` matches, `FraudSignalsService.recordBidSignals` writes `BID_BURST` and, if `User.createdAt` is younger than 24 hours at the transaction `bidCreatedAt`, also `NEW_ACCOUNT_BURST`. Both signals and the single `FRAUD_REVIEW` hold share the bid transaction. The current bid stays accepted; the next bid is `BUYER_BLOCKED`. An older account still records only `BID_BURST` and is not held for that one series. Tests: `antifraud.policy.spec.ts`, `commerce-bids.integration.spec.ts`.
+
 ## 2026-10-31 — Work deletion
 
 **Implemented locally / live Needs verification.** `Product.deletedAt`, `ProductsController.remove`, `product-publication.ts`, read filters and `MediaLifecycleService` implement the W6 tombstone path; `product-delete.integration.spec.ts` and `media-lifecycle.integration.spec.ts` cover owner access, sale guards, races, retained order cover, cleanup and purge retry. Public JSON edge cache TTLs for works, authors, portfolio home and facets are 30 seconds (`deploy/cloudflare/src/router.ts`, `router.spec.ts`); live R2/CDN behavior remains unverified. Scoped final independent re-review is pending.

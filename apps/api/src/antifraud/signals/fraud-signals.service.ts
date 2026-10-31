@@ -29,6 +29,7 @@ import {
   buyerStrikesBlock,
   detectBidBurst,
   hasBuyerContact,
+  isNewAccount,
   isActiveBuyerStrike,
   shouldHold,
   strikeMark,
@@ -180,15 +181,24 @@ export class FraudSignalsService {
       },
       select: { listingId: true, createdAt: true },
     });
-    if (
-      detectBidBurst(
-        recent.map((row) => ({ listingId: row.listingId, at: row.createdAt })),
-        input.bidCreatedAt,
-      )
-    ) {
+    const burst = detectBidBurst(
+      recent.map((row) => ({ listingId: row.listingId, at: row.createdAt })),
+      input.bidCreatedAt,
+    );
+    if (!burst) return;
+    await this.recordSignal(tx, {
+      userId: input.userId,
+      kind: 'BID_BURST',
+      subjectId: input.listingId,
+    });
+    const account = await tx.user.findUnique({
+      where: { id: input.userId },
+      select: { createdAt: true },
+    });
+    if (account && isNewAccount(account.createdAt, input.bidCreatedAt)) {
       await this.recordSignal(tx, {
         userId: input.userId,
-        kind: 'BID_BURST',
+        kind: 'NEW_ACCOUNT_BURST',
         subjectId: input.listingId,
       });
     }
