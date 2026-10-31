@@ -1,5 +1,7 @@
 import {
   ApiErrorCode,
+  SELLER_STATUSES,
+  USER_STATUSES,
   type ApiErrorCode as ApiErrorCodeValue,
   type ListingStatus,
   type ListingType,
@@ -10,6 +12,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { AntifraudService, type ActorAction } from '../antifraud';
 import { AppException } from '../core/errors';
 import { dbNow } from '../core/time';
+import { sellerMayAcceptOrders } from '../sellers/seller-capability';
 import { effectiveListingState } from './listing-state';
 
 export type BuyerListing = {
@@ -52,6 +55,26 @@ export class CommerceGuards {
     });
     if (view.blockedReason) throw buyerBlockException(view.blockedReason);
     await this.antifraud.assertCanAct(tx, input.userId, input.action ?? 'bid');
+  }
+
+  /** Caller already holds this user row via `AntifraudService.lockUsers`. */
+  async sellerMaySell(
+    tx: Prisma.TransactionClient,
+    sellerUserId: string,
+  ): Promise<boolean> {
+    const seller = await tx.user.findUnique({
+      where: { id: sellerUserId },
+      select: {
+        status: true,
+        sellerProfile: { select: { status: true } },
+      },
+    });
+    const userStatus = USER_STATUSES.find((status) => status === seller?.status);
+    const sellerStatus = SELLER_STATUSES.find(
+      (status) => status === seller?.sellerProfile?.status,
+    );
+    if (!userStatus || !sellerStatus) return false;
+    return sellerMayAcceptOrders({ userStatus, sellerStatus });
   }
 
   async describeBuyer(

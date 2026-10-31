@@ -89,6 +89,7 @@ export class ListingsService {
   ): Promise<CreatedListing> {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       await lockProductRowForUpdate(tx, productId);
+      await this.antifraud.lockUsers(tx, [userId]);
       const now = await dbNow(tx);
       const product = await tx.product.findUnique({
         where: { id: productId },

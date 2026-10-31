@@ -6,6 +6,7 @@ import { dbNow } from '../core/time';
 import { TickService } from '../core/tick/tick.service';
 import { enqueueNotification } from '../notifications/notification-outbox';
 import { lockProductRowForUpdate } from '../products/product-write-guard';
+import { CommerceGuards } from './commerce-guards';
 import { effectiveListingState } from './listing-state';
 import { rankBidders } from './order-offers';
 import { OrdersService } from './orders.service';
@@ -32,6 +33,7 @@ export class CommerceTickService implements OnModuleInit {
     private readonly tick: TickService,
     private readonly orders: OrdersService,
     private readonly antifraud: AntifraudService,
+    private readonly guards: CommerceGuards,
   ) {}
 
   onModuleInit(): void {
@@ -234,15 +236,17 @@ export class CommerceTickService implements OnModuleInit {
 
       const winner = rankBidders(bids, new Set())[0];
       if (winner) {
-        await this.orders.createOrder(tx, {
-          listing,
-          buyerUserId: winner.userId,
-          amountMinor: winner.amountMinor,
-          source: 'AUCTION_WIN',
-          sourceBidId: winner.bidId,
-          status: 'ACTIVE',
-          now,
-        });
+        if (await this.guards.sellerMaySell(tx, listing.sellerUserId)) {
+          await this.orders.createOrder(tx, {
+            listing,
+            buyerUserId: winner.userId,
+            amountMinor: winner.amountMinor,
+            source: 'AUCTION_WIN',
+            sourceBidId: winner.bidId,
+            status: 'ACTIVE',
+            now,
+          });
+        }
         return true;
       }
 

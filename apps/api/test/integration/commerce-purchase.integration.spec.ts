@@ -537,8 +537,8 @@ describe('fixed price purchase', () => {
       data: { status: 'SUSPENDED' },
     });
     const response = await postPurchase(buyer, listingId, 'suspended-author');
-    expect(response.status).toBe(403);
-    expect(await errorBody(response)).toMatchObject({ code: 'forbidden' });
+    expect(response.status).toBe(409);
+    expect(await errorBody(response)).toMatchObject({ code: 'LISTING_NOT_OPEN' });
     expect(await prisma.order.count({ where: { listingId } })).toBe(0);
     expect(
       await prisma.listing.findUniqueOrThrow({ where: { id: listingId } }),

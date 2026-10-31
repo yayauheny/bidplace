@@ -52,7 +52,7 @@ function service(prisma: { $transaction: unknown }) {
   return new ListingsService(
     prisma as never,
     {} as CommerceGuards,
-    {} as never,
+    { lockUsers: vi.fn().mockResolvedValue(undefined) } as never,
   );
 }
 

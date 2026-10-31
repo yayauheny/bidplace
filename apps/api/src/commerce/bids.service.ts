@@ -100,7 +100,12 @@ export class BidsService implements OnModuleInit {
 
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       await lockProductRowForUpdate(tx, anchor.productId);
-      await this.antifraud.lockUsers(tx, [userId]);
+      const seller = await tx.listing.findUnique({
+        where: { id: listingId },
+        select: { sellerUserId: true },
+      });
+      if (!seller) throw listingNotFound();
+      await this.antifraud.lockUsers(tx, [userId, seller.sellerUserId]);
       const now = await dbNow(tx);
       const listing = await tx.listing.findUnique({
         where: { id: listingId },
@@ -136,6 +141,13 @@ export class BidsService implements OnModuleInit {
         now,
         userLocked: true,
       });
+      if (!(await this.guards.sellerMaySell(tx, listing.sellerUserId))) {
+        throw new AppException({
+          status: 409,
+          code: ApiErrorCode.LISTING_NOT_OPEN,
+          message: 'Listing is not open',
+        });
+      }
       assertAuctionAmount(listing, input.amountMinor);
 
       const previous = await tx.bid.findFirst({

@@ -144,7 +144,12 @@ export class OrdersService {
     try {
       return await runReadCommittedTransaction(this.prisma, async (tx) => {
         await lockProductRowForUpdate(tx, anchor.productId);
-        await this.antifraud.lockUsers(tx, [userId]);
+        const sellerLock = await tx.listing.findUnique({
+          where: { id: listingId },
+          select: { sellerUserId: true },
+        });
+        if (!sellerLock) throw listingNotFound();
+        await this.antifraud.lockUsers(tx, [userId, sellerLock.sellerUserId]);
         const now = await dbNow(tx);
         const listing = await tx.listing.findUnique({
           where: { id: listingId },
@@ -171,12 +176,9 @@ export class OrdersService {
           userLocked: true,
           action: 'purchase',
         });
-        const seller = await tx.sellerProfile.findUnique({
-          where: { userId: listing.sellerUserId },
-          select: { status: true },
-        });
-        if (!seller) throw new NotFoundException('Seller profile not found');
-        assertApprovedSeller(seller.status);
+        if (!(await this.guards.sellerMaySell(tx, listing.sellerUserId))) {
+          throw listingNotOpen();
+        }
 
         const order = await this.createOrder(tx, {
           listing,
@@ -477,6 +479,9 @@ export class OrdersService {
         await this.antifraud.lockUsers(tx, [
           ...new Set([sellerUserId, ...ranked.map((bidder) => bidder.userId)]),
         ]);
+        if (!(await this.guards.sellerMaySell(tx, sellerUserId))) {
+          throw new ForbiddenException('Approved SellerProfile is required');
+        }
         const now = await dbNow(tx);
         const current = await tx.order.findUnique({ where: { id: order.id } });
         const currentOrders = await tx.order.findMany({
