@@ -13,6 +13,7 @@ import {
   foundationAcquisitionSql,
   foundationGrowthSql,
   acquisitionBySourceSql,
+  approvedWorkEventsSql,
   countActiveUsersSql,
   listingViewDaySql,
   publishedWorkDaySql,
@@ -230,7 +231,7 @@ export class AdminAnalyticsService {
       listingViewed,
       sellerProfilesCreated,
       productsCreated,
-      productsApproved,
+      productsApprovedRows,
       recentUsers,
       recentCreators,
       recentWorks,
@@ -264,13 +265,9 @@ export class AdminAnalyticsService {
       this.prisma.product.count({
         where: { deletedAt: null, createdAt: periodFilter },
       }),
-      this.prisma.auditEvent.count({
-        where: {
-          targetType: 'PRODUCT',
-          newStatus: 'APPROVED',
-          createdAt: periodFilter,
-        },
-      }),
+      this.prisma.$queryRaw<Array<{ count: number | bigint }>>(
+        approvedWorkEventsSql(from, to),
+      ),
       this.prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
         take: 8,
@@ -379,7 +376,7 @@ export class AdminAnalyticsService {
           'postgresql',
         ),
         productsApproved: metric(
-          productsApproved,
+          readSqlCount(productsApprovedRows[0]?.count),
           'AuditEvent PRODUCT newStatus APPROVED in period',
           'postgresql',
         ),

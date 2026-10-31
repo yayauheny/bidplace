@@ -1160,20 +1160,6 @@ export class ImagesService {
     }
 
     const deleted = Boolean(image.product.deletedAt);
-    const retainedCover =
-      deleted &&
-      !source &&
-      userId &&
-      Boolean(
-        await this.prisma.order.findFirst({
-          where: {
-            productId: image.productId,
-            coverImageIdSnapshot: imageId,
-            OR: [{ buyerUserId: userId }, { sellerUserId: userId }],
-          },
-          select: { id: true },
-        }),
-      );
     const isOwner = !deleted && image.product.sellerProfile.userId === userId;
     const isAdmin = !deleted && role === 'admin';
     const isPublic =
@@ -1194,6 +1180,16 @@ export class ImagesService {
           select: { id: true },
         }),
       );
+    const retainedCover =
+      !isOwner && !isAdmin && !isPublic && !source && userId &&
+      Boolean(await this.prisma.order.findFirst({
+        where: {
+          productId: image.productId,
+          coverImageIdSnapshot: imageId,
+          OR: [{ buyerUserId: userId }, { sellerUserId: userId }],
+        },
+        select: { id: true },
+      }));
 
     if (!isOwner && !isAdmin && !isPublic && !retainedCover) {
       throw new NotFoundException('Image not found');
@@ -1235,11 +1231,7 @@ export class ImagesService {
       throw new BadRequestException('Invalid idempotency key');
     }
     // Match gallery uploads: reject non-owners before staging bytes in R2.
-    const product = await this.requireEditableOwner(
-      this.prisma,
-      userId,
-      productId,
-    );
+    const product = await this.requireEditableOwner(this.prisma, userId, productId);
     if (product.editingRevisionId !== expectedRevisionId) {
       throw new ConflictException('Product editing revision changed');
     }
@@ -1309,10 +1301,7 @@ export class ImagesService {
           where: { identity: uploadIdentity },
           select: { revisionId: true },
         });
-        if (
-          operation?.revisionId &&
-          operation.revisionId !== expectedRevisionId
-        ) {
+        if (operation?.revisionId && operation.revisionId !== expectedRevisionId) {
           throw new ConflictException(
             'Upload identity belongs to an earlier revision',
           );
@@ -1565,9 +1554,7 @@ export class ImagesService {
         !product.editingRevisionId ||
         product.editingRevisionId === product.publishedRevisionId ||
         !product.editingRevision ||
-        !isEditableProductStatus(
-          product.editingRevision.status as ProductStatus,
-        )
+        !isEditableProductStatus(product.editingRevision.status as ProductStatus)
       ) {
         throw new ForbiddenException('Product images are locked');
       }

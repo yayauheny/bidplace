@@ -465,7 +465,10 @@ export class ProductsService {
             images: { select: { imageId: true }, take: 1 },
           },
         });
-        assertRevisionTransition(editingRevision.status, 'PENDING_REVIEW');
+        assertRevisionTransition(
+          editingRevision.status,
+          'PENDING_REVIEW',
+        );
         const missingFields = missingProductApprovalFields({
           ...editingRevision,
           images: editingRevision.images.map(({ imageId }) => ({
@@ -523,7 +526,10 @@ export class ProductsService {
           images: { select: { imageId: true }, take: 1 },
         },
       });
-      assertRevisionTransition(editingRevision.status, 'PENDING_REVIEW');
+      assertRevisionTransition(
+        editingRevision.status,
+        'PENDING_REVIEW',
+      );
       const missingFields = missingProductApprovalFields({
         ...editingRevision,
         images: editingRevision.images.map(({ imageId }) => ({ id: imageId })),
@@ -637,8 +643,7 @@ export class ProductsService {
         }
         assertProductOwner(product, userId);
         if (
-          product.status !==
-          (nextStatus === 'ARCHIVED' ? 'APPROVED' : 'ARCHIVED')
+          product.status !== (nextStatus === 'ARCHIVED' ? 'APPROVED' : 'ARCHIVED')
         ) {
           throw new AppException({
             status: 409,

@@ -9,6 +9,8 @@
 
 **Partial / Needs verification.** `Product.deletedAt`, `ProductsController.remove`, `product-publication.ts`, read filters and `MediaLifecycleService` implement the W6 tombstone path; `product-delete.integration.spec.ts` and `media-lifecycle.integration.spec.ts` exercise owner access, sale guards, races, retained order cover and purge retry. Full checks and independent review remain pending.
 
+2026-10-31 review fixes: order covers use the published revision and remain available to order participants after later publication; deletion excludes approval events from active funnel counts without deleting audit history. Real order and media cleanup regressions were added; independent re-review remains pending.
+
 | Область | Статус и основание |
 | --- | --- |
 | Portfolio discovery, author/Work lifecycle и moderation | Implemented для проверенного локального среза: `portfolio`, `products`, `sellers`, `admin-moderation` в `apps/api/src`; revision/public guards и HTTP/media tests. Live acceptance остаётся отдельной. |

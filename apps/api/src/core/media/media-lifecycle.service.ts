@@ -1000,13 +1000,9 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         const current = await tx.mediaOperation.findUniqueOrThrow({
           where: { id: operation.id },
         });
-        if (
-          current.state !== 'RUNNING' ||
-          current.leaseToken !== token ||
-          current.generation !== operation.generation ||
-          !current.leaseUntil ||
-          current.leaseUntil.getTime() <= Date.now()
-        )
+        if (current.state !== 'RUNNING' || current.leaseToken !== token ||
+          current.generation !== operation.generation || !current.leaseUntil ||
+          current.leaseUntil.getTime() <= Date.now())
           throw new Error('Publication lease was lost');
         await tx.mediaOperation.upsert({
           where: {
@@ -1070,8 +1066,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
               current.state !== 'RUNNING' ||
               current.leaseToken !== token ||
               current.generation !== operation.generation
-            )
-              return;
+            ) return;
             if (
               product.deletedAt ||
               (product.status === 'ARCHIVED' && !operation.restore)
@@ -1405,38 +1400,19 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
                 {
                   kind: 'PUBLISH',
                   state: { in: ['PENDING', 'FAILED'] },
-                  ...(operation.kind === 'REVOKE' &&
-                  item.object.tier === 'PUBLIC'
-                    ? {
-                        NOT: {
-                          OR: [
-                            { restore: false, product: { status: 'ARCHIVED' } },
-                            ...(compensating
-                              ? [
-                                  {
-                                    id: restore.id,
-                                    generation: operation.generation,
-                                    restore: true,
-                                    state: 'FAILED' as const,
-                                    ...(operation.productId
-                                      ? {
-                                          productId: operation.productId,
-                                          product: {
-                                            status: 'ARCHIVED' as const,
-                                          },
-                                        }
-                                      : {
-                                          profileId: operation.profileId,
-                                          profile: {
-                                            status: 'SUSPENDED' as const,
-                                          },
-                                        }),
-                                  },
-                                ]
-                              : []),
-                          ],
-                        },
-                      }
+                  ...(operation.kind === 'REVOKE' && item.object.tier === 'PUBLIC'
+                    ? { NOT: { OR: [
+                        { restore: false, product: { status: 'ARCHIVED' } },
+                        ...(compensating ? [{
+                          id: restore.id,
+                          generation: operation.generation,
+                          restore: true,
+                          state: 'FAILED' as const,
+                          ...(operation.productId
+                            ? { productId: operation.productId, product: { status: 'ARCHIVED' as const } }
+                            : { profileId: operation.profileId, profile: { status: 'SUSPENDED' as const } }),
+                        }] : []),
+                      ] } }
                     : {}),
                 },
               ],

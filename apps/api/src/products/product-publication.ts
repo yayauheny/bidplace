@@ -2,10 +2,7 @@ import { ApiErrorCode, type ProductStatus } from '@bidplace/contracts';
 import type { Prisma } from '@bidplace/database';
 
 import { AppException } from '../core/errors/app.exception';
-import {
-  assertProductNotInSale,
-  lockProductRowForUpdate,
-} from './product-write-guard';
+import { assertProductNotInSale, lockProductRowForUpdate } from './product-write-guard';
 
 export type PublicationActor = 'author' | 'admin' | 'media';
 

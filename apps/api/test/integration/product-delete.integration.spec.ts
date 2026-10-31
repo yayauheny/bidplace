@@ -485,9 +485,12 @@ describe('work deletion', () => {
         ).json(),
       ),
     ).toContain(product.id);
+    await prisma.auditEvent.create({ data: {
+      targetType: 'PRODUCT', targetId: product.id, action: 'DECISION', newStatus: 'APPROVED',
+    } });
     const before = (await (
       await admin.get('/admin/analytics/overview?period=7d')
-    ).json()) as { overview: { publishedWorks: { value: number } } };
+    ).json()) as { overview: { publishedWorks: { value: number } }; sellerFunnel: { productsApproved: { value: number } } };
     expect((await owner.delete(`/products/${product.id}`)).status).toBe(204);
     expect((await guest.get(`/works/${product.publicId}`)).status).toBe(404);
     for (const path of [
@@ -516,7 +519,9 @@ describe('work deletion', () => {
     expect((await admin.get(`/admin/products/${product.id}`)).status).toBe(404);
     const after = (await (
       await admin.get('/admin/analytics/overview?period=7d')
-    ).json()) as { overview: { publishedWorks: { value: number } } };
+    ).json()) as { overview: { publishedWorks: { value: number } }; sellerFunnel: { productsApproved: { value: number } } };
+    expect(after.sellerFunnel.productsApproved.value).toBe(before.sellerFunnel.productsApproved.value - 1);
+    expect(await prisma.auditEvent.count({ where: { targetId: product.id, newStatus: 'APPROVED' } })).toBe(1);
     expect(after.overview.publishedWorks.value).toBe(
       before.overview.publishedWorks.value - 1,
     );

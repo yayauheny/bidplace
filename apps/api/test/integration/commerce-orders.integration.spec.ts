@@ -1,4 +1,6 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import sharp from 'sharp';
+import { publishRevision } from '../../src/products/product-publication';
 
 import { type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -297,6 +299,53 @@ async function ageAuthentication(actor: HttpTestClient) {
 }
 
 describe('order access', () => {
+  it('snapshots the newly published cover when purchasing a revised work', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const product = await prisma.product.findUniqueOrThrow({ where: { id: fixture.approvedProductId } });
+    const coverBytes = await sharp({ create: { width: 8, height: 8, channels: 3, background: 'blue' } }).png().toBuffer();
+    const image = await prisma.productImage.create({ data: {
+      productId: product.id, position: 1, mimeType: 'image/png', byteLength: coverBytes.length,
+      data: coverBytes, checksum: createHash('sha256').update(coverBytes).digest('hex'),
+    } });
+    const revision = await prisma.productRevision.create({ data: {
+      productId: product.id, version: 2, status: 'PENDING_REVIEW', title: 'Revised work',
+      categoryId: fixture.categoryId, images: { create: { imageId: image.id, position: 0 } },
+    } });
+    await prisma.product.update({ where: { id: product.id }, data: { editingRevisionId: revision.id } });
+    expect(await prisma.$transaction((tx) => publishRevision(tx, {
+      productId: product.id, revisionId: revision.id,
+      expectedPublishedRevisionId: product.publishedRevisionId, expectedRevisionAt: revision.updatedAt,
+    }))).toBe('published');
+    const purchased = await purchaseFixed(fixture);
+    const order = await prisma.order.findUniqueOrThrow({ where: { publicId: purchased.publicId } });
+    expect(order.coverImageIdSnapshot).toBe(image.id);
+    const before = await purchased.buyer.get(`/images/${image.id}`);
+    expect(before.status).toBe(200);
+    expect(Buffer.from(await before.arrayBuffer())).toEqual(coverBytes);
+    expect((await purchased.seller.post(`/orders/${order.publicId}/complete`)).status).toBe(200);
+    const laterImage = await prisma.productImage.create({ data: {
+      productId: product.id, position: 2, mimeType: 'image/png', byteLength: coverBytes.length,
+      data: coverBytes, checksum: createHash('sha256').update(coverBytes).digest('hex'),
+    } });
+    const laterRevision = await prisma.productRevision.create({ data: {
+      productId: product.id, version: 3, status: 'PENDING_REVIEW', title: 'Later work',
+      categoryId: fixture.categoryId, images: { create: { imageId: laterImage.id, position: 0 } },
+    } });
+    await prisma.product.update({ where: { id: product.id }, data: { editingRevisionId: laterRevision.id } });
+    expect(await prisma.$transaction((tx) => publishRevision(tx, {
+      productId: product.id, revisionId: laterRevision.id,
+      expectedPublishedRevisionId: revision.id, expectedRevisionAt: laterRevision.updatedAt,
+    }))).toBe('published');
+    const historical = await purchased.buyer.get(`/images/${image.id}`);
+    expect(historical.status).toBe(200);
+    expect(Buffer.from(await historical.arrayBuffer())).toEqual(coverBytes);
+    expect((await purchased.buyer.get(`/images/${image.id}?source=true`)).status).toBe(404);
+    expect((await purchased.seller.delete(`/products/${product.id}`)).status).toBe(204);
+    const retained = await purchased.buyer.get(`/images/${image.id}`);
+    expect(retained.status).toBe(200);
+    expect(Buffer.from(await retained.arrayBuffer())).toEqual(coverBytes);
+  });
+
   it.each([
     ['buyer', 200],
     ['seller', 200],

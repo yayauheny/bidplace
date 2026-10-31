@@ -79,6 +79,15 @@ export function countActiveUsersSql(from: Date, to: Date): Prisma.Sql {
   `;
 }
 
+export function approvedWorkEventsSql(from: Date, to: Date): Prisma.Sql {
+  return Prisma.sql`
+    SELECT COUNT(*) AS "count"
+    FROM audit_events a JOIN products p ON p.id = a.target_id
+    WHERE a.target_type::text = 'PRODUCT' AND a.new_status = 'APPROVED'
+      AND p.deleted_at IS NULL AND ${inUtcPeriod(Prisma.sql`a.created_at`, from, to)}
+  `;
+}
+
 // Visitors are attribution rows captured in the period, with null source
 // coalesced to direct. Signups stay inside that cohort: the row also needs a
 // user and a linkedAt inside the same period.

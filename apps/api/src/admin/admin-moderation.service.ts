@@ -97,52 +97,38 @@ export class AdminModerationService {
   ) {}
 
   async summaries(resource: ModerationResource, query: AdminQueueQuery) {
-    return this.prisma.$transaction(
-      async (tx) => {
-        const rows = await tx.$queryRaw<ModerationSummaryRow[]>(
-          moderationSummarySql(resource, query),
-        );
-        const page = rows.slice(0, query.limit);
-        const last = page.at(-1);
-        const cards = new Map<string, unknown>();
-        if (query.includeCard && page.length) {
-          const where = { id: { in: page.map((row) => row.id) } };
-          if (resource === 'PRODUCT') {
-            for (const record of await tx.product.findMany({
-              where,
-              select: adminProductSummarySelect,
-            }))
-              cards.set(record.id, toProductSummaryCard(record));
-          } else {
-            for (const record of await tx.sellerProfile.findMany({
-              where,
-              select: adminSellerSummarySelect,
-            }))
-              cards.set(record.id, toSellerSummaryCard(record));
-          }
-        }
-        return adminModerationSummariesSchema.parse({
-          items: page.map((row) => ({
-            ...(query.includeCard ? { card: cards.get(row.id) } : {}),
-            id: row.id,
-            label: row.label,
-            parentStatus: row.parentStatus,
-            reviewStatus: row.reviewStatus,
-            reviewRevisionId: row.reviewRevisionId,
-            submittedAt: row.submittedAt?.toISOString() ?? null,
-            submissionTimeUnknown: row.submittedAt === null,
-          })),
-          nextCursor:
-            rows.length > query.limit && last
-              ? encodeAdminQueueCursor({
-                  submittedAt: last.submittedAt?.toISOString() ?? null,
-                  id: last.sortId,
-                })
-              : null,
-        });
-      },
-      { isolationLevel: 'RepeatableRead' },
+    return this.prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<ModerationSummaryRow[]>(
+      moderationSummarySql(resource, query),
     );
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    const cards = new Map<string, unknown>();
+    if (query.includeCard && page.length) {
+      const where = { id: { in: page.map((row) => row.id) } };
+      if (resource === 'PRODUCT') {
+        for (const record of await tx.product.findMany({ where, select: adminProductSummarySelect })) cards.set(record.id, toProductSummaryCard(record));
+      } else {
+        for (const record of await tx.sellerProfile.findMany({ where, select: adminSellerSummarySelect })) cards.set(record.id, toSellerSummaryCard(record));
+      }
+    }
+    return adminModerationSummariesSchema.parse({
+      items: page.map((row) => ({
+        ...(query.includeCard ? { card: cards.get(row.id) } : {}),
+        id: row.id, label: row.label, parentStatus: row.parentStatus,
+        reviewStatus: row.reviewStatus, reviewRevisionId: row.reviewRevisionId,
+        submittedAt: row.submittedAt?.toISOString() ?? null,
+        submissionTimeUnknown: row.submittedAt === null,
+      })),
+      nextCursor:
+        rows.length > query.limit && last
+          ? encodeAdminQueueCursor({
+              submittedAt: last.submittedAt?.toISOString() ?? null,
+              id: last.sortId,
+            })
+          : null,
+    });
+    }, { isolationLevel: 'RepeatableRead' });
   }
 
   async sellerDetail(id: string) {
@@ -491,10 +477,7 @@ export class AdminModerationService {
         }
 
         if (input.status === 'SUSPENDED') {
-          const blockingProducts = await findSellerProductIdsInSale(
-            tx,
-            sellerProfile.id,
-          );
+          const blockingProducts = await findSellerProductIdsInSale(tx, sellerProfile.id);
           if (blockingProducts.length > 0) {
             this.logger.warn(
               `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status} because a scheduled or live listing exists`,
@@ -691,17 +674,11 @@ export class AdminModerationService {
           },
         });
         if (input.status === 'APPROVED') {
-          await tx.auditEvent.create({
-            data: {
-              actorUserId: adminUserId,
-              targetType: 'SELLER_PROFILE',
-              targetId: sellerProfile.id,
-              action: 'PUBLICATION_COMPLETED',
-              revisionId: sellerProfile.publishedRevisionId,
-              oldStatus: sellerProfile.status,
-              newStatus: 'APPROVED',
-            },
-          });
+          await tx.auditEvent.create({ data: {
+            actorUserId: adminUserId, targetType: 'SELLER_PROFILE', targetId: sellerProfile.id,
+            action: 'PUBLICATION_COMPLETED', revisionId: sellerProfile.publishedRevisionId,
+            oldStatus: sellerProfile.status, newStatus: 'APPROVED',
+          } });
         }
 
         return updated;
@@ -789,7 +766,10 @@ export class AdminModerationService {
           if (!editingRevision) {
             throw new ConflictException('Moderation target is stale');
           }
-          assertRevisionTransition(editingRevision.status, input.status);
+          assertRevisionTransition(
+            editingRevision.status,
+            input.status,
+          );
 
           if (input.status === 'APPROVED') {
             await assertProductNotInSale(tx, productId);
@@ -936,17 +916,11 @@ export class AdminModerationService {
           },
         });
         if (input.status === 'APPROVED') {
-          await tx.auditEvent.create({
-            data: {
-              actorUserId: adminUserId,
-              targetType: 'PRODUCT',
-              targetId: product.id,
-              action: 'PUBLICATION_COMPLETED',
-              revisionId: product.publishedRevisionId,
-              oldStatus: product.status,
-              newStatus: 'APPROVED',
-            },
-          });
+          await tx.auditEvent.create({ data: {
+            actorUserId: adminUserId, targetType: 'PRODUCT', targetId: product.id,
+            action: 'PUBLICATION_COMPLETED', revisionId: product.publishedRevisionId,
+            oldStatus: product.status, newStatus: 'APPROVED',
+          } });
         }
 
         return updated;
@@ -1285,9 +1259,7 @@ export class AdminModerationService {
           });
         }
         if (this.media?.enabled) {
-          await this.media.cancelPublication(tx, {
-            productId: revision.productId,
-          });
+          await this.media.cancelPublication(tx, { productId: revision.productId });
         }
         await tx.auditEvent.create({
           data: {
@@ -1306,9 +1278,7 @@ export class AdminModerationService {
 
       if (proposal.kind === 'CATEGORY') {
         if (!target.categoryId) {
-          throw new ConflictException(
-            'Category proposal must map to a category',
-          );
+          throw new ConflictException('Category proposal must map to a category');
         }
         const category = await tx.category.findUnique({
           where: { id: target.categoryId },

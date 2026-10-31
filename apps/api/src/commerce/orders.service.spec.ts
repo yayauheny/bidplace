@@ -20,7 +20,7 @@ function serviceWith(generate: () => string, orderCreate: ReturnType<typeof vi.f
       findUnique: vi.fn().mockResolvedValue({
         title: 'Work',
         publicId: 'workpublic1',
-        images: [],
+        publishedRevision: null,
         sellerProfile: { fullName: 'Seller' },
       }),
     },

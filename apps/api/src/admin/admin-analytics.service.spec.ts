@@ -17,6 +17,7 @@ function emptyFindMany() {
 }
 
 function queryResult(query: SqlQuery): unknown[] {
+  if (sqlText(query).includes('FROM audit_events')) return [{ count: 0n }];
   if (sqlText(query).includes('COUNT(DISTINCT')) {
     return [{ count: 0n }];
   }
@@ -58,6 +59,7 @@ describe('AdminAnalyticsService', () => {
   it('builds a 7d overview from aggregate rows', async () => {
     const prisma = createPrisma(async (query) => {
       const sql = sqlText(query);
+      if (sql.includes('FROM audit_events')) return [{ count: 0n }];
       if (sql.includes('COUNT(DISTINCT')) {
         return [{ count: 2n }];
       }
