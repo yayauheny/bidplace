@@ -446,7 +446,7 @@ function normalizeFacetValues(values: Array<string | null>) {
   );
 }
 
-function toPortfolioWorkItem(item: {
+export function toPortfolioWorkItem(item: {
   product: {
     id: string;
     publicId: string;

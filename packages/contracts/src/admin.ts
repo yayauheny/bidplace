@@ -1,7 +1,7 @@
 import { mediaDeliverySchema } from './media';
 import { z } from 'zod';
 
-import { trustSignalsSchema } from './commerce';
+import { orderDetailSchema, trustSignalsSchema } from './commerce';
 
 import {
   authorApplicationStageSchema,
@@ -182,6 +182,14 @@ export const adminUserStatusResponseSchema = adminUserSchema;
 export const adminUserCardSchema = adminUserSchema
   .extend({
     trustSignals: trustSignalsSchema,
+  })
+  .strict();
+
+export const adminAttentionResponseSchema = z
+  .object({
+    reportedOrders: z.array(orderDetailSchema),
+    unmarkedOrders: z.array(orderDetailSchema),
+    blocks: z.array(adminUserSchema),
   })
   .strict();
 
@@ -471,6 +479,7 @@ export type AdminProductStatusUpdateRequest = z.infer<
 >;
 export type AdminUsersLookupQuery = z.infer<typeof adminUsersLookupQuerySchema>;
 export type AdminUser = z.infer<typeof adminUserSchema>;
+export type AdminAttentionResponse = z.infer<typeof adminAttentionResponseSchema>;
 export type AdminUsersLookupResponse = z.infer<
   typeof adminUsersLookupResponseSchema
 >;

@@ -1,6 +1,7 @@
 import type { AdminUserStatusUpdateRequest } from '@bidplace/contracts';
 import { Injectable } from '@nestjs/common';
 
+import { hasBuyerContact as buyerHasContact } from './antifraud.policy';
 import { getTrustSignals } from './trust-signals';
 import {
   FraudSignalsService,
@@ -54,6 +55,12 @@ export class AntifraudService {
   }
   releaseHold(...args: Parameters<FraudSignalsService['releaseHold']>) {
     return this.signals.releaseHold(...args);
+  }
+  listActiveHolds() {
+    return this.signals.listActiveHolds();
+  }
+  hasBuyerContact(values: Array<string | null | undefined>): boolean {
+    return buyerHasContact(values);
   }
   banUser(adminId: string, userId: string, reason: string) {
     return this.updateUserStatus(adminId, userId, { status: 'banned', reason });

@@ -390,6 +390,15 @@ export class FraudSignalsService {
       throw new ForbiddenException('Active admin required');
   }
 
+  async listActiveHolds() {
+    const holds = await this.prisma.purchaseHold.findMany({
+      where: { releasedAt: null },
+      orderBy: { createdAt: 'asc' },
+      select: { user: { select: userSelect } },
+    });
+    return holds.map((hold) => hold.user);
+  }
+
   async releaseHold(
     adminId: string,
     userId: string,

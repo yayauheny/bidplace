@@ -34,6 +34,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ImagesModule } from './images/images.module';
 import { SellersModule } from './sellers/sellers.module';
 import { CommerceModule } from './commerce/commerce.module';
+import { FavoritesModule } from './favorites/favorites.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 
 @Module({})
@@ -70,6 +71,7 @@ export class AppModule implements NestModule {
         SellersModule,
         PortfolioModule,
         CommerceModule,
+        FavoritesModule,
       ],
       providers: [
         {
