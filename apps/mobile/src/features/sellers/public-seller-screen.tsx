@@ -21,7 +21,7 @@ import { AppText, PageState, PrimaryButton } from '../../components/ui';
 import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
-import { categoryKeys } from '../../lib/query-cache';
+import { categoryKeys, invalidateWorkSurfaces } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 
 import { useAuthorWorks } from './use-author-works';
@@ -38,7 +38,6 @@ import {
 
 import { AuthorAbout } from './AuthorAbout';
 import { CreatorWorkCard } from './CreatorWorkCard';
-import { invalidateOwnerWorks } from './owner-work-query';
 import { CreatorHeader } from './CreatorHeader';
 
 import { type AuthorPublicTab } from './author-public-tabs';
@@ -99,9 +98,7 @@ export function PublicSellerScreen({
     mutationFn: (id: string) => api.portfolio.hideWork(id),
     onSuccess: () => {
       setPendingHide(null);
-      void queryClient.invalidateQueries({ queryKey: ['public-author', slug] });
-      void queryClient.invalidateQueries({ queryKey: ['portfolio-home'] });
-      void invalidateOwnerWorks(queryClient);
+      void invalidateWorkSurfaces(queryClient, { sellerSlug: slug });
     },
   });
 

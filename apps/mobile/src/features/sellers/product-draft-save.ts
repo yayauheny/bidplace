@@ -19,9 +19,12 @@ import {
   readFormFailure,
 } from '../../errors';
 import { apiErrorMessage } from '../../lib/api-error-messages';
-import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
+import {
+  canWritePrivateCache,
+  currentAuthEpoch,
+  invalidateWorkSurfaces,
+} from '../../lib/query-cache';
 import { persistedFieldOverrides } from './reconcile-saved-fields';
-import { invalidateOwnerWorks } from './owner-work-query';
 import {
   productDraftFieldOrder,
   productDraftFormSchema,
@@ -146,8 +149,7 @@ export function useProductDraftSaveSession({
     }
   };
 
-  const invalidateSavedProduct = (savedProductId: string) =>
-    invalidateOwnerWorks(queryClient, savedProductId);
+  const invalidateSavedProduct = () => invalidateWorkSurfaces(queryClient);
 
   // Single confirmation of a successful field save, shared by the ordinary
   // save and the update leg of the submit path.
@@ -164,7 +166,7 @@ export function useProductDraftSaveSession({
     if (!canWritePrivateCache(queryClient, requestEpoch)) return;
     applyPersistedForm(product, values);
     onSavedProduct?.(product);
-    void invalidateSavedProduct(product.id);
+    void invalidateSavedProduct();
   };
 
   const save = useMutation({

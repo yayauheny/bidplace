@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 
+import { portfolioKeys } from '../../lib/query-cache';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import {
@@ -19,7 +20,7 @@ export function usePortfolioAuthors(state: PortfolioAuthorsRouteState) {
     limit: AUTHORS_PAGE_SIZE,
   };
   const query = useInfiniteQuery({
-    queryKey: ['portfolio-authors', listQuery],
+    queryKey: portfolioKeys.authors(listQuery),
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) =>
       api.portfolio.listAuthors({ ...listQuery, page: pageParam }, { signal }),

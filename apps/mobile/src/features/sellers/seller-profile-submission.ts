@@ -10,6 +10,7 @@ import {
   canWritePrivateCache,
   currentAuthEpoch,
   refreshPrivateQuery,
+  sellerKeys,
 } from '../../lib/query-cache';
 import type { useApiClient } from '../../providers/api-provider';
 import {
@@ -74,9 +75,9 @@ export function useProfileSubmission({
     const epoch = currentAuthEpoch(queryClient);
     void queryClient.invalidateQueries({ queryKey: sellerProfileQueryKey });
     void queryClient.invalidateQueries({
-      queryKey: ['seller', 'application-photo'],
+      queryKey: sellerKeys.applicationPhotoRoot,
     });
-    void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
+    void refreshPrivateQuery(queryClient, sellerKeys.application, epoch);
   };
 
   const saveMutation = useMutation({
@@ -287,11 +288,11 @@ export function useProfileSubmission({
       }
       onSubmitted?.();
       void queryClient.invalidateQueries({
-        queryKey: ['seller', 'application-photo'],
+        queryKey: sellerKeys.applicationPhotoRoot,
       });
       void refreshPrivateQuery(
         queryClient,
-        ['seller', 'application'],
+        sellerKeys.application,
         submitEpoch,
       );
       await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });

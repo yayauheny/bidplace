@@ -16,7 +16,11 @@ import type { SellerProfileResponse } from '@bidplace/contracts';
 
 import { rememberPendingOpener } from '../../components/ui/use-return-focus';
 import { getApiAssetUrl } from '../../lib/environment';
-import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
+import {
+  canWritePrivateCache,
+  currentAuthEpoch,
+  sellerKeys,
+} from '../../lib/query-cache';
 import type { useApiClient } from '../../providers/api-provider';
 import type { ProfileOperationGuard } from './seller-profile-operation-guard';
 
@@ -78,7 +82,7 @@ export function useProfilePhoto({
   useEffect(() => () => photoResource.current?.(), []);
 
   const applicationPhoto = useQuery({
-    queryKey: ['seller', 'application-photo', profile?.id, hydrationToken],
+    queryKey: sellerKeys.applicationPhoto(profile?.id, hydrationToken),
     queryFn: async () => {
       const epoch = currentAuthEpoch(queryClient);
       const photo = await api.portfolio.getAuthorApplicationPhoto();

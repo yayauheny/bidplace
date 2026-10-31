@@ -8,6 +8,7 @@ import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
 import { FilterSearchField } from '../../components/figma/FilterSearchField';
 import { FilterSheet } from '../../components/figma/FilterSheet';
 import { AppText, SecondaryButton } from '../../components/ui';
+import { catalogKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 
 export function CountryPickerSheet({
@@ -25,7 +26,7 @@ export function CountryPickerSheet({
   const [search, setSearch] = useState('');
   const query = search.trim();
   const countries = useQuery({
-    queryKey: ['countries', query],
+    queryKey: catalogKeys.countries(query),
     queryFn: ({ signal }) => api.countries.list(query, { signal }),
     enabled: open,
   });

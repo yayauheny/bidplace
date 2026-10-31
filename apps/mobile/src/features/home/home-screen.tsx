@@ -9,6 +9,7 @@ import { AppShell } from '../../components/layout/AppShell';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import { PageState, PrimaryButton } from '../../components/ui';
+import { portfolioKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import { HomeNewAuthors } from './home-new-authors';
 import { HomeNewWorks } from './home-new-works';
@@ -19,7 +20,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
   const api = useApiClient();
   const router = useRouter();
   const home = useQuery({
-    queryKey: ['portfolio-home'],
+    queryKey: portfolioKeys.home,
     queryFn: ({ signal }) => api.portfolio.home({ signal }),
   });
   const pageStatus = infrastructurePageFetchStatus(home);

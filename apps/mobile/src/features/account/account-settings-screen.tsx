@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { authKeys } from '../../lib/query-cache';
 import { useAuth } from '../../providers/auth-provider';
 import { useApiClient } from '../../providers/api-provider';
 import { ProviderButtons } from '../auth/provider-buttons';
@@ -28,7 +29,7 @@ export function AccountSettingsScreen() {
   const api = useApiClient();
   const auth = useAuth();
   const connections = useQuery({
-    queryKey: ['user', auth.user?.id, 'auth', 'connections'],
+    queryKey: authKeys.connections(auth.user?.id),
     queryFn: ({ signal }) => api.auth.connections({ signal }),
     retry: false,
   });

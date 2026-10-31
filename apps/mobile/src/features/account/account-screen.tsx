@@ -17,6 +17,7 @@ import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { FormPageShell } from '../../components/layout';
 import { navigateBack } from '../../components/layout/navigate-back';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import { sellerKeys } from '../../lib/query-cache';
 import {
   AppDialog,
   AppText,
@@ -99,7 +100,7 @@ export function AccountScreen() {
           status="error"
           onRetry={() =>
             void queryClient.invalidateQueries({
-              queryKey: ['seller', 'profile'],
+              queryKey: sellerKeys.profile,
             })
           }
         />

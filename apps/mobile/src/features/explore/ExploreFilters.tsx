@@ -7,7 +7,7 @@ import {
   type CatalogFilterSection,
 } from '../discovery/CatalogFilterSheet';
 import { useApiClient } from '../../providers/api-provider';
-import { categoryKeys } from '../../lib/query-cache';
+import { categoryKeys, portfolioKeys } from '../../lib/query-cache';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { AUTHOR_SORT_OPTIONS } from '../sellers/author-sort';
 import { toPortfolioWorksRouteState } from '../products/portfolio-works-query';
@@ -36,7 +36,7 @@ export function ExploreFilters({
     enabled: state.section === 'works',
   });
   const facets = useQuery({
-    queryKey: ['portfolio-facets'],
+    queryKey: portfolioKeys.facets,
     queryFn: ({ signal }) => api.portfolio.facets({ signal }),
     retry: retryTransientPublicQuery,
   });

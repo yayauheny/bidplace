@@ -314,6 +314,7 @@ import {
   advanceAuthEpoch,
   authKeys,
   clearAuthenticatedSession,
+  sellerKeys,
 } from '../../lib/query-cache';
 import { SellerProfileScreen } from './seller-profile-screen';
 
@@ -1353,7 +1354,7 @@ describe('seller profile save reconciliation', () => {
     setInput(view.container, 'Город', 'Hrodna');
     await act(async () => {
       await view.queryClient.invalidateQueries({
-        queryKey: ['seller', 'profile'],
+        queryKey: sellerKeys.profile,
       });
     });
     await flush();

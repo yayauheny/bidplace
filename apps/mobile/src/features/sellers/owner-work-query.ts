@@ -1,12 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query';
 
-import { canWritePrivateCache } from '../../lib/query-cache';
+import { canWritePrivateCache, ownerWorkKeys } from '../../lib/query-cache';
 
-export const ownerWorkQueryKeys = {
-  cabinet: ['seller', 'cabinet', 'works'] as const,
-  detailRoot: ['seller', 'product'] as const,
-  detail: (productId: string) => ['seller', 'product', productId] as const,
-};
+export const ownerWorkQueryKeys = ownerWorkKeys;
 
 export async function invalidateOwnerWorks(
   queryClient: QueryClient,

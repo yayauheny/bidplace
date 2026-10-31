@@ -20,6 +20,7 @@ import {
 } from '../../components/ui';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { MediaDeliveryNotice } from '../../components/shared/MediaDeliveryNotice';
+import { adminKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import { useAppTheme } from '../../providers/theme-provider';
 import {
@@ -66,7 +67,7 @@ export function AdminModerationScreen() {
   const { reserve } = useDockInset();
   const list = useRef<FlatList<Summary>>(null);
   const query = useInfiniteQuery({
-    queryKey: ['admin', 'queue', section, filter, search.trim()],
+    queryKey: adminKeys.queue(section, filter, search.trim()),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) => {
       const input: Partial<AdminQueueQuery> = {

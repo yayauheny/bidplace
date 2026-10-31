@@ -293,11 +293,12 @@ vi.mock('../../components/ui', () => {
 });
 
 import {
+  authKeys,
   clearAuthenticatedSession,
   issueDraftWriteLease,
   replaceAuthenticatedSession,
   retireDraftWriteLease,
-  authKeys,
+  sellerKeys,
 } from '../../lib/query-cache';
 import { clearAccountFormDrafts } from '../../lib/local-form-draft';
 import { SellerProfileScreen } from './seller-profile-screen';
@@ -1233,7 +1234,7 @@ describe('Author application achievement lifecycle', () => {
       'delete',
     );
     void view.queryClient.refetchQueries({
-      queryKey: ['seller', 'application'],
+      queryKey: sellerKeys.application,
     });
     await until(
       view.container,

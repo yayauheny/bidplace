@@ -19,6 +19,7 @@ import { FigmaButton } from '../../components/figma/FigmaButton';
 import { ShareSheet } from '../../components/figma/ShareSheet';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useTrackWorkView } from '../../lib/analytics/use-track-views';
+import { portfolioKeys } from '../../lib/query-cache';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { useAppTheme } from '../../providers/theme-provider';
@@ -38,7 +39,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const palette = useAppTheme();
   const [shareOpen, setShareOpen] = useState(false);
   const query = useQuery({
-    queryKey: ['portfolio-work', publicId],
+    queryKey: portfolioKeys.work(publicId),
     queryFn: ({ signal }) => api.portfolio.getWork(publicId, { signal }),
     retry: retryTransientPublicQuery,
   });

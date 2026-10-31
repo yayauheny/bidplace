@@ -4,12 +4,16 @@ import type { SellerProfileResponse } from '@bidplace/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 
-import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
+import {
+  canWritePrivateCache,
+  currentAuthEpoch,
+  sellerKeys,
+} from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
 import type { ProfileFields } from './seller-profile-steps';
 
-export const sellerProfileQueryKey = ['seller', 'profile'] as const;
+export const sellerProfileQueryKey = sellerKeys.profile;
 
 // One shared option set for every ['seller', 'profile'] consumer, so dock,
 // account, cabinet and the editor deduplicate on a single request.
