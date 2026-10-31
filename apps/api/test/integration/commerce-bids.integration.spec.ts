@@ -4,6 +4,7 @@ import { type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { ANALYTICS_BROWSER_COOKIE, signAnalyticsBrowser } from '../../src/analytics/browser-attribution';
+import { AntifraudService } from '../../src/antifraud';
 import type { ServerEnv } from '../../src/core/config';
 import {
   createHttpTestApp,
@@ -161,6 +162,82 @@ async function postBid(
     `/listings/${listingId}/bids`,
     bidPayload(amountMinor, idempotencyKey, turnstileToken),
   );
+}
+
+async function anotherLiveAuction(fixture: PermissionFixture, title: string) {
+  const product = await spareProduct(fixture, title);
+  const now = await databaseNow();
+  return prisma.listing.create({
+    data: {
+      productId: product.id,
+      sellerUserId: fixture.sellers.approved.id,
+      type: 'AUCTION',
+      status: 'LIVE',
+      currency: 'BYN',
+      startsAt: new Date(now.getTime() - 60_000),
+      endsAt: new Date(now.getTime() + DAY_MS),
+      originalEndsAt: new Date(now.getTime() + DAY_MS),
+      currentPriceMinor: 1_000,
+      bidCount: 0,
+      auctionRules: {
+        create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+      },
+    },
+    select: { id: true },
+  });
+}
+
+async function seedRecentBurst(
+  fixture: PermissionFixture,
+  buyerId: string,
+  now: Date,
+  prefix: string,
+) {
+  const listings = await Promise.all(
+    [0, 1, 2].map(async (index) => {
+      const product = await spareProduct(fixture, `${prefix} ${index}`);
+      return prisma.listing.create({
+        data: {
+          productId: product.id,
+          sellerUserId: fixture.sellers.approved.id,
+          type: 'AUCTION',
+          status: 'ENDED',
+          currency: 'BYN',
+          startsAt: new Date(now.getTime() - DAY_MS),
+          endsAt: new Date(now.getTime() - 60_000),
+          originalEndsAt: new Date(now.getTime() - 60_000),
+          endedAt: new Date(now.getTime() - 60_000),
+          currentPriceMinor: 1_000,
+          bidCount: 1,
+          auctionRules: {
+            create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+          },
+        },
+        select: { id: true },
+      });
+    }),
+  );
+  const recent = new Date(now.getTime() - 1_000);
+  for (const [index, listing] of listings.entries()) {
+    await prisma.bid.create({
+      data: {
+        listingId: listing.id,
+        bidderUserId: buyerId,
+        amountMinor: 1_000,
+        idempotencyKey: `${prefix}-a-${index}`,
+        createdAt: recent,
+      },
+    });
+  }
+  await prisma.bid.create({
+    data: {
+      listingId: listings[0]!.id,
+      bidderUserId: buyerId,
+      amountMinor: 1_500,
+      idempotencyKey: `${prefix}-b-0`,
+      createdAt: recent,
+    },
+  });
 }
 
 async function spareProduct(fixture: PermissionFixture, title: string) {
@@ -731,53 +808,13 @@ describe('bid signals and bans', () => {
   it('records a bid burst from detectBidBurst and still accepts the bid', async () => {
     const fixture = await createPermissionFixture(prisma);
     await giveContact(fixture.buyer.id);
-    const buyer = await signedIn(fixture.buyer.email, fixture.buyer.password);
     const now = await databaseNow();
-    const listings = await Promise.all(
-      [0, 1, 2].map(async (index) => {
-        const product = await spareProduct(fixture, `Burst ${index}`);
-        return prisma.listing.create({
-          data: {
-            productId: product.id,
-            sellerUserId: fixture.sellers.approved.id,
-            type: 'AUCTION',
-            status: 'ENDED',
-            currency: 'BYN',
-            startsAt: new Date(now.getTime() - DAY_MS),
-            endsAt: new Date(now.getTime() - 60_000),
-            originalEndsAt: new Date(now.getTime() - 60_000),
-            endedAt: new Date(now.getTime() - 60_000),
-            currentPriceMinor: 1_000,
-            bidCount: 1,
-            auctionRules: {
-              create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
-            },
-          },
-          select: { id: true },
-        });
-      }),
-    );
-    const recent = new Date(now.getTime() - 1_000);
-    for (const [index, listing] of listings.entries()) {
-      await prisma.bid.create({
-        data: {
-          listingId: listing.id,
-          bidderUserId: fixture.buyer.id,
-          amountMinor: 1_000,
-          idempotencyKey: `burst-a-${index}`,
-          createdAt: recent,
-        },
-      });
-    }
-    await prisma.bid.create({
-      data: {
-        listingId: listings[0]!.id,
-        bidderUserId: fixture.buyer.id,
-        amountMinor: 1_500,
-        idempotencyKey: 'burst-b-0',
-        createdAt: recent,
-      },
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { createdAt: new Date(now.getTime() - DAY_MS - 1) },
     });
+    const buyer = await signedIn(fixture.buyer.email, fixture.buyer.password);
+    await seedRecentBurst(fixture, fixture.buyer.id, now, 'burst');
     const { listingId } = await liveAuction(fixture);
     const response = await postBid(buyer, listingId, 1_000, 'burst-live');
     expect(response.status).toBe(200);
@@ -787,8 +824,117 @@ describe('bid signals and bans', () => {
       }),
     ).toBe(1);
     expect(
+      await prisma.fraudSignal.count({
+        where: { userId: fixture.buyer.id, kind: 'NEW_ACCOUNT_BURST' },
+      }),
+    ).toBe(0);
+    expect(
       await prisma.purchaseHold.count({
         where: { userId: fixture.buyer.id, releasedAt: null },
+      }),
+    ).toBe(0);
+    const next = await anotherLiveAuction(fixture, 'After old burst');
+    expect((await postBid(buyer, next.id, 1_000, 'burst-old-next')).status).toBe(200);
+  });
+
+  it('holds the next bid when a new account repeats the same burst', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    await giveContact(fixture.buyer.id);
+    const buyer = await signedIn(fixture.buyer.email, fixture.buyer.password);
+    const now = await databaseNow();
+    await seedRecentBurst(fixture, fixture.buyer.id, now, 'new-burst');
+    const { listingId } = await liveAuction(fixture);
+    const response = await postBid(buyer, listingId, 1_000, 'new-burst-live');
+    expect(response.status).toBe(200);
+    expect(
+      await prisma.fraudSignal.count({
+        where: { userId: fixture.buyer.id, kind: 'BID_BURST' },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.fraudSignal.count({
+        where: { userId: fixture.buyer.id, kind: 'NEW_ACCOUNT_BURST' },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.purchaseHold.count({
+        where: {
+          userId: fixture.buyer.id,
+          releasedAt: null,
+          reason: 'FRAUD_REVIEW',
+        },
+      }),
+    ).toBe(1);
+    const next = await anotherLiveAuction(fixture, 'After new burst');
+    const blocked = await postBid(buyer, next.id, 1_000, 'new-burst-next');
+    expect(blocked.status).toBe(403);
+    expect(await errorBody(blocked)).toMatchObject({ code: 'BUYER_BLOCKED' });
+  });
+
+  it('does not record a new-account burst without a bid series', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    await giveContact(fixture.buyer.id);
+    const buyer = await signedIn(fixture.buyer.email, fixture.buyer.password);
+    const { listingId } = await liveAuction(fixture);
+    expect((await postBid(buyer, listingId, 1_000, 'no-burst')).status).toBe(200);
+    expect(
+      await prisma.fraudSignal.count({
+        where: { userId: fixture.buyer.id, kind: 'NEW_ACCOUNT_BURST' },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.fraudSignal.count({
+        where: { userId: fixture.buyer.id, kind: 'BID_BURST' },
+      }),
+    ).toBe(0);
+  });
+
+  it('rolls burst signals and the hold back with the bid', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    await giveContact(fixture.buyer.id);
+    const now = await databaseNow();
+    await seedRecentBurst(fixture, fixture.buyer.id, now, 'rollback-burst');
+    const { listingId } = await liveAuction(fixture);
+    let sawBoth = false;
+    await expect(
+      prisma.$transaction(async (tx) => {
+        const bid = await tx.bid.create({
+          data: {
+            listingId,
+            bidderUserId: fixture.buyer.id,
+            amountMinor: 1_000,
+            idempotencyKey: 'rollback-burst-live',
+            createdAt: now,
+          },
+        });
+        await http.app.get(AntifraudService).recordBidSignals(tx, {
+          userId: fixture.buyer.id,
+          listingId,
+          sellerUserId: fixture.sellers.approved.id,
+          bidCreatedAt: bid.createdAt,
+          turnstile: 'passed',
+          browserId: null,
+        });
+        const kinds = await tx.fraudSignal.findMany({
+          where: { userId: fixture.buyer.id },
+          select: { kind: true },
+        });
+        sawBoth =
+          kinds.some((row) => row.kind === 'BID_BURST') &&
+          kinds.some((row) => row.kind === 'NEW_ACCOUNT_BURST');
+        throw new Error('rollback');
+      }),
+    ).rejects.toThrow('rollback');
+    expect(sawBoth).toBe(true);
+    expect(
+      await prisma.fraudSignal.count({ where: { userId: fixture.buyer.id } }),
+    ).toBe(0);
+    expect(
+      await prisma.purchaseHold.count({ where: { userId: fixture.buyer.id } }),
+    ).toBe(0);
+    expect(
+      await prisma.bid.count({
+        where: { bidderUserId: fixture.buyer.id, idempotencyKey: 'rollback-burst-live' },
       }),
     ).toBe(0);
   });

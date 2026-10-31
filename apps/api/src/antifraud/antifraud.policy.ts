@@ -6,6 +6,7 @@ export const FRAUD_SIGNAL_WINDOW_MS = 24 * 60 * 60 * 1_000;
 export const BID_BURST_WINDOW_MS = 10_000;
 export const BID_BURST_MIN_BIDS = 5;
 export const BID_BURST_MIN_LISTINGS = 3;
+export const NEW_ACCOUNT_MAX_AGE_MS = 24 * 60 * 60 * 1_000;
 export type SignalKind =
   | 'TURNSTILE_FAILED'
   | 'BID_BURST'
@@ -80,6 +81,10 @@ export function isActiveBuyerStrike(
   if (order.buyerReportOpen || order.failedAt === null) return false;
   const delay = COMMERCE_LIMITS.strikeDelayHours * 60 * 60 * 1000;
   return order.failedAt.getTime() <= now.getTime() - delay;
+}
+
+export function isNewAccount(createdAt: Date, at: Date): boolean {
+  return at.getTime() - createdAt.getTime() < NEW_ACCOUNT_MAX_AGE_MS;
 }
 
 export function detectBidBurst(

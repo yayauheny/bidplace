@@ -5,6 +5,8 @@ import {
   detectBidBurst,
   hasBuyerContact,
   isActiveBuyerStrike,
+  isNewAccount,
+  NEW_ACCOUNT_MAX_AGE_MS,
   shouldHold,
   type SignalKind,
 } from './antifraud.policy';
@@ -38,6 +40,19 @@ describe('fraud signal policies', () => {
       expect(detectBidBurst(bids, now)).toBe(want);
     },
   );
+
+  it('pins the new-account burst window at 24 hours', () => {
+    expect(NEW_ACCOUNT_MAX_AGE_MS).toBe(24 * 60 * 60 * 1_000);
+  });
+
+  const bidAt = new Date('2026-10-29T12:00:00.000Z');
+  it.each([
+    { ageMs: NEW_ACCOUNT_MAX_AGE_MS - 1, fresh: true },
+    { ageMs: NEW_ACCOUNT_MAX_AGE_MS, fresh: false },
+    { ageMs: NEW_ACCOUNT_MAX_AGE_MS + 1, fresh: false },
+  ])('treats an account of age $ageMs as new=$fresh', ({ ageMs, fresh }) => {
+    expect(isNewAccount(new Date(bidAt.getTime() - ageMs), bidAt)).toBe(fresh);
+  });
 
   it('requires a non-blank deal contact', () => {
     expect(hasBuyerContact([null, '  ', undefined])).toBe(false);
