@@ -520,6 +520,9 @@ function observeAggregates(client: PrismaClient): {
 }
 
 function queryKind(sql: string): string {
+  if (sql.includes('FROM audit_events')) {
+    return 'approvedWorks';
+  }
   if (sql.includes('COUNT(DISTINCT')) {
     return 'activeUsers';
   }
@@ -562,11 +565,12 @@ describe('admin analytics database aggregation', () => {
     ).buildOverview({ period: '7d' }, now);
 
     expect(overview).toEqual(expectedSevenDayOverview);
-    expect(sizes).toHaveLength(6);
+    expect(sizes).toHaveLength(7);
     expect(
       Object.fromEntries(sizes.map((size) => [size.kind, size.rows])),
     ).toEqual({
       activeUsers: 1,
+      approvedWorks: 1,
       acquisition: 3,
       userDays: 3,
       listingDays: 4,
@@ -771,11 +775,12 @@ describe('admin analytics database aggregation', () => {
 
     expect(await prisma.analyticsEvent.count()).toBe(48);
     expect(await prisma.acquisitionAttribution.count()).toBe(20);
-    expect(sizes).toHaveLength(6);
+    expect(sizes).toHaveLength(7);
     expect(
       Object.fromEntries(sizes.map((size) => [size.kind, size.rows])),
     ).toEqual({
       activeUsers: 1,
+      approvedWorks: 1,
       acquisition: 4,
       userDays: 1,
       listingDays: 5,

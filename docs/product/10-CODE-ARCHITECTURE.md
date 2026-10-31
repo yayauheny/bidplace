@@ -3,6 +3,16 @@
 Последнее обновление: 2026-10-31
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-10-31 — Work deletion
+
+`DELETE /api/products/:id` takes the Product row lock, checks ownership without requiring a verified email or an approved seller, and uses `deleteProduct` in `product-publication.ts` to set `deletedAt` after the open-sale guard. Curator removal, audit and media revoke enqueue share the transaction; retained Product, revision, order and image rows are not cascaded. Active reads and late product writers reject tombstones. Order summaries expose `coverImageUrl` from the existing snapshot; after deletion `ImagesService.get` serves its private preview only to a buyer or seller on an order referencing that exact image. Public derivatives are revoked asynchronously through the existing lifecycle. Edge JSON may remain cached for 30 seconds on works, authors, home and facets.
+
+An author restore excludes deleted works when building its media manifest. A previously queued restore rechecks each Work asset under the related Product row locks before a PUBLIC write; it skips assets with no eligible published Work. Second-chance offers reject deleted works and correcting a retained fixed-price order does not relist one.
+
+Order creation snapshots the first image of the published revision. Participants retain private access to that exact preview after later revisions or deletion; cleanup retains referenced assets. The approval funnel joins retained audit events to non-deleted Products without modifying audit history.
+
+Favorites reuse public visibility for list/count and add; a deleted work leaves its stored favorite rows intact. Personal attention excludes deleted works from auction choices while retaining open-report history. Admin attention omits a deleted work's cover URL; role alone does not grant its private media access.
+
 ## 2026-10-31 — Commerce module, transactions, and indexes
 
 `CommerceModule` (`apps/api/src/commerce/`) is on the API boot graph with `NotificationsModule` and `FavoritesModule`. It owns listing create, author cancel, admin remove, `GET /api/works/:publicId/lot`, bids, fixed-price purchase, the order card and `GET /api/me/orders`, accept, decline, complete, fail, note, offer-next, admin void-strike and outcome, order reports, and both attention lists. It does not import `ProductsService`. Favorites stay in `apps/api/src/favorites/`. Deal contacts are `PUT /api/me/contacts`. Transactional mail stays in `apps/api/src/notifications/` (`enqueueNotification` inside the caller transaction; `notifications.send` delivers later). The sections below are the per-flow detail.

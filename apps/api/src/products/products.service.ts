@@ -52,11 +52,10 @@ import {
   productWriteGuardSelect,
   writableProductWhere,
 } from './product-write-guard';
-import {
-  portfolioCatalogProductWhere,
-} from './public-visibility';
+import { portfolioCatalogProductWhere } from './public-visibility';
 import {
   assertRevisionTransition,
+  deleteProduct,
   transitionProductVisibility,
 } from './product-publication';
 import { AppException } from '../core/errors/app.exception';
@@ -582,6 +581,38 @@ export class ProductsService {
     });
   }
 
+  async remove(userId: string, id: string): Promise<void> {
+    await runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, id);
+      const product = await tx.product.findUnique({
+        where: { id },
+        select: {
+          deletedAt: true,
+          sellerProfile: { select: { userId: true } },
+        },
+      });
+      if (!product || product.sellerProfile.userId !== userId) {
+        throw new NotFoundException('Product not found');
+      }
+      if (product.deletedAt) return;
+      await deleteProduct(tx, { productId: id, actor: 'author' });
+      await tx.curatorSelection.deleteMany({ where: { productId: id } });
+      await tx.auditEvent.create({
+        data: {
+          actorUserId: userId,
+          targetType: 'PRODUCT',
+          targetId: id,
+          action: 'DELETE',
+          newStatus: 'DELETED',
+        },
+      });
+      if (this.media?.enabled) {
+        await this.media.cancelPublication(tx, { productId: id });
+        await this.media.enqueueRevoke(tx, { productId: id });
+      }
+    });
+  }
+
   async hide(userId: string, id: string) {
     return this.setAuthorVisibility(userId, id, 'ARCHIVED');
   }
@@ -719,7 +750,8 @@ export class ProductsService {
           publishedRevisionId: true,
         },
       });
-      if (!product) throw new NotFoundException('Product not found');
+      if (!product || product.deletedAt)
+        throw new NotFoundException('Product not found');
       if (product.sellerProfile.userId !== userId) {
         throw new ForbiddenException('Product is not owned by user');
       }

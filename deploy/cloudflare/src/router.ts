@@ -52,7 +52,7 @@ function publicCacheTtl(request: Request): number | undefined {
   const origin = request.headers.get('Origin');
   if (origin && origin !== new URL(request.url).origin) return;
   if (path === '/api/categories') return 1800;
-  if (path === '/api/portfolio/home' || path === '/api/portfolio/facets') return 60;
+  if (path === '/api/portfolio/home' || path === '/api/portfolio/facets') return 30;
   if (/^\/api\/(works|authors)(\/[^/]+)?$/.test(path)) return 30;
 }
 

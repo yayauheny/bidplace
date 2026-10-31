@@ -94,7 +94,7 @@ export function productModerationWhere(
   query: AdminModerationListQuery,
   cursor: AdminModerationCursor | null,
 ): Prisma.ProductWhereInput {
-  const filters: Prisma.ProductWhereInput[] = [];
+  const filters: Prisma.ProductWhereInput[] = [{ deletedAt: null }];
   if (query.filter === 'APPROVED') {
     filters.push({ status: 'APPROVED' });
   } else if (
@@ -178,6 +178,7 @@ export function productModerationSearchSql(
   cursor: AdminModerationCursor | null,
 ): Prisma.Sql {
   const filters: Prisma.Sql[] = [
+    Prisma.sql`p."deleted_at" IS NULL`,
     Prisma.sql`(
       CASE
         WHEN p."editing_revision_id" IS NOT NULL THEN COALESCE(rev."title", '')

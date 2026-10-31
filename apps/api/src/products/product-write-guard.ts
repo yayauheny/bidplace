@@ -37,11 +37,13 @@ export const productInSaleWhere = {
 
 export const productWriteGuardSelect = {
   id: true,
+  deletedAt: true,
   status: true,
   sellerProfile: { select: { userId: true, status: true } },
 } satisfies Prisma.ProductSelect;
 
 export const writableProductWhere = {
+  deletedAt: null,
   status: { in: [...EDITABLE_PRODUCT_STATUSES] },
   listings: {
     none: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
@@ -59,6 +61,7 @@ export type ProductWriteGuardKind =
 
 export type ProductWriteGuardSnapshot = {
   id: string;
+  deletedAt?: Date | null;
   status: string;
   sellerProfile: { userId: string; status: string };
 };
@@ -77,8 +80,11 @@ export async function lockProductRowForUpdate(
       Prisma.sql`SELECT id FROM "products" WHERE id = ${productId}::uuid FOR UPDATE`,
     );
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2010' && error.meta?.code === '55P03') {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2010' &&
+      error.meta?.code === '55P03'
+    ) {
       throw new AppException({
         status: 409,
         code: ApiErrorCode.PRODUCT_STATE_CONFLICT,
@@ -97,7 +103,7 @@ export function assertProductOwner<T extends ProductWriteGuardSnapshot>(
   product: T | null,
   userId: string,
 ): asserts product is T {
-  if (!product) {
+  if (!product || product.deletedAt) {
     throw new NotFoundException('Product not found');
   }
 
@@ -182,6 +188,11 @@ export async function assertWorkCanTakeNextOffer(
   tx: Prisma.TransactionClient,
   productId: string,
 ): Promise<void> {
+  const product = await tx.product.findUnique({
+    where: { id: productId },
+    select: { deletedAt: true },
+  });
+  if (!product || product.deletedAt) throw new NotFoundException('Product not found');
   const sold = await tx.order.findFirst({
     where: { productId, status: 'COMPLETED' },
     select: { id: true },

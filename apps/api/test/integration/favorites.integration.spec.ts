@@ -125,6 +125,21 @@ async function favoriteRows(userId: string, productId: string) {
 }
 
 describe('favorite works', () => {
+  it('excludes a deleted work from favorites and its count while retaining the favorite row', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const work = await createPublicWork(fixture, 'Deleted favorite');
+    const buyer = await signedIn(fixture.buyer.email);
+    const owner = await signedIn(fixture.sellers.approved.email);
+    expect((await buyer.put(`/works/${work.id}/favorite`)).status).toBe(204);
+    expect((await owner.delete(`/products/${work.id}`)).status).toBe(204);
+    expect((await buyer.put(`/works/${work.id}/favorite`)).status).toBe(404);
+    const response = await buyer.get('/me/favorites');
+    expect(response.status).toBe(200);
+    const body = portfolioWorksResponseSchema.parse(await response.json());
+    expect(body.works).toEqual([]);
+    expect(body.pagination.total).toBe(0);
+    expect(await favoriteRows(fixture.buyer.id, work.id)).toBe(1);
+  });
   it('rejects an anonymous reader and writer', async () => {
     const actor = client();
     const productId = randomUUID();

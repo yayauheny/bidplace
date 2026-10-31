@@ -1,6 +1,7 @@
 import { publishRevision } from '../../src/products/product-publication';
 import { ImagesService } from '../../src/images/images.service';
 import { ProductsService } from '../../src/products/products.service';
+import { OrdersService } from '../../src/commerce/orders.service';
 import { PublicIdService } from '../../src/core/public-id';
 import { TickService } from '../../src/core/tick/tick.service';
 import { SystemClock } from '../../src/core/time';
@@ -1880,6 +1881,205 @@ describe('tick media recovery on PostgreSQL', () => {
         })
       ).state,
     ).toBe('FAILED');
+  });
+});
+
+describe('deletion media lifecycle', () => {
+  it.each(['queued', 'in-flight'] as const)('does not republish a deleted work during %s author restore', async (timing) => {
+    const s = setup();
+    const f = await author(s.media);
+    await approve(s.media, f.profile, f.user.id);
+    const work = await pendingWork(f.user.id, f.profile.id, s.media, true);
+    const moderation = new AdminModerationService(prisma as never, new PostgresImageStore(prisma as never), s.media);
+    await moderation.updateProductStatus(f.user.id, work.id, { status: 'APPROVED', target: { kind: 'revision', id: work.first.id, updatedAt: work.first.updatedAt.toISOString() } });
+    let profile = await prisma.sellerProfile.findUniqueOrThrow({ where: { id: f.profile.id } });
+    await moderation.updateSellerStatus(f.user.id, profile.id, { status: 'SUSPENDED', reason: 'test suspension', target: { kind: 'parent', status: 'APPROVED', updatedAt: profile.updatedAt.toISOString() } });
+    profile = await prisma.sellerProfile.findUniqueOrThrow({ where: { id: f.profile.id } });
+    const approvedRevision = await prisma.sellerProfileRevision.findUniqueOrThrow({ where: { id: f.profile.revision.id } });
+    const restore = await prisma.$transaction((tx) => s.media.enqueuePublication(tx, { profileId: profile.id }, approvedRevision, approvedRevision.id, f.user.id, true));
+    const image = await prisma.productImage.findUniqueOrThrow({ where: { id: work.imageId }, include: { mediaAsset: { include: { objects: true } } } });
+    const publicPreview = image.mediaAsset!.objects.find((object) => object.tier === 'PUBLIC' && object.variant === 'PREVIEW')!;
+    const products = new ProductsService(prisma as never, new PublicIdService(), s.media);
+    const writes = vi.spyOn(s.store, 'put');
+    if (timing === 'queued') {
+      await products.remove(f.user.id, work.id);
+      await s.media.deliver(restore.id);
+    } else {
+      let reached!: () => void;
+      let resume!: () => void;
+      const ready = new Promise<void>((resolve) => { reached = resolve; });
+      const released = new Promise<void>((resolve) => { resume = resolve; });
+      const get = s.store.get.bind(s.store);
+      const reads = vi.spyOn(s.store, 'get').mockImplementation(async (tier, key) => {
+        const value = await get(tier, key);
+        if (tier === 'PRIVATE' && key === publicPreview.objectKey) {
+          reached();
+          await released;
+        }
+        return value;
+      });
+      const delivery = s.media.deliver(restore.id);
+      try {
+        await ready;
+        await products.remove(f.user.id, work.id);
+      } finally {
+        resume();
+      }
+      await delivery;
+      reads.mockRestore();
+    }
+    expect(writes.mock.calls.some(([tier, key]) => tier === 'PUBLIC' && key === publicPreview.objectKey)).toBe(false);
+    await s.media.deliverOutstanding({ productId: work.id }, 'REVOKE');
+    expect(await s.store.get('PUBLIC', publicPreview.objectKey)).toBeNull();
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: work.id } })).deletedAt).not.toBeNull();
+  });
+
+  it('keeps the tombstone on purge failure, retries revocation, and retains private source', async () => {
+    const s = setup();
+    const f = await author(s.media);
+    await approve(s.media, f.profile, f.user.id);
+    const work = await pendingWork(f.user.id, f.profile.id, s.media, true);
+    const moderation = new AdminModerationService(
+      prisma as never,
+      new PostgresImageStore(prisma as never),
+      s.media,
+    );
+    await moderation.updateProductStatus(f.user.id, work.id, {
+      status: 'APPROVED',
+      target: {
+        kind: 'revision',
+        id: work.first.id,
+        updatedAt: work.first.updatedAt.toISOString(),
+      },
+    });
+    const replacementBytes = await sharp({
+      create: { width: 40, height: 20, channels: 3, background: 'blue' },
+    }).png().toBuffer();
+    const replacement = await s.media.stage(f.user.id, 'WORK_IMAGE', {
+      buffer: replacementBytes, mimetype: 'image/png',
+    });
+    const revised = await prisma.$transaction(async (tx) => {
+      await s.media.attach(tx, replacement.id);
+      const image = await tx.productImage.create({ data: {
+        productId: work.id, position: 1, mediaAssetId: replacement.id,
+        objectKey: replacement.preview.objectKey, mimeType: replacement.preview.mimeType,
+        byteLength: replacement.preview.byteLength, checksum: replacement.preview.sha256,
+        data: new Uint8Array(0),
+      } });
+      const revision = await tx.productRevision.create({ data: {
+        productId: work.id, version: 2, status: 'PENDING_REVIEW', title: 'Revised work',
+        categoryId: work.first.categoryId, images: { create: { imageId: image.id, position: 0 } },
+      } });
+      await tx.product.update({ where: { id: work.id }, data: { editingRevisionId: revision.id } });
+      return { image, revision };
+    });
+    await moderation.updateProductStatus(f.user.id, work.id, {
+      status: 'APPROVED', target: { kind: 'revision', id: revised.revision.id, updatedAt: revised.revision.updatedAt.toISOString() },
+    });
+    const image = await prisma.productImage.findUniqueOrThrow({
+      where: { id: revised.image.id },
+      include: { mediaAsset: { include: { objects: true } } },
+    });
+    const buyer = await prisma.user.create({
+      data: {
+        email: `buyer-${randomUUID()}@example.com`,
+        passwordHash: 'unusable',
+        displayName: 'Buyer',
+      },
+    });
+    const listing = await prisma.listing.create({
+      data: {
+        productId: work.id,
+        sellerUserId: f.user.id,
+        type: 'FIXED',
+        status: 'ENDED',
+        currency: 'BYN',
+        priceMinor: 1000,
+        startsAt: new Date(),
+      },
+    });
+    const orders = new OrdersService(prisma as never, new PublicIdService(), {} as never, {} as never);
+    const order = await prisma.$transaction((tx) => orders.createOrder(tx, {
+      listing: { id: listing.id, productId: work.id, sellerUserId: f.user.id, currency: 'BYN', contactWindowHours: 24 },
+      buyerUserId: buyer.id, amountMinor: 1000, source: 'FIXED_PURCHASE', status: 'ACTIVE', now: new Date(),
+    }));
+    expect(order.coverImageIdSnapshot).toBe(image.id);
+    await prisma.order.update({ where: { id: order.id }, data: { status: 'COMPLETED', completedAt: new Date() } });
+    const publicPreview = image.mediaAsset!.objects.find(
+      (object) => object.tier === 'PUBLIC' && object.variant === 'PREVIEW',
+    )!;
+    const source = image.mediaAsset!.objects.find(
+      (object) => object.tier === 'PRIVATE' && object.variant === 'SOURCE',
+    )!;
+    const preview = image.mediaAsset!.objects.find(
+      (object) => object.tier === 'PRIVATE' && object.variant === 'PREVIEW',
+    )!;
+    const expectedPreview = await s.store.get('PRIVATE', preview.objectKey);
+    expect(expectedPreview).not.toBeNull();
+    expect(await s.store.get('PUBLIC', publicPreview.objectKey)).not.toBeNull();
+    s.cache.fail = true;
+    const products = new ProductsService(
+      prisma as never,
+      new PublicIdService(),
+      s.media,
+    );
+    await expect(products.remove(f.user.id, work.id)).resolves.toBeUndefined();
+    expect(
+      (await prisma.product.findUniqueOrThrow({ where: { id: work.id } }))
+        .deletedAt,
+    ).not.toBeNull();
+    const revoke = await prisma.mediaOperation.findFirstOrThrow({
+      where: {
+        productId: work.id,
+        kind: 'REVOKE',
+        state: { in: ['PENDING', 'FAILED'] },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    await s.media.run(revoke.id);
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: revoke.id },
+        })
+      ).state,
+    ).toBe('FAILED');
+    s.cache.fail = false;
+    await s.media.run(revoke.id);
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: revoke.id },
+        })
+      ).state,
+    ).toBe('DONE');
+    expect(await s.store.get('PUBLIC', publicPreview.objectKey)).toBeNull();
+    expect(await s.store.get('PRIVATE', source.objectKey)).not.toBeNull();
+    expect(s.cache.urls).toContain(publicPreview.publicUrl);
+    await prisma.$transaction((tx) => s.media.enqueueCleanup(tx, [image.mediaAsset!.id]));
+    const cleanup = await prisma.mediaOperation.findFirstOrThrow({
+      where: { kind: 'CLEANUP', objects: { some: { object: { assetId: image.mediaAsset!.id } } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    await s.media.run(cleanup.id);
+    expect((await prisma.mediaOperation.findUniqueOrThrow({ where: { id: cleanup.id } })).state).toBe('DONE');
+    expect(await s.store.get('PUBLIC', publicPreview.objectKey)).toBeNull();
+    expect(await s.store.get('PRIVATE', source.objectKey)).not.toBeNull();
+    const images = new ImagesService(
+      prisma as never,
+      new PostgresImageStore(prisma as never),
+      s.media,
+    );
+    const privatePreview = await images.get(image.id, buyer.id);
+    expect(privatePreview.isPublic).toBe(false);
+    expect(Buffer.from(privatePreview.data)).toEqual(Buffer.from(expectedPreview!.bytes));
+    expect(Buffer.from((await images.get(image.id, f.user.id)).data)).toEqual(Buffer.from(expectedPreview!.bytes));
+    await expect(images.get(image.id)).rejects.toMatchObject({ status: 404 });
+    await expect(images.get(image.id, randomUUID())).rejects.toMatchObject({ status: 404 });
+    await expect(images.get(image.id, randomUUID(), 'admin')).rejects.toMatchObject({ status: 404 });
+    await expect(
+      images.get(image.id, buyer.id, undefined, true),
+    ).rejects.toMatchObject({ status: 404 });
   });
 });
 

@@ -3,6 +3,10 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed (engineering owner)
 
+## 2026-10-31 — Work deletion
+
+**Implemented locally / live Needs verification.** Session and ownership are required for deletion; strangers and missing works receive 404, repeated owner deletion receives 204. Suspended and unverified owners may delete. Product row locks serialize deletion with publication, save, submit, media attachment and listing creation; open listings or orders block deletion. Public media is queued for revoke and purge while private SOURCE is retained. An order participant may read only the exact retained cover preview with private, no-store caching; role alone and SOURCE do not grant access after deletion. Final independent branch review and live R2/CDN verification remain open.
+
 ## 2026-10-30 — Order reports
 
 **Implemented** locally. `POST /api/orders/:publicId/reports` requires a session and a verified email. A caller who is not the buyer or the seller receives 404. The body is `createReportRequestSchema` (`ORDER` reasons only). Create and resolve responses use `reportSchema`. `GET /api/admin/reports` uses `adminReportSchema` (`orderPublicId`, reporter, buyer and seller user ids, `adminNote`) and includes no contacts. The other party's `ORDER_REPORTED` payload is `orderPublicId`, `reportId`, and `workTitle`; it cannot carry the complaint text. `@RateLimit` allows 5 creates per user per hour; the 6th is `rate_limited` and the counter is in PostgreSQL. A second open report from the same participant is `conflict` after a locked pre-check. Resolve requires `AdminGuard`, an active admin inside the transaction, and `adminNote` (400 when missing). A banned admin fails session auth with 401 before the handler; the transaction still checks that the admin row is active. `UPHELD` requires `faultSide`. `REJECTED` rejects `faultSide`. The report row, optional order outcome, and `audit_events` (`REPORT_RESOLVE`, and `ORDER_OUTCOME` when the order changes) commit together. The same decision is 200 and does not write again. A different decision is 409.

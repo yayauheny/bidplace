@@ -694,10 +694,16 @@ describe('PortfolioService', () => {
         },
       }),
     };
+    const tx = {
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValue([{ id: item.product.id, timeout: '0' }]),
+      product: { findUnique: vi.fn().mockResolvedValue({ deletedAt: null }) },
+      curatorSelection: { upsert: vi.fn().mockResolvedValue({}) },
+    };
     const prisma = {
-      curatorSelection: {
-        upsert: vi.fn().mockResolvedValue({}),
-      },
+      ...tx,
+      $transaction: vi.fn((callback) => callback(tx)),
     };
     const service = new PortfolioService(
       products as never,

@@ -20,7 +20,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { PrismaService } from '../core/database';
+import { PrismaService, runReadCommittedTransaction } from '../core/database';
+import { lockProductRowForUpdate } from '../products/product-write-guard';
 import { ProductsService } from '../products/products.service';
 import { SellersService } from '../sellers/sellers.service';
 
@@ -193,23 +194,32 @@ export class PortfolioService {
       throw new ConflictException('Curator is not publicly visible');
     }
     const selectedAt = new Date();
-    await this.prisma.curatorSelection.upsert({
-      where: { slot: HOME_CURATOR_SLOT },
-      create: {
-        slot: HOME_CURATOR_SLOT,
-        productId: item.product.id,
-        curatorSellerProfileId: curator.sellerProfile.id,
-        note,
-        selectedAt,
-        selectedByUserId: actorUserId,
-      },
-      update: {
-        productId: item.product.id,
-        curatorSellerProfileId: curator.sellerProfile.id,
-        note,
-        selectedAt,
-        selectedByUserId: actorUserId,
-      },
+    await runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, item.product.id);
+      const product = await tx.product.findUnique({
+        where: { id: item.product.id },
+        select: { deletedAt: true },
+      });
+      if (!product || product.deletedAt)
+        throw new ConflictException('Work is not publicly visible');
+      await tx.curatorSelection.upsert({
+        where: { slot: HOME_CURATOR_SLOT },
+        create: {
+          slot: HOME_CURATOR_SLOT,
+          productId: item.product.id,
+          curatorSellerProfileId: curator.sellerProfile.id,
+          note,
+          selectedAt,
+          selectedByUserId: actorUserId,
+        },
+        update: {
+          productId: item.product.id,
+          curatorSellerProfileId: curator.sellerProfile.id,
+          note,
+          selectedAt,
+          selectedByUserId: actorUserId,
+        },
+      });
     });
     return {
       publicId: item.product.publicId,
@@ -281,7 +291,7 @@ export class PortfolioService {
     if (seller?.status !== 'APPROVED' && seller?.status !== 'SUSPENDED') {
       throw new ForbiddenException('Author cabinet is unavailable');
     }
-    const where = { sellerProfile: { userId } };
+    const where = { sellerProfile: { userId }, deletedAt: null };
     const offset = (query.page - 1) * query.limit;
     const [pageRows, total] = await Promise.all([
       this.prisma.$queryRaw<
@@ -313,7 +323,7 @@ export class PortfolioService {
           ORDER BY audit.created_at DESC, audit.id DESC
           LIMIT 1
         ) AS moderation ON TRUE
-        WHERE seller.user_id = ${userId}::uuid
+        WHERE seller.user_id = ${userId}::uuid AND product.deleted_at IS NULL
         ORDER BY
           GREATEST(product.updated_at, COALESCE(revision.updated_at, product.updated_at)) DESC,
           product.id DESC

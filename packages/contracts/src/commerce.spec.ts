@@ -374,6 +374,7 @@ describe('commerce request and response schemas', () => {
       currency: 'BYN',
       workTitle: 'Bowl',
       workPublicId: 'workpublic01',
+      coverImageUrl: null,
       role: 'buyer',
       createdAt: now,
     };

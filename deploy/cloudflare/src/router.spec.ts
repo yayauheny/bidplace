@@ -118,6 +118,14 @@ describe('Cloudflare application boundary', () => {
     expect(h.fetchApi).toHaveBeenCalledTimes(2);
   });
 
+  it.each(['/api/portfolio/home', '/api/portfolio/facets'])(
+    'limits %s public cache to 30 seconds', async (path) => {
+      const h = harness();
+      const response = await h.request(path);
+      expect(response.headers.get('Cache-Control')).toBe('public, max-age=0, s-maxage=30');
+    },
+  );
+
   it.each([
     ['/api/auth/me', {}], ['/api/admin/works', {}], ['/api/images/private', {}],
     ['/api/works', { method: 'POST' }], ['/api/works', { headers: { Cookie: 'session=opaque' } }],

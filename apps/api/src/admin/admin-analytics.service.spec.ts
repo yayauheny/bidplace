@@ -17,6 +17,7 @@ function emptyFindMany() {
 }
 
 function queryResult(query: SqlQuery): unknown[] {
+  if (sqlText(query).includes('FROM audit_events')) return [{ count: 0n }];
   if (sqlText(query).includes('COUNT(DISTINCT')) {
     return [{ count: 0n }];
   }
@@ -58,6 +59,7 @@ describe('AdminAnalyticsService', () => {
   it('builds a 7d overview from aggregate rows', async () => {
     const prisma = createPrisma(async (query) => {
       const sql = sqlText(query);
+      if (sql.includes('FROM audit_events')) return [{ count: 0n }];
       if (sql.includes('COUNT(DISTINCT')) {
         return [{ count: 2n }];
       }
@@ -127,6 +129,7 @@ describe('AdminAnalyticsService', () => {
     expect(sqlText(activeQuery!)).not.toContain('created_at" AT TIME ZONE');
     expect(prisma.product.count).toHaveBeenCalledWith({
       where: {
+        deletedAt: null,
         status: 'PENDING_REVIEW',
         updatedAt: { lt: new Date('2026-08-13T15:00:00.000Z') },
       },

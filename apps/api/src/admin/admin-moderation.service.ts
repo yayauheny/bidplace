@@ -176,7 +176,7 @@ export class AdminModerationService {
 
   async productDetail(id: string) {
     const product = await this.prisma.product.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       select: {
         ...adminProductListSelect,
         publishedRevision: {
@@ -723,6 +723,9 @@ export class AdminModerationService {
           },
         });
 
+        if (product?.deletedAt) {
+          throw new ConflictException('Moderation target is stale');
+        }
         if (!product) {
           this.logger.warn('Product moderation target was not found');
           throw new NotFoundException('Product not found');
@@ -1215,18 +1218,23 @@ export class AdminModerationService {
           id: true,
           status: true,
           productId: true,
-          product: { select: { editingRevisionId: true, status: true } },
+          product: {
+            select: { deletedAt: true, editingRevisionId: true, status: true },
+          },
         },
       });
       if (
         !revision ||
+        revision.product.deletedAt ||
         revision.product.editingRevisionId !== revision.id ||
         revision.status !== 'PENDING_REVIEW'
       ) {
         throw new ConflictException('Moderation target is stale');
       }
       if (this.media?.enabled) {
-        await this.media.assertNotPending(tx, { productId: revision.productId });
+        await this.media.assertNotPending(tx, {
+          productId: revision.productId,
+        });
       }
       if (target.reason) {
         await tx.catalogProposal.update({

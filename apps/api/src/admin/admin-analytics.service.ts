@@ -13,6 +13,7 @@ import {
   foundationAcquisitionSql,
   foundationGrowthSql,
   acquisitionBySourceSql,
+  approvedWorkEventsSql,
   countActiveUsersSql,
   listingViewDaySql,
   publishedWorkDaySql,
@@ -230,7 +231,7 @@ export class AdminAnalyticsService {
       listingViewed,
       sellerProfilesCreated,
       productsCreated,
-      productsApproved,
+      productsApprovedRows,
       recentUsers,
       recentCreators,
       recentWorks,
@@ -249,6 +250,7 @@ export class AdminAnalyticsService {
       this.prisma.sellerProfile.count(),
       this.prisma.product.count({
         where: {
+          deletedAt: null,
           status: 'APPROVED',
           publishedRevisionId: { not: null },
         },
@@ -260,14 +262,12 @@ export class AdminAnalyticsService {
       this.prisma.sellerProfile.count({
         where: { createdAt: periodFilter },
       }),
-      this.prisma.product.count({ where: { createdAt: periodFilter } }),
-      this.prisma.auditEvent.count({
-        where: {
-          targetType: 'PRODUCT',
-          newStatus: 'APPROVED',
-          createdAt: periodFilter,
-        },
+      this.prisma.product.count({
+        where: { deletedAt: null, createdAt: periodFilter },
       }),
+      this.prisma.$queryRaw<Array<{ count: number | bigint }>>(
+        approvedWorkEventsSql(from, to),
+      ),
       this.prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
         take: 8,
@@ -285,7 +285,7 @@ export class AdminAnalyticsService {
         },
       }),
       this.prisma.product.findMany({
-        where: { publishedAt: { not: null } },
+        where: { deletedAt: null, publishedAt: { not: null } },
         orderBy: { publishedAt: 'desc' },
         take: 8,
         select: {
@@ -297,6 +297,7 @@ export class AdminAnalyticsService {
       }),
       this.prisma.product.count({
         where: {
+          deletedAt: null,
           status: 'PENDING_REVIEW',
           updatedAt: { lt: stuckBefore },
         },
@@ -375,7 +376,7 @@ export class AdminAnalyticsService {
           'postgresql',
         ),
         productsApproved: metric(
-          productsApproved,
+          readSqlCount(productsApprovedRows[0]?.count),
           'AuditEvent PRODUCT newStatus APPROVED in period',
           'postgresql',
         ),
@@ -470,7 +471,7 @@ export class AdminAnalyticsService {
       }
       case 'recent_works': {
         const rows = await this.prisma.product.findMany({
-          where: { publishedAt: periodFilter },
+          where: { deletedAt: null, publishedAt: periodFilter },
           orderBy: { publishedAt: 'desc' },
           take: 50,
           select: {
@@ -491,6 +492,7 @@ export class AdminAnalyticsService {
       case 'stuck_products': {
         const rows = await this.prisma.product.findMany({
           where: {
+            deletedAt: null,
             status: 'PENDING_REVIEW',
             updatedAt: { lt: stuckBefore },
           },

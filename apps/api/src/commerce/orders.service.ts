@@ -237,10 +237,14 @@ export class OrdersService {
       select: {
         title: true,
         publicId: true,
-        images: {
-          orderBy: { position: 'asc' },
-          take: 1,
-          select: { id: true },
+        publishedRevision: {
+          select: {
+            images: {
+              orderBy: { position: 'asc' },
+              take: 1,
+              select: { imageId: true },
+            },
+          },
         },
         sellerProfile: { select: { fullName: true } },
       },
@@ -277,7 +281,7 @@ export class OrdersService {
         idempotencyKey: input.idempotencyKey ?? null,
         workTitleSnapshot: title,
         workPublicIdSnapshot: product.publicId,
-        coverImageIdSnapshot: product.images[0]?.id ?? null,
+        coverImageIdSnapshot: product.publishedRevision?.images[0]?.imageId ?? null,
         sellerNameSnapshot: sellerName,
         createdAt: input.now,
       },
@@ -724,7 +728,11 @@ export class OrdersService {
         listing.type === 'FIXED' &&
         listing.status === 'ENDED'
       ) {
-        await restoreFixedPriceListing(tx, listing.id);
+        const product = await tx.product.findUniqueOrThrow({
+          where: { id: order.productId },
+          select: { deletedAt: true },
+        });
+        if (!product.deletedAt) await restoreFixedPriceListing(tx, listing.id);
       }
       const stored = await tx.order.findUniqueOrThrow({ where: { id: order.id } });
       await this.enqueueOutcomeLetters(tx, stored, listing.type, input.actor, input.next);
@@ -933,6 +941,9 @@ function orderSummary(
     currency: currencyOf(order.currency),
     workTitle: order.workTitleSnapshot,
     workPublicId: order.workPublicIdSnapshot,
+    coverImageUrl: order.coverImageIdSnapshot
+      ? `/api/images/${order.coverImageIdSnapshot}`
+      : null,
     role,
     createdAt: order.createdAt.toISOString(),
   };

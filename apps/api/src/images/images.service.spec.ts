@@ -506,7 +506,7 @@ describe('ImagesService', () => {
     );
     const findPublic = vi.fn().mockResolvedValue({ id: 'product-id' });
     const service = new ImagesService(
-      { productImage: { findUnique }, product: { findFirst: findPublic } } as never,
+      { productImage: { findUnique }, product: { findFirst: findPublic }, order: { findFirst: vi.fn().mockResolvedValue(null) } } as never,
       imageStore as never,
     );
 

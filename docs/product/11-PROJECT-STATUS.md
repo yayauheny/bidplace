@@ -5,6 +5,12 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-10-31 — Work deletion
+
+**Implemented locally / live Needs verification.** `Product.deletedAt`, `ProductsController.remove`, `product-publication.ts`, read filters and `MediaLifecycleService` implement the W6 tombstone path; `product-delete.integration.spec.ts` and `media-lifecycle.integration.spec.ts` cover owner access, sale guards, races, retained order cover, cleanup and purge retry. Public JSON edge cache TTLs for works, authors, portfolio home and facets are 30 seconds (`deploy/cloudflare/src/router.ts`, `router.spec.ts`); live R2/CDN behavior remains unverified. Scoped final independent re-review is pending.
+
+2026-10-31 review fixes: order covers use the published revision and remain available to order participants after later publication; deletion excludes approval events from active funnel counts without deleting audit history. Real order and media cleanup regressions were added; independent re-review remains pending.
+
 | Область | Статус и основание |
 | --- | --- |
 | Portfolio discovery, author/Work lifecycle и moderation | Implemented для проверенного локального среза: `portfolio`, `products`, `sellers`, `admin-moderation` в `apps/api/src`; revision/public guards и HTTP/media tests. Live acceptance остаётся отдельной. |
@@ -12,7 +18,7 @@
 | Author Story / каталоги / история Work | Implemented для проверенного client/API cutover: `use-product-story-editor.ts` вызывает `api.products.replaceCreation`, `ProductsController` → `ProductsService.replaceCreationStory`, revision-owned blocks; UI completion, review. Архивное «B6 не начат» — исторический checkpoint. |
 | Responsive UI, account/settings, author/header/footer | Partial: реализация и browser evidence есть; настройки имеют исключённое смещение заголовка, физические устройства/zoom и точный desktop parity не закрыты. [Design status](../design/04-DESIGN-STATUS.md). |
 | Фото Work и автора (DEC-131/132) | Partial: `ImageProcessor`/Sharp и пофайловый upload объединены с release wizard; local verify/media E2E прошли. Live R2/CDN, устройства и Figma новых статусов — Needs verification. |
-| Удаление своей Work (DEC-123) | Not implemented: в `ProductsController` нет DELETE Work, в `Product` нет tombstone. Hide/unhide не удаляет работу. План — [W6 Task 2](../launch/waves/W6-launch-legal-ops.md). |
+| Удаление своей Work (DEC-123) | Implemented локально / live Needs verification: `DELETE /api/products/:id`, `Product.deletedAt`, история заказов, отзыв медиа и гонки покрыты API integration tests; публичный JSON edge cache ограничен 30 секундами. Live R2/CDN behavior остаётся Needs verification. |
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Partial: the 2026-10-31 W3 rollup is Implemented locally where its tests exist (listings, bids, purchase, orders, tick, reports, attention, favorites, outbox, API client). Trust signals on the author order card and admin order/report views stay Partial. `SUPPORT_TELEGRAM_URL` / `SUPPORT_EMAIL` stay NEEDS-DECISION. The DEC-152 seller gate is Implemented: a banned account cannot open a new bid, purchase, or order, and a due auction ends `ENDED` with no order. Settings email/password stay Not implemented. |
 

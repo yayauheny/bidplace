@@ -348,6 +348,7 @@ const orderSummaryFields = {
   currency: currencySchema,
   workTitle: z.string().trim().min(1).max(200),
   workPublicId: z.string().trim().min(1).max(16),
+  coverImageUrl: z.string().nullable(),
   role: z.enum(['buyer', 'seller', 'admin']),
   createdAt: isoDateTimeSchema,
 };

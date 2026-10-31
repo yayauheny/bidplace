@@ -322,6 +322,7 @@ model Product {
   packaging       String?       @db.Text
   deliveryInfo    String?       @map("delivery_info") @db.Text
   creationIntro   String?       @map("creation_intro") @db.Text
+  deletedAt       DateTime?     @map("deleted_at")
   publishedAt     DateTime?     @map("published_at")
   status          ProductStatus @default(DRAFT)
   editingRevisionId String?     @unique @map("editing_revision_id") @db.Uuid

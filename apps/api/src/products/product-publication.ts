@@ -53,6 +53,17 @@ export function assertRevisionTransition(
   if (!revisionTransitions[from].includes(to)) throw stateConflict();
 }
 
+export async function deleteProduct(
+  tx: Prisma.TransactionClient,
+  input: { productId: string; actor: 'author' },
+): Promise<void> {
+  await assertProductNotInSale(tx, input.productId);
+  await tx.product.updateMany({
+    where: { id: input.productId, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+}
+
 export async function transitionProductVisibility(
   tx: Prisma.TransactionClient,
   input: {
@@ -70,10 +81,15 @@ export async function transitionProductVisibility(
   ) {
     throw stateConflict();
   }
-  if (input.next === 'ARCHIVED') await assertProductNotInSale(tx, input.productId);
+  if (input.next === 'ARCHIVED')
+    await assertProductNotInSale(tx, input.productId);
   else await lockProductRowForUpdate(tx, input.productId);
   const moved = await tx.product.updateMany({
-    where: { id: input.productId, status: { in: input.expected } },
+    where: {
+      id: input.productId,
+      deletedAt: null,
+      status: { in: input.expected },
+    },
     data: { status: input.next },
   });
   if (moved.count !== 1) throw stateConflict();
@@ -100,6 +116,7 @@ export async function publishRevision(
   });
   if (
     !product ||
+    product.deletedAt !== null ||
     !revision ||
     product.sellerProfile.status !== 'APPROVED' ||
     product.sellerProfile.user.status !== 'active' ||

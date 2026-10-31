@@ -29,6 +29,7 @@ export function moderationSummarySql(
   const fallbackLabel = Prisma.raw(seller ? 'p.full_name' : 'p.title');
   const filters: Prisma.Sql[] = [];
   if (seller) filters.push(Prisma.sql`p.status::text <> 'DRAFT'`);
+  else filters.push(Prisma.sql`p.deleted_at IS NULL`);
   if (query.filter === 'APPROVED')
     filters.push(Prisma.sql`p.status::text = 'APPROVED'`);
   else if (query.filter !== 'ALL')
