@@ -4,6 +4,7 @@ import { type PrismaClient } from '@bidplace/database';
 import { ForbiddenException } from '@nestjs/common';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { AntifraudService } from '../../src/antifraud';
 import { CommerceTickService } from '../../src/commerce/commerce-tick';
 import { OrdersService } from '../../src/commerce/orders.service';
 import {
@@ -221,7 +222,7 @@ async function deadlocks(): Promise<number> {
   throw new Error('deadlock count is missing');
 }
 
-async function waitForUserLock(): Promise<void> {
+async function waitForRowLock(relation: 'users' | 'products'): Promise<void> {
   const started = Date.now();
   while (Date.now() - started < 5_000) {
     const [row] = await prisma.$queryRaw<Array<{ waiting: boolean }>>`
@@ -238,7 +239,7 @@ async function waitForUserLock(): Promise<void> {
             JOIN pg_class AS class ON class.oid = lock.relation
             JOIN pg_namespace AS namespace ON namespace.oid = class.relnamespace
             WHERE lock.pid = activity.pid
-              AND class.relname = 'users'
+              AND class.relname = ${relation}
               AND namespace.nspname = current_schema()
               AND lock.locktype = 'relation'
               AND lock.granted
@@ -248,7 +249,7 @@ async function waitForUserLock(): Promise<void> {
     if (row?.waiting) return;
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
-  throw new Error('request did not wait on the user lock');
+  throw new Error(`request did not wait on the ${relation} lock`);
 }
 
 async function banWhileWaiting(
@@ -278,7 +279,7 @@ async function banWhileWaiting(
   await ready;
   const pending = start();
   try {
-    await waitForUserLock();
+    await waitForRowLock('users');
     release();
     return await pending;
   } finally {
@@ -552,5 +553,181 @@ describe('banned seller gate', () => {
     expect(
       await prisma.listing.findUniqueOrThrow({ where: { id: fixed.listingId } }),
     ).toMatchObject({ status: 'ENDED' });
+  });
+
+  it('replays a prior bid after the seller ban and rejects another amount', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    await giveContact(fixture.buyer.id);
+    const buyer = await signedIn(fixture.buyer.email, fixture.buyer.password);
+    const now = await databaseNow();
+    const auction = await liveAuction(
+      fixture.sellers.approved,
+      'Replay bid',
+      new Date(now.getTime() + 2 * HOUR_MS),
+    );
+    const idempotencyKey = `bid-replay-${randomUUID()}`;
+    const first = await buyer.post(`/listings/${auction.listingId}/bids`, {
+      amountMinor: 1_000,
+      idempotencyKey,
+      turnstileToken: PASS,
+    });
+    expect(first.status).toBe(200);
+    const firstBody = (await first.json()) as { bid: unknown };
+    const letters = await prisma.notificationOutbox.count();
+
+    await banAccount(fixture.sellers.approved.id);
+
+    const replay = await buyer.post(`/listings/${auction.listingId}/bids`, {
+      amountMinor: 1_000,
+      idempotencyKey,
+      turnstileToken: PASS,
+    });
+    expect(replay.status).toBe(200);
+    expect((await replay.json() as { bid: unknown }).bid).toEqual(firstBody.bid);
+    expect(await prisma.bid.count({ where: { listingId: auction.listingId } })).toBe(1);
+    expect(await prisma.notificationOutbox.count()).toBe(letters);
+
+    const changed = await buyer.post(`/listings/${auction.listingId}/bids`, {
+      amountMinor: 1_500,
+      idempotencyKey,
+      turnstileToken: PASS,
+    });
+    expect(changed.status).toBe(409);
+    expect(await errorBody(changed)).toMatchObject({ code: 'IDEMPOTENCY_KEY_REUSED' });
+    expect(await prisma.bid.count({ where: { listingId: auction.listingId } })).toBe(1);
+    expect(await prisma.notificationOutbox.count()).toBe(letters);
+  });
+
+  it('replays a prior purchase after the seller ban and rejects another comment', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    await giveContact(fixture.buyer.id);
+    const buyer = await signedIn(fixture.buyer.email, fixture.buyer.password);
+    const fixed = await liveFixed(fixture.sellers.approved, 'Replay purchase');
+    const idempotencyKey = `purchase-replay-${randomUUID()}`;
+    const first = await buyer.post(`/listings/${fixed.listingId}/purchase`, {
+      idempotencyKey,
+      comment: 'Original comment',
+      turnstileToken: PASS,
+    });
+    expect(first.status).toBe(200);
+    const firstBody = (await first.json()) as { order: unknown };
+    const letters = await prisma.notificationOutbox.count();
+
+    await banAccount(fixture.sellers.approved.id);
+
+    const replay = await buyer.post(`/listings/${fixed.listingId}/purchase`, {
+      idempotencyKey,
+      comment: 'Original comment',
+      turnstileToken: PASS,
+    });
+    expect(replay.status).toBe(200);
+    expect((await replay.json() as { order: unknown }).order).toEqual(firstBody.order);
+    expect(await prisma.order.count({ where: { listingId: fixed.listingId } })).toBe(1);
+    expect(await prisma.notificationOutbox.count()).toBe(letters);
+
+    const changed = await buyer.post(`/listings/${fixed.listingId}/purchase`, {
+      idempotencyKey,
+      comment: 'Changed comment',
+      turnstileToken: PASS,
+    });
+    expect(changed.status).toBe(409);
+    expect(await errorBody(changed)).toMatchObject({ code: 'IDEMPOTENCY_KEY_REUSED' });
+    expect(await prisma.order.count({ where: { listingId: fixed.listingId } })).toBe(1);
+    expect(await prisma.notificationOutbox.count()).toBe(letters);
+  });
+
+  it.each([
+    ['ban commits before close', true, 0],
+    ['close commits before ban', false, 1],
+  ] as const)('%s without a deadlock or duplicate order', async (_label, banFirst, expectedOrders) => {
+    const fixture = await createPermissionFixture(prisma);
+    const bidder = await extraBuyer('close-race-bidder');
+    const sellerUuid = fixture.sellers.approved.id.replaceAll('-', '');
+    const adminUuid = (BigInt(`0x${sellerUuid}`) - 1n).toString(16).padStart(32, '0');
+    const adminId = `${adminUuid.slice(0, 8)}-${adminUuid.slice(8, 12)}-${adminUuid.slice(12, 16)}-${adminUuid.slice(16, 20)}-${adminUuid.slice(20)}`;
+    const admin = await prisma.user.create({
+      data: {
+        id: adminId,
+        email: `close-race-admin.${randomUUID().slice(0, 8)}@wave3.test`,
+        passwordHash: fixturePasswordHash,
+        displayName: 'Close race admin',
+        role: 'admin',
+        emailVerifiedAt: new Date('2026-09-01T00:00:00.000Z'),
+      },
+      select: { id: true },
+    });
+    const now = await databaseNow();
+    const auction = await liveAuction(
+      fixture.sellers.approved,
+      'Close race',
+      new Date(now.getTime() - 60_000),
+      [{ bidderUserId: bidder.id, amountMinor: 2_500 }],
+    );
+    const antifraud = http.app.get(AntifraudService);
+    const commerceTick = http.app.get(CommerceTickService);
+    const beforeDeadlocks = await deadlocks();
+    let release!: () => void;
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let acquired!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      acquired = resolve;
+    });
+    const holder = prisma.$transaction(
+      async (tx) => {
+        if (banFirst) {
+          await tx.$queryRaw`SELECT id FROM products WHERE id = ${auction.product.id}::uuid FOR UPDATE`;
+        } else {
+          await tx.$queryRaw`SELECT id FROM users WHERE id = ${admin.id}::uuid FOR UPDATE`;
+        }
+        acquired();
+        await released;
+      },
+      { isolationLevel: 'ReadCommitted', timeout: 15_000 },
+    );
+    await ready;
+    let pendingBan: Promise<unknown> | undefined;
+    let pendingClose: Promise<number> | undefined;
+    try {
+      if (banFirst) {
+        pendingClose = commerceTick.closeDue(Date.now() + 20_000);
+        await waitForRowLock('products');
+        pendingBan = antifraud.banUser(admin.id, fixture.sellers.approved.id, 'close race');
+        await pendingBan;
+      } else {
+        pendingBan = antifraud.banUser(admin.id, fixture.sellers.approved.id, 'close race');
+        await waitForRowLock('users');
+        pendingClose = commerceTick.closeDue(Date.now() + 20_000);
+        expect(await pendingClose).toBe(1);
+      }
+    } finally {
+      release();
+      await Promise.all([holder, pendingBan, pendingClose]);
+    }
+
+    expect(await pendingClose).toBe(1);
+    expect(await deadlocks()).toBe(beforeDeadlocks);
+    expect(
+      await prisma.user.findUniqueOrThrow({ where: { id: fixture.sellers.approved.id } }),
+    ).toMatchObject({ status: 'banned' });
+    expect(
+      await prisma.listing.findUniqueOrThrow({ where: { id: auction.listingId } }),
+    ).toMatchObject({ status: 'ENDED' });
+    const orders = await prisma.order.findMany({ where: { listingId: auction.listingId } });
+    expect(orders).toHaveLength(expectedOrders);
+    if (expectedOrders === 1) {
+      expect(orders[0]).toMatchObject({ status: 'ACTIVE', source: 'AUCTION_WIN' });
+    }
+    const letters = await prisma.notificationOutbox.findMany();
+    expect(new Set(letters.map((letter) => letter.kind))).toEqual(
+      expectedOrders === 1 ? new Set(['BID_WON', 'AUCTION_ENDED']) : new Set(),
+    );
+
+    expect(await commerceTick.closeDue(Date.now() + 20_000)).toBe(0);
+    expect(await prisma.order.count({ where: { listingId: auction.listingId } })).toBe(
+      expectedOrders,
+    );
+    expect(await prisma.notificationOutbox.count()).toBe(letters.length);
   });
 });
