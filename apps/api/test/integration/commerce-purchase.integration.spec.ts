@@ -342,13 +342,13 @@ describe('fixed price purchase', () => {
     });
   });
 
-  it('returns the same order for the same key and refuses another key', async () => {
+  it('replays the same purchase payload and refuses another payload or key', async () => {
     const fixture = await createPermissionFixture(prisma);
     await giveContact(fixture.buyer.id);
     const buyer = await signedIn(fixture.buyer.email, fixture.buyer.password);
     const { listingId } = await fixedListing(fixture);
-    const first = await postPurchase(buyer, listingId, 'same-purchase-key', 'Первый');
-    const second = await postPurchase(buyer, listingId, 'same-purchase-key', 'Второй');
+    const first = await postPurchase(buyer, listingId, 'same-purchase-key', ' Первый ');
+    const second = await postPurchase(buyer, listingId, 'same-purchase-key', 'Первый');
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
     const firstBody = (await first.json()) as PurchaseBody;
@@ -361,6 +361,11 @@ describe('fixed price purchase', () => {
         where: { kind: { in: ['PURCHASED', 'LISTING_SOLD'] } },
       }),
     ).toBe(2);
+
+    const changed = await postPurchase(buyer, listingId, 'same-purchase-key', 'Второй');
+    expect(changed.status).toBe(409);
+    expect(await errorBody(changed)).toMatchObject({ code: 'IDEMPOTENCY_KEY_REUSED' });
+    expect(await prisma.order.count({ where: { listingId } })).toBe(1);
 
     const other = await postPurchase(buyer, listingId, 'other-purchase-key');
     expect(other.status).toBe(409);

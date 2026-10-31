@@ -163,7 +163,16 @@ export class OrdersService {
             idempotencyKey: input.idempotencyKey,
           },
         });
-        if (replay) return this.present(tx, replay, now);
+        if (replay) {
+          if (replay.buyerComment !== storedComment(input.comment)) {
+            throw new AppException({
+              status: 409,
+              code: ApiErrorCode.IDEMPOTENCY_KEY_REUSED,
+              message: 'Idempotency key was reused with a different payload',
+            });
+          }
+          return this.present(tx, replay, now);
+        }
 
         if (!canPurchaseFixed(listing, now)) throw listingNotOpen();
         if (listing.priceMinor === null) {
