@@ -8,6 +8,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createApiClient } from '@bidplace/api-client';
 
+import { portfolioKeys } from '../../lib/query-cache';
 import { ApiProvider } from '../../providers/api-provider';
 import {
   AUTHORS_PAGE_SIZE,
@@ -532,7 +533,7 @@ describe('portfolio catalog hooks', () => {
     expect(snapshot.itemIds).toEqual(indexes.map((index) => uuid('11111111', index)));
     expect(
       view.queryClient.getQueryCache().findAll({
-        queryKey: ['portfolio-works', snapshot.listQuery],
+        queryKey: portfolioKeys.works(snapshot.listQuery),
       }),
     ).toHaveLength(1);
     view.unmount();
@@ -558,7 +559,7 @@ describe('portfolio catalog hooks', () => {
     expect(snapshot.itemIds).toEqual(indexes.map((index) => uuid('22222222', index)));
     expect(
       view.queryClient.getQueryCache().findAll({
-        queryKey: ['portfolio-authors', snapshot.listQuery],
+        queryKey: portfolioKeys.authors(snapshot.listQuery),
       }),
     ).toHaveLength(1);
     view.unmount();
@@ -715,7 +716,7 @@ describe('portfolio catalog hooks', () => {
       );
       expect(
         view.queryClient.getQueryCache().findAll({
-          queryKey: ['portfolio-works', snapshot.listQuery],
+          queryKey: portfolioKeys.works(snapshot.listQuery),
         }),
       ).toHaveLength(1);
       expect(snapshot.listQuery).not.toEqual(previousQuery);
@@ -760,7 +761,7 @@ describe('portfolio catalog hooks', () => {
       );
       expect(
         view.queryClient.getQueryCache().findAll({
-          queryKey: ['portfolio-authors', snapshot.listQuery],
+          queryKey: portfolioKeys.authors(snapshot.listQuery),
         }),
       ).toHaveLength(1);
       expect(snapshot.listQuery).not.toEqual(previousQuery);
@@ -809,7 +810,7 @@ describe('portfolio catalog hooks', () => {
     const view = mountWorks(worksState);
     const request = await view.transport.started();
     expect(request.signal?.aborted).toBe(false);
-    const queryKey = ['portfolio-works', view.read().listQuery] as const;
+    const queryKey = portfolioKeys.works(view.read().listQuery);
 
     view.unmount();
 
@@ -821,7 +822,7 @@ describe('portfolio catalog hooks', () => {
     const view = mountAuthors(authorsState);
     const request = await view.transport.started();
     expect(request.signal?.aborted).toBe(false);
-    const queryKey = ['portfolio-authors', view.read().listQuery] as const;
+    const queryKey = portfolioKeys.authors(view.read().listQuery);
 
     view.unmount();
 

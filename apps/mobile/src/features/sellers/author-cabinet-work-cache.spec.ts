@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { portfolioKeys } from '../../lib/query-cache';
 import { flush } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -265,7 +266,7 @@ import { ProductDraftScreen } from './product-draft-screen';
 
 function PublicProbe() {
   const query = useQuery({
-    queryKey: ['portfolio-works'],
+    queryKey: portfolioKeys.works(),
     queryFn: async () => {
       harness.publicReads.count += 1;
       return { marker: true };
@@ -419,7 +420,7 @@ afterEach(() => {
 });
 
 describe('owner work cache', () => {
-  it('updates the retained cabinet after a work save without touching public queries', async () => {
+  it('updates the retained cabinet after a work save and refreshes public work queries', async () => {
     let resolveSave: (value: {
       product: ReturnType<typeof product>;
     }) => void = () => undefined;
@@ -466,7 +467,7 @@ describe('owner work cache', () => {
     expect(view.container.textContent).not.toContain(
       'Обложка работы не добавлена',
     );
-    expect(harness.publicReads.count).toBe(publicReads);
+    expect(harness.publicReads.count).toBeGreaterThan(publicReads);
     expect(view.queryClient.getQueryData(['portfolio-works'])).toEqual({
       marker: true,
     });

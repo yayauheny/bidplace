@@ -7,14 +7,18 @@ import {
 
 import type { SellerProfile } from '@bidplace/contracts';
 
-import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
+import {
+  canWritePrivateCache,
+  currentAuthEpoch,
+  invalidateWorkSurfaces,
+} from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import {
   AUTHOR_CABINET_PAGE_SIZE,
   authorCabinetWorksFromPages,
 } from '../sellers/author-cabinet-state';
 import { isAuthorCabinetAvailable } from '../../hooks/use-seller-capability';
-import { invalidateOwnerWorks, ownerWorkQueryKeys } from '../sellers/owner-work-query';
+import { ownerWorkQueryKeys } from '../sellers/owner-work-query';
 
 /**
  * Единый owner-контроллер кабинета: /cabinet и /account делят этот hook,
@@ -78,11 +82,7 @@ export function useAuthorCabinetVisibility() {
   const [intent, setIntent] = useState<CabinetVisibilityIntent | null>(null);
 
   const invalidate = () => {
-    void invalidateOwnerWorks(queryClient);
-    void queryClient.invalidateQueries({ queryKey: ['public-author'] });
-    void queryClient.invalidateQueries({ queryKey: ['portfolio-home'] });
-    void queryClient.invalidateQueries({ queryKey: ['portfolio-work'] });
-    void queryClient.invalidateQueries({ queryKey: ['portfolio-works'] });
+    void invalidateWorkSurfaces(queryClient);
   };
   const mutation = useMutation({
     mutationFn: ({ workId, action }: CabinetVisibilityIntent) =>

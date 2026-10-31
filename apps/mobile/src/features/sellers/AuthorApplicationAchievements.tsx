@@ -19,6 +19,7 @@ import { getApiAssetUrl } from '../../lib/environment';
 import {
   authKeys,
   canWritePrivateCache,
+  sellerKeys,
   captureDraftWriteLease,
   currentAuthEpoch,
   draftWriteLeaseIsValid,
@@ -125,7 +126,7 @@ export function AuthorApplicationAchievements({
   );
 
   const application = useQuery({
-    queryKey: ['seller', 'application'],
+    queryKey: sellerKeys.application,
     queryFn: async () => {
       const epoch = currentAuthEpoch(queryClient);
       const data = await api.portfolio.getAuthorApplication();
@@ -166,7 +167,7 @@ export function AuthorApplicationAchievements({
         variables.epoch,
       );
       if (!canWritePrivateCache(queryClient, variables.epoch)) return;
-      await queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      await queryClient.invalidateQueries({ queryKey: sellerKeys.profile });
     },
     onSettled: (_saved, _error, variables) => {
       releaseWrite(variables.token);
@@ -184,7 +185,7 @@ export function AuthorApplicationAchievements({
         variables.epoch,
       );
       if (!canWritePrivateCache(queryClient, variables.epoch)) return;
-      await queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      await queryClient.invalidateQueries({ queryKey: sellerKeys.profile });
     },
     onSettled: (_saved, _error, variables) => {
       releaseWrite(variables.token);

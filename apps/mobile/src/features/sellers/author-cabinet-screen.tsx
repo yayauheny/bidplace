@@ -24,6 +24,7 @@ import {
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
 import { apiErrorMessage } from '../../lib/api-error-messages';
+import { sellerKeys } from '../../lib/query-cache';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import {
@@ -82,7 +83,7 @@ export function AuthorCabinetScreen() {
             status="error"
             onRetry={() =>
               void queryClient.invalidateQueries({
-                queryKey: ['seller', 'profile'],
+                queryKey: sellerKeys.profile,
               })
             }
           />

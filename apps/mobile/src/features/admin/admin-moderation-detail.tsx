@@ -29,7 +29,7 @@ import { MediaDeliveryNotice } from '../../components/shared/MediaDeliveryNotice
 import { PrivateStoryImage } from '../../components/shared/PrivateStoryImage';
 import { useApiClient } from '../../providers/api-provider';
 import { formatAchievementDate } from '../sellers/achievement-date';
-import { currentAuthEpoch } from '../../lib/query-cache';
+import { adminKeys, currentAuthEpoch } from '../../lib/query-cache';
 import { readFormFailure } from '../../errors';
 import {
   presentEnum,
@@ -98,7 +98,7 @@ export function AdminModerationDetail({
   const [stale, setStale] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const saving = useRef(false);
-  const queryKey = ['admin', 'detail', kind, id];
+  const queryKey = adminKeys.detail(kind, id);
   const query = useQuery({
     queryKey,
     queryFn: async ({ signal }): Promise<Detail> =>
@@ -107,7 +107,7 @@ export function AdminModerationDetail({
         : { kind, data: await api.admin.getSellerDetail(id, { signal }) },
   });
   const history = useInfiniteQuery({
-    queryKey: ['admin', 'history', kind, id],
+    queryKey: adminKeys.history(kind, id),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
       kind === 'products'
@@ -170,7 +170,7 @@ export function AdminModerationDetail({
   });
   const refresh = async () => {
     await query.refetch();
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'queue'] });
+    void queryClient.invalidateQueries({ queryKey: adminKeys.queueRoot });
   };
   const submit = async () => {
     if (!confirmation || saving.current || stale) return;
@@ -203,7 +203,7 @@ export function AdminModerationDetail({
       setSuccess(
         'Решение принято. Фактический статус публикации показан ниже.',
       );
-      await queryClient.invalidateQueries({ queryKey: ['admin'] });
+      await queryClient.invalidateQueries({ queryKey: adminKeys.all });
     } catch (error) {
       if (currentAuthEpoch(queryClient) !== epoch) return;
       const conflict =

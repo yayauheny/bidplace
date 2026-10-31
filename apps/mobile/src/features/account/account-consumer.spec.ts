@@ -17,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '@bidplace/api-client';
 import { lightColorMap } from '@bidplace/design-tokens';
 
+import { sellerKeys } from '../../lib/query-cache';
 import { flush } from '../../testing/dom';
 import { publicAuthorKeys, useAuthorWorks } from '../sellers/use-author-works';
 
@@ -350,7 +351,7 @@ function PublicAuthorProbe() {
 // Owner-query probe: читает тот же кэш продавца, что capability экрана.
 function CapabilityProbe() {
   const query = useQuery({
-    queryKey: ['seller', 'profile'],
+    queryKey: sellerKeys.profile,
     queryFn: () => harness.getMyProfile(),
   });
   return createElement('div', {

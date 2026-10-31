@@ -4,6 +4,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import type { AuthProvider } from '@bidplace/contracts';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { AppText, TextButton } from '../../components/ui';
+import { authKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import { AuthGoogleIcon } from './auth-google-icon';
 import { AuthTelegramIcon } from './auth-telegram-icon';
@@ -23,7 +24,7 @@ export function ProviderButtons({
   const api = useApiClient();
   const action = useAuthFlowAction();
   const options = useQuery({
-    queryKey: ['auth', 'options'],
+    queryKey: authKeys.options,
     queryFn: ({ signal }) => api.auth.options({ signal }),
     retry: false,
   });

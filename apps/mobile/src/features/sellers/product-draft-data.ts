@@ -7,6 +7,7 @@ import type { ApiClient } from '@bidplace/api-client';
 
 import {
   canWritePrivateCache,
+  catalogKeys,
   categoryKeys,
   currentAuthEpoch,
 } from '../../lib/query-cache';
@@ -84,12 +85,12 @@ export function useProductDraftData({
     'MATERIAL' | 'TECHNIQUE' | null
   >(null);
   const materialsCatalog = useQuery({
-    queryKey: ['catalog', 'terms', 'MATERIAL'],
+    queryKey: catalogKeys.terms('MATERIAL'),
     queryFn: ({ signal }) => api.catalog.listTerms('MATERIAL', { signal }),
     enabled: catalogOpenRole === 'MATERIAL',
   });
   const techniquesCatalog = useQuery({
-    queryKey: ['catalog', 'terms', 'TECHNIQUE'],
+    queryKey: catalogKeys.terms('TECHNIQUE'),
     queryFn: ({ signal }) => api.catalog.listTerms('TECHNIQUE', { signal }),
     enabled: catalogOpenRole === 'TECHNIQUE',
   });

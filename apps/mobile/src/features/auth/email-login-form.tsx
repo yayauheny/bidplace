@@ -10,6 +10,7 @@ import {
   TextButton,
   TextField,
 } from '../../components/ui';
+import { authKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { AuthCodeField } from './auth-code-field';
@@ -36,7 +37,7 @@ export function EmailLoginForm({ redirectTo }: { redirectTo: SafeRedirect }) {
   const sendKey = useRef<string | null>(null);
   const verifyKey = useRef<string | null>(null);
   const state = useQuery({
-    queryKey: ['user', 'auth', 'email-login', 'state'],
+    queryKey: authKeys.emailLoginState,
     queryFn: async ({ signal }) => {
       try {
         return await api.auth.loginCodeState({ signal });

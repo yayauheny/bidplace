@@ -16,6 +16,7 @@ import {
   TextButton,
   TextField,
 } from '../../components/ui';
+import { authKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { AuthCodeField } from './auth-code-field';
@@ -54,7 +55,7 @@ export function OnboardingForm() {
   const sendKey = useRef<string | null>(null);
   const verifyKey = useRef<string | null>(null);
   const state = useQuery({
-    queryKey: ['user', 'auth', 'onboarding'],
+    queryKey: authKeys.onboarding,
     queryFn: async ({ signal }) => {
       try {
         return await api.auth.onboarding({ signal });
@@ -69,7 +70,7 @@ export function OnboardingForm() {
     gcTime: 0,
   });
   const verification = useQuery({
-    queryKey: ['user', 'auth', 'onboarding', 'email'],
+    queryKey: authKeys.onboardingEmail,
     queryFn: ({ signal }) => api.auth.onboardingEmailState({ signal }),
     enabled: state.data?.stage === 'email',
     retry: false,

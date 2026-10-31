@@ -10,6 +10,7 @@ import {
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText, PrimaryButton, SecondaryButton, TextField } from '../../components/ui';
+import { catalogKeys, categoryKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 
 type Proposal = NonNullable<AdminProduct['reviewTarget']>['selection']['proposals'][number];
@@ -32,12 +33,12 @@ export function AdminWorkCatalogProposals({
     ? active.kind
     : null;
   const terms = useQuery({
-    queryKey: ['catalog', 'terms', role],
+    queryKey: catalogKeys.terms(role),
     queryFn: ({ signal }) => api.catalog.listTerms(role!, { signal }),
     enabled: role !== null,
   });
   const categories = useQuery({
-    queryKey: ['categories'],
+    queryKey: categoryKeys.all,
     queryFn: ({ signal }) => api.categories.list({ signal }),
     enabled: active?.kind === 'CATEGORY',
   });
@@ -70,16 +71,16 @@ export function AdminWorkCatalogProposals({
       setActiveId(null);
       setSearch('');
       setReason('');
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'terms'] });
-      void queryClient.invalidateQueries({ queryKey: ['categories'] });
+      void queryClient.invalidateQueries({ queryKey: catalogKeys.termsRoot });
+      void queryClient.invalidateQueries({ queryKey: categoryKeys.all });
       onChanged();
     },
     onError: () => {
       // Creating the term may succeed even if mapping it fails. Refresh the
       // directory so a retry can map to the existing value instead of
       // creating a duplicate.
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'terms'] });
-      void queryClient.invalidateQueries({ queryKey: ['categories'] });
+      void queryClient.invalidateQueries({ queryKey: catalogKeys.termsRoot });
+      void queryClient.invalidateQueries({ queryKey: categoryKeys.all });
     },
   });
   if (pending.length === 0) return null;

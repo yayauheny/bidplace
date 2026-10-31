@@ -16,6 +16,7 @@ import {
   TextField,
 } from '../../components/ui';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import { adminKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import { useAppTheme } from '../../providers/theme-provider';
 import {
@@ -75,7 +76,7 @@ export function AdminAnalyticsScreen() {
   const [end, setEnd] = useState('');
   const range = analyticsRange(period, instant, start, end);
   const query = useQuery({
-    queryKey: ['admin', 'analytics', 'foundation', range],
+    queryKey: adminKeys.analyticsFoundation(range),
     queryFn: ({ signal }) =>
       api.admin.getAnalyticsFoundation(range!, { signal }),
     enabled: range !== null,

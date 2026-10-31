@@ -6,7 +6,114 @@ export const categoryKeys = {
 
 export const authKeys = {
   session: ['user', 'me'] as const,
+  options: ['auth', 'options'] as const,
+  onboarding: ['user', 'auth', 'onboarding'] as const,
+  onboardingEmail: ['user', 'auth', 'onboarding', 'email'] as const,
+  emailLoginState: ['user', 'auth', 'email-login', 'state'] as const,
+  connections: (userId: string | undefined) =>
+    ['user', userId, 'auth', 'connections'] as const,
 };
+
+export const portfolioKeys = {
+  home: ['portfolio-home'] as const,
+  facets: ['portfolio-facets'] as const,
+  workRoot: ['portfolio-work'] as const,
+  work: (publicId: string) => ['portfolio-work', publicId] as const,
+  works: (query?: unknown) =>
+    query === undefined
+      ? (['portfolio-works'] as const)
+      : (['portfolio-works', query] as const),
+  authors: (query?: unknown) =>
+    query === undefined
+      ? (['portfolio-authors'] as const)
+      : (['portfolio-authors', query] as const),
+  authorRoot: ['public-author'] as const,
+  author: (slug: string) => ['public-author', slug] as const,
+};
+
+export const ownerWorkKeys = {
+  cabinet: ['seller', 'cabinet', 'works'] as const,
+  detailRoot: ['seller', 'product'] as const,
+  detail: (productId: string) => ['seller', 'product', productId] as const,
+};
+
+export const sellerKeys = {
+  profile: ['seller', 'profile'] as const,
+  application: ['seller', 'application'] as const,
+  applicationPhotoRoot: ['seller', 'application-photo'] as const,
+  applicationPhoto: (profileId: string | undefined, token: unknown) =>
+    ['seller', 'application-photo', profileId, token] as const,
+};
+
+export const catalogKeys = {
+  termsRoot: ['catalog', 'terms'] as const,
+  terms: (role: string | null) => ['catalog', 'terms', role] as const,
+  countries: (query: string) => ['countries', query] as const,
+};
+
+export const adminKeys = {
+  all: ['admin'] as const,
+  queueRoot: ['admin', 'queue'] as const,
+  queue: (section: string, filter: string, search: string) =>
+    ['admin', 'queue', section, filter, search] as const,
+  detail: (kind: string, id: string) => ['admin', 'detail', kind, id] as const,
+  history: (kind: string, id: string) =>
+    ['admin', 'history', kind, id] as const,
+  analyticsFoundation: (range: unknown) =>
+    ['admin', 'analytics', 'foundation', range] as const,
+};
+
+export const commerceKeys = {
+  lot: (publicId: string, viewerId: string | null) =>
+    ['user', viewerId ?? 'anonymous', 'lot', publicId] as const,
+  bids: (listingId: string) => ['bids', listingId] as const,
+  orders: (role: string, state: string) =>
+    ['user', 'orders', role, state] as const,
+  order: (publicId: string) => ['user', 'order', publicId] as const,
+  attention: () => ['user', 'attention'] as const,
+  favorites: () => ['user', 'favorites'] as const,
+  favorite: (productId: string) => ['user', 'favorite', productId] as const,
+  contacts: () => ['user', 'contacts'] as const,
+  notificationSettings: () => ['user', 'notification-settings'] as const,
+};
+
+function isLotQueryKey(queryKey: QueryKey, publicId?: string) {
+  return (
+    queryKey[0] === 'user' &&
+    queryKey[2] === 'lot' &&
+    (publicId === undefined || queryKey[3] === publicId)
+  );
+}
+
+export async function invalidateWorkSurfaces(
+  queryClient: QueryClient,
+  input: { publicId?: string; sellerSlug?: string } = {},
+): Promise<void> {
+  const tasks = [
+    queryClient.invalidateQueries({
+      queryKey: input.publicId
+        ? portfolioKeys.work(input.publicId)
+        : portfolioKeys.workRoot,
+    }),
+    queryClient.invalidateQueries({ queryKey: portfolioKeys.works() }),
+    queryClient.invalidateQueries({ queryKey: portfolioKeys.home }),
+    queryClient.invalidateQueries({
+      queryKey: input.sellerSlug
+        ? portfolioKeys.author(input.sellerSlug)
+        : portfolioKeys.authorRoot,
+    }),
+    queryClient.invalidateQueries({
+      predicate: (query) => isLotQueryKey(query.queryKey, input.publicId),
+    }),
+  ];
+  if (canWritePrivateCache(queryClient)) {
+    tasks.push(
+      queryClient.invalidateQueries({ queryKey: ownerWorkKeys.cabinet }),
+      queryClient.invalidateQueries({ queryKey: ownerWorkKeys.detailRoot }),
+    );
+  }
+  await Promise.all(tasks);
+}
 
 const authScopedRoots = new Set(['user', 'seller', 'admin']);
 

@@ -19,7 +19,7 @@ import { ApiClientError } from '@bidplace/api-client';
 import '../../testing/author-application-mocks';
 
 import { flush } from '../../testing/dom';
-import { authKeys } from '../../lib/query-cache';
+import { authKeys, sellerKeys } from '../../lib/query-cache';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -510,7 +510,7 @@ describe('SellerProfileScreen render contract', () => {
       new ApiClientError('network down', { kind: 'network', status: 0 }),
     );
     await act(async () => {
-      await queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      await queryClient.invalidateQueries({ queryKey: sellerKeys.profile });
     });
 
     await until(

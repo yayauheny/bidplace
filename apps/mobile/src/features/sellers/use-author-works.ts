@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 
 import type { ApiClient } from '@bidplace/api-client';
 
+import { portfolioKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 
@@ -11,7 +12,15 @@ export const publicAuthorKeys = {
     sort: 'newest' | 'oldest',
     category?: string,
     categories?: string[],
-  ) => ['public-author', slug, { sort, category, ...(categories?.length ? { categories } : {}) }] as const,
+  ) =>
+    [
+      ...portfolioKeys.author(slug),
+      {
+        sort,
+        category,
+        ...(categories?.length ? { categories } : {}),
+      },
+    ] as const,
 };
 
 // Shared base options for every observer of a public-author key, so the
