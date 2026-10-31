@@ -26,6 +26,8 @@ Server sales on this branch. **Implemented** locally only where a test exists: c
 
 **Implemented:** DEC-152 seller gate. `sellerMayAcceptOrders` (`apps/api/src/sellers/seller-capability.ts`) is true only for `users.status = active` and `SellerProfile.status = APPROVED`. `CommerceGuards.sellerMaySell` reads both after `AntifraudService.lockUsers`. A banned seller's new bid or fixed purchase is `LISTING_NOT_OPEN`. `offerNext` throws the approved-seller `ForbiddenException`. The close tick still sets the listing `ENDED` and creates no order; when a bid exists it does not send `AUCTION_ENDED_NO_BIDS`. An existing `ACTIVE` order stays. `SellerProfile` `SUSPENDED` stays a separate author status. User status stays `active|banned`. Test: `commerce-seller-ban.integration.spec.ts`.
 
+**Needs verification before production migrate:** `20261030130000_commerce_v2` drops the baseline `orders`, `bids`, `auction_rules`, `listings`, and `phone_verification_codes` tables and the `seller_profiles.handoff_*` columns. Production emptiness is not proven. Deploy must stop unless those counts are zero. The migration SQL stays as applied locally.
+
 **NEEDS-DECISION:** admin `FAILED` → `COMPLETED` returns `PRODUCT_IN_SALE` while the work has a `SCHEDULED` or `LIVE` listing (stricter than COMMERCE §6.1; orders entry). RFC §14's fail-closed capability is the pre-W3 runtime the RFC header already scopes that way. Live SMTP, Cron, and production remain Needs verification.
 
 ## 2026-10-31 — Commerce API client

@@ -554,6 +554,10 @@ COMMERCE §3.2, §6.1, §7, §11 с кодом и тестами. Вердикт
   ветка поле сохранила (читатель — `auth.mapper.ts`).
 - `DEC-152` подтверждён основателем 2026-10-31: бан = `User.status = banned`,
   `SUSPENDED` — только профиль автора, лоты снимает админ отдельно.
+- **Preflight перед production.** Пустота прода не доказана. До
+  `20261030130000_commerce_v2` строки `listings`, `bids`, `auction_rules`,
+  `orders`, `phone_verification_codes` и непустые `seller_profiles.handoff_*`
+  должны быть 0. Иначе deploy останавливается. SQL миграции не менять.
 - **Пробел статуса продавца закрыт.** Одна функция `sellerMayAcceptOrders`
   (`user.status = active` и `SellerProfile.status = APPROVED`). Ставка, покупка
   и `offerNext` вызывают `CommerceGuards.sellerMaySell` после `lockUsers`.
