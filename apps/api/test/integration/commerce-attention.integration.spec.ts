@@ -18,6 +18,7 @@ import {
 import {
   createPermissionFixture,
   fixturePasswordHash,
+  permissionImage,
   resetPermissionFixture,
   type PermissionFixture,
 } from './permission-fixtures';
@@ -268,6 +269,36 @@ async function readAttention(actor: HttpTestClient) {
 }
 
 describe('personal attention', () => {
+  it('removes a deleted work from auction choices while retaining open-report history', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const order = await insertOrder(fixture, {
+      buyerId: fixture.buyer.id, status: 'FAILED', type: 'AUCTION', source: 'AUCTION_WIN',
+      failReason: 'BUYER_REFUSED', faultSide: 'BUYER',
+    });
+    const image = await prisma.productImage.create({ data: {
+      productId: order.productId, position: 0, mimeType: 'image/png',
+      byteLength: permissionImage.length, data: permissionImage, checksum: 'a'.repeat(64),
+    } });
+    await prisma.order.update({ where: { id: order.id }, data: { coverImageIdSnapshot: image.id } });
+    await prisma.report.create({ data: {
+      targetType: 'ORDER', targetId: order.id, reporterUserId: fixture.buyer.id,
+      reason: 'FRAUD', status: 'OPEN',
+    } });
+    const owner = await signedIn(fixture.sellers.approved.email);
+    const before = await readAttention(owner);
+    expect(before.items).toContainEqual(itemOf('AUCTION_CHOICE', order));
+    expect(before.items).toContainEqual(itemOf('OPEN_REPORT', order));
+    expect((await owner.delete(`/products/${order.productId}`)).status).toBe(204);
+    const after = await readAttention(owner);
+    expect(after.items).not.toContainEqual(itemOf('AUCTION_CHOICE', order));
+    expect(after.items).toContainEqual(itemOf('OPEN_REPORT', order));
+    const admin = await adminUser();
+    const response = await admin.client.get('/admin/attention');
+    expect(response.status).toBe(200);
+    const body = adminAttentionResponseSchema.parse(await response.json());
+    expect(body.reportedOrders.find((row) => row.publicId === order.publicId)?.coverImageUrl).toBeNull();
+    expect((await admin.client.get(`/images/${image.id}`)).status).toBe(404);
+  });
   it('rejects an anonymous reader', async () => {
     expect((await client().get('/me/attention')).status).toBe(401);
     expect((await client().get('/admin/attention')).status).toBe(401);
@@ -459,6 +490,11 @@ describe('admin attention', () => {
       buyerId: buyer.id,
       status: 'ACTIVE',
     });
+    const cover = await prisma.productImage.create({ data: {
+      productId: reported.productId, position: 0, mimeType: 'image/png',
+      byteLength: permissionImage.length, data: permissionImage, checksum: 'b'.repeat(64),
+    } });
+    await prisma.order.update({ where: { id: reported.id }, data: { coverImageIdSnapshot: cover.id } });
     await prisma.report.create({
       data: {
         targetType: 'ORDER',
@@ -507,6 +543,7 @@ describe('admin attention', () => {
     expect(body.reportedOrders.map((order) => order.publicId)).toEqual([
       reported.publicId,
     ]);
+    expect(body.reportedOrders[0]?.coverImageUrl).toBe(`/api/images/${cover.id}`);
     expect(body.unmarkedOrders.map((order) => order.publicId)).toEqual([
       stale.publicId,
     ]);

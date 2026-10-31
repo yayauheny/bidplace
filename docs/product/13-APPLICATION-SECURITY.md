@@ -5,7 +5,7 @@
 
 ## 2026-10-31 — Work deletion
 
-**Partial / Needs verification.** Session and ownership are required for deletion; strangers and missing works receive 404, repeated owner deletion receives 204. Suspended and unverified owners may delete. Product row locks serialize deletion with publication, save, submit, media attachment and listing creation; open listings or orders block deletion. Public media is queued for revoke and purge while private SOURCE is retained. An order participant may read only the exact retained cover preview with private, no-store caching; role alone and SOURCE do not grant access after deletion. Full checks, independent review and live R2/CDN verification remain open.
+**Implemented locally / live Needs verification.** Session and ownership are required for deletion; strangers and missing works receive 404, repeated owner deletion receives 204. Suspended and unverified owners may delete. Product row locks serialize deletion with publication, save, submit, media attachment and listing creation; open listings or orders block deletion. Public media is queued for revoke and purge while private SOURCE is retained. An order participant may read only the exact retained cover preview with private, no-store caching; role alone and SOURCE do not grant access after deletion. Final independent branch review and live R2/CDN verification remain open.
 
 ## 2026-10-30 — Order reports
 

@@ -125,6 +125,7 @@ export class AttentionService {
              l.product_id AS "productId",
              failed.public_id AS "orderPublicId"
       FROM listings l
+      INNER JOIN products p ON p.id = l.product_id AND p.deleted_at IS NULL
       INNER JOIN LATERAL (
         SELECT o.public_id
         FROM orders o
@@ -216,6 +217,7 @@ export class AttentionService {
         o.currency,
         o.work_title_snapshot AS "workTitle",
         o.work_public_id_snapshot AS "workPublicId",
+        CASE WHEN product.deleted_at IS NULL THEN o.cover_image_id_snapshot ELSE NULL END AS "coverImageId",
         o.created_at AS "createdAt",
         o.contact_deadline_at AS "contactDeadlineAt",
         o.offer_expires_at AS "offerExpiresAt",
@@ -236,6 +238,7 @@ export class AttentionService {
         seller.contact_instagram AS "sellerInstagram",
         seller.contact_vk AS "sellerVk"
       FROM orders o
+      INNER JOIN products product ON product.id = o.product_id
       INNER JOIN users buyer ON buyer.id = o.buyer_user_id
       INNER JOIN users seller ON seller.id = o.seller_user_id
       WHERE ${where}

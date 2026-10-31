@@ -105,6 +105,7 @@ export type AdminOrderRow = {
   currency: string;
   workTitle: string;
   workPublicId: string;
+  coverImageId: string | null;
   createdAt: Date;
   contactDeadlineAt: Date | null;
   offerExpiresAt: Date | null;
@@ -146,6 +147,7 @@ export function toAdminOrderDetail(row: AdminOrderRow): OrderDetail {
     currency: currencyOf(row.currency.trim()),
     workTitle: row.workTitle,
     workPublicId: row.workPublicId,
+    coverImageUrl: row.coverImageId ? `/api/images/${row.coverImageId}` : null,
     role: 'admin',
     createdAt,
     contactDeadlineAt: iso(row.contactDeadlineAt),

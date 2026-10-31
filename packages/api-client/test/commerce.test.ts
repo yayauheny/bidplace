@@ -48,6 +48,7 @@ const orders = {
       currency: 'BYN',
       workTitle: 'Bowl',
       workPublicId: 'work1',
+      coverImageUrl: null,
       role: 'buyer',
       createdAt: now,
     },
