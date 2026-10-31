@@ -43,7 +43,17 @@ describe('private tick HTTP and database boundary', () => {
     expect(await tick.lastSucceededAt()).toBeNull();
     const first = await request('/api/internal/tick', secret);
     expect(first.status).toBe(200);
-    expect(await first.json()).toEqual({ skipped: false, jobs: [{ name: 'antifraud-cleanup', processed: 0, failed: false }] });
+    expect(await first.json()).toEqual({
+      skipped: false,
+      jobs: [
+        { name: 'antifraud-cleanup', processed: 0, failed: false },
+        { name: 'notifications.send', processed: 0, failed: false },
+        { name: 'commerce.activate', processed: 0, failed: false },
+        { name: 'commerce.close', processed: 0, failed: false },
+        { name: 'commerce.offers', processed: 0, failed: false },
+        { name: 'commerce.reminders', processed: 0, failed: false },
+      ],
+    });
     const at = await tick.lastSucceededAt();
     expect(at).toBeInstanceOf(Date);
     const [dbNow] = await database.prisma.$queryRaw<
@@ -91,7 +101,15 @@ describe('private tick HTTP and database boundary', () => {
     expect(result.status).toBe(200);
     expect(await result.json()).toEqual({
       skipped: false,
-      jobs: [{ name: 'antifraud-cleanup', processed: 0, failed: false }, { name: 'broken', processed: 0, failed: true }],
+      jobs: [
+        { name: 'antifraud-cleanup', processed: 0, failed: false },
+        { name: 'notifications.send', processed: 0, failed: false },
+        { name: 'commerce.activate', processed: 0, failed: false },
+        { name: 'commerce.close', processed: 0, failed: false },
+        { name: 'commerce.offers', processed: 0, failed: false },
+        { name: 'commerce.reminders', processed: 0, failed: false },
+        { name: 'broken', processed: 0, failed: true },
+      ],
     });
     expect(await tick.lastSucceededAt()).toEqual(before);
   });

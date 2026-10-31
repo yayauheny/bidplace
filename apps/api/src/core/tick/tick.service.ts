@@ -59,8 +59,11 @@ export class TickService implements OnApplicationBootstrap, OnModuleDestroy {
         try {
           const processed = await job.run(now, { deadline });
           jobs.push({ name: job.name, processed, failed: false });
-        } catch {
-          this.logger.error(`Tick job failed: ${job.name}`);
+        } catch (error) {
+          const name = error instanceof Error ? error.name : 'Error';
+          const message =
+            error instanceof Error ? error.message : 'Unknown failure';
+          this.logger.error(`Tick job failed: ${job.name}: ${name}: ${message}`);
           jobs.push({ name: job.name, processed: 0, failed: true });
         }
       }

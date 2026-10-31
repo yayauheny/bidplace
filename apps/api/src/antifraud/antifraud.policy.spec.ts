@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buyerReservationLimitReached,
+  buyerStrikesBlock,
   detectBidBurst,
+  hasBuyerContact,
+  isActiveBuyerStrike,
   shouldHold,
   type SignalKind,
 } from './antifraud.policy';
@@ -34,4 +38,89 @@ describe('fraud signal policies', () => {
       expect(detectBidBurst(bids, now)).toBe(want);
     },
   );
+
+  it('requires a non-blank deal contact', () => {
+    expect(hasBuyerContact([null, '  ', undefined])).toBe(false);
+    expect(hasBuyerContact([null, '+375291112233'])).toBe(true);
+  });
+
+  it('blocks at two strikes and at three reservations', () => {
+    expect(buyerStrikesBlock(1)).toBe(false);
+    expect(buyerStrikesBlock(2)).toBe(true);
+    expect(buyerReservationLimitReached(2)).toBe(false);
+    expect(buyerReservationLimitReached(3)).toBe(true);
+  });
+
+  it('counts a buyer refusal immediately and a seller mark only after the delay without an open report', () => {
+    const recent = new Date(now.getTime() - 60 * 60 * 1000);
+    const aged = new Date(now.getTime() - 73 * 60 * 60 * 1000);
+    expect(
+      isActiveBuyerStrike(
+        { failReason: 'BUYER_REFUSED', failedAt: recent, buyerReportOpen: true },
+        now,
+      ),
+    ).toBe(true);
+    expect(
+      isActiveBuyerStrike(
+        { failReason: 'BUYER_NO_CONTACT', failedAt: recent, buyerReportOpen: false },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isActiveBuyerStrike(
+        { failReason: 'BUYER_NO_CONTACT', failedAt: aged, buyerReportOpen: true },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isActiveBuyerStrike(
+        { failReason: 'BUYER_NO_CONTACT', failedAt: aged, buyerReportOpen: false },
+        now,
+      ),
+    ).toBe(true);
+    expect(
+      isActiveBuyerStrike(
+        {
+          failReason: 'BUYER_REFUSED',
+          failedAt: recent,
+          buyerReportOpen: false,
+          markedBy: 'seller',
+        },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isActiveBuyerStrike(
+        {
+          failReason: 'BUYER_REFUSED',
+          failedAt: aged,
+          buyerReportOpen: false,
+          markedBy: 'seller',
+        },
+        now,
+      ),
+    ).toBe(true);
+    expect(
+      isActiveBuyerStrike(
+        {
+          failReason: 'BUYER_REFUSED',
+          failedAt: aged,
+          buyerReportOpen: true,
+          markedBy: 'seller',
+        },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isActiveBuyerStrike(
+        {
+          failReason: 'BUYER_NO_CONTACT',
+          failedAt: recent,
+          buyerReportOpen: false,
+          markedBy: 'admin',
+        },
+        now,
+      ),
+    ).toBe(true);
+  });
 });

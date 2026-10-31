@@ -336,9 +336,6 @@ export class SellersService {
             shortDescription: input.shortDescription ?? null,
             status: 'DRAFT',
             applicationStage: 'CONTACTS',
-            handoffContactType: null,
-            handoffContactValue: null,
-            handoffInitiator: null,
             profilePhotoMimeType: profilePhoto.mimeType,
             profilePhotoByteLength: profilePhoto.buffer.byteLength,
             profilePhotoChecksum: createHash('sha256')
@@ -452,12 +449,7 @@ export class SellersService {
     }
 
     if (current.status === 'APPROVED') {
-      if (
-        input.sellerType !== undefined ||
-        input.handoffContactType !== undefined ||
-        input.handoffContactValue !== undefined ||
-        input.handoffInitiator !== undefined
-      ) {
+      if (input.sellerType !== undefined) {
         throw new ForbiddenException(
           'Only public profile fields can be revised after approval',
         );

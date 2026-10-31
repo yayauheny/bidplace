@@ -4,8 +4,6 @@ import { portfolioAchievementSchema } from './portfolio';
 
 import {
   authorApplicationStageSchema,
-  handoffContactTypeSchema,
-  handoffInitiatorSchema,
   sellerProfileRevisionStatusSchema,
   sellerStatusSchema,
   sellerTypeSchema,
@@ -31,12 +29,6 @@ export const sellerInstagramHandleSchema = z
   .regex(
     /^(?:@[A-Za-z0-9._]{1,30}|https:\/\/(?:www\.)?instagram\.com\/[A-Za-z0-9._]{1,30})$/,
   );
-export const sellerPhoneHandleSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .regex(/^\+[1-9]\d{1,14}$/);
-
 const sellerProfilePhotoUrlSchema = z.union([
   z.string().regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/),
   publicMediaUrlSchema,
@@ -86,9 +78,6 @@ export const sellerProfileSchema = z
     shortDescription: z.string().trim().min(1).nullable(),
     directionCategoryIds: z.array(uuidSchema).default([]),
     directions: z.array(selectedCategorySchema).default([]),
-    handoffContactType: handoffContactTypeSchema.nullable(),
-    handoffContactValue: z.string().trim().min(1).nullable(),
-    handoffInitiator: handoffInitiatorSchema.nullable(),
     status: sellerStatusSchema,
     applicationStage: authorApplicationStageSchema.nullable(),
     createdAt: isoDateTimeSchema,
@@ -157,63 +146,8 @@ export const sellerProfileUpdateRequestSchema = z
     websiteUrl: sellerPublicUrlSchema.nullable().optional(),
     publicEmail: sellerPublicEmailSchema.nullable().optional(),
     shortDescription: z.string().trim().min(1).nullable().optional(),
-    handoffContactType: handoffContactTypeSchema.optional(),
-    handoffContactValue: z.string().trim().min(1).optional(),
-    handoffInitiator: handoffInitiatorSchema.optional(),
   })
-  .strict()
-  .superRefine((value, context) => {
-    const hasContactType = value.handoffContactType !== undefined;
-    const hasContactValue = value.handoffContactValue !== undefined;
-
-    if (hasContactType !== hasContactValue) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: hasContactType ? ['handoffContactValue'] : ['handoffContactType'],
-        message:
-          'handoffContactType and handoffContactValue must be updated together',
-      });
-    }
-
-    if (value.handoffContactType && value.handoffContactValue) {
-      const contactValue = value.handoffContactValue.trim();
-
-      if (
-        value.handoffContactType === 'TELEGRAM' &&
-        !sellerTelegramHandleSchema.safeParse(contactValue).success
-      ) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['handoffContactValue'],
-          message:
-            'Telegram contact must be @username or https://t.me/username',
-        });
-      }
-
-      if (
-        value.handoffContactType === 'PHONE' &&
-        !sellerPhoneHandleSchema.safeParse(contactValue).success
-      ) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['handoffContactValue'],
-          message: 'Phone contact must be in E.164 format',
-        });
-      }
-
-      if (
-        value.handoffContactType === 'INSTAGRAM' &&
-        !sellerInstagramHandleSchema.safeParse(contactValue).success
-      ) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['handoffContactValue'],
-          message:
-            'Instagram contact must be @username or https://instagram.com/username',
-        });
-      }
-    }
-  });
+  .strict();
 
 export const sellerProfileResponseSchema = z
   .object({

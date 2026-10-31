@@ -62,8 +62,6 @@ describe('Public work pagination PostgreSQL behavior', () => {
         profilePhotoData: Buffer.from([0]),
         socialLink: 'https://example.com/seller',
         shortDescription: 'Seller profile for pagination tests',
-        handoffContactType: 'TELEGRAM',
-        handoffContactValue: '@seller',
         status: 'APPROVED',
       },
     });

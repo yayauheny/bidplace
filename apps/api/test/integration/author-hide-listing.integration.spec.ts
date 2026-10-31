@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from '@bidplace/database';
+import { type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { productModerationRequest, sellerModerationRequest } from './admin-status-request';
@@ -95,18 +95,25 @@ async function publishApprovedWork(sellerProfileId: string, categoryId: string) 
 
 function listingData(
   productId: string,
+  sellerUserId: string,
   status: 'SCHEDULED' | 'LIVE' | 'ENDED',
 ) {
   const startsAt = new Date('2026-09-01T10:00:00.000Z');
   const endsAt = new Date('2026-09-02T10:00:00.000Z');
   return {
     productId,
+    sellerUserId,
+    type: 'AUCTION' as const,
     status,
+    currency: 'BYN',
     startsAt,
     originalEndsAt: endsAt,
     endsAt,
-    currentPrice: new Prisma.Decimal(10),
-    auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
+    currentPriceMinor: 1_000,
+    endedAt: status === 'ENDED' ? endsAt : null,
+    auctionRules: {
+      create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+    },
   };
 }
 
@@ -157,7 +164,7 @@ describe('Work hide with live commerce', () => {
 
     for (const status of ['SCHEDULED', 'LIVE'] as const) {
       const listing = await prisma.listing.create({
-        data: listingData(product.id, status),
+        data: listingData(product.id, fixture.sellers.approved.id, status),
       });
       const beforeAudits = await prisma.auditEvent.count({
         where: { targetType: 'PRODUCT', targetId: product.id },
@@ -184,7 +191,7 @@ describe('Work hide with live commerce', () => {
     }
 
     await prisma.listing.create({
-      data: listingData(product.id, 'ENDED'),
+      data: listingData(product.id, fixture.sellers.approved.id, 'ENDED'),
     });
     expect((await owner.post(`/products/${product.id}/hide`)).status).toBe(201);
     expect(
@@ -211,7 +218,7 @@ describe('Work hide with live commerce', () => {
         fixture.sellers.approved.profileId,
         fixture.categoryId,
       );
-      await prisma.listing.create({ data: listingData(product.id, 'LIVE') });
+      await prisma.listing.create({ data: listingData(product.id, fixture.sellers.approved.id, 'LIVE') });
       const admin = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
       if (action === 'admin archive') {
         await prisma.user.create({
@@ -271,7 +278,7 @@ describe('Work hide with live commerce', () => {
       fixture.sellers.approved.profileId,
       fixture.categoryId,
     );
-    await prisma.listing.create({ data: listingData(product.id, 'LIVE') });
+    await prisma.listing.create({ data: listingData(product.id, fixture.sellers.approved.id, 'LIVE') });
     await prisma.user.create({
       data: {
         email: 'guard.admin@wave3.test',

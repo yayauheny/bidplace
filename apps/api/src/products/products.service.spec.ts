@@ -97,6 +97,7 @@ function createWritePrisma(options: {
   };
   const tx = {
     listing: { findFirst: vi.fn().mockResolvedValue((options.product?.listings as Array<{ id: string }> | undefined)?.[0] ?? null) },
+    order: { findFirst: vi.fn().mockResolvedValue(null) },
     $queryRaw: vi
       .fn()
       .mockResolvedValue(options.product ? [{ id: product.id }] : []),
@@ -423,6 +424,7 @@ describe('ProductsService', () => {
     const response = { ...approvedProduct, status: 'APPROVED' as const };
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
       product: {
         findUnique: vi
@@ -505,6 +507,7 @@ describe('ProductsService', () => {
     };
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(current),
@@ -610,6 +613,7 @@ describe('ProductsService', () => {
     const response = { ...approvedProduct, status: 'APPROVED' as const };
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(current),
@@ -661,6 +665,7 @@ describe('ProductsService', () => {
     };
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue({ id: 'listing-id' }) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
       product: { findUnique: vi.fn().mockResolvedValue(current) },
       productRevision: { findUniqueOrThrow: vi.fn(), update: vi.fn() },

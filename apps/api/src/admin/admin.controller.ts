@@ -12,6 +12,8 @@ import {
   adminSellerStatusUpdateRequestSchema,
   adminUserRevokeSessionsRequestSchema,
   adminReleaseHoldRequestSchema,
+  adminOrderReasonRequestSchema,
+  adminUserCardSchema,
   adminUserStatusResponseSchema,
   adminUserStatusUpdateRequestSchema,
   adminUsersLookupQuerySchema,
@@ -31,6 +33,8 @@ import {
   Delete,
   Get,
   Header,
+  HttpCode,
+  HttpStatus,
   Inject,
   Param,
   ParseUUIDPipe,
@@ -207,6 +211,25 @@ export class AdminController {
     const parsed = parseQuery(adminUsersLookupQuerySchema, query);
     return adminUsersLookupResponseSchema.parse(
       await this.users.lookupByEmail(parsed.email),
+    );
+  }
+
+  @Get('users/:id')
+  @Header('Cache-Control', 'private, no-store')
+  async userCard(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+    return adminUserCardSchema.parse(await this.users.card(id));
+  }
+
+  @Post('users/:id/ban')
+  @HttpCode(HttpStatus.OK)
+  async banUser(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const { reason } = parseBody(adminOrderReasonRequestSchema, body);
+    return adminUserStatusResponseSchema.parse(
+      await this.users.ban(auth.sub, id, reason),
     );
   }
 

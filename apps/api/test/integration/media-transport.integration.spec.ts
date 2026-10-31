@@ -102,9 +102,9 @@ describe('public media transport over HTTP and PostgreSQL', () => {
     expect(imageResponse.headers.get('cache-control')).toBe(
       'public, max-age=31536000, immutable',
     );
-    expect(
-      (await guest.get(`/listings/${fixture.approvedListingId}/bids`)).status,
-    ).toBe(404);
+    const bids = await guest.get(`/listings/${fixture.approvedListingId}/bids`);
+    expect(bids.status).toBe(200);
+    expect(await bids.json()).toEqual({ bids: [] });
     expect((await guest.get(`/sellers/${seller.slug}/detail`)).status).toBe(
       404,
     );
@@ -121,8 +121,10 @@ describe('public media transport over HTTP and PostgreSQL', () => {
     });
 
     expect((await guest.get(`/images/${productImage.id}`)).status).toBe(404);
-    expect(
-      (await guest.get(`/listings/${fixture.approvedListingId}/bids`)).status,
-    ).toBe(404);
+    const bidsAfterSuspension = await guest.get(
+      `/listings/${fixture.approvedListingId}/bids`,
+    );
+    expect(bidsAfterSuspension.status).toBe(200);
+    expect(await bidsAfterSuspension.json()).toEqual({ bids: [] });
   });
 });

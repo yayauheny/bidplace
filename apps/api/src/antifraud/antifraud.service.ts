@@ -1,6 +1,12 @@
+import type { AdminUserStatusUpdateRequest } from '@bidplace/contracts';
 import { Injectable } from '@nestjs/common';
 
-import { FraudSignalsService } from './signals/fraud-signals.service';
+import { hasBuyerContact as buyerHasContact } from './antifraud.policy';
+import { getTrustSignals } from './trust-signals';
+import {
+  FraudSignalsService,
+  type BanHook,
+} from './signals/fraud-signals.service';
 
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { AuthAbuseService } from './auth/auth-abuse.service';
@@ -24,16 +30,47 @@ export class AntifraudService {
   assertCanAct(...args: Parameters<FraudSignalsService['assertCanAct']>) {
     return this.signals.assertCanAct(...args);
   }
+  isPurchaseBlocked(
+    ...args: Parameters<FraudSignalsService['isPurchaseBlocked']>
+  ) {
+    return this.signals.isPurchaseBlocked(...args);
+  }
+  getTrustSignals(
+    ...args: Parameters<typeof getTrustSignals>
+  ) {
+    return getTrustSignals(...args);
+  }
+  onBan(hook: BanHook): () => void {
+    return this.signals.registerBanHook(hook);
+  }
+  recordBidSignals(
+    ...args: Parameters<FraudSignalsService['recordBidSignals']>
+  ) {
+    return this.signals.recordBidSignals(...args);
+  }
+  recordPurchaseSignals(
+    ...args: Parameters<FraudSignalsService['recordPurchaseSignals']>
+  ) {
+    return this.signals.recordPurchaseSignals(...args);
+  }
   releaseHold(...args: Parameters<FraudSignalsService['releaseHold']>) {
     return this.signals.releaseHold(...args);
   }
-  banUser(...args: Parameters<FraudSignalsService['banUser']>) {
-    return this.signals.banUser(...args);
+  listActiveHolds() {
+    return this.signals.listActiveHolds();
+  }
+  hasBuyerContact(values: Array<string | null | undefined>): boolean {
+    return buyerHasContact(values);
+  }
+  banUser(adminId: string, userId: string, reason: string) {
+    return this.updateUserStatus(adminId, userId, { status: 'banned', reason });
   }
   updateUserStatus(
-    ...args: Parameters<FraudSignalsService['updateUserStatus']>
+    adminId: string,
+    userId: string,
+    request: AdminUserStatusUpdateRequest,
   ) {
-    return this.signals.updateUserStatus(...args);
+    return this.signals.updateUserStatus(adminId, userId, request);
   }
 
   verifyRequired(...args: Parameters<AuthAbuseService['verifyRequired']>) {

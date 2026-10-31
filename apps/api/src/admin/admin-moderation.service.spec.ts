@@ -67,9 +67,6 @@ function sellerProfileRecord() {
     websiteUrl: null,
     publicEmail: null,
     shortDescription: 'Author description',
-    handoffContactType: null,
-    handoffContactValue: null,
-    handoffInitiator: null,
     status: 'PENDING_REVIEW',
     applicationStage: null,
     createdAt: now,
@@ -400,6 +397,7 @@ describe('AdminModerationService', () => {
           .mockResolvedValue({ ...txProduct, status: 'ARCHIVED' }),
       },
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       auditEvent: { create: vi.fn() },
     };
     const prisma = {
@@ -657,6 +655,7 @@ describe('AdminModerationService', () => {
     };
     const tx = {
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(product),
@@ -838,6 +837,7 @@ describe('AdminModerationService', () => {
       },
       sellerProfileRevision: { update: vi.fn() },
       listing: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
       auditEvent: { create: vi.fn() },
     };
     const service = moderationService(transactionPrisma(tx));

@@ -208,6 +208,52 @@ export async function requestJson<TSchema extends ZodType>(
   }
 }
 
+export async function requestEmpty(
+  context: RequestContext,
+  path: string,
+  options: RequestOptions = {},
+): Promise<void> {
+  const url = requestUrl(context, path, options.query);
+  const headers = requestHeaders(options.headers);
+  let body: BodyInit | undefined;
+
+  if (options.body !== undefined) {
+    headers.set('Content-Type', 'application/json');
+    body = JSON.stringify(options.body);
+  }
+
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(options.method ?? 'GET')) {
+    headers.set('X-Bidplace-Request', '1');
+  }
+
+  const init: RequestInit = {
+    method: options.method ?? 'GET',
+    headers,
+  };
+
+  if (options.signal) {
+    init.signal = options.signal;
+  }
+
+  if (context.credentials) {
+    init.credentials = context.credentials;
+  }
+
+  if (body !== undefined) {
+    init.body = body;
+  }
+
+  const response = await fetchApi(context, url, init);
+
+  if (!response.ok) {
+    await throwApiClientResponseError(response);
+  }
+
+  if (response.status !== 204) {
+    throw createUnexpectedResponseError(response.status);
+  }
+}
+
 export async function requestBlob(
   context: RequestContext,
   path: string,

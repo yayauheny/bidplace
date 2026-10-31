@@ -7,9 +7,12 @@ import * as antifraud from './index';
 
 describe('antifraud public boundary', () => {
   it('keeps auth operations behind the facade instead of exporting callable internals', () => {
-    for (const operation of ['lockAbuseUser', 'otpCodeHash', 'classifyMailFailure']) {
+    for (const operation of ['lockAbuseUser', 'otpCodeHash']) {
       expect(Reflect.has(antifraud, operation)).toBe(false);
     }
+    // Notification delivery classifies SMTP failures without an AntifraudService
+    // instance, and feature code cannot import antifraud internals.
+    expect(Reflect.has(antifraud, 'classifyMailFailure')).toBe(true);
   });
 
   it('rejects internal implementation imports from another feature while allowing the public entrypoint', () => {

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { Prisma, type PrismaClient } from '@bidplace/database';
+import { type PrismaClient } from '@bidplace/database';
 
 import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 
@@ -149,8 +149,6 @@ async function createSeller(
       profilePhotoData: permissionImage,
       socialLink: 'https://example.com/wave3',
       shortDescription: 'Wave 3 seller fixture',
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: '@wave3_seller',
       status,
     },
     select: { id: true },
@@ -209,12 +207,17 @@ async function createSeller(
   const listing = await prisma.listing.create({
     data: {
       productId: product.id,
-      status: 'DRAFT',
+      sellerUserId: user.id,
+      type: 'AUCTION',
+      status: 'CANCELLED',
+      currency: 'BYN',
       startsAt: new Date(fixtureDate.getTime() + 3_600_000),
       originalEndsAt: new Date(fixtureDate.getTime() + 7_200_000),
       endsAt: new Date(fixtureDate.getTime() + 7_200_000),
-      currentPrice: new Prisma.Decimal(10),
-      auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
+      currentPriceMinor: 1_000,
+      auctionRules: {
+        create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+      },
     },
     select: { id: true },
   });
@@ -236,7 +239,6 @@ export async function resetPermissionFixture(
   await prisma.registrationLegalEvidence.deleteMany();
   await prisma.termsAcceptance.deleteMany();
   await prisma.emailVerificationCode.deleteMany();
-  await prisma.phoneVerificationCode.deleteMany();
   await prisma.order.deleteMany();
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
@@ -259,6 +261,7 @@ export async function resetPermissionFixture(
   await prisma.mediaAsset.deleteMany();
   await prisma.catalogTerm.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.notificationOutbox.deleteMany();
   await prisma.user.deleteMany();
 }
 
@@ -368,12 +371,17 @@ export async function createPermissionFixture(
   const approvedListing = await prisma.listing.create({
     data: {
       productId: approvedProduct.id,
-      status: 'DRAFT',
+      sellerUserId: sellers.approved.id,
+      type: 'AUCTION',
+      status: 'CANCELLED',
+      currency: 'BYN',
       startsAt: new Date(fixtureDate.getTime() + 3_600_000),
       originalEndsAt: new Date(fixtureDate.getTime() + 7_200_000),
       endsAt: new Date(fixtureDate.getTime() + 7_200_000),
-      currentPrice: new Prisma.Decimal(10),
-      auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
+      currentPriceMinor: 1_000,
+      auctionRules: {
+        create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+      },
     },
     select: { id: true },
   });
@@ -432,8 +440,8 @@ export async function permissionState(prisma: PrismaClient) {
           productId: true,
           status: true,
           bidCount: true,
-          currentPrice: true,
-          updatedAt: true,
+          currentPriceMinor: true,
+          createdAt: true,
         },
         orderBy: { id: 'asc' },
       }),

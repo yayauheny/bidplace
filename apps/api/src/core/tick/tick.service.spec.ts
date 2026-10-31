@@ -57,7 +57,7 @@ describe('TickService', () => {
     expect(prisma.$executeRaw).toHaveBeenCalledOnce();
   });
 
-  it('logs only the failed job name, continues, and preserves the heartbeat', async () => {
+  it('logs the failed job name and error, continues, and preserves the heartbeat', async () => {
     const { service, prisma } = setup();
     const error = vi
       .spyOn(Logger.prototype, 'error')
@@ -73,7 +73,9 @@ describe('TickService', () => {
       { name: 'broken', processed: 0, failed: true },
       { name: 'next', processed: 4, failed: false },
     ]);
-    expect(error).toHaveBeenCalledExactlyOnceWith('Tick job failed: broken');
+    expect(error).toHaveBeenCalledExactlyOnceWith(
+      'Tick job failed: broken: Error: private payload',
+    );
     expect(prisma.$executeRaw).not.toHaveBeenCalled();
   });
 

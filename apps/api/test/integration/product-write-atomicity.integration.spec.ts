@@ -35,7 +35,6 @@ afterAll(async () => context?.cleanup());
 
 async function reset() {
   await prisma.auditEvent.deleteMany();
-  await prisma.phoneVerificationCode.deleteMany();
   await prisma.order.deleteMany();
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
@@ -116,9 +115,6 @@ async function createSubmitReadyProduct(
       profilePhotoData: png,
       socialLink: 'https://example.com/owner',
       shortDescription: 'Write race seller',
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: '@owner',
-      handoffInitiator: 'BUYER_CONTACTS_SELLER',
       status: 'APPROVED',
     },
   });
@@ -399,12 +395,17 @@ describe('Product write atomicity against PostgreSQL', () => {
         await tx.listing.create({
           data: {
             productId: product.id,
+            sellerUserId: owner.id,
+            type: 'AUCTION',
             status: 'SCHEDULED',
+            currency: 'BYN',
             startsAt,
             originalEndsAt: endsAt,
             endsAt,
-            currentPrice: new Prisma.Decimal(10),
-            auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
+            currentPriceMinor: 1_000,
+            auctionRules: {
+              create: { startPriceMinor: 1_000, stepTableCode: 'BYN_V1' },
+            },
           },
         });
       },

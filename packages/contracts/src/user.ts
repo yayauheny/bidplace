@@ -3,6 +3,10 @@ import { z } from 'zod';
 import { userRoleSchema, userStatusSchema } from './enums';
 import { registrationLegalSchema } from './legal';
 import { isoDateTimeSchema, slugTextSchema, uuidSchema } from './primitives';
+import {
+  sellerInstagramHandleSchema,
+  sellerTelegramHandleSchema,
+} from './seller-profile';
 
 export const accountSlugSchema = slugTextSchema('Введите никнейм').max(
   120,
@@ -79,7 +83,48 @@ export const meResponseSchema = z
   })
   .strict();
 
+export const vkContactSchema = z
+  .string()
+  .trim()
+  .regex(
+    /^(?:@[A-Za-z0-9._]{1,32}|https:\/\/(?:m\.)?vk\.(?:com|ru)\/[A-Za-z0-9._]{1,32})$/,
+  );
+
+export const commercePhoneSchema = z
+  .string()
+  .trim()
+  .regex(/^\+[0-9]{7,15}$/);
+
+export const userContactsRequestSchema = z
+  .object({
+    phone: commercePhoneSchema.nullable().optional(),
+    telegram: sellerTelegramHandleSchema.nullable().optional(),
+    instagram: sellerInstagramHandleSchema.nullable().optional(),
+    vk: vkContactSchema.nullable().optional(),
+    showToBuyer: z.boolean().optional(),
+  })
+  .strict();
+
+export const userContactsResponseSchema = z
+  .object({
+    phone: z.string().nullable(),
+    telegram: z.string().nullable(),
+    instagram: z.string().nullable(),
+    vk: z.string().nullable(),
+    showToBuyer: z.boolean().nullable(),
+  })
+  .strict();
+
+export const notificationSettingsSchema = z
+  .object({
+    outbidEmail: z.boolean(),
+  })
+  .strict();
+
 export type User = z.infer<typeof userSchema>;
+export type UserContactsRequest = z.infer<typeof userContactsRequestSchema>;
+export type UserContactsResponse = z.infer<typeof userContactsResponseSchema>;
+export type NotificationSettings = z.infer<typeof notificationSettingsSchema>;
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type ClaimSlugRequest = z.infer<typeof claimSlugRequestSchema>;
 export type ClaimSlugResponse = z.infer<typeof claimSlugResponseSchema>;

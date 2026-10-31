@@ -7,6 +7,7 @@ import {
   portfolioAuthorsResponseSchema,
   portfolioDiscoveryFacetsResponseSchema,
   portfolioHomeResponseSchema,
+  bidHistoryResponseSchema,
   portfolioWorkDetailResponseSchema,
   portfolioWorksResponseSchema,
 } from '@bidplace/contracts';
@@ -72,7 +73,7 @@ describe('portfolio HTTP route surface', () => {
     }
   });
 
-  it('returns 404 for removed catalog and commerce routes and 200 for contract-valid portfolio reads', async () => {
+  it('returns 404 for removed catalog routes, public bid history, and 200 for portfolio reads', async () => {
     const fixture = await createPermissionFixture(prisma);
     const product = await prisma.product.findUniqueOrThrow({
       where: { id: fixture.approvedProductId },
@@ -90,15 +91,25 @@ describe('portfolio HTTP route surface', () => {
       '/sellers',
       `/sellers/${seller.slug}/detail`,
       `/listings/${fixture.approvedListingId}`,
-      `/listings/${fixture.approvedListingId}/bids`,
       '/orders',
-      `/orders/${product.publicId}`,
     ];
 
     for (const path of removedGets) {
       const response = await guest.get(path);
       expect({ path, status: response.status }).toEqual({ path, status: 404 });
     }
+
+    const bids = await guest.get(`/listings/${fixture.approvedListingId}/bids`);
+    expect(bids.status).toBe(200);
+    expect(bidHistoryResponseSchema.parse(await bids.json())).toEqual({
+      bids: [],
+    });
+
+    const hiddenOrder = await guest.get(`/orders/${product.publicId}`);
+    expect(hiddenOrder.status).toBe(401);
+    expect(apiErrorResponseSchema.parse(await hiddenOrder.json()).code).toBe(
+      ApiErrorCode.UNAUTHORIZED,
+    );
 
     const listingCreate = await guest.post(
       `/products/${fixture.approvedProductId}/listings`,
@@ -114,7 +125,13 @@ describe('portfolio HTTP route surface', () => {
       `/listings/${fixture.approvedListingId}/bids`,
       { amount: 20 },
     );
-    expect(bidPlace.status).toBe(404);
+    expect(bidPlace.status).toBe(401);
+    expect(apiErrorResponseSchema.parse(await bidPlace.json()).code).toBe(
+      ApiErrorCode.UNAUTHORIZED,
+    );
+    expect(
+      await prisma.bid.count({ where: { listingId: fixture.approvedListingId } }),
+    ).toBe(0);
 
     const works = await guest.get('/works');
     expect(works.status).toBe(200);

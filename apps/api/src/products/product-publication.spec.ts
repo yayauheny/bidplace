@@ -79,6 +79,7 @@ function fixture(status: ProductStatus = 'PENDING_REVIEW') {
   const db = {
     $queryRaw: vi.fn().mockResolvedValue([{ id: 'product', timeout: '0' }]),
     listing: { findFirst: vi.fn().mockResolvedValue(null) },
+    order: { findFirst: vi.fn().mockResolvedValue(null) },
     product: {
       findUnique: vi.fn().mockResolvedValue(product),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),

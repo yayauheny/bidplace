@@ -43,6 +43,10 @@ type PrismaUser = {
   phone: string;
   emailVerifiedAt: Date | null;
   phoneVerifiedAt: Date | null;
+  contactTelegram: string | null;
+  contactInstagram: string | null;
+  contactVk: string | null;
+  contactPhone: string | null;
   acceptedRulesVersion?: string | null;
   displayName: string | null;
   slug: string | null;
@@ -61,6 +65,10 @@ function createPrismaUser(overrides: Partial<PrismaUser> = {}): PrismaUser {
     phone: '+15555550123',
     emailVerifiedAt: null,
     phoneVerifiedAt: null,
+    contactTelegram: null,
+    contactInstagram: null,
+    contactVk: null,
+    contactPhone: null,
     acceptedRulesVersion: null,
     displayName: 'Demo Seller',
     slug: null,

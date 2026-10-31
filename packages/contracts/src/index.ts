@@ -1,5 +1,6 @@
 export * from './analytics';
 export * from './catalog';
+export * from './commerce';
 export * from './countries';
 export * from './story';
 export * from './auth';

@@ -37,6 +37,17 @@ const defaultErrorMessages: Record<ApiErrorCodeValue, string> = {
   [ApiErrorCode.LISTING_CHANGED]: 'Listing changed while placing bid',
   [ApiErrorCode.SELF_BID_FORBIDDEN]: 'Cannot bid on your own Listing',
   [ApiErrorCode.ADMIN_BID_FORBIDDEN]: 'Administrators cannot place bids',
+  [ApiErrorCode.BID_ALREADY_LEADING]: 'Bidder is already leading',
+  [ApiErrorCode.BID_AMOUNT_INVALID]: 'Bid amount is invalid',
+  [ApiErrorCode.BUYER_ORDER_LIMIT]: 'Buyer active order limit is reached',
+  [ApiErrorCode.BUYER_CONTACTS_REQUIRED]: 'Buyer contacts are required',
+  [ApiErrorCode.IDEMPOTENCY_KEY_REUSED]:
+    'Idempotency key was reused with a different payload',
+  [ApiErrorCode.ORDER_TRANSITION_NOT_ALLOWED]:
+    'Order transition is not allowed',
+  [ApiErrorCode.PRODUCT_ALREADY_SOLD]: 'Product is already sold',
+  [ApiErrorCode.NO_NEXT_BIDDER]: 'No next bidder is available',
+  [ApiErrorCode.DEAL_RULES_NOT_ACCEPTED]: 'Deal rules are not accepted',
   [ApiErrorCode.EMAIL_VERIFICATION_REQUIRED]: 'Email verification is required',
   [ApiErrorCode.RULES_ACCEPTANCE_REQUIRED]:
     'Service rules acceptance is required',

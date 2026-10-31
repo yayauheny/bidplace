@@ -115,6 +115,14 @@ export class HttpTestClient {
     return this.request(path, { method: 'DELETE' });
   }
 
+  setCookie(name: string, value: string): void {
+    this.cookies.set(name, value);
+  }
+
+  cookie(name: string): string | undefined {
+    return this.cookies.get(name);
+  }
+
   private cookieHeader(): string {
     return [...this.cookies.entries()]
       .map(([name, value]) => `${name}=${value}`)
