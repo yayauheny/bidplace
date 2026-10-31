@@ -77,6 +77,8 @@
 | Компонент                      | Путь                              | Назначение                                      |
 | ------------------------------ | --------------------------------- | ----------------------------------------------- |
 | **AppText**                    | `ui/AppText.tsx`                  | Типографика по ролям (`role`, `tone`).          |
+| **StatusBadge**                | `ui/StatusBadge.tsx`              | Метка статуса. Визуал provisional, NEEDS-FIGMA. |
+| **SettingsRow**                | `figma/SettingsList.tsx`          | Строка настроек; `toggle` — switch 36×20.       |
 | **PageState** / **PageHeader** | `ui/`                             | Пустые/ошибочные состояния и заголовки страниц. |
 | **ResilientRemoteImage**       | `ui/ResilientRemoteImage.tsx`     | Удалённые изображения с retry.                  |
 | **ImagePlaceholder**           | `ui/ImagePlaceholder.tsx`         | Заглушка в product/layout UI.                   |

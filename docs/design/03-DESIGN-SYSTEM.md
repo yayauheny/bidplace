@@ -703,6 +703,11 @@ This does not change control size, type, or the field success state.
   label группы опционален и красится `accountMeta`; поверхность группы
   прежняя. Row: иконка + текстовый блок `flex:1/minWidth:0` (AppText
   `flexShrink:1`), props `trailingArrow` и `busy` (busy блокирует row).
+  `toggle` делает ту же строку switch (роль `switch`, имя из label):
+  трек 36×20 и бегунок 16×16 из Figma `7008:15192` (только включённое
+  состояние). Включённый трек — `inkStrong`, бегунок — `canvas`; выключенный
+  трек — `surfaceStrong`. Выключенное, disabled и black-состояние
+  переключателя — NEEDS-FIGMA.
 - `WorkCoverCaption` (экспорт `WorkCoverCard.tsx`) — единый caption
   caption-варианта: author — `coverCaptionAuthor` (tracking −0.14), title
   — роль `coverCaptionTitle` 14/17/500/−0.28, максимум 2 строки. Ветки

@@ -1,5 +1,6 @@
 export * from './AppDialog';
 export * from './AppText';
+export * from './StatusBadge';
 export * from './CreatorCard';
 export * from './Button';
 export * from './FormSection';
