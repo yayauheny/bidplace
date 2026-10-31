@@ -130,7 +130,8 @@
 ### Task 3: Согласие и удаление в интерфейсе
 
 **Files:** Modify: `src/features/commerce/BidSheet.tsx`, `PurchaseDialog.tsx`,
-`CreateLotSheet.tsx` (шаг согласия при первой сделке), `src/lib/api-error-messages.ts`,
+`CreateLotSheet.tsx`, `OrderActions.tsx` (принятие предложения) — шаг согласия
+при первой сделке, `src/lib/api-error-messages.ts`,
 `owner-work-card.tsx` / экран работы автора (действие «Удалить» с подтверждением
 «Работа исчезнет навсегда. История продаж сохранится»), `(public)/legal/[id].tsx`
 (новый документ). Test: спеки, e2e.
@@ -165,7 +166,10 @@
      проверка числа строк** `orders`, `bids`, `listings`; время восстановления записать.
   6. Откат: как вернуть предыдущий образ контейнера и что делать с миграцией продаж.
   7. Тик: открыть сайт, через минуту в логах ответ внутреннего таймера;
-     `curl -i https://bid.place/api/internal/tick` → 404.
+     `curl -i https://bid.place/api/internal/tick` → 404. После включения
+     `TICK_CRON`: тестовый аукцион заканчивается без визитов на сайт → заказ
+     и письмо победителю не позже чем через 10 мин, в Cloudflare → Cron Triggers
+     есть запуски без ошибок.
   8. Монитор и поддержка — по [MONITORING-AND-SUPPORT.md](../MONITORING-AND-SUPPORT.md):
      UptimeRobot на главную (при пустом `TICK_CRON`; `/api/*` будит контейнер),
      пуш в приложении; ссылки поддержки открываются, письмо на почту поддержки доходит.

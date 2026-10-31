@@ -3508,3 +3508,21 @@ Cron move, native acceptance or main/CI/deploy cutover is included.
 Owners: [RFC §10](05-MVP-RFC.md#10-создание-work),
 [architecture](10-CODE-ARCHITECTURE.md), [status](11-PROJECT-STATUS.md),
 [W0 verification journal](../launch/waves/W0-photo-and-trunk.md#журнал-исполнения-2026-10-28).
+
+## DEC-152 — Бан аккаунта отделён от статуса автора; критерии закрытого пилота
+
+Date: 2026-10-30
+Status: Proposed — pending explicit founder confirmation
+Source: recommendations from the W3–W7 launch-plan audit; founder approval not yet recorded
+Refines: `DEC-150` (ban voids bids); [COMMERCE §7](../launch/COMMERCE.md#7-защита-от-срыва-и-обмана) «Бан»
+
+- Account ban is `User.status = banned`. `SellerProfile.SUSPENDED` is a separate
+  author status; the two are not linked automatically.
+- A banned seller's active listings are removed by a separate admin action
+  ([OPERATIONS §3.8](../launch/OPERATIONS.md#38-мошенничество-захват-аккаунта-бан)).
+  Existing orders stay and are resolved manually.
+- From the ban on, no new bid, purchase or order is possible on that seller's
+  listings, including orders created by the scheduler tick.
+- The closed pilot is evaluated 14 days after start. Guide values: 10–20 invited
+  authors, ≥ 60 % published a Work, ≥ 30 % created a listing, zero critical
+  technical errors. Other pilot metrics are measured without required thresholds.
