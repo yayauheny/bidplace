@@ -261,6 +261,7 @@ export async function resetPermissionFixture(
   await prisma.mediaAsset.deleteMany();
   await prisma.catalogTerm.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.notificationOutbox.deleteMany();
   await prisma.user.deleteMany();
 }
 
