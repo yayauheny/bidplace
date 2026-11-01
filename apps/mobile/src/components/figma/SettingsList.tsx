@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -43,24 +43,56 @@ export function SettingsGroup({
   );
 }
 
-export function SettingsRow({
-  icon,
-  label,
-  onPress,
-  divided = false,
-  trailingArrow = false,
-  busy = false,
-}: {
+type SettingsToggle = {
+  value: boolean;
+  onChange(value: boolean): void;
+  disabled?: boolean;
+};
+
+type SettingsRowShared = {
   icon: FigmaIconName;
   label: string;
-  onPress: () => void;
   /** Render the hairline divider above this row (all rows but the first). */
   divided?: boolean;
   /** Navigational rows show the chevron (Figma settings rows). */
   trailingArrow?: boolean;
   busy?: boolean;
-}) {
+};
+
+type SettingsRowProps = SettingsRowShared &
+  (
+    | { onPress: () => void; toggle?: undefined }
+    | { toggle: SettingsToggle; onPress?: never }
+  );
+
+/** Figma 7008:15192. That node is the on state only. */
+const settingsSwitchTrack = { width: 36, height: 20 } as const;
+const settingsSwitchThumb = 16;
+const settingsSwitchInset = 2;
+
+export function SettingsRow(props: SettingsRowProps) {
+  const {
+    icon,
+    label,
+    divided = false,
+    trailingArrow = false,
+    busy = false,
+  } = props;
+  const toggle = props.toggle;
+  const disabled = busy || Boolean(toggle?.disabled);
   const palette = useAppTheme();
+  const handleWebKeyDown = (event: {
+    key: string;
+    preventDefault: () => void;
+    repeat: boolean;
+  }) => {
+    // Pressable activates Enter for role=switch and Space only for button.
+    if (!toggle) return;
+    if (event.key !== ' ' && event.key !== 'Spacebar') return;
+    event.preventDefault();
+    if (disabled || event.repeat) return;
+    toggle.onChange(!toggle.value);
+  };
   return (
     <View>
       {divided ? (
@@ -72,11 +104,25 @@ export function SettingsRow({
         />
       ) : null}
       <MotionPressable
-        accessibilityRole="button"
+        accessibilityRole={toggle ? 'switch' : 'button'}
         accessibilityLabel={label}
-        accessibilityState={{ busy }}
-        disabled={busy}
-        onPress={onPress}
+        accessibilityState={
+          toggle ? { checked: toggle.value, disabled, busy } : { busy }
+        }
+        disabled={disabled}
+        {...(Platform.OS === 'web' && toggle
+          ? ({
+              'aria-checked': toggle.value,
+              onKeyDown: handleWebKeyDown,
+            } as object)
+          : {})}
+        onPress={() => {
+          if (toggle) {
+            toggle.onChange(!toggle.value);
+            return;
+          }
+          props.onPress();
+        }}
         preset="icon"
         style={{
           minHeight: designTokens.size.touch,
@@ -105,7 +151,37 @@ export function SettingsRow({
             {label}
           </AppText>
         </View>
-        {trailingArrow ? (
+        {toggle ? (
+          <View
+            testID="settings-switch-track"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={{
+              width: settingsSwitchTrack.width,
+              height: settingsSwitchTrack.height,
+              borderRadius: designTokens.radius.pill,
+              padding: settingsSwitchInset,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: toggle.value ? 'flex-end' : 'flex-start',
+              backgroundColor: toggle.value
+                ? palette.inkStrong
+                : palette.surfaceStrong,
+              boxShadow: `inset 0px 2px 3px ${palette.overlayOnLight}`,
+            }}
+          >
+            <View
+              testID="settings-switch-thumb"
+              style={{
+                width: settingsSwitchThumb,
+                height: settingsSwitchThumb,
+                borderRadius: designTokens.radius.pill,
+                backgroundColor: palette.canvas,
+              }}
+            />
+          </View>
+        ) : null}
+        {trailingArrow && !toggle ? (
           <FigmaIcon
             name="arrow-right-01"
             size={designTokens.size.settingsRowIcon}

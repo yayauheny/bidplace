@@ -74,4 +74,43 @@ test('computed focus ring follows the mirrored theme variable', async ({
   await expect
     .poll(async () => (await outlineColor()).replaceAll(' ', ''))
     .toBe(lightFocus.replaceAll(' ', ''));
+
+  await page.evaluate(() => {
+    const probe = document.createElement('div');
+    probe.setAttribute('role', 'switch');
+    probe.tabIndex = 0;
+    probe.setAttribute('aria-label', 'Контур переключателя');
+    document.activeElement?.after(probe);
+  });
+  const switchProbe = page.getByRole('switch', {
+    name: 'Контур переключателя',
+  });
+  await page.keyboard.press('Tab');
+  await expect(switchProbe).toBeFocused();
+  const switchOutline = () =>
+    switchProbe.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        color: style.outlineColor.replaceAll(' ', ''),
+        width: style.outlineWidth,
+        offset: style.outlineOffset,
+        line: style.outlineStyle,
+      };
+    });
+  await expect.poll(switchOutline).toEqual({
+    color: lightFocus.replaceAll(' ', ''),
+    width: '2px',
+    offset: '2px',
+    line: 'solid',
+  });
+  await page.evaluate(() => {
+    document.documentElement.dataset.bidplaceTheme = 'black';
+    document.documentElement.style.setProperty('--bidplace-focus', '#ffffff');
+  });
+  await expect.poll(switchOutline).toEqual({
+    color: blackFocus.replaceAll(' ', ''),
+    width: '2px',
+    offset: '2px',
+    line: 'solid',
+  });
 });

@@ -5,6 +5,14 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-01 — Settings switch web focus and keyboard
+
+`SettingsRow` toggle keeps role `switch`. On web it sets `aria-checked` and handles Space without scrolling; Enter stays on `Pressable`. The shared `focus-visible` rule now includes `[role='switch']` (`--bidplace-focus`, 2px, offset 2px). Off, disabled, and black switch colors, and `StatusBadge`, stay NEEDS-FIGMA.
+
+## 2026-11-01 — Settings switch and provisional status badge
+
+`SettingsRow` can render the Figma `7008:15192` switch (track 36×20, thumb 16×16) without a second row component. That node is the on state only. Off, disabled, and black switch colors use existing semantic roles and stay NEEDS-FIGMA. `StatusBadge` (`neutral` / `accent` / `success` / `danger`) has no Figma frame; it uses caption type, pill radius, and theme colors. Visual agreement is still required. No adult-content setting was added.
+
 ## 2026-10-29 — Story upload revision, same geometry
 
 **Partial.** No layout, token, or frame change. Story upload now sends the
@@ -348,7 +356,7 @@ has no public media mapping and retains existing placeholders.
 | Author application / Author Story / Work story | Implemented для проверенного web-среза, device parity Needs verification | Client/API cutover, ordered blocks, private media и сохранение перед переходом; UI completion. Старое «UI не переведён / B6 не начат» не текущее состояние. |
 | Work editor | Partial, updated 2026-10-23 | Portfolio audit: сетка177×236/12, tile-local состояния и bottomAction; четыре визуальных этапа, Review metadata, photo tiles, ordered block menu и revision/save guards; independent review. Source frames 390; 1024/1440 exact parity NEEDS-FIGMA. |
 | Фото Work и автора | Browser acceptance, native Needs verification | Portfolio audit: пять визуальных шагов автора, safe retry создания, Chromium/WebKit responsive evidence и 200% browser zoom.  Release-сетка/wizard, preview, пофайловый прогресс/retry/timeout/переходы объединены; 1023 mobile tests и 6 media E2E по merge-записи. Physical devices, live R2/CDN и Figma новых статусов Needs verification. |
-| Account / settings | Partial | Published identity, общий cabinet owner, navigation/scroll/long identity; account acceptance. Settings title примерно +7 px при 390 — явное исключение BackButton/FigmaIconButton, 2 geometry failures сохранены. Desktop 1024/1440 и black parity NEEDS-FIGMA. Delete CTA отсутствует до API. |
+| Account / settings | Partial | Published identity, общий cabinet owner, navigation/scroll/long identity; account acceptance. Settings title примерно +7 px при 390 — явное исключение BackButton/FigmaIconButton, 2 geometry failures сохранены. Desktop 1024/1440 и black parity NEEDS-FIGMA. `SettingsRow` toggle matches Figma `7008:15192` on-state only; off/disabled/black switch and `StatusBadge` visual stay NEEDS-FIGMA. Delete CTA отсутствует до API. |
 | Public author / category / sticky header | Partial | Bleed, identity, grid, About, action-row motion и focus; author parity. Master/MVP exclusions и desktop grid start 384 vs 387 px записаны там; 1024/1440 exact parity NEEDS-FIGMA. |
 | Public desktop navigation / footer / brand | Partial visual parity | Desktop header от 1024 CSS px, ordinary-page footer, shared chrome visibility; footer audit. 44px targets/MVP legal labels отличаются от static source; unavailable commerce controls дают честный feedback. |
 | Home empty/loading/error и shared sheets | Implemented для проверенных browser states | Empty CTA capped 420; 390/1024/1440/1920 no-overflow, непрерывный drag, reduced motion/focus/dirty-busy guards; UI completion. Desktop empty-state exact parity NEEDS-FIGMA. |
