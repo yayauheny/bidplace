@@ -5,6 +5,30 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Extension hint lasts five seconds
+
+The live-auction line «Продлено на минуту: ставка в последние секунды» uses the existing caption for 5 seconds of device time. The brief does not set that duration, so this is a local ruling, not a Figma decision. Reserved, sold, ended, cancelled, and awaiting close do not show it. Lot geometry and F7 stay NEEDS-FIGMA. Buy, bid, history, list, and unlist stay unmounted.
+
+## 2026-11-01 — Stale portfolio lot keeps retry
+
+A cancelled or unmarked ended lot still renders as the portfolio. When that saved response fails to refresh, the existing stale line and «Повторить» stay visible. The retry does not add a price or a sale action. Lot geometry and F7 stay NEEDS-FIGMA. Buy, bid, history, list, and unlist stay unmounted.
+
+## 2026-11-01 — Work lot block
+
+**Partial. NEEDS-FIGMA.** Figma `4425:2872` («Страница работы») was read.
+Phone frames include a live auction price, an announcement start price, a
+completed price, and a not-for-sale page. They also contain a cart, a heart,
+and «Оплатить банковской картой», which the brief forbids. There is no
+product-correct frame for fixed «Купить», the leader, awaiting close, reserved,
+sold without a leftover button, the extension hint, or F7 (blocked buyer, hold
+limit, missing contacts). Desktop frames at 1800 exist and are not a named lot
+layout, so 1024/1440 lot geometry stays NEEDS-FIGMA. The price uses the existing
+`workTitle` role; the frame’s larger price type is not copied. `StatusBadge`
+and the black switch states stay NEEDS-FIGMA.
+
+The sale tab is «Как проходит сделка» only while the lot is an open sale.
+Buy, bid, history, list, and unlist are not mounted.
+
 ## 2026-11-01 — Settings switch web focus and keyboard
 
 `SettingsRow` toggle keeps role `switch`. On web it sets `aria-checked` and handles Space without scrolling; Enter stays on `Pressable`. The shared `focus-visible` rule now includes `[role='switch']` (`--bidplace-focus`, 2px, offset 2px). Off, disabled, and black switch colors, and `StatusBadge`, stay NEEDS-FIGMA.

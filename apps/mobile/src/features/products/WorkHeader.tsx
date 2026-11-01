@@ -19,6 +19,7 @@ export function WorkHeader({
   panelId,
   onBack,
   onShare,
+  summary,
   children,
 }: WorkHeaderProps) {
   return (
@@ -43,6 +44,7 @@ export function WorkHeader({
           authorHref={authorHref}
           chips={chips}
         />
+        {summary}
         <FigmaTabs
           tabs={tabs}
           value={tab}

@@ -24,7 +24,7 @@
 ## 1. Блок лота на странице работы
 
 Figma: работа `4425:2872`. Код: `src/features/products/product-screen.tsx`,
-вкладка «Оплата и доставка» сейчас — заглушка `payment-delivery-stub.ts`.
+`src/features/commerce/LotPanel.tsx`. Вкладка сделки — «Как проходит сделка».
 
 | Кто смотрит | Лот | Что видно |
 | --- | --- | --- |

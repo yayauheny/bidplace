@@ -65,6 +65,51 @@
 
 ## Facts
 
+Checked on `6720b7af`. Later corrections stay here; the bullets below are the
+snapshot from that check.
+
+### Correction 2026-11-01 — Task 3 on `cdd81fcb`
+
+- `SettingsRow` has a `toggle`. `StatusBadge` exists. Off, disabled, and black
+  switch colors, and the badge frame, stay NEEDS-FIGMA.
+- `payment-delivery-stub.ts` is deleted. The sale tab keeps the `delivery`
+  param and is labelled «Как проходит сделка». It is added only when the lot
+  presentation is an open sale.
+- `useLot` reads `GET /api/works/:publicId/lot` with
+  `commerceKeys.lot(publicId, viewerId)`. It does not return `effectiveState`
+  or `remainingMs`. The work query stays separate.
+- Ruling: clock — the countdown is `serverNow` plus device time since
+  `dataUpdatedAt`. The response `Date` header is not a second clock. Reading
+  a cached payload does not restart the full term. Cost of being wrong: the
+  timer shows a new full term after every refetch.
+- Ruling: poll — one `refetchInterval`, no fetch loop. No poll when the screen
+  is inactive or the lot is `RESERVED`, `SOLD`, `CANCELLED`, or `ENDED`.
+  `LIVE` is 10s; a live auction in the last 120s, including a locally passed
+  `endsAt`, is 3s. `SCHEDULED` waits until `startsAt` (at least 1s, and no
+  longer than 2_147_483_647 ms). A longer lead is split: after that wake the
+  remainder is calculated again. Once `startsAt` has passed, it polls every
+  10s while the server is still scheduled. `AWAITING_CLOSE` polls
+  every 3s until a terminal result. Focus return refetches once if no request
+  is in flight. Cost of being wrong: the screen stays on «скоро» or «подводим
+  итоги», or it keeps polling after the sale is finished.
+- Ruling: actions — buy, bid, bid history, sign-in, email confirmation,
+  contacts, list, and unlist are not mounted. The view model names the owner
+  task. Retry is a real control. A blocked buyer and a locked unlist are text.
+  Cost of being wrong: a press with no handler looks like a completed purchase
+  or bid. An author `cancel-lot` stays in the model for `SCHEDULED`, `LIVE`,
+  and `AWAITING_CLOSE` when `canAuthorCancel` would allow it (open stored
+  status, and no auction bids). Buyers stay blocked by `LISTING_NOT_OPEN`.
+- Ruling: extension hint — a later `endsAt` on the same listing shows the
+  existing line for 5s of device time (`LOT_EXTENSION_HINT_MS`). The brief
+  does not set a duration. A refetch with the same `endsAt` does not restart
+  it. Reserved, sold, ended, cancelled, and awaiting close do not show it.
+  Cost of being wrong: the line stays up for the whole live auction.
+- `describeBuyer` does not put `BUYER_CONTACTS_REQUIRED` or `BUYER_ORDER_LIMIT`
+  on `viewer.blockedReason`. A null lot also does not prove that the viewer
+  owns the work, so «Выставить на продажу» is not shown.
+- Native `AppState` has no current owner under `apps/mobile/src`. Activity is
+  screen focus, plus `document.visibilityState` on web.
+
 - Маршруты: `src/app/(public)/product/[publicId].tsx` (работа),
   `src/app/(account)/account/index.tsx`, `settings.tsx`; `(seller)/cabinet.tsx`;
   `(admin)/admin.tsx`. `ProtectedRoute` в `(account)/_layout.tsx`; `(seller)` —

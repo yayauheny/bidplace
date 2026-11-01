@@ -2,19 +2,26 @@ import type { PortfolioWorkDetailResponse, StoryBlock } from '@bidplace/contract
 
 export type WorkTab = 'story' | 'details' | 'delivery';
 
-export function workTabs(blocks: readonly StoryBlock[]) {
+export function workTabs(blocks: readonly StoryBlock[], sale: boolean) {
   return [
     ...(blocks.length > 0 ? [{ value: 'story', label: 'История' }] : []),
     { value: 'details', label: 'Детали' },
-    { value: 'delivery', label: 'Оплата и доставка' },
+    ...(sale
+      ? [{ value: 'delivery', label: 'Как проходит сделка' }]
+      : []),
   ];
 }
 
 export function resolveWorkTab(
   blocks: readonly StoryBlock[],
-  requested?: string,
+  requested: string | undefined,
+  sale: boolean,
 ): WorkTab {
-  if (requested === 'delivery' || requested === 'details') return requested;
+  if (requested === 'delivery') {
+    if (!sale) return blocks.length > 0 ? 'story' : 'details';
+    return 'delivery';
+  }
+  if (requested === 'details') return 'details';
   return blocks.length > 0 ? 'story' : 'details';
 }
 
