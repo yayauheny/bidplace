@@ -126,13 +126,14 @@ describe('LotPanel', () => {
 
   afterEach(() => {
     act(() => root?.unmount());
+    root = undefined;
     host.replaceChildren();
     vi.useRealTimers();
   });
 
   function render(value: LotRead, theme: 'light' | 'black' = 'light') {
     act(() => {
-      root = createRoot(host);
+      root ??= createRoot(host);
       root.render(
         createElement(ThemeProvider, {
           theme,
@@ -183,6 +184,39 @@ describe('LotPanel', () => {
     expect(shown()).toContain('Данные продажи устарели');
     expect(host.querySelector('button')?.textContent).toContain('Повторить');
   });
+
+  it.each(['CANCELLED', 'ENDED'] as const)(
+    'keeps retry when a %s lot fails in the background and clears it after a fresh read',
+    (effectiveStatus) => {
+      const refetch = vi.fn(async () => ({}) as never);
+      const closed = lot({
+        effectiveStatus,
+        mark: null,
+        priceMinor: 125000,
+        endsAt: '2026-11-01T09:00:00.000Z',
+      });
+      render(read({ status: 'ready', lot: closed }));
+      expect(shown()).toBe('');
+      expect(host.querySelector('button')).toBeNull();
+
+      render(read({ status: 'stale', lot: closed, refetch }));
+      expect(shown()).toContain('Данные продажи устарели.');
+      expect(shown()).not.toContain('Обновляем');
+      expect(shown()).not.toContain('1 250 BYN');
+      expect(shown()).not.toContain('Купить');
+      expect(shown()).not.toContain('Сделать ставку');
+      expect(host.querySelectorAll('button')).toHaveLength(1);
+      act(() => host.querySelector('button')?.click());
+      expect(refetch).toHaveBeenCalledOnce();
+
+      render(read({ status: 'ready', lot: closed }));
+      expect(shown()).toBe('');
+
+      render(read({ status: 'stale', lot: closed, refetch }));
+      expect(shown()).toContain('Данные продажи устарели.');
+      expect(host.querySelector('button')?.textContent).toContain('Повторить');
+    },
+  );
 
   it('shows the auction price and timer without a bid button', () => {
     render(read());

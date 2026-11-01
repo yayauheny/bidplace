@@ -6,6 +6,8 @@ import { formatMoney } from '../../lib/money';
 export const LOT_POLL_LIVE_MS = 10_000;
 export const LOT_POLL_FINAL_MS = 3_000;
 const FINAL_WINDOW_MS = 120_000;
+// setInterval stores the delay as a signed 32-bit int; a larger value fires immediately.
+const LOT_POLL_MAX_MS = 2_147_483_647;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -98,7 +100,8 @@ export function lotPollIntervalMs(input: {
   const synced = input.syncedNowMs ?? Date.parse(lot.serverNow);
   if (lot.effectiveStatus === 'SCHEDULED') {
     const until = Date.parse(lot.startsAt) - synced;
-    return until > 0 ? Math.max(until, 1_000) : LOT_POLL_LIVE_MS;
+    if (until <= 0) return LOT_POLL_LIVE_MS;
+    return Math.min(Math.max(until, 1_000), LOT_POLL_MAX_MS);
   }
   if (lot.effectiveStatus === 'AWAITING_CLOSE') return LOT_POLL_FINAL_MS;
   if (lot.effectiveStatus !== 'LIVE') return false;

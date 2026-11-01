@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-01 — Stale portfolio lot keeps retry
+
+A cancelled or unmarked ended lot still renders as the portfolio. When that saved response fails to refresh, the existing stale line and «Повторить» stay visible. The retry does not add a price or a sale action. Lot geometry and F7 stay NEEDS-FIGMA. Buy, bid, history, list, and unlist stay unmounted.
+
 ## 2026-11-01 — Work lot block
 
 **Partial. NEEDS-FIGMA.** Figma `4425:2872` («Страница работы») was read.

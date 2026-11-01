@@ -195,6 +195,11 @@ test('polls a quiet live auction at most seven times in a minute', async ({ page
 });
 
 test('polls the last two minutes faster and stops while hidden', async ({ page }) => {
+  const lotAt: number[] = [];
+  page.on('request', (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path.endsWith('/lot')) lotAt.push(Date.now());
+  });
   const counts = await install(page, (route) =>
     route.fulfill({ json: liveLot('2026-11-01T10:01:30.000Z') }),
   );
@@ -204,7 +209,7 @@ test('polls the last two minutes faster and stops while hidden', async ({ page }
   await page.waitForTimeout(12_000);
   expect(counts.lot - opened).toBeGreaterThanOrEqual(3);
   expect(counts.lot - opened).toBeLessThanOrEqual(5);
-  const hiddenAt = counts.lot;
+  const hideStarted = Date.now();
   await page.evaluate(() => {
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -213,7 +218,7 @@ test('polls the last two minutes faster and stops while hidden', async ({ page }
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await page.waitForTimeout(12_000);
-  expect(counts.lot).toBe(hiddenAt);
+  expect(lotAt.filter((time) => time - hideStarted > 1_000)).toEqual([]);
   expect(counts.work).toBe(1);
 });
 
@@ -231,6 +236,85 @@ test('slows the poll outside the final window and speeds up inside it', async ({
   await page.waitForTimeout(21_000);
   expect(counts.lot - quiet).toBeGreaterThanOrEqual(4);
 });
+
+test('does not rapid-poll a scheduled lot that starts in 30 days', async ({ page }) => {
+  const startsAt = new Date(Date.parse(CLOCK) + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const counts = await install(page, (route) =>
+    route.fulfill({
+      json: {
+        ...liveLot(startsAt),
+        type: 'AUCTION',
+        effectiveStatus: 'SCHEDULED',
+        mark: 'SCHEDULED',
+        priceMinor: null,
+        minimumBidMinor: 1000,
+        bidCount: 0,
+        startsAt,
+        endsAt: null,
+      },
+    }),
+  );
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await expect(page.getByText(/Аукцион начнётся/)).toBeVisible();
+  const opened = counts.lot;
+  expect(opened).toBeGreaterThanOrEqual(1);
+  expect(opened).toBeLessThanOrEqual(2);
+  await page.waitForTimeout(8_000);
+  expect(counts.lot).toBe(opened);
+  expect(counts.work).toBe(1);
+  expect(counts.commerceWrites).toBe(0);
+});
+
+for (const effectiveStatus of ['CANCELLED', 'ENDED'] as const) {
+  test(`restores retry when a ${effectiveStatus} lot fails in the background`, async ({
+    page,
+  }) => {
+    let fail = false;
+    await install(page, (route) => {
+      if (fail) return route.fulfill({ status: 500, json: { message: 'failed' } });
+      return route.fulfill({
+        json: {
+          ...liveLot('2026-11-01T09:00:00.000Z', 99900),
+          effectiveStatus,
+          mark: null,
+        },
+      });
+    });
+    await page.goto(`/product/${PUBLIC_ID}`);
+    await expect(page.getByRole('heading', { level: 1, name: TITLE })).toBeVisible();
+    await expect(page.getByText('Данные продажи устарели.')).toHaveCount(0);
+    await expect(page.getByText('999 BYN')).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Как проходит сделка' })).toHaveCount(0);
+    fail = true;
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'hidden',
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'visible',
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    const retry = page.getByRole('button', { name: 'Повторить' });
+    await expect(page.getByText('Данные продажи устарели.')).toBeVisible();
+    await expect(retry).toBeVisible();
+    await expect(page.getByText('999 BYN')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Купить' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Сделать ставку' })).toHaveCount(0);
+    await retry.click();
+    await expect(page.getByText('Данные продажи устарели.')).toBeVisible();
+    fail = false;
+    await retry.click();
+    await expect(page.getByText('Данные продажи устарели.')).toHaveCount(0);
+    await expect(page.getByText('999 BYN')).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Как проходит сделка' })).toHaveCount(0);
+  });
+}
 
 test('shows the sale at phone and desktop widths without a buy button', async ({
   page,

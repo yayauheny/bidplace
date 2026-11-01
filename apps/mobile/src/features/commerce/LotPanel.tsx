@@ -42,7 +42,7 @@ export function LotPanel({ read }: { read: LotRead }) {
       })
     : null;
   if (!view || view.phase === 'portfolio') {
-    return read.status === 'empty-stale' ? (
+    return read.status === 'empty-stale' || read.status === 'stale' ? (
       <StaleSale onRetry={() => void read.refetch()} />
     ) : null;
   }

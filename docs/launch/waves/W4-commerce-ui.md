@@ -85,8 +85,10 @@ snapshot from that check.
 - Ruling: poll — one `refetchInterval`, no fetch loop. No poll when the screen
   is inactive or the lot is `RESERVED`, `SOLD`, `CANCELLED`, or `ENDED`.
   `LIVE` is 10s; a live auction in the last 120s, including a locally passed
-  `endsAt`, is 3s. `SCHEDULED` waits until `startsAt` (at least 1s), then
-  polls every 10s while the server is still scheduled. `AWAITING_CLOSE` polls
+  `endsAt`, is 3s. `SCHEDULED` waits until `startsAt` (at least 1s, and no
+  longer than 2_147_483_647 ms). A longer lead is split: after that wake the
+  remainder is calculated again. Once `startsAt` has passed, it polls every
+  10s while the server is still scheduled. `AWAITING_CLOSE` polls
   every 3s until a terminal result. Focus return refetches once if no request
   is in flight. Cost of being wrong: the screen stays on «скоро» or «подводим
   итоги», or it keeps polling after the sale is finished.

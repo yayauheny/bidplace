@@ -370,12 +370,98 @@ describe('lot clock and poll', () => {
       active: true,
       interval: false,
     },
+    {
+      name: 'reserved',
+      patch: { mark: 'RESERVED' as const, effectiveStatus: 'LIVE' as const },
+      syncedNowMs: now,
+      active: true,
+      interval: false,
+    },
+    {
+      name: 'cancelled',
+      patch: { effectiveStatus: 'CANCELLED' as const, mark: null },
+      syncedNowMs: now,
+      active: true,
+      interval: false,
+    },
+    {
+      name: 'ended without a mark',
+      patch: { effectiveStatus: 'ENDED' as const, mark: null },
+      syncedNowMs: now,
+      active: true,
+      interval: false,
+    },
+    {
+      name: 'inactive scheduled',
+      patch: {
+        effectiveStatus: 'SCHEDULED' as const,
+        mark: 'SCHEDULED' as const,
+        startsAt: '2026-12-01T10:00:00.000Z',
+      },
+      syncedNowMs: now,
+      active: false,
+      interval: false,
+    },
   ])('$name polls at $interval', ({ patch, syncedNowMs: synced, active, interval }) => {
     expect(
       lotPollIntervalMs({
         active,
         lot: lot(patch),
         syncedNowMs: synced,
+      }),
+    ).toBe(interval);
+  });
+
+  it('caps a 30-day scheduled start so the timer does not fire immediately, then waits out the remainder', async () => {
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    const timerLimit = 2_147_483_647;
+    const start = now + thirtyDays;
+    const scheduled = lot({
+      effectiveStatus: 'SCHEDULED',
+      mark: 'SCHEDULED',
+      startsAt: new Date(start).toISOString(),
+    });
+    const first = lotPollIntervalMs({
+      active: true,
+      lot: scheduled,
+      syncedNowMs: now,
+    });
+    expect(typeof first).toBe('number');
+    expect(Number.isFinite(first)).toBe(true);
+    expect(first).toBeGreaterThan(24 * 60 * 60 * 1000);
+    expect(first).toBeLessThanOrEqual(timerLimit);
+    expect(first).toBeLessThan(thirtyDays);
+    let fired = 0;
+    const timer = setInterval(() => {
+      fired += 1;
+    }, first as number);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    clearInterval(timer);
+    expect(fired).toBe(0);
+    expect(
+      lotPollIntervalMs({
+        active: true,
+        lot: scheduled,
+        syncedNowMs: now + (first as number),
+      }),
+    ).toBe(start - (now + (first as number)));
+  });
+
+  it.each([
+    { name: 'the timer ceiling', until: 2_147_483_647, interval: 2_147_483_647 },
+    { name: 'one millisecond past the timer ceiling', until: 2_147_483_648, interval: 2_147_483_647 },
+    { name: 'a near start', until: 5_000, interval: 5_000 },
+    { name: 'a wait shorter than one second', until: 400, interval: 1_000 },
+  ])('scheduled $name waits $interval', ({ until, interval }) => {
+    expect(
+      lotPollIntervalMs({
+        active: true,
+        lot: lot({
+          effectiveStatus: 'SCHEDULED',
+          mark: 'SCHEDULED',
+          startsAt: new Date(now + until).toISOString(),
+        }),
+        syncedNowMs: now,
       }),
     ).toBe(interval);
   });
