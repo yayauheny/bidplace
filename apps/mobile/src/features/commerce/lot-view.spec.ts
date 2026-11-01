@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PublicLot } from '@bidplace/contracts';
 
 import {
+  LOT_EXTENSION_HINT_MS,
   lotExtensionLabel,
   lotPollIntervalMs,
   lotSaleOpen,
@@ -100,7 +101,6 @@ describe('presentLot', () => {
       const view = presentLot({
         lot: lot(patch),
         syncedNowMs: now,
-        extended: false,
       });
       expect(view.priceCaption).toBe(priceCaption);
       expect(shown(view.priceLabel)).toBe(priceLabel);
@@ -120,7 +120,6 @@ describe('presentLot', () => {
         mark: 'AUCTION',
       }),
       syncedNowMs: now,
-      extended: false,
     });
     expect(view.priceCaption).toBe('Начальная цена');
     expect(shown(view.priceLabel)).toBe('500 BYN');
@@ -131,7 +130,6 @@ describe('presentLot', () => {
     const view = presentLot({
       lot: lot({ priceMinor: null, minimumBidMinor: null, bidCount: 0 }),
       syncedNowMs: now,
-      extended: false,
     });
     expect(view.priceLabel).toBeNull();
   });
@@ -151,7 +149,6 @@ describe('presentLot', () => {
         },
       }),
       syncedNowMs: now,
-      extended: false,
     });
     expect(view.phase).toBe(mark === 'SOLD' ? 'sold' : 'reserved');
     expect(view.statusLabel).toBe(label);
@@ -164,7 +161,6 @@ describe('presentLot', () => {
       const view = presentLot({
         lot: lot({ effectiveStatus, mark: null, endsAt: null }),
         syncedNowMs: now,
-        extended: false,
       });
       expect(view.phase).toBe('portfolio');
       expect(view.deal).toBe(false);
@@ -177,7 +173,6 @@ describe('presentLot', () => {
     const view = presentLot({
       lot: lot({ effectiveStatus: 'LIVE', mark: 'AUCTION' }),
       syncedNowMs: Date.parse('2026-11-01T12:00:00.000Z'),
-      extended: false,
     });
     expect(view.phase).toBe('awaiting-close');
     expect(view.statusLabel).toBe('Аукцион завершён, подводим итоги');
@@ -195,7 +190,6 @@ describe('presentLot', () => {
         startsAt: '2026-11-01T09:00:00.000Z',
       }),
       syncedNowMs: Date.parse('2026-11-01T10:00:00.000Z'),
-      extended: false,
     });
     expect(view.phase).toBe('auction-scheduled');
     expect(view.scheduleLabel).toBe('Аукцион начнётся 01.11 в 12:00');
@@ -206,7 +200,6 @@ describe('presentLot', () => {
     const anonymous = presentLot({
       lot: lot({ viewer: null }),
       syncedNowMs: now,
-      extended: false,
     });
     expect(anonymous.action).toEqual({
       kind: 'sign-in',
@@ -224,7 +217,6 @@ describe('presentLot', () => {
         },
       }),
       syncedNowMs: now,
-      extended: false,
     });
     expect(unknown.action?.enabled).toBe(false);
     expect(unknown.action?.reason).toBe('Действие сейчас недоступно.');
@@ -241,7 +233,6 @@ describe('presentLot', () => {
         },
       }),
       syncedNowMs: now,
-      extended: false,
     });
     expect(blocked.action?.enabled).toBe(false);
     expect(blocked.action?.reason).toBe(
@@ -257,13 +248,194 @@ describe('presentLot', () => {
         },
       }),
       syncedNowMs: now,
-      extended: false,
     });
     expect(email.action).toMatchObject({
       kind: 'verify-email',
       enabled: true,
       owner: 'auth',
     });
+  });
+
+  it.each([
+    {
+      name: 'scheduled with no bids',
+      patch: {
+        effectiveStatus: 'SCHEDULED' as const,
+        mark: 'SCHEDULED' as const,
+        bidCount: 0,
+        priceMinor: null,
+        minimumBidMinor: 50000,
+        endsAt: null,
+      },
+      syncedNowMs: now,
+      blockedReason: 'LISTING_NOT_OPEN',
+      enabled: true,
+      hint: null,
+    },
+    {
+      name: 'live with no bids',
+      patch: { bidCount: 0, priceMinor: null, minimumBidMinor: 50000 },
+      syncedNowMs: now,
+      blockedReason: 'SELF_BID_FORBIDDEN',
+      enabled: true,
+      hint: null,
+    },
+    {
+      name: 'awaiting close with no bids',
+      patch: {
+        effectiveStatus: 'AWAITING_CLOSE' as const,
+        mark: null,
+        bidCount: 0,
+        priceMinor: null,
+        minimumBidMinor: 50000,
+        endsAt: '2026-11-01T10:00:00.000Z',
+      },
+      syncedNowMs: now,
+      blockedReason: 'LISTING_NOT_OPEN',
+      enabled: true,
+      hint: null,
+    },
+    {
+      name: 'scheduled with bids',
+      patch: {
+        effectiveStatus: 'SCHEDULED' as const,
+        mark: 'SCHEDULED' as const,
+        bidCount: 2,
+        endsAt: null,
+      },
+      syncedNowMs: now,
+      blockedReason: 'LISTING_NOT_OPEN',
+      enabled: false,
+      hint: 'Аукцион со ставками снять нельзя.',
+    },
+    {
+      name: 'awaiting close with bids',
+      patch: {
+        effectiveStatus: 'AWAITING_CLOSE' as const,
+        mark: null,
+        bidCount: 2,
+        endsAt: '2026-11-01T10:00:00.000Z',
+      },
+      syncedNowMs: now,
+      blockedReason: 'LISTING_NOT_OPEN',
+      enabled: false,
+      hint: 'Аукцион со ставками снять нельзя.',
+    },
+  ])(
+    'keeps the author cancel model for $name',
+    ({ patch, syncedNowMs: synced, blockedReason, enabled, hint }) => {
+      const view = presentLot({
+        lot: lot({
+          ...patch,
+          viewer: { role: 'seller', isLeading: false, blockedReason },
+        }),
+        syncedNowMs: synced,
+      });
+      expect(view.phase === 'sold').toBe(false);
+      expect(view.action).toMatchObject({
+        kind: 'cancel-lot',
+        enabled,
+        owner: 'task-5',
+      });
+      expect(view.action?.kind === 'buy' || view.action?.kind === 'bid').toBe(false);
+      expect(view.authorHint).toBe(hint);
+    },
+  );
+
+  it.each([
+    {
+      name: 'buyer scheduled',
+      patch: { effectiveStatus: 'SCHEDULED' as const, mark: 'SCHEDULED' as const, endsAt: null },
+      viewer: { role: 'buyer' as const, isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
+    },
+    {
+      name: 'anonymous scheduled',
+      patch: { effectiveStatus: 'SCHEDULED' as const, mark: 'SCHEDULED' as const, endsAt: null },
+      viewer: null,
+    },
+    {
+      name: 'admin scheduled',
+      patch: { effectiveStatus: 'SCHEDULED' as const, mark: 'SCHEDULED' as const, endsAt: null },
+      viewer: { role: 'admin' as const, isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
+    },
+    {
+      name: 'anonymous awaiting close',
+      patch: {
+        effectiveStatus: 'AWAITING_CLOSE' as const,
+        mark: null,
+        endsAt: '2026-11-01T10:00:00.000Z',
+      },
+      viewer: null,
+    },
+    {
+      name: 'admin awaiting close',
+      patch: {
+        effectiveStatus: 'AWAITING_CLOSE' as const,
+        mark: null,
+        endsAt: '2026-11-01T10:00:00.000Z',
+      },
+      viewer: { role: 'admin' as const, isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
+    },
+    {
+      name: 'buyer awaiting close',
+      patch: {
+        effectiveStatus: 'AWAITING_CLOSE' as const,
+        mark: null,
+        endsAt: '2026-11-01T10:00:00.000Z',
+      },
+      viewer: { role: 'buyer' as const, isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
+    },
+    {
+      name: 'admin live',
+      patch: {},
+      viewer: { role: 'admin' as const, isLeading: false, blockedReason: 'ADMIN_BID_FORBIDDEN' },
+    },
+    {
+      name: 'reserved seller',
+      patch: { mark: 'RESERVED' as const },
+      viewer: { role: 'seller' as const, isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
+    },
+    {
+      name: 'sold seller',
+      patch: { mark: 'SOLD' as const, effectiveStatus: 'ENDED' as const },
+      viewer: { role: 'seller' as const, isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
+    },
+    {
+      name: 'cancelled seller',
+      patch: { effectiveStatus: 'CANCELLED' as const, mark: null },
+      viewer: { role: 'seller' as const, isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
+    },
+    {
+      name: 'ended without a mark',
+      patch: { effectiveStatus: 'ENDED' as const, mark: null },
+      viewer: { role: 'seller' as const, isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
+    },
+  ])('does not give $name an author cancel or a buyer action', ({ name, patch, viewer }) => {
+    const view = presentLot({
+      lot: lot({ ...patch, viewer }),
+      syncedNowMs: now,
+    });
+    if (name === 'admin live') {
+      expect(view.action).toMatchObject({ kind: 'bid', enabled: false, owner: 'task-4' });
+      return;
+    }
+    expect(view.action).toBeNull();
+  });
+
+  it('keeps a fixed live author cancel from the public seller view', () => {
+    const view = presentLot({
+      lot: lot({
+        type: 'FIXED',
+        mark: 'BUY',
+        bidCount: 0,
+        minimumBidMinor: null,
+        endsAt: null,
+        viewer: { role: 'seller', isLeading: false, blockedReason: 'SELF_BID_FORBIDDEN' },
+      }),
+      syncedNowMs: now,
+    });
+    expect(view.phase).toBe('fixed-live');
+    expect(view.action).toMatchObject({ kind: 'cancel-lot', enabled: true, owner: 'task-5' });
   });
 
   it('describes author cancel from public fields and does not offer a bid', () => {
@@ -279,7 +451,6 @@ describe('presentLot', () => {
         },
       }),
       syncedNowMs: now,
-      extended: false,
     });
     expect(open.action).toMatchObject({
       kind: 'cancel-lot',
@@ -297,7 +468,6 @@ describe('presentLot', () => {
         },
       }),
       syncedNowMs: now,
-      extended: false,
     });
     expect(locked.action).toMatchObject({
       kind: 'cancel-lot',
@@ -321,7 +491,6 @@ describe('lot clock and poll', () => {
     const view = presentLot({
       lot: lot({ endsAt: '2026-11-01T10:01:00.000Z' }),
       syncedNowMs: synced,
-      extended: false,
     });
     expect(view.timerLabel).toBe('00:10');
   });
@@ -503,6 +672,50 @@ describe('lot clock and poll', () => {
         syncedNowMs: Date.parse('2026-11-01T12:00:05.000Z'),
       }),
     ).toBe(false);
+  });
+
+  it.each([
+    ['reserved', { mark: 'RESERVED' as const }],
+    ['sold', { mark: 'SOLD' as const, effectiveStatus: 'ENDED' as const }],
+    ['cancelled', { effectiveStatus: 'CANCELLED' as const, mark: null }],
+    ['ended', { effectiveStatus: 'ENDED' as const, mark: null }],
+    [
+      'awaiting close',
+      {
+        effectiveStatus: 'AWAITING_CLOSE' as const,
+        mark: null,
+        endsAt: '2026-11-01T10:00:00.000Z',
+      },
+    ],
+  ])('does not show an active extension hint for %s', (_name, patch) => {
+    expect(
+      presentLot({
+        lot: lot(patch),
+        syncedNowMs: now,
+        extensionUntil: now + LOT_EXTENSION_HINT_MS,
+        nowMs: now,
+      }).extensionLabel,
+    ).toBeNull();
+  });
+
+  it('shows an extension hint only while its device deadline is ahead', () => {
+    const live = lot();
+    expect(
+      presentLot({
+        lot: live,
+        syncedNowMs: now,
+        extensionUntil: now + LOT_EXTENSION_HINT_MS,
+        nowMs: now,
+      }).extensionLabel,
+    ).toBe('Продлено на минуту: ставка в последние секунды');
+    expect(
+      presentLot({
+        lot: live,
+        syncedNowMs: now,
+        extensionUntil: now + LOT_EXTENSION_HINT_MS,
+        nowMs: now + LOT_EXTENSION_HINT_MS,
+      }).extensionLabel,
+    ).toBeNull();
   });
 
   it('shows one extension hint for the same listing and none for the first response or a new id', () => {

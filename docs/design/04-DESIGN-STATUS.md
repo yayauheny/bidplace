@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Extension hint lasts five seconds
+
+The live-auction line «Продлено на минуту: ставка в последние секунды» uses the existing caption for 5 seconds of device time. The brief does not set that duration, so this is a local ruling, not a Figma decision. Reserved, sold, ended, cancelled, and awaiting close do not show it. Lot geometry and F7 stay NEEDS-FIGMA. Buy, bid, history, list, and unlist stay unmounted.
+
 ## 2026-11-01 — Stale portfolio lot keeps retry
 
 A cancelled or unmarked ended lot still renders as the portfolio. When that saved response fails to refresh, the existing stale line and «Повторить» stay visible. The retry does not add a price or a sale action. Lot geometry and F7 stay NEEDS-FIGMA. Buy, bid, history, list, and unlist stay unmounted.

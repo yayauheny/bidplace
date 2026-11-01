@@ -52,7 +52,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           dataUpdatedAt: lot.dataUpdatedAt,
           deviceNow: Date.now(),
         }),
-        extended: lot.extended,
+        extensionUntil: lot.extensionUntil,
+        nowMs: Date.now(),
       })
     : null;
   const saleKnown =

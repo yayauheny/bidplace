@@ -9,6 +9,7 @@ import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import {
+  LOT_EXTENSION_HINT_MS,
   lotExtensionLabel,
   lotPollIntervalMs,
   syncedNowMs,
@@ -24,7 +25,7 @@ export type LotRead = {
     | 'ready'
     | 'stale';
   lot: PublicLot | null;
-  extended: boolean;
+  extensionUntil: number | null;
   active: boolean;
   dataUpdatedAt: number;
   refetch: () => Promise<unknown>;
@@ -74,21 +75,27 @@ export function useLot(publicId: string): LotRead {
 
   const scopeKey = `${viewerId ?? ''}:${publicId}`;
   const seen = useRef<{ id: string; endsAt: string | null } | null>(null);
-  const [extensionFor, setExtensionFor] = useState<string | null>(null);
+  const [extensionUntil, setExtensionUntil] = useState<number | null>(null);
   const [scope, setScope] = useState(scopeKey);
   if (scope !== scopeKey) {
     setScope(scopeKey);
-    setExtensionFor(null);
+    setExtensionUntil(null);
     seen.current = null;
   }
   const lot = query.data ?? null;
+  if (lot === null) {
+    if (extensionUntil !== null) setExtensionUntil(null);
+    seen.current = null;
+  }
   useEffect(() => {
     if (!lot) return;
-    if (lotExtensionLabel(seen.current, lot)) setExtensionFor(lot.id);
-    else if (seen.current && seen.current.id !== lot.id) setExtensionFor(null);
+    if (lotExtensionLabel(seen.current, lot)) {
+      setExtensionUntil(Date.now() + LOT_EXTENSION_HINT_MS);
+    } else if (seen.current && seen.current.id !== lot.id) {
+      setExtensionUntil(null);
+    }
     seen.current = { id: lot.id, endsAt: lot.endsAt };
   }, [lot]);
-  const extended = extensionFor !== null && extensionFor === lot?.id;
 
   const read = (
     status: LotRead['status'],
@@ -97,7 +104,8 @@ export function useLot(publicId: string): LotRead {
   ): LotRead => ({
     status,
     lot: value,
-    extended: status === 'ready' || status === 'stale' ? extended : false,
+    extensionUntil:
+      status === 'ready' || status === 'stale' ? extensionUntil : null,
     active,
     dataUpdatedAt,
     refetch: query.refetch,

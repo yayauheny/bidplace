@@ -5,6 +5,10 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-02 — W4 Task 3 author cancel and extension hint
+
+**Partial.** `actionOf` keeps `cancel-lot` for the author on `SCHEDULED` and `AWAITING_CLOSE` when `bidCount` is 0, matching `canAuthorCancel` for an open stored status. A buyer `LISTING_NOT_OPEN` on those phases still has no buy or bid. An auction with bids stays locked with «Аукцион со ставками снять нельзя.» The cancel control is not mounted (Task 5). The extension line lasts 5s of device time (`LOT_EXTENSION_HINT_MS`); the brief does not set a duration. The same `endsAt` does not restart it. The screen stays NEEDS-FIGMA and NEEDS-DECISION. Tasks 4–11 stay Not implemented. Checks: commerce/work/error specs 103 passed; mobile typecheck and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`; Chromium `e2e/commerce-lot.spec.ts` 11 passed. No database setup.
+
 ## 2026-11-01 — W4 Task 3 scheduled poll and stale portfolio
 
 **Partial.** A scheduled start farther than 2_147_483_647 ms no longer overflows `setInterval`. The same `refetchInterval` waits at that cap, then for the remaining time until `startsAt`. `CANCELLED` and unmarked `ENDED` lots stay on the portfolio. A failed background refetch of that saved lot shows «Данные продажи устарели.» and «Повторить», without price or sale actions. The screen stays NEEDS-FIGMA and NEEDS-DECISION. Tasks 4–11 stay Not implemented. Checks: commerce/work/error specs 77 passed; mobile typecheck and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`; Chromium `e2e/commerce-lot.spec.ts` 9 passed, including a 30-day scheduled lot with no second poll in 8s and retry recovery for `CANCELLED` and `ENDED`. No database setup.

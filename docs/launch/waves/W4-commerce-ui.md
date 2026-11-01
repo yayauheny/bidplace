@@ -96,7 +96,14 @@ snapshot from that check.
   contacts, list, and unlist are not mounted. The view model names the owner
   task. Retry is a real control. A blocked buyer and a locked unlist are text.
   Cost of being wrong: a press with no handler looks like a completed purchase
-  or bid.
+  or bid. An author `cancel-lot` stays in the model for `SCHEDULED`, `LIVE`,
+  and `AWAITING_CLOSE` when `canAuthorCancel` would allow it (open stored
+  status, and no auction bids). Buyers stay blocked by `LISTING_NOT_OPEN`.
+- Ruling: extension hint — a later `endsAt` on the same listing shows the
+  existing line for 5s of device time (`LOT_EXTENSION_HINT_MS`). The brief
+  does not set a duration. A refetch with the same `endsAt` does not restart
+  it. Reserved, sold, ended, cancelled, and awaiting close do not show it.
+  Cost of being wrong: the line stays up for the whole live auction.
 - `describeBuyer` does not put `BUYER_CONTACTS_REQUIRED` or `BUYER_ORDER_LIMIT`
   on `viewer.blockedReason`. A null lot also does not prove that the viewer
   owns the work, so «Выставить на продажу» is not shown.

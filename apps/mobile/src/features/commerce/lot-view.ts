@@ -63,6 +63,8 @@ export type LotPresentation = {
 };
 
 const EXTENSION_LABEL = 'Продлено на минуту: ставка в последние секунды';
+// Local ruling: the brief asks for a short hint and does not set a duration.
+export const LOT_EXTENSION_HINT_MS = 5_000;
 const CLOSE_LABEL = 'Аукцион завершён, подводим итоги';
 const UNKNOWN_BLOCK = 'Действие сейчас недоступно.';
 
@@ -115,7 +117,8 @@ export function lotPollIntervalMs(input: {
 export function presentLot(input: {
   lot: PublicLot;
   syncedNowMs: number;
-  extended: boolean;
+  extensionUntil?: number | null;
+  nowMs?: number;
 }): LotPresentation {
   const phase = phaseOf(input.lot, input.syncedNowMs);
   const price = priceOf(input.lot, phase);
@@ -139,7 +142,11 @@ export function presentLot(input: {
     statusLabel: statusLabel(input.lot, phase),
     statusTone: statusTone(phase, input.lot),
     extensionLabel:
-      input.extended && phase === 'auction-live' ? EXTENSION_LABEL : null,
+      input.extensionUntil != null &&
+      (input.nowMs ?? 0) < input.extensionUntil &&
+      phase === 'auction-live'
+        ? EXTENSION_LABEL
+        : null,
     deal,
     contactLine: deal
       ? `Автор свяжется в течение ${hoursPhrase(input.lot.contactWindowHours)}`
@@ -205,7 +212,6 @@ function actionOf(lot: PublicLot, phase: LotPhase): LotAction | null {
   if (phase === 'portfolio' || phase === 'reserved' || phase === 'sold') {
     return null;
   }
-  if (phase === 'awaiting-close' || phase === 'auction-scheduled') return null;
   if (lot.viewer?.role === 'seller') {
     const locked = lot.type === 'AUCTION' && lot.bidCount > 0;
     return {
@@ -215,6 +221,7 @@ function actionOf(lot: PublicLot, phase: LotPhase): LotAction | null {
       owner: 'task-5',
     };
   }
+  if (phase === 'awaiting-close' || phase === 'auction-scheduled') return null;
   if (lot.viewer === null) {
     return { kind: 'sign-in', enabled: true, reason: null, owner: 'auth' };
   }

@@ -334,6 +334,62 @@ for (const effectiveStatus of ['CANCELLED', 'ENDED'] as const) {
   });
 }
 
+test('shows an extension hint briefly and again after another extension', async ({
+  page,
+}) => {
+  let endsAt = '2026-11-01T18:00:00.000Z';
+  const counts = await install(page, (route) =>
+    route.fulfill({ json: liveLot(endsAt) }),
+  );
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await expect(page.getByText('Текущая цена')).toBeVisible();
+  const hint = page.getByText('Продлено на минуту: ставка в последние секунды');
+  await expect(hint).toHaveCount(0);
+  endsAt = new Date(Date.parse(endsAt) + 60_000).toISOString();
+  await expect(hint).toBeVisible({ timeout: 15_000 });
+  const shown = counts.lot;
+  await expect(hint).toHaveCount(0, { timeout: 8_000 });
+  expect(counts.lot).toBe(shown);
+  endsAt = new Date(Date.parse(endsAt) + 60_000).toISOString();
+  await expect(hint).toBeVisible({ timeout: 15_000 });
+  expect(counts.commerceWrites).toBe(0);
+});
+
+test('does not restore an extension hint after a hidden return', async ({ page }) => {
+  let endsAt = '2026-11-01T18:00:00.000Z';
+  const counts = await install(page, (route) =>
+    route.fulfill({ json: liveLot(endsAt) }),
+  );
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await expect(page.getByText('Текущая цена')).toBeVisible();
+  endsAt = new Date(Date.parse(endsAt) + 60_000).toISOString();
+  const hint = page.getByText('Продлено на минуту: ставка в последние секунды');
+  await expect(hint).toBeVisible({ timeout: 15_000 });
+  const shown = counts.lot;
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'hidden',
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(6_000);
+  expect(counts.lot).toBe(shown);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(hint).toHaveCount(0);
+  await expect(page.getByText(/\d+ ч \d+ мин/)).toBeVisible();
+  await expect.poll(() => counts.lot).toBeGreaterThan(shown);
+  await expect(hint).toHaveCount(0);
+  expect(counts.work).toBe(1);
+  expect(counts.commerceWrites).toBe(0);
+});
+
 test('shows the sale at phone and desktop widths without a buy button', async ({
   page,
 }) => {

@@ -38,7 +38,8 @@ export function LotPanel({ read }: { read: LotRead }) {
           dataUpdatedAt: read.dataUpdatedAt,
           deviceNow,
         }),
-        extended: read.extended,
+        extensionUntil: read.extensionUntil,
+        nowMs: deviceNow,
       })
     : null;
   if (!view || view.phase === 'portfolio') {

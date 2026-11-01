@@ -111,7 +111,7 @@ function read(patch: Partial<LotRead> & { lot?: PublicLot | null } = {}): LotRea
   return {
     status: 'ready',
     lot: lot(),
-    extended: false,
+    extensionUntil: null,
     active: false,
     dataUpdatedAt: Date.now(),
     refetch: vi.fn(async () => ({}) as never),
@@ -256,11 +256,31 @@ describe('LotPanel', () => {
     expect(shown()).not.toContain('Сделать ставку');
   });
 
+  it('does not mount a cancel button when the author may remove a scheduled lot', () => {
+    render(
+      read({
+        lot: lot({
+          effectiveStatus: 'SCHEDULED',
+          mark: 'SCHEDULED',
+          bidCount: 0,
+          priceMinor: null,
+          minimumBidMinor: 50000,
+          endsAt: null,
+          viewer: { role: 'seller', isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
+        }),
+      }),
+    );
+    expect(shown()).not.toContain('Снять');
+    expect(shown()).not.toContain('Купить');
+    expect(shown()).not.toContain('Сделать ставку');
+    expect(host.querySelector('button')).toBeNull();
+  });
+
   it('shows the author lock as text', () => {
     render(
       read({
         lot: lot({
-          viewer: { role: 'seller', isLeading: false, blockedReason: null },
+          viewer: { role: 'seller', isLeading: false, blockedReason: 'SELF_BID_FORBIDDEN' },
         }),
       }),
     );
