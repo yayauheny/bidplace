@@ -23,6 +23,7 @@ export function WorkHeader({
   panelId,
   onBack,
   onShare,
+  summary,
   children,
 }: WorkHeaderProps) {
   const sentinel = useRef<HTMLDivElement>(null);
@@ -112,6 +113,7 @@ export function WorkHeader({
               authorHref={authorHref}
               chips={chips}
             />
+            {summary}
           </View>
         </div>
         <div

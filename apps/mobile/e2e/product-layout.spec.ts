@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-import { PAYMENT_DELIVERY_STUB } from '../src/features/products/payment-delivery-stub';
 import { createAuctionFixture } from './support/e2e-fixtures';
 
-test('product composition stays portfolio-only without auction chrome', async ({
+test('product composition keeps the gallery and shows the sale on a live auction', async ({
   page,
 }) => {
   const relatedTitle = 'Related E2E artwork';
@@ -22,11 +21,13 @@ test('product composition stays portfolio-only without auction chrome', async ({
   await expect(
     page.getByRole('heading', { level: 2, name: 'Другие работы автора' }),
   ).toBeVisible();
-  await page.getByRole('tab', { name: 'Оплата и доставка' }).click();
+  await expect(page.getByText('Начальная цена')).toBeVisible();
+  await expect(page.getByText('10 BYN')).toBeVisible();
+  await page.getByRole('tab', { name: 'Как проходит сделка' }).click();
   await expect(page).toHaveURL(/\?tab=delivery$/);
-  await expect(page.getByText(PAYMENT_DELIVERY_STUB)).toBeVisible();
-  await expect(page.getByText('Ставка', { exact: true })).toHaveCount(0);
-  await expect(page.getByText(/BYN/)).toHaveCount(0);
+  await expect(page.getByText('Работа бронируется.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Сделать ставку' })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'Оплата и доставка' })).toHaveCount(0);
   await expect(page.getByRole('tab', { name: /Торги/ })).toHaveCount(0);
   await expect(page.getByTestId('product-sticky-auction-player')).toHaveCount(
     0,
