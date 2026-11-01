@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-01 — Settings switch web focus and keyboard
+
+`SettingsRow` toggle keeps role `switch`. On web it sets `aria-checked` and handles Space without scrolling; Enter stays on `Pressable`. The shared `focus-visible` rule now includes `[role='switch']` (`--bidplace-focus`, 2px, offset 2px). Off, disabled, and black switch colors, and `StatusBadge`, stay NEEDS-FIGMA.
+
 ## 2026-11-01 — Settings switch and provisional status badge
 
 `SettingsRow` can render the Figma `7008:15192` switch (track 36×20, thumb 16×16) without a second row component. That node is the on state only. Off, disabled, and black switch colors use existing semantic roles and stay NEEDS-FIGMA. `StatusBadge` (`neutral` / `accent` / `success` / `danger`) has no Figma frame; it uses caption type, pill radius, and theme colors. Visual agreement is still required. No adult-content setting was added.

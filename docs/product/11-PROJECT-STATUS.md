@@ -5,6 +5,10 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-01 — W4 settings switch web accessibility
+
+**Partial.** `SettingsRow` toggle on web now sets `aria-checked` and activates Space once without scrolling. Enter and click stay on `Pressable`. `[role='switch']` uses the shared focus outline in `apps/mobile/global.css`. Native `accessibilityState` is unchanged. Off, disabled, and black switch colors, and `StatusBadge`, stay NEEDS-FIGMA. Local: `SettingsList.web.spec.ts`, `SettingsList.spec.ts`, and `StatusBadge.spec.ts` — 15 passed; mobile `tsc --noEmit` and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist` with `[role=switch]:focus-visible`. Chromium loaded `global.css`: light outline `rgb(18, 18, 18)`, black `rgb(255, 255, 255)`, both solid 2px with offset 2px. `e2e/theme-computed-focus.spec.ts` was not run against `/login`. W4 screens (Tasks 3–11) stay Not implemented.
+
 ## 2026-11-01 — W4 Task 2 UI primitives
 
 **Partial.** `SettingsRow` in `apps/mobile/src/components/figma/SettingsList.tsx` accepts `toggle` and keeps the previous button row when `toggle` is absent. The switch is role `switch`, named by the row label, 36×20 with a 16×16 thumb (Figma `7008:15192`, on state). `StatusBadge` in `apps/mobile/src/components/ui/StatusBadge.tsx` is a caption label in `neutral` / `accent` / `success` / `danger`. No status-badge frame exists, so that visual is NEEDS-FIGMA. Tests: `SettingsList.spec.ts`, `StatusBadge.spec.ts`. W4 screens (Tasks 3–11) stay Not implemented. Adult-content settings were not added.

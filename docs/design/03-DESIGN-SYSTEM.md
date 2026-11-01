@@ -680,7 +680,8 @@ Dismissed dialogs must not intercept clicks: web `app-dialog-host` /
 `DEC-104`. A pressed `FigmaButton` or `FigmaChoiceChip` keeps its existing
 fill, inset, or opacity change. It does not draw a mint ring. Selected chips
 stay on the charcoal fill after release. Keyboard focus uses the monochrome
-`focus-visible` outline in `global.css` (DEC-127). Dock items already have no shadow.
+`focus-visible` outline in `global.css` (DEC-127), including
+`[role='switch']`. Dock items already have no shadow.
 This does not change control size, type, or the field success state.
 
 ## 7. Account shared components (2026-10-20)
@@ -707,7 +708,9 @@ This does not change control size, type, or the field success state.
   трек 36×20 и бегунок 16×16 из Figma `7008:15192` (только включённое
   состояние). Включённый трек — `inkStrong`, бегунок — `canvas`; выключенный
   трек — `surfaceStrong`. Выключенное, disabled и black-состояние
-  переключателя — NEEDS-FIGMA.
+  переключателя — NEEDS-FIGMA. На web строка с `toggle` ставит
+  `aria-checked` и обрабатывает Space (без прокрутки); Enter остаётся
+  у `Pressable`. Фокус — общий `focus-visible` для `[role='switch']`.
 - `WorkCoverCaption` (экспорт `WorkCoverCard.tsx`) — единый caption
   caption-варианта: author — `coverCaptionAuthor` (tracking −0.14), title
   — роль `coverCaptionTitle` 14/17/500/−0.28, максимум 2 строки. Ветки

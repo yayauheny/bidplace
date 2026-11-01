@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -81,6 +81,17 @@ export function SettingsRow(props: SettingsRowProps) {
   const toggle = props.toggle;
   const disabled = busy || Boolean(toggle?.disabled);
   const palette = useAppTheme();
+  const handleWebKeyDown = (event: {
+    key: string;
+    preventDefault: () => void;
+  }) => {
+    // Pressable activates Enter for role=switch and Space only for button.
+    if (!toggle) return;
+    if (event.key !== ' ' && event.key !== 'Spacebar') return;
+    event.preventDefault();
+    if (disabled) return;
+    toggle.onChange(!toggle.value);
+  };
   return (
     <View>
       {divided ? (
@@ -98,6 +109,12 @@ export function SettingsRow(props: SettingsRowProps) {
           toggle ? { checked: toggle.value, disabled, busy } : { busy }
         }
         disabled={disabled}
+        {...(Platform.OS === 'web' && toggle
+          ? ({
+              'aria-checked': toggle.value,
+              onKeyDown: handleWebKeyDown,
+            } as object)
+          : {})}
         onPress={() => {
           if (toggle) {
             toggle.onChange(!toggle.value);
