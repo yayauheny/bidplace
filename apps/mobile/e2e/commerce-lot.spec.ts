@@ -195,10 +195,18 @@ test('polls a quiet live auction at most seven times in a minute', async ({ page
 });
 
 test('polls the last two minutes faster and stops while hidden', async ({ page }) => {
-  const lotAt: number[] = [];
-  page.on('request', (request) => {
-    const path = new URL(request.url()).pathname;
-    if (path.endsWith('/lot')) lotAt.push(Date.now());
+  await page.addInitScript(() => {
+    const starts: number[] = [];
+    const original = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const raw =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (new URL(raw, window.location.origin).pathname.endsWith('/lot')) {
+        starts.push(performance.now());
+      }
+      return original(input, init);
+    };
+    Object.assign(window, { __lotStarts: starts });
   });
   const counts = await install(page, (route) =>
     route.fulfill({ json: liveLot('2026-11-01T10:01:30.000Z') }),
@@ -209,8 +217,13 @@ test('polls the last two minutes faster and stops while hidden', async ({ page }
   await page.waitForTimeout(12_000);
   expect(counts.lot - opened).toBeGreaterThanOrEqual(3);
   expect(counts.lot - opened).toBeLessThanOrEqual(5);
-  const hideStarted = Date.now();
+  const seenBeforeHide = await page.evaluate(() => {
+    const marks = window as Window & { __lotStarts?: number[] };
+    return marks.__lotStarts?.length ?? 0;
+  });
+  expect(seenBeforeHide).toBe(counts.lot);
   await page.evaluate(() => {
+    Object.assign(window, { __lotHiddenAt: performance.now() });
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
       get: () => 'hidden',
@@ -218,7 +231,12 @@ test('polls the last two minutes faster and stops while hidden', async ({ page }
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await page.waitForTimeout(12_000);
-  expect(lotAt.filter((time) => time - hideStarted > 1_000)).toEqual([]);
+  const startedAfterHide = await page.evaluate(() => {
+    const marks = window as Window & { __lotStarts?: number[]; __lotHiddenAt?: number };
+    const hiddenAt = marks.__lotHiddenAt ?? 0;
+    return (marks.__lotStarts ?? []).filter((start) => start >= hiddenAt);
+  });
+  expect(startedAfterHide).toEqual([]);
   expect(counts.work).toBe(1);
 });
 
