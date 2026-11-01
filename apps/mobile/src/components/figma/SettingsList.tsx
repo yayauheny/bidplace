@@ -84,12 +84,13 @@ export function SettingsRow(props: SettingsRowProps) {
   const handleWebKeyDown = (event: {
     key: string;
     preventDefault: () => void;
+    repeat: boolean;
   }) => {
     // Pressable activates Enter for role=switch and Space only for button.
     if (!toggle) return;
     if (event.key !== ' ' && event.key !== 'Spacebar') return;
     event.preventDefault();
-    if (disabled) return;
+    if (disabled || event.repeat) return;
     toggle.onChange(!toggle.value);
   };
   return (

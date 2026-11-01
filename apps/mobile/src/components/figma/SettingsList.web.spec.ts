@@ -40,11 +40,17 @@ vi.mock('./FigmaIcon', () => ({
   FigmaIcon: () => null,
 }));
 
-function key(target: Element, type: 'keydown' | 'keyup', keyName: string) {
+function key(
+  target: Element,
+  type: 'keydown' | 'keyup',
+  keyName: string,
+  repeat = false,
+) {
   const event = new KeyboardEvent(type, {
     key: keyName,
     bubbles: true,
     cancelable: true,
+    repeat,
   });
   target.dispatchEvent(event);
   return event;
@@ -182,6 +188,58 @@ describe('SettingsRow web', () => {
       key(control, 'keyup', 'Enter');
     });
     expect(calls).toEqual([true, false, true]);
+  });
+
+  it('toggles once when Space repeats, then again after release', () => {
+    const calls: boolean[] = [];
+    let value = false;
+    function paint() {
+      renderRow({
+        icon: 'user',
+        label: 'Уведомления',
+        toggle: {
+          value,
+          onChange: (next) => {
+            calls.push(next);
+            value = next;
+          },
+        },
+      });
+    }
+    paint();
+
+    const first = key(row('switch'), 'keydown', ' ', false);
+    act(() => undefined);
+    expect(first.defaultPrevented).toBe(true);
+    expect(calls).toEqual([true]);
+    paint();
+
+    const repeats = [0, 1, 2].map(() =>
+      key(row('switch'), 'keydown', ' ', true),
+    );
+    act(() => undefined);
+    expect(repeats.every((event) => event.defaultPrevented)).toBe(true);
+    expect(calls).toEqual([true]);
+
+    key(row('switch'), 'keyup', ' ');
+    const next = key(row('switch'), 'keydown', ' ', false);
+    act(() => undefined);
+    expect(next.defaultPrevented).toBe(true);
+    expect(calls).toEqual([true, false]);
+    paint();
+
+    act(() => {
+      row('switch').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(calls).toEqual([true, false, true]);
+    paint();
+
+    act(() => {
+      const control = row('switch');
+      key(control, 'keydown', 'Enter');
+      key(control, 'keyup', 'Enter');
+    });
+    expect(calls).toEqual([true, false, true, false]);
   });
 
   it('blocks mouse and keyboard while disabled or busy, then allows them again', () => {
