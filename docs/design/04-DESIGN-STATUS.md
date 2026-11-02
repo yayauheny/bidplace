@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Create and cancel a lot
+
+**Partial. NEEDS-FIGMA.** Live Figma `pAPQo6cADmG5XzVmBX76EE` and `design/figma-handoff` have no frame for the create-lot sheet (brief F4). The sheet is `AppDialog` presentation `sheet`, with `FigmaTabs`, `FigmaChoiceChip`, `TextField`, and `DateField`. It shows the work, the price or start price, and the currency before submit. Exact 390/1024/1440 geometry is not claimed. Cancel uses the existing dialog. An auction with bids has no button.
+
 ## 2026-11-02 — Author onboarding entry navigation
 
 **Partial.** `authorProfileDestination` in `use-seller-capability.ts` owns query-aware profile destinations. `header-chrome.ts` and `use-app-navigation.ts` reuse it for plus/footer: only confirmed absence opens intro; loading/error stay on the profile; suspended authors go to the cabinet and approved creation still goes to `/products/new`. Guest plus retains creation intent through `/products/new?entry=create`; this temporary resolver redirects by the same owner before mounting an editor, preserving it through later background query errors. Footer author entry retains onboarding in `redirectTo`. Paused first queries stay unknown. Parameterized owner tests and `e2e/navigation.spec.ts` cover statuses, absence, errors, guest continuation, Back and one-time intro. Chromium/WebKit routing matrix: 32 passed; mobile units: 1228 passed; owner routing/query tests: 43 passed. Typecheck, lint and web export passed. Physical iPhone acceptance remains NEEDS DEVICE VERIFICATION.
