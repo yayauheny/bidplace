@@ -178,7 +178,8 @@ test('shows a lot error and retries without replacing the work', async ({ page }
   failed = false;
   await page.keyboard.press('Enter');
   await expect(page.getByText('Текущая цена')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Сделать ставку' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Сделать ставку' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'История ставок' })).toBeVisible();
 });
 
 test('polls a quiet live auction at most seven times in a minute', async ({ page }) => {
@@ -415,4 +416,109 @@ test('shows the sale at phone and desktop widths without a buy button', async ({
   await expect(page.getByRole('button', { name: 'Купить' })).toHaveCount(0);
   await page.getByRole('tab', { name: 'Как проходит сделка' }).click();
   await expect(page.getByText('Автор свяжется в течение 24 часа')).toBeVisible();
+});
+
+test('sends one bid when the sheet is submitted twice', async ({ page }) => {
+  let bids = 0;
+  let release: () => void = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await install(page, (route) =>
+    route.fulfill({ json: liveLot('2026-11-01T18:00:00.000Z') }),
+  );
+  await page.route('**/api/listings/*/bids', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    bids += 1;
+    const body = route.request().postDataJSON() as { amountMinor: number };
+    await gate;
+    const next = liveLot('2026-11-01T18:00:00.000Z', body.amountMinor);
+    await route.fulfill({
+      json: {
+        bid: {
+          id: '22222222-2222-4222-8222-222222222222',
+          amountMinor: body.amountMinor,
+          createdAt: CLOCK,
+          participantLabel: 'Участник 3',
+        },
+        lot: {
+          ...next,
+          bidCount: 3,
+          minimumBidMinor: body.amountMinor + 2500,
+          viewer: { role: 'buyer', isLeading: true, blockedReason: 'BID_ALREADY_LEADING' },
+        },
+      },
+    });
+  });
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await page.getByRole('button', { name: 'Сделать ставку' }).click();
+  const submit = page.getByRole('dialog').getByRole('button', { name: 'Сделать ставку' });
+  await submit.click();
+  await expect.poll(() => bids).toBe(1);
+  await submit.click({ force: true });
+  expect(bids).toBe(1);
+  release();
+  await expect(page.getByText('Ваша ставка лидирует')).toBeVisible();
+});
+
+test('reserves a fixed lot once and shows the deal code', async ({ page }) => {
+  let purchases = 0;
+  let release: () => void = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const fixed = {
+    id: '11111111-1111-4111-8111-111111111111',
+    type: 'FIXED',
+    effectiveStatus: 'LIVE',
+    currency: 'BYN',
+    priceMinor: 335_300,
+    minimumBidMinor: null,
+    bidCount: 0,
+    startsAt: CLOCK,
+    endsAt: null,
+    contactWindowHours: 24,
+    mark: 'BUY',
+    serverNow: CLOCK,
+    viewer: { role: 'buyer', isLeading: false, blockedReason: null },
+  };
+  let current = fixed;
+  await install(page, (route) => route.fulfill({ json: current }));
+  await page.route('**/api/listings/*/purchase', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    purchases += 1;
+    await gate;
+    current = { ...fixed, mark: 'RESERVED', effectiveStatus: 'ENDED' };
+    await route.fulfill({
+      json: {
+        order: {
+          publicId: 'orderPanel1',
+          dealCode: '123456',
+          status: 'ACTIVE',
+          source: 'FIXED_PURCHASE',
+          amountMinor: 335_300,
+          currency: 'BYN',
+          activatedAt: CLOCK,
+          contactDeadlineAt: '2026-11-02T10:00:00.000Z',
+          buyerComment: 'Можно вечером',
+        },
+        lot: { ...fixed, mark: 'RESERVED', effectiveStatus: 'ENDED' },
+      },
+    });
+  });
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await page.getByRole('button', { name: 'Купить' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByText('3 353 BYN')).toBeVisible();
+  await expect(dialog.getByText('Автор свяжется с вами в течение 24 часа.')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Предложить цену' })).toHaveCount(0);
+  await dialog.getByLabel('Комментарий автору').fill('Можно вечером');
+  const submit = dialog.getByRole('button', { name: 'Купить' });
+  await submit.click();
+  await expect.poll(() => purchases).toBe(1);
+  await submit.click({ force: true });
+  expect(purchases).toBe(1);
+  release();
+  await expect(dialog.getByText('Код сделки 123456')).toBeVisible();
+  await expect(page.getByText('Забронировано')).toBeVisible();
 });

@@ -492,7 +492,7 @@ describe('lot clock and poll', () => {
       lot: lot({ endsAt: '2026-11-01T10:01:00.000Z' }),
       syncedNowMs: synced,
     });
-    expect(view.timerLabel).toBe('00:10');
+    expect(view.timerLabel).toBe('Закончится через 00:10');
   });
 
   it('corrects a jumped device clock after a newer serverNow', () => {

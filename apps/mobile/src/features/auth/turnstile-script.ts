@@ -8,7 +8,9 @@ export type TurnstileAction =
   | 'login'
   | 'register'
   | 'password_reset'
-  | 'email_verification';
+  | 'email_verification'
+  | 'bid'
+  | 'purchase';
 
 type TurnstileRenderOptions = {
   sitekey: string;

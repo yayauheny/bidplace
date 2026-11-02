@@ -68,6 +68,29 @@
 Checked on `6720b7af`. Later corrections stay here; the bullets below are the
 snapshot from that check.
 
+### Correction 2026-11-02 — Task 4 on `c3adf4f4`
+
+- Buyer «Купить» and «Сделать ставку» open `PurchaseDialog` and `BidSheet`.
+  «История ставок» opens `BidHistorySheet`. Sign-in and email verification use
+  the existing routes and return to `/product/:publicId`.
+- Not mounted: author cancel (Task 5), contacts (Task 7), and the order card
+  (Task 6). A purchase shows the deal code and does not navigate. A contacts
+  block stays text.
+- Idempotency: one key per request body until success. A lost response
+  (`network`, `server`, `unexpected_response`) keeps the key. A body change
+  or success replaces it. A second press while the first is in flight does
+  not send another request. A late success for another user or work is not
+  written into that cache.
+- `BID_TOO_LOW`, `LISTING_NOT_OPEN`, and `LISTING_CHANGED` refresh the lot
+  through `invalidateWorkSurfaces`. The client does not invent the new minimum.
+- A bid above twice `minimumBidMinor` asks «Подтвердите ставку N» before send.
+  The step is `bidStepMinor`. There is no buyout, no «Предложить цену», and
+  no `+10/+50/+100` row.
+- Appearance follows `597:18789`, `7464:3174`, and `7464:3293`. The auction
+  timer is «Закончится через …». Desktop lot frames are still absent, so
+  1024/1440 is the existing page pattern, not a pixel match. `7454:2765` is
+  not a source.
+
 ### Correction 2026-11-01 — Task 3 on `cdd81fcb`
 
 - `SettingsRow` has a `toggle`. `StatusBadge` exists. Off, disabled, and black

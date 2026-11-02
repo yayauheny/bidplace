@@ -23,6 +23,7 @@ import { portfolioKeys } from '../../lib/query-cache';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { useAppTheme } from '../../providers/theme-provider';
+import { LotCommerce } from '../commerce/LotCommerce';
 import { DEAL_STEPS, LotPanel } from '../commerce/LotPanel';
 import { useLot } from '../commerce/use-lot';
 import { lotSaleOpen, presentLot, syncedNowMs } from '../commerce/lot-view';
@@ -38,6 +39,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const panelId = useId();
   const palette = useAppTheme();
   const [shareOpen, setShareOpen] = useState(false);
+  const [sheet, setSheet] = useState<'bid' | 'buy' | 'history' | null>(null);
   const query = useQuery({
     queryKey: portfolioKeys.work(publicId),
     queryFn: ({ signal }) => api.portfolio.getWork(publicId, { signal }),
@@ -62,6 +64,9 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     lot.status === 'empty' ||
     lot.status === 'empty-stale';
   const sale = saleKnown ? lotSaleOpen(saleView) : undefined;
+  useEffect(() => {
+    setSheet(null);
+  }, [publicId]);
   useEffect(() => {
     if (!query.data || !requestedTab) return;
     if (sale === undefined && requestedTab === 'delivery') return;
@@ -146,7 +151,27 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           panelId={panelId}
           onBack={() => navigateWorkPageBack(router)}
           onShare={() => setShareOpen(true)}
-          summary={<LotPanel read={lot} />}
+          summary={
+            <LotPanel
+              read={lot}
+              onAction={(action) => {
+                if (!action.enabled) return;
+                if (action.kind === 'bid') setSheet('bid');
+                else if (action.kind === 'buy') setSheet('buy');
+                else if (action.kind === 'sign-in') {
+                  router.push({
+                    pathname: '/login',
+                    params: { redirectTo: `/product/${publicId}` },
+                  });
+                } else if (action.kind === 'verify-email') {
+                  router.push(
+                    `/verify-email?redirectTo=${encodeURIComponent(`/product/${publicId}`)}` as Href,
+                  );
+                }
+              }}
+              onHistory={() => setSheet('history')}
+            />
+          }
         >
           <View
             style={{
@@ -260,6 +285,16 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         sharePath={work.sharePath}
+      />
+      <LotCommerce
+        publicId={publicId}
+        lot={lot.lot}
+        title={work.title}
+        imageUrl={
+          work.images[0] ? getApiAssetUrl(work.images[0].url) : null
+        }
+        mode={sheet}
+        onClose={() => setSheet(null)}
       />
     </AppShell>
   );

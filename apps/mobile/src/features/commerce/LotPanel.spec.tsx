@@ -9,6 +9,7 @@ import type { PublicLot } from '@bidplace/contracts';
 
 import { ThemeProvider } from '../../providers/theme-provider';
 import { LotPanel } from './LotPanel';
+import type { LotAction } from './lot-view';
 import type { LotRead } from './use-lot';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -52,6 +53,7 @@ vi.mock('react-native', () => ({
       children?: ReactNode | ((state: { pressed: boolean; hovered: boolean; focused: boolean }) => ReactNode);
       onPress?: () => void;
       accessibilityLabel?: string;
+      disabled?: boolean;
     },
     ref,
   ) {
@@ -64,8 +66,11 @@ vi.mock('react-native', () => ({
       {
         ref,
         type: 'button',
+        disabled: props.disabled,
         'aria-label': props.accessibilityLabel,
-        onClick: () => props.onPress?.(),
+        onClick: () => {
+          if (!props.disabled) props.onPress?.();
+        },
       },
       children,
     );
@@ -131,13 +136,20 @@ describe('LotPanel', () => {
     vi.useRealTimers();
   });
 
-  function render(value: LotRead, theme: 'light' | 'black' = 'light') {
+  function render(
+    value: LotRead,
+    theme: 'light' | 'black' = 'light',
+    handlers: {
+      onAction?: (action: LotAction) => void;
+      onHistory?: () => void;
+    } = {},
+  ) {
     act(() => {
       root ??= createRoot(host);
       root.render(
         createElement(ThemeProvider, {
           theme,
-          children: createElement(LotPanel, { read: value }),
+          children: createElement(LotPanel, { read: value, ...handlers }),
         }),
       );
     });
@@ -218,14 +230,59 @@ describe('LotPanel', () => {
     },
   );
 
-  it('shows the auction price and timer without a bid button', () => {
-    render(read());
+  it('keeps a leading bid disabled and sends sign-in through the same label', () => {
+    const onAction = vi.fn();
+    render(
+      read({
+        lot: lot({
+          viewer: { role: 'buyer', isLeading: true, blockedReason: 'BID_ALREADY_LEADING' },
+        }),
+      }),
+      'light',
+      { onAction },
+    );
+    const bid = [...host.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Сделать ставку'),
+    ) as HTMLButtonElement | undefined;
+    expect(bid?.disabled).toBe(true);
+    expect(shown()).toContain('Ваша ставка уже лидирует.');
+    act(() => bid?.click());
+    expect(onAction).not.toHaveBeenCalled();
+
+    render(
+      read({ lot: lot({ viewer: null }) }),
+      'light',
+      { onAction },
+    );
+    const signIn = [...host.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Сделать ставку'),
+    ) as HTMLButtonElement | undefined;
+    act(() => signIn?.click());
+    expect(onAction).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'sign-in', enabled: true }),
+    );
+  });
+
+  it('opens a bid from the live auction and keeps history beside it', () => {
+    const onAction = vi.fn();
+    const onHistory = vi.fn();
+    render(read(), 'light', { onAction, onHistory });
     expect(shown()).toContain('Текущая цена');
     expect(shown()).toContain('1 250 BYN');
     expect(shown()).toContain('2 ставки');
     expect(shown()).toContain('2 ч 0 мин');
-    expect(host.querySelector('button')).toBeNull();
-    expect(shown()).not.toContain('Сделать ставку');
+    const bid = [...host.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Сделать ставку'),
+    );
+    const history = [...host.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('История ставок'),
+    );
+    expect(bid).toBeTruthy();
+    expect(history).toBeTruthy();
+    act(() => (bid as HTMLButtonElement).click());
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ kind: 'bid', enabled: true }));
+    act(() => (history as HTMLButtonElement).click());
+    expect(onHistory).toHaveBeenCalledOnce();
   });
 
   it('uses the theme ink for the price in light and black', () => {

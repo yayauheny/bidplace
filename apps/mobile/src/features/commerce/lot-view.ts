@@ -137,7 +137,7 @@ export function presentLot(input: {
       phase === 'auction-scheduled' ? scheduleLabel(input.lot.startsAt) : null,
     timerLabel:
       phase === 'auction-live' && input.lot.endsAt
-        ? formatRemaining(Date.parse(input.lot.endsAt) - input.syncedNowMs)
+        ? endsLabel(Date.parse(input.lot.endsAt) - input.syncedNowMs)
         : null,
     statusLabel: statusLabel(input.lot, phase),
     statusTone: statusTone(phase, input.lot),
@@ -149,7 +149,7 @@ export function presentLot(input: {
         : null,
     deal,
     contactLine: deal
-      ? `Автор свяжется в течение ${hoursPhrase(input.lot.contactWindowHours)}`
+      ? `Автор свяжется в течение ${contactHoursPhrase(input.lot.contactWindowHours)}`
       : null,
     action,
     authorHint: action?.kind === 'cancel-lot' && !action.enabled
@@ -280,6 +280,11 @@ function scheduleLabel(startsAt: string): string {
   return `Аукцион начнётся ${parts.day}.${parts.month} в ${parts.hour}:${parts.minute}`;
 }
 
+function endsLabel(ms: number): string | null {
+  const rest = formatRemaining(ms);
+  return rest ? `Закончится через ${rest}` : null;
+}
+
 function formatRemaining(ms: number): string | null {
   if (ms <= 0) return null;
   const totalSeconds = Math.floor(ms / 1000);
@@ -295,7 +300,7 @@ function formatRemaining(ms: number): string | null {
   }
   const days = Math.floor(ms / DAY_MS);
   const hours = Math.floor((ms % DAY_MS) / HOUR_MS);
-  return `осталось ${days} д ${hours} ч`;
+  return `${days} д ${hours} ч`;
 }
 
 function bidLabel(count: number): string {
@@ -311,7 +316,7 @@ function bidLabel(count: number): string {
   return `${count} ${word}`;
 }
 
-function hoursPhrase(hours: number): string {
+export function contactHoursPhrase(hours: number): string {
   const mod10 = hours % 10;
   const mod100 = hours % 100;
   const word =

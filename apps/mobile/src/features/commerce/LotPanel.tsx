@@ -1,12 +1,13 @@
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
+import type { PublicLot } from '@bidplace/contracts';
 
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { AppText } from '../../components/ui/AppText';
-import { TextButton } from '../../components/ui/Button';
+import { PrimaryButton, TextButton } from '../../components/ui/Button';
 import { useNow } from '../../lib/use-now';
-import { presentLot, syncedNowMs } from './lot-view';
+import { presentLot, syncedNowMs, type LotAction } from './lot-view';
 import type { LotRead } from './use-lot';
 
 export const DEAL_STEPS = [
@@ -15,7 +16,15 @@ export const DEAL_STEPS = [
   'Автор подтверждает сделку.',
 ] as const;
 
-export function LotPanel({ read }: { read: LotRead }) {
+export function LotPanel({
+  read,
+  onAction,
+  onHistory,
+}: {
+  read: LotRead;
+  onAction?: (action: LotAction) => void;
+  onHistory?: () => void;
+}) {
   const clock =
     read.lot?.type === 'AUCTION' && read.lot.effectiveStatus === 'LIVE';
   const deviceNow = useNow(1000, clock && read.active);
@@ -77,8 +86,44 @@ export function LotPanel({ read }: { read: LotRead }) {
         <AppText role="caption">{view.extensionLabel}</AppText>
       ) : null}
       {reason ? <AppText role="bodySmall">{reason}</AppText> : null}
+      {view.action && read.lot && onAction ? (
+        <BuyerAction action={view.action} lot={read.lot} onAction={onAction} />
+      ) : null}
+      {view.showsBidHistory && onHistory ? (
+        <TextButton label="История ставок" onPress={onHistory} />
+      ) : null}
     </View>
   );
+}
+
+function BuyerAction({
+  action,
+  lot,
+  onAction,
+}: {
+  action: LotAction;
+  lot: PublicLot;
+  onAction: (action: LotAction) => void;
+}) {
+  const label = buyerLabel(action, lot.type);
+  if (!label) return null;
+  return (
+    <PrimaryButton
+      label={label}
+      width="full"
+      disabled={!action.enabled}
+      onPress={() => {
+        if (action.enabled) onAction(action);
+      }}
+    />
+  );
+}
+
+function buyerLabel(action: LotAction, type: PublicLot['type']): string | null {
+  if (action.kind === 'contacts' || action.kind === 'cancel-lot') return null;
+  if (action.kind === 'buy') return 'Купить';
+  if (action.kind === 'bid') return 'Сделать ставку';
+  return type === 'FIXED' ? 'Купить' : 'Сделать ставку';
 }
 
 function StaleSale({ onRetry }: { onRetry: () => void }) {
