@@ -59,6 +59,39 @@ describe('runTransaction', () => {
     expect(prisma.calls).toBe(3);
   });
 
+  it('maps a transaction start timeout to conflict without retrying', async () => {
+    const prisma = fakePrisma(async () => {
+      throw Object.assign(
+        new Error(
+          'Transaction API error: Unable to start a transaction in the given time.',
+        ),
+        { code: 'P2028' },
+      );
+    });
+
+    await expect(
+      runReadCommittedTransaction(prisma.client, async () => undefined),
+    ).rejects.toMatchObject({
+      apiCode: ApiErrorCode.CONFLICT,
+      status: 409,
+    });
+    expect(prisma.calls).toBe(1);
+  });
+
+  it('does not treat other transaction API errors as a start timeout', async () => {
+    const prisma = fakePrisma(async () => {
+      throw Object.assign(
+        new Error('Transaction API error: Transaction not found.'),
+        { code: 'P2028' },
+      );
+    });
+
+    await expect(
+      runReadCommittedTransaction(prisma.client, async () => undefined),
+    ).rejects.toThrow('Transaction not found');
+    expect(prisma.calls).toBe(1);
+  });
+
   it('does not retry other errors', async () => {
     const prisma = fakePrisma(async () => {
       throw new Error('void failed');

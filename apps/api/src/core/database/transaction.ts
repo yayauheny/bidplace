@@ -3,7 +3,10 @@ import { Prisma } from '@bidplace/database';
 
 import { AppException } from '../errors';
 import { PrismaService } from './prisma.service';
-import { isPrismaSerializableConflictError } from './prisma-error';
+import {
+  isPrismaSerializableConflictError,
+  isPrismaTransactionStartTimeout,
+} from './prisma-error';
 
 export class RetryableTransactionConflict extends Error {
   constructor() {
@@ -81,6 +84,14 @@ async function runTransaction<T>(
       return await prisma.$transaction(callback, options);
     } catch (error) {
       lastError = error;
+
+      if (isPrismaTransactionStartTimeout(error)) {
+        throw new AppException({
+          status: 409,
+          code: ApiErrorCode.CONFLICT,
+          message: 'Conflict',
+        });
+      }
 
       if (!isRetryableTransactionConflict(error) || attempt === attempts) {
         if (hasRetryableTransactionConflict(error)) {

@@ -1,5 +1,8 @@
 const PRISMA_UNIQUE_CONSTRAINT_ERROR_CODE = 'P2002';
 const PRISMA_SERIALIZABLE_CONFLICT_ERROR_CODE = 'P2034';
+const PRISMA_TRANSACTION_API_ERROR_CODE = 'P2028';
+const TRANSACTION_START_TIMEOUT_MESSAGE =
+  'Unable to start a transaction in the given time';
 
 function hasPrismaErrorCode(error: unknown, code: string): boolean {
   return (
@@ -22,6 +25,15 @@ export function prismaUniqueTargets(error: unknown): string[] {
   }
   if (typeof target === 'string') return [target];
   return [];
+}
+
+export function isPrismaTransactionStartTimeout(error: unknown): boolean {
+  if (!hasPrismaErrorCode(error, PRISMA_TRANSACTION_API_ERROR_CODE)) return false;
+  const message = (error as { message?: unknown }).message;
+  return (
+    typeof message === 'string' &&
+    message.includes(TRANSACTION_START_TIMEOUT_MESSAGE)
+  );
 }
 
 export function isPrismaSerializableConflictError(error: unknown): boolean {
