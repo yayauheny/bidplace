@@ -35,6 +35,7 @@
 
 - [Направление creator-платформы, границы MVP и UX Quality Bar](18-CREATOR-PLATFORM-DIRECTION.md).
 - [Сравнение конкурентов, гипотезы, риски и эксперименты](../research/2026-11-03-CREATOR-PLATFORM-RESEARCH-SYNTHESIS.md).
+- [Предметные предложения по UX: пути, экраны, данные, приоритеты MVP](../product-ux/README.md) — только для product/design-планирования, не обязательный coding context.
 
 Это контекст для будущих product/UX/research задач, **не замена** действующим владельцам решений, контрактов, дизайна и waves. Для обычного coding-фикса читать необязательно.
 
