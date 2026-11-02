@@ -383,8 +383,9 @@ facts; "Planned" owners are created by the named launch wave.
 | Scheduled jobs | `apps/api/src/core/tick/TickService` | Implemented locally — W2; live Needs verification |
 | Transactional emails | notification outbox, `enqueueNotification` | Implemented locally — W3 |
 | Client cache keys and invalidation | `apps/mobile/src/lib/query-cache.ts` | Implemented; W4 adds commerce keys |
+| Client lot read on the work page | `apps/mobile/src/features/commerce/use-lot.ts`, `lot-view.ts`, `LotPanel.tsx` | Partial — read, timer, and sale tab. Buy, bid, history, list, and unlist are not mounted |
 | Client error texts | `apps/mobile/src/lib/api-error-messages.ts` | Implemented locally — W1; sale codes extend in W4 |
-| Money formatting, ticking time | `apps/mobile/src/lib/money.ts`, `use-now.ts` | Planned — W4 |
+| Money formatting, ticking time | `apps/mobile/src/lib/money.ts`, `use-now.ts` | Implemented — W4 Task 1. The lot panel is the only work-page caller of `useNow` |
 | Leave-screen guard | `apps/mobile/src/lib/use-prevent-remove.ts` | Planned — W7 |
 | Formats, limits, error codes | `packages/contracts` | Implemented |
 | Colors and sizes | `packages/design-tokens` via `useAppTheme` | Implemented |

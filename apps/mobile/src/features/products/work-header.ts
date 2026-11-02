@@ -19,5 +19,6 @@ export type WorkHeaderProps = {
   panelId: string;
   onBack: () => void;
   onShare: () => void;
+  summary?: ReactNode;
   children?: ReactNode;
 };

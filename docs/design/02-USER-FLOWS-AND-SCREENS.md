@@ -333,8 +333,9 @@ Portfolio variant сохраняет визуальную галерею и ин
   Текущий runtime всё ещё показывает plain text с gallery extras по прежнему `DEC-093`;
 - `Детали` всегда.
 
-`Оплата и доставка` пока присутствует в runtime как v1 stub; в portfolio target
-она отсутствует и отложена в [sales plan](../product/15-POST-MVP-BACKLOG.md).
+`Как проходит сделка` (param `delivery`) appears only while the lot presentation
+is an open sale. `CANCELLED` and `ENDED` without `RESERVED` or `SOLD` do not
+add it. Card payment stays out. Exact lot geometry is NEEDS-FIGMA.
 `Ставки` отсутствуют. `Другие работы автора` содержит только Work cards; ссылка имени уже
 ведёт в Creator profile. Claims об authenticity/provenance маркируются как
 информация автора, если platform не проводила экспертизу.
