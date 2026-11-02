@@ -217,6 +217,20 @@ export function canWritePrivateCache(
   return true;
 }
 
+export async function refreshAfterContactSave(
+  queryClient: QueryClient,
+  epoch = currentAuthEpoch(queryClient),
+): Promise<void> {
+  if (!canWritePrivateCache(queryClient, epoch)) return;
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: commerceKeys.contacts() }),
+    queryClient.invalidateQueries({ queryKey: commerceKeys.attention() }),
+    queryClient.invalidateQueries({
+      predicate: (query) => isLotQueryKey(query.queryKey),
+    }),
+  ]);
+}
+
 export async function refreshPrivateQuery(
   queryClient: QueryClient,
   queryKey: QueryKey,

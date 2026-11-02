@@ -13,6 +13,7 @@ import {
   draftWriteLeaseIsValid,
   invalidateWorkSurfaces,
   isAuthScopedQueryKey,
+  refreshAfterContactSave,
   issueDraftWriteLease,
   ownerWorkKeys,
   portfolioKeys,
@@ -373,5 +374,40 @@ describe('commerce query keys', () => {
     expect(
       queryClient.getQueryState(commerceKeys.lot('w1', null))?.isInvalidated,
     ).toBe(true);
+  });
+
+  it('refreshes contacts, attention, and lots only for the current session', async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(authKeys.session, { id: 'viewer-1' });
+    queryClient.setQueryData(commerceKeys.contacts(), { phone: '1' });
+    queryClient.setQueryData(commerceKeys.attention(), { count: 1 });
+    queryClient.setQueryData(commerceKeys.lot('w1', 'viewer-1'), {});
+    queryClient.setQueryData(commerceKeys.bids('listing-1'), []);
+
+    await refreshAfterContactSave(queryClient);
+
+    expect(
+      queryClient.getQueryState(commerceKeys.contacts())?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(commerceKeys.attention())?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(commerceKeys.lot('w1', 'viewer-1'))
+        ?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(commerceKeys.bids('listing-1'))?.isInvalidated,
+    ).toBe(false);
+
+    await replaceAuthenticatedSession(queryClient, { id: 'viewer-2' });
+    queryClient.setQueryData(commerceKeys.contacts(), { phone: '2' });
+    await refreshAfterContactSave(queryClient, 0);
+    expect(
+      queryClient.getQueryState(commerceKeys.contacts())?.isInvalidated,
+    ).toBe(false);
+    expect(queryClient.getQueryData(commerceKeys.contacts())).toEqual({
+      phone: '2',
+    });
   });
 });
