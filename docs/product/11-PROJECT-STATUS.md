@@ -5,6 +5,10 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-02 — Touch web input typography
+
+**Partial.** `apps/mobile/global.css` centralizes 16px touch browser fields without changing desktop/native tokens, OTP typography, viewport limits or gestures. `e2e/figma-text-field-focus.spec.ts` checks actual auth/profile sizes, browser control kinds, OTP, overflow and form reachability on touch and desktop. Physical iPhone focus/keyboard behavior remains **NEEDS DEVICE VERIFICATION**; Chromium/WebKit touch/desktop checks: 8 passed; mobile units: 1211 passed; typecheck, lint and web export passed.
+
 ## 2026-11-02 — W4 Task 4 bid, purchase, and bid history
 
 **Partial.** A live buyer can open «Сделать ставку» or «Купить» from `LotPanel`. `BidSheet` steps by `bidStepMinor`, asks for a second press above twice the server minimum, and sends `placeBid` with one idempotency key until the amount changes or the bid is accepted. `PurchaseDialog` sends `purchase`, shows the deal code, and does not open an order card. `BidHistorySheet` reads `listBids`. Sign-in and email verification return to `/product/:publicId`. A lost response keeps the key. A late success does not land on another user or work. `BID_TOO_LOW`, `LISTING_NOT_OPEN`, and `LISTING_CHANGED` refresh the lot through `invalidateWorkSurfaces`. Author cancel, contacts, and the order route stay unmounted (Tasks 5, 7, and 6). The auction timer reads «Закончится через …». Checks: commerce/work/error specs 111 passed; mobile typecheck and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`; Chromium `e2e/commerce-lot.spec.ts` 12 passed, then the purchase case passed. `pnpm docs:link-check` passed (105 files). No database setup. Not a completed sale screen.
@@ -996,3 +1000,13 @@ No backend/API/auth/media changes. Owner regressions cover X/filter separation,
 section drafts, reload/Back/Forward, pagination/retry and result-tree identity.
 Verified:1047 mobile unit tests, typecheck/lint,70 Chromium/WebKit E2E +8 geometry checks, Web/iOS/Android exports, fence and docs links. PR44 reconciliation and remaining device/design gaps:
 Explore report.
+
+## 2026-11-02 — Web EXIF orientation
+
+**Partial (local Chromium pipeline verified; server save/reload and other devices need verification).**
+`PhotoCropSurface.web` leaves EXIF orientation to the shared browser decode instead
+of applying it again through cropper transforms and Expo export. The isolated
+`e2e/photo-harness` owner checks 39 pixel/crop scenarios across EXIF 1–8, user
+rotate/flip and work previews, plus two reopen cases; crop-only work keeps its
+original bytes. No API, storage, native or media lifecycle contract changed.
+The reported work-only right shift was not reproduced and received no speculative fix.

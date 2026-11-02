@@ -119,6 +119,8 @@ export function PhotoCropSurface({
         <Cropper
           ref={cropper}
           src={uri}
+          // Browser decode already applies EXIF for both this cropper and the web exporter.
+          checkOrientation={false}
           transitions={false}
           className={
             avatar ? 'photo-cropper photo-cropper--avatar' : 'photo-cropper'

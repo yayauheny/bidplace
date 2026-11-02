@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Touch web input typography
+
+**Partial.** `apps/mobile/global.css` centralizes 16px touch browser fields without changing desktop/native tokens, OTP typography, viewport limits or gestures. `e2e/figma-text-field-focus.spec.ts` checks actual auth/profile sizes, browser control kinds, OTP, overflow and form reachability on touch and desktop. Physical iPhone focus/keyboard behavior remains **NEEDS DEVICE VERIFICATION**; Chromium/WebKit touch/desktop checks: 8 passed; mobile units: 1211 passed; typecheck, lint and web export passed.
+
 ## 2026-11-02 — Bid and purchase sheets from the original frames
 
 **Partial.** Sources, read only: lot block `597:18789`, bid sheet `7464:3174`, purchase sheet `7464:3293`. Archive section `7454:2765` is not a source. The bid sheet keeps the title, one step down and up, the amount, and the obligation line (the frame’s «соглашетесь» is spelled «соглашаетесь»). The `+10/+50/+100` chips and «Выкуп» are not copied. The purchase sheet keeps the title, current price, and «Купить»; «Предложить цену» is not copied. The contact-window line replaces the auction sentence on that sheet. A second press «Подтвердите ставку N» is the brief, not a frame. The live timer is «Закончится через …». Price stays `workTitle`. 1024/1440 uses the existing work page; there is no desktop lot frame. Contacts, unlist, and the order card are not in these sheets.
