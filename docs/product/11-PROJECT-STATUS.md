@@ -978,3 +978,13 @@ No backend/API/auth/media changes. Owner regressions cover X/filter separation,
 section drafts, reload/Back/Forward, pagination/retry and result-tree identity.
 Verified:1047 mobile unit tests, typecheck/lint,70 Chromium/WebKit E2E +8 geometry checks, Web/iOS/Android exports, fence and docs links. PR44 reconciliation and remaining device/design gaps:
 Explore report.
+
+## 2026-11-02 — Web EXIF orientation
+
+**Partial (local Chromium pipeline verified; server save/reload and other devices need verification).**
+`PhotoCropSurface.web` leaves EXIF orientation to the shared browser decode instead
+of applying it again through cropper transforms and Expo export. The isolated
+`e2e/photo-harness` owner checks 39 pixel/crop scenarios across EXIF 1–8, user
+rotate/flip and work previews, plus two reopen cases; crop-only work keeps its
+original bytes. No API, storage, native or media lifecycle contract changed.
+The reported work-only right shift was not reproduced and received no speculative fix.
