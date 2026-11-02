@@ -31,6 +31,13 @@
 | Release/backup/restore | [Operations](../ops/00-RELEASE-AND-BACKUP.md) |
 | Удалённые планы, аудиты и архив | `git show 036d2cc4:<путь>` |
 
+## Рабочий продуктовый синтез (ноябрь 2026, не новый DEC)
+
+- [Направление creator-платформы, границы MVP и UX Quality Bar](18-CREATOR-PLATFORM-DIRECTION.md).
+- [Сравнение конкурентов, гипотезы, риски и эксперименты](../research/2026-11-03-CREATOR-PLATFORM-RESEARCH-SYNTHESIS.md).
+
+Это контекст для будущих product/UX/research задач, **не замена** действующим владельцам решений, контрактов, дизайна и waves. Для обычного coding-фикса читать необязательно.
+
 Перед продуктовой реализацией: foundation + нужные разделы RFC; архитектура и
 решения — только по затронутой границе. Roadmap/growth/market не обязательны для
 обычного исправления. UI: нужный flow только при изменении маршрута, design-system
