@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Author onboarding entry navigation
+
+**Partial.** `authorProfileDestination` in `use-seller-capability.ts` owns query-aware profile destinations. `header-chrome.ts` and `use-app-navigation.ts` reuse it for plus/footer: only confirmed absence opens intro; loading/error stay on the profile; suspended authors go to the cabinet and approved creation still goes to `/products/new`. Guest plus retains creation intent through `/products/new?entry=create`; this temporary resolver redirects by the same owner before mounting an editor, preserving it through later background query errors. Footer author entry retains onboarding in `redirectTo`. Paused first queries stay unknown. Parameterized owner tests and `e2e/navigation.spec.ts` cover statuses, absence, errors, guest continuation, Back and one-time intro. Chromium/WebKit routing matrix: 32 passed; mobile units: 1228 passed; owner routing/query tests: 43 passed. Typecheck, lint and web export passed. Physical iPhone acceptance remains NEEDS DEVICE VERIFICATION.
+
 ## 2026-11-02 — Touch web input typography
 
 **Partial.** `apps/mobile/global.css` centralizes 16px touch browser fields without changing desktop/native tokens, OTP typography, viewport limits or gestures. `e2e/figma-text-field-focus.spec.ts` checks actual auth/profile sizes, browser control kinds, OTP, overflow and form reachability on touch and desktop. Physical iPhone focus/keyboard behavior remains **NEEDS DEVICE VERIFICATION**; Chromium/WebKit touch/desktop checks: 8 passed; mobile units: 1211 passed; typecheck, lint and web export passed.

@@ -22,10 +22,23 @@ export function isAuthorCabinetAvailable(
   return status === 'APPROVED' || status === 'SUSPENDED';
 }
 
+export type SellerProfileAvailability = {
+  isLoading: boolean;
+  isError: boolean;
+  isAbsent: boolean;
+};
+
 export function authorProfileDestination(
   status: SellerProfile['status'] | null,
+  availability: SellerProfileAvailability = {
+    isLoading: false,
+    isError: false,
+    isAbsent: false,
+  },
 ): '/cabinet' | '/profile' | '/profile?intro=1' {
-  if (status === null) return '/profile?intro=1';
+  if (availability.isLoading || availability.isError) return '/profile';
+  if (status === null)
+    return availability.isAbsent ? '/profile?intro=1' : '/profile';
   return isAuthorCabinetAvailable(status) ? '/cabinet' : '/profile';
 }
 
@@ -49,6 +62,7 @@ export function useSellerCapability() {
     status: profile?.status ?? null,
     isLoading: query.isLoading,
     isError,
-    isAbsent: absent || (!query.isLoading && !query.data && !query.isError),
+    isAbsent: absent,
+    refetch: query.refetch,
   };
 }

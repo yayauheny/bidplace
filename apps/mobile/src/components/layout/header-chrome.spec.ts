@@ -58,16 +58,55 @@ describe('shared public navigation', () => {
     { status: null, destination: '/profile' },
     { status: 'PENDING_REVIEW', destination: '/profile' },
     { status: 'APPROVED', destination: '/products/new' },
-  ] as const)('keeps author onboarding separate from creation for $status', ({ status, destination }) => {
-    expect(getMobileCreateHref({ isAuthenticated: true, sellerStatus: status, returnPath: '/works' })).toBe(destination);
-    expect(getMobileCreateHref({ isAuthenticated: true, sellerStatus: null, returnPath: '/profile' })).toBe('/profile');
-    expect(getProfileHref({ isAdmin: false, isAuthenticated: true, returnPath: '/works' })).toBe('/account');
-  });
+  ] as const)(
+    'keeps author onboarding separate from creation for $status',
+    ({ status, destination }) => {
+      expect(
+        getMobileCreateHref({
+          isAuthenticated: true,
+          sellerStatus: status,
+          returnPath: '/works',
+        }),
+      ).toBe(destination);
+      expect(
+        getMobileCreateHref({
+          isAuthenticated: true,
+          sellerStatus: null,
+          returnPath: '/profile',
+        }),
+      ).toBe('/profile');
+      expect(
+        getProfileHref({
+          isAdmin: false,
+          isAuthenticated: true,
+          returnPath: '/works',
+        }),
+      ).toBe('/account');
+    },
+  );
 
   it('preserves the requested destination for guest onboarding and returns admins to their cabinet', () => {
-    expect(getMobileCreateHref({ isAuthenticated: false, sellerStatus: null, returnPath: '/profile' })).toEqual({ pathname: '/login', params: { redirectTo: '/profile' } });
-    expect(getMobileCreateHref({ isAuthenticated: false, sellerStatus: null, returnPath: '/works' })).toEqual({ pathname: '/login', params: { redirectTo: '/works' } });
-    expect(getProfileHref({ isAdmin: true, isAuthenticated: true, returnPath: '/works' })).toBe('/account');
+    expect(
+      getMobileCreateHref({
+        isAuthenticated: false,
+        sellerStatus: null,
+        returnPath: '/profile',
+      }),
+    ).toEqual({ pathname: '/login', params: { redirectTo: '/profile' } });
+    expect(
+      getMobileCreateHref({
+        isAuthenticated: false,
+        sellerStatus: null,
+        returnPath: '/works',
+      }),
+    ).toEqual({ pathname: '/login', params: { redirectTo: '/works' } });
+    expect(
+      getProfileHref({
+        isAdmin: true,
+        isAuthenticated: true,
+        returnPath: '/works',
+      }),
+    ).toBe('/account');
   });
 
   it.each([
@@ -97,4 +136,32 @@ describe('footer legal destinations', () => {
     );
     expect(new Set(ids)).toEqual(new Set(legalDocumentIdSchema.options));
   });
+});
+
+describe('create navigation availability', () => {
+  it.each([
+    [null, false, false, true, '/profile?intro=1'],
+    ['DRAFT', false, false, false, '/profile'],
+    ['PENDING_REVIEW', false, false, false, '/profile'],
+    ['CHANGES_REQUESTED', false, false, false, '/profile'],
+    ['REJECTED', false, false, false, '/profile'],
+    ['APPROVED', false, false, false, '/products/new'],
+    ['SUSPENDED', false, false, false, '/cabinet'],
+    [null, true, false, false, '/profile'],
+    [null, false, true, false, '/profile'],
+    [null, false, false, false, '/profile'],
+    [null, false, true, true, '/profile'],
+    ['APPROVED', false, true, false, '/profile'],
+  ] as const)(
+    'routes status=%s loading=%s error=%s absent=%s to %s',
+    (status, isLoading, isError, isAbsent, destination) => {
+      expect(
+        getMobileCreateHref({
+          isAuthenticated: true,
+          sellerStatus: status,
+          sellerState: { isLoading, isError, isAbsent },
+        }),
+      ).toBe(destination);
+    },
+  );
 });
