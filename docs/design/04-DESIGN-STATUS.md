@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Touch web input typography
+
+**Partial.** `apps/mobile/global.css` centralizes 16px touch browser fields without changing desktop/native tokens, OTP typography, viewport limits or gestures. `e2e/figma-text-field-focus.spec.ts` checks actual auth/profile sizes, browser control kinds, OTP, overflow and form reachability on touch and desktop. Physical iPhone focus/keyboard behavior remains **NEEDS DEVICE VERIFICATION**; Chromium/WebKit touch/desktop checks: 8 passed; mobile units: 1211 passed; typecheck, lint and web export passed.
+
 ## 2026-11-01 — Settings switch web focus and keyboard
 
 `SettingsRow` toggle keeps role `switch`. On web it sets `aria-checked` and handles Space without scrolling; Enter stays on `Pressable`. The shared `focus-visible` rule now includes `[role='switch']` (`--bidplace-focus`, 2px, offset 2px). Off, disabled, and black switch colors, and `StatusBadge`, stay NEEDS-FIGMA.

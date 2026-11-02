@@ -5,6 +5,10 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-02 — Touch web input typography
+
+**Partial.** `apps/mobile/global.css` centralizes 16px touch browser fields without changing desktop/native tokens, OTP typography, viewport limits or gestures. `e2e/figma-text-field-focus.spec.ts` checks actual auth/profile sizes, browser control kinds, OTP, overflow and form reachability on touch and desktop. Physical iPhone focus/keyboard behavior remains **NEEDS DEVICE VERIFICATION**; Chromium/WebKit touch/desktop checks: 8 passed; mobile units: 1211 passed; typecheck, lint and web export passed.
+
 ## 2026-11-01 — W4 settings switch web accessibility
 
 **Partial.** `SettingsRow` toggle on web now sets `aria-checked` and activates Space once without scrolling. Enter and click stay on `Pressable`. `[role='switch']` uses the shared focus outline in `apps/mobile/global.css`. Native `accessibilityState` is unchanged. Off, disabled, and black switch colors, and `StatusBadge`, stay NEEDS-FIGMA. Local: `SettingsList.web.spec.ts`, `SettingsList.spec.ts`, and `StatusBadge.spec.ts` — 15 passed; mobile `tsc --noEmit` and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist` with `[role=switch]:focus-visible`. Chromium loaded `global.css`: light outline `rgb(18, 18, 18)`, black `rgb(255, 255, 255)`, both solid 2px with offset 2px. `e2e/theme-computed-focus.spec.ts` was not run against `/login`. W4 screens (Tasks 3–11) stay Not implemented.
