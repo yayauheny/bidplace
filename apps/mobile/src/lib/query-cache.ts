@@ -61,6 +61,8 @@ export const adminKeys = {
     ['admin', 'history', kind, id] as const,
   analyticsFoundation: (range: unknown) =>
     ['admin', 'analytics', 'foundation', range] as const,
+  commerceRoot: ['admin', 'commerce'] as const,
+  commerce: (part: string) => ['admin', 'commerce', part] as const,
 };
 
 export const commerceKeys = {
