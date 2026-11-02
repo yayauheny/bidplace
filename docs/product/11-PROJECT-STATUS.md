@@ -7,7 +7,7 @@
 
 ## 2026-11-02 — Sales launch checklist
 
-**Partial.** The only sales-launch checklist is `docs/ops/00-RELEASE-AND-BACKUP.md` («Запуск продаж»). Cloudflare tick and at-least-once mail notes are in `docs/ops/CLOUDFLARE-DEPLOYMENT.md`. Operations and monitoring only link there. Live `GET /api/health` and `/api/health/ready` returned 200 with database ok at 2026-11-02T21:14:40Z. Public `GET /api/internal/tick` returned an Express 404, so the Worker boundary is not confirmed. Backup restore, mail, Turnstile, Cron and ★ values were not run and are not passed. W6 consent stays a separate gap. No cloud mutation.
+**Partial.** The only sales-launch checklist is `docs/ops/00-RELEASE-AND-BACKUP.md` («Запуск продаж»). The PITR baseline is the read-only snapshot at restore time `T`, including order/bid/listing connectivity. Commerce mail follows COMMERCE §9. The Cron test expects close, order and buyer mail within 10 minutes of `endsAt`, with heartbeat recorded separately. Live `GET /api/health` and `/api/health/ready` returned 200 with database ok at 2026-11-02T21:14:40Z. Public tick returned JSON 404 with `x-powered-by: Express`, which differs from the Worker empty 404; that single GET is not evidence of a tick run. Restore, mail, Turnstile, Cron and ★ values were not run. W6 consent stays a separate gap. No cloud mutation.
 
 ## 2026-11-02 — Author onboarding entry navigation
 
