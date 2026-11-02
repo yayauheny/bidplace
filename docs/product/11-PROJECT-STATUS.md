@@ -5,6 +5,10 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-02 — Sales launch checklist
+
+**Partial.** The only sales-launch checklist is `docs/ops/00-RELEASE-AND-BACKUP.md` («Запуск продаж»). Cloudflare tick and at-least-once mail notes are in `docs/ops/CLOUDFLARE-DEPLOYMENT.md`. Operations and monitoring only link there. Live `GET /api/health` and `/api/health/ready` returned 200 with database ok at 2026-11-02T21:14:40Z. Public `GET /api/internal/tick` returned an Express 404, so the Worker boundary is not confirmed. Backup restore, mail, Turnstile, Cron and ★ values were not run and are not passed. W6 consent stays a separate gap. No cloud mutation.
+
 ## 2026-11-02 — Author onboarding entry navigation
 
 **Partial.** `authorProfileDestination` in `use-seller-capability.ts` owns query-aware profile destinations. `header-chrome.ts` and `use-app-navigation.ts` reuse it for plus/footer: only confirmed absence opens intro; loading/error stay on the profile; suspended authors go to the cabinet and approved creation still goes to `/products/new`. Guest plus retains creation intent through `/products/new?entry=create`; this temporary resolver redirects by the same owner before mounting an editor, preserving it through later background query errors. Footer author entry retains onboarding in `redirectTo`. Paused first queries stay unknown. Parameterized owner tests and `e2e/navigation.spec.ts` cover statuses, absence, errors, guest continuation, Back and one-time intro. Chromium/WebKit routing matrix: 32 passed; mobile units: 1228 passed; owner routing/query tests: 43 passed. Typecheck, lint and web export passed. Physical iPhone acceptance remains NEEDS DEVICE VERIFICATION.
