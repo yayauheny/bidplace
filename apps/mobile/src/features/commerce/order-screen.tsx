@@ -29,6 +29,10 @@ import { useOrderCommands } from './use-order-actions';
 import { useOrder } from './use-order';
 
 export function OrderScreen({ publicId }: { publicId: string }) {
+  return <OrderCard key={publicId} publicId={publicId} />;
+}
+
+function OrderCard({ publicId }: { publicId: string }) {
   const router = useRouter();
   const order = useOrder(publicId);
   const detail = order.data ?? null;
