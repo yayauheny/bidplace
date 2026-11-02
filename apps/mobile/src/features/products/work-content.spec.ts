@@ -12,18 +12,24 @@ const imageOnly: StoryBlock[] = [{
 
 describe('Work story tab', () => {
   it('hides an empty story and resolves its deep link to details', () => {
-    expect(workTabs([]).map((tab) => tab.value)).toEqual(['details', 'delivery']);
-    expect(resolveWorkTab([], 'story')).toBe('details');
+    expect(workTabs([], false).map((tab) => tab.value)).toEqual(['details']);
+    expect(resolveWorkTab([], 'story', false)).toBe('details');
+    expect(resolveWorkTab([], 'delivery', false)).toBe('details');
   });
 
   it('shows IMAGE-only stories and honors an explicit non-story tab', () => {
-    expect(workTabs(imageOnly).map((tab) => tab.value)).toEqual([
+    expect(workTabs(imageOnly, false).map((tab) => tab.value)).toEqual([
       'story',
       'details',
-      'delivery',
     ]);
-    expect(resolveWorkTab(imageOnly)).toBe('story');
-    expect(resolveWorkTab(imageOnly, 'details')).toBe('details');
-    expect(resolveWorkTab(imageOnly, 'delivery')).toBe('delivery');
+    expect(workTabs(imageOnly, true).map((tab) => tab.label)).toEqual([
+      'История',
+      'Детали',
+      'Как проходит сделка',
+    ]);
+    expect(resolveWorkTab(imageOnly, undefined, false)).toBe('story');
+    expect(resolveWorkTab(imageOnly, 'details', false)).toBe('details');
+    expect(resolveWorkTab(imageOnly, 'delivery', true)).toBe('delivery');
+    expect(resolveWorkTab(imageOnly, 'delivery', false)).toBe('story');
   });
 });

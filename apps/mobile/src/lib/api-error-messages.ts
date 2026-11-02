@@ -1,7 +1,7 @@
 import { getApiErrorCode } from '@bidplace/api-client';
 
-export function apiErrorMessage(error: unknown): string | null {
-  switch (getApiErrorCode(error)) {
+export function apiErrorCodeMessage(code: string | null): string | null {
+  switch (code) {
     case 'PRODUCT_IN_SALE':
       return 'Работа сейчас в продаже. Снимите лот, чтобы изменить или скрыть её';
     case 'PRODUCT_STATE_CONFLICT':
@@ -41,4 +41,8 @@ export function apiErrorMessage(error: unknown): string | null {
     default:
       return null;
   }
+}
+
+export function apiErrorMessage(error: unknown): string | null {
+  return apiErrorCodeMessage(getApiErrorCode(error));
 }

@@ -23,13 +23,14 @@ import { portfolioKeys } from '../../lib/query-cache';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { useAppTheme } from '../../providers/theme-provider';
-import { PAYMENT_DELIVERY_STUB } from './payment-delivery-stub';
+import { LotCommerce } from '../commerce/LotCommerce';
+import { DEAL_STEPS, LotPanel } from '../commerce/LotPanel';
+import { useLot } from '../commerce/use-lot';
+import { lotSaleOpen, presentLot, syncedNowMs } from '../commerce/lot-view';
 import { resolvePublicWorkPageState } from './public-work-page-state';
 import { resolveWorkTab, workFacts, workTabs } from './work-content';
 import { navigateWorkPageBack } from './work-page-back';
 import { WorkHeader } from './WorkHeader';
-
-export { PAYMENT_DELIVERY_STUB };
 
 export function ProductScreen({ publicId }: { publicId: string }) {
   const api = useApiClient();
@@ -38,21 +39,44 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const panelId = useId();
   const palette = useAppTheme();
   const [shareOpen, setShareOpen] = useState(false);
+  const [sheet, setSheet] = useState<'bid' | 'buy' | 'history' | null>(null);
   const query = useQuery({
     queryKey: portfolioKeys.work(publicId),
     queryFn: ({ signal }) => api.portfolio.getWork(publicId, { signal }),
     retry: retryTransientPublicQuery,
   });
+  const lot = useLot(publicId);
+  const saleView = lot.lot
+    ? presentLot({
+        lot: lot.lot,
+        syncedNowMs: syncedNowMs({
+          serverNow: lot.lot.serverNow,
+          dataUpdatedAt: lot.dataUpdatedAt,
+          deviceNow: Date.now(),
+        }),
+        extensionUntil: lot.extensionUntil,
+        nowMs: Date.now(),
+      })
+    : null;
+  const saleKnown =
+    lot.status === 'ready' ||
+    lot.status === 'stale' ||
+    lot.status === 'empty' ||
+    lot.status === 'empty-stale';
+  const sale = saleKnown ? lotSaleOpen(saleView) : undefined;
   useEffect(() => {
-    if (
-      query.data &&
-      requestedTab &&
-      resolveWorkTab(query.data.work.creationStory.blocks, requestedTab) !==
-        requestedTab
-    ) {
-      router.setParams({ tab: undefined });
-    }
-  }, [query.data, requestedTab, router]);
+    setSheet(null);
+  }, [publicId]);
+  useEffect(() => {
+    if (!query.data || !requestedTab) return;
+    if (sale === undefined && requestedTab === 'delivery') return;
+    const resolved = resolveWorkTab(
+      query.data.work.creationStory.blocks,
+      requestedTab,
+      sale === true,
+    );
+    if (resolved !== requestedTab) router.setParams({ tab: undefined });
+  }, [query.data, requestedTab, router, sale]);
   useTrackWorkView({
     productPublicId: publicId,
     sellerProfileId: query.data?.author.id,
@@ -83,7 +107,11 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       </AppShell>
     );
   const { work, author, relatedWorks } = query.data;
-  const tab = resolveWorkTab(work.creationStory.blocks, requestedTab);
+  const tab = resolveWorkTab(
+    work.creationStory.blocks,
+    sale === true ? requestedTab : requestedTab === 'delivery' ? undefined : requestedTab,
+    sale === true,
+  );
   const facts = workFacts(work);
   const related = relatedWorks.filter(
     (item) => item.work.publicId !== publicId,
@@ -117,12 +145,33 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             } as Href
           }
           chips={chips}
-          tabs={workTabs(work.creationStory.blocks)}
+          tabs={workTabs(work.creationStory.blocks, sale === true)}
           tab={tab}
           onTabChange={(value) => router.setParams({ tab: value })}
           panelId={panelId}
           onBack={() => navigateWorkPageBack(router)}
           onShare={() => setShareOpen(true)}
+          summary={
+            <LotPanel
+              read={lot}
+              onAction={(action) => {
+                if (!action.enabled) return;
+                if (action.kind === 'bid') setSheet('bid');
+                else if (action.kind === 'buy') setSheet('buy');
+                else if (action.kind === 'sign-in') {
+                  router.push({
+                    pathname: '/login',
+                    params: { redirectTo: `/product/${publicId}` },
+                  });
+                } else if (action.kind === 'verify-email') {
+                  router.push(
+                    `/verify-email?redirectTo=${encodeURIComponent(`/product/${publicId}`)}` as Href,
+                  );
+                }
+              }}
+              onHistory={() => setSheet('history')}
+            />
+          }
         >
           <View
             style={{
@@ -165,8 +214,17 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                     ),
                   )}
                 </View>
-              ) : tab === 'delivery' ? (
-                <AppText role="bodySmall">{PAYMENT_DELIVERY_STUB}</AppText>
+              ) : tab === 'delivery' && saleView?.deal ? (
+                <View testID="work-deal" style={{ gap: designTokens.space.x3 }}>
+                  {DEAL_STEPS.map((step) => (
+                    <AppText key={step} role="bodySmall">
+                      {step}
+                    </AppText>
+                  ))}
+                  {saleView.contactLine ? (
+                    <AppText role="bodySmall">{saleView.contactLine}</AppText>
+                  ) : null}
+                </View>
               ) : (
                 <WorkFactsList facts={facts} />
               )}
@@ -227,6 +285,16 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         sharePath={work.sharePath}
+      />
+      <LotCommerce
+        publicId={publicId}
+        lot={lot.lot}
+        title={work.title}
+        imageUrl={
+          work.images[0] ? getApiAssetUrl(work.images[0].url) : null
+        }
+        mode={sheet}
+        onClose={() => setSheet(null)}
       />
     </AppShell>
   );

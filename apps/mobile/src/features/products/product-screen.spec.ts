@@ -5,7 +5,7 @@ import { act, createElement, forwardRef, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { PAYMENT_DELIVERY_STUB } from './payment-delivery-stub';
+import { resolveWorkTab, workTabs } from './work-content';
 import { WorkHeader as NativeWorkHeader } from './WorkHeader';
 import { WorkHeader as WebWorkHeader } from './WorkHeader.web';
 
@@ -239,13 +239,19 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-describe('Work page commerce stub', () => {
-  it('keeps payment and delivery unavailable in v1 without a bid CTA', () => {
-    expect(PAYMENT_DELIVERY_STUB).toBe(
-      'Оплата и доставка на bidplace пока недоступны.',
+describe('Work page without a sale', () => {
+  it('keeps the portfolio tabs and does not offer a sale tab', () => {
+    expect(workTabs([], false).map((tab) => tab.label)).toEqual(['Детали']);
+    expect(resolveWorkTab([], 'delivery', false)).toBe('details');
+    expect(workTabs([], true).map((tab) => tab.label)).toContain(
+      'Как проходит сделка',
     );
-    expect(PAYMENT_DELIVERY_STUB.toLowerCase()).not.toContain('корзин');
-    expect(PAYMENT_DELIVERY_STUB.toLowerCase()).not.toContain('купить');
+    expect(
+      workTabs([], false)
+        .map((tab) => tab.label)
+        .join(' ')
+        .toLowerCase(),
+    ).not.toContain('купить');
   });
 });
 

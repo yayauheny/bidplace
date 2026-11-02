@@ -9,6 +9,28 @@
 
 **Partial.** `authorProfileDestination` in `use-seller-capability.ts` owns query-aware profile destinations. `header-chrome.ts` and `use-app-navigation.ts` reuse it for plus/footer: only confirmed absence opens intro; loading/error stay on the profile; suspended authors go to the cabinet and approved creation still goes to `/products/new`. Guest plus retains creation intent through `/products/new?entry=create`; this temporary resolver redirects by the same owner before mounting an editor, preserving it through later background query errors. Footer author entry retains onboarding in `redirectTo`. Paused first queries stay unknown. Parameterized owner tests and `e2e/navigation.spec.ts` cover statuses, absence, errors, guest continuation, Back and one-time intro. Chromium/WebKit routing matrix: 32 passed; mobile units: 1228 passed; owner routing/query tests: 43 passed. Typecheck, lint and web export passed. Physical iPhone acceptance remains NEEDS DEVICE VERIFICATION.
 
+## 2026-11-02 — Touch web input typography
+
+**Partial.** `apps/mobile/global.css` centralizes 16px touch browser fields without changing desktop/native tokens, OTP typography, viewport limits or gestures. `e2e/figma-text-field-focus.spec.ts` checks actual auth/profile sizes, browser control kinds, OTP, overflow and form reachability on touch and desktop. Physical iPhone focus/keyboard behavior remains **NEEDS DEVICE VERIFICATION**; Chromium/WebKit touch/desktop checks: 8 passed; mobile units: 1211 passed; typecheck, lint and web export passed.
+
+## 2026-11-02 — W4 Task 4 bid, purchase, and bid history
+
+**Partial.** A live buyer can open «Сделать ставку» or «Купить» from `LotPanel`. `BidSheet` steps by `bidStepMinor`, asks for a second press above twice the server minimum, and sends `placeBid` with one idempotency key until the amount changes or the bid is accepted. `PurchaseDialog` sends `purchase`, shows the deal code, and does not open an order card. `BidHistorySheet` reads `listBids`. Sign-in and email verification return to `/product/:publicId`. A lost response keeps the key. A late success does not land on another user or work. `BID_TOO_LOW`, `LISTING_NOT_OPEN`, and `LISTING_CHANGED` refresh the lot through `invalidateWorkSurfaces`. Author cancel, contacts, and the order route stay unmounted (Tasks 5, 7, and 6). The auction timer reads «Закончится через …». Checks: commerce/work/error specs 111 passed; mobile typecheck and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`; Chromium `e2e/commerce-lot.spec.ts` 12 passed, then the purchase case passed. `pnpm docs:link-check` passed (105 files). No database setup. Not a completed sale screen.
+
+## 2026-11-02 — W4 Task 3 author cancel and extension hint
+
+**Partial.** `actionOf` keeps `cancel-lot` for the author on `SCHEDULED` and `AWAITING_CLOSE` when `bidCount` is 0, matching `canAuthorCancel` for an open stored status. A buyer `LISTING_NOT_OPEN` on those phases still has no buy or bid. An auction with bids stays locked with «Аукцион со ставками снять нельзя.» The cancel control is not mounted (Task 5). The extension line lasts 5s of device time (`LOT_EXTENSION_HINT_MS`); the brief does not set a duration. The same `endsAt` does not restart it. The screen stays NEEDS-FIGMA and NEEDS-DECISION. Tasks 4–11 stay Not implemented. Checks: commerce/work/error specs 103 passed; mobile typecheck and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`; Chromium `e2e/commerce-lot.spec.ts` 11 passed. No database setup.
+
+## 2026-11-01 — W4 Task 3 scheduled poll and stale portfolio
+
+**Partial.** A scheduled start farther than 2_147_483_647 ms no longer overflows `setInterval`. The same `refetchInterval` waits at that cap, then for the remaining time until `startsAt`. `CANCELLED` and unmarked `ENDED` lots stay on the portfolio. A failed background refetch of that saved lot shows «Данные продажи устарели.» and «Повторить», without price or sale actions. The screen stays NEEDS-FIGMA and NEEDS-DECISION. Tasks 4–11 stay Not implemented. Checks: commerce/work/error specs 77 passed; mobile typecheck and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`; Chromium `e2e/commerce-lot.spec.ts` 9 passed, including a 30-day scheduled lot with no second poll in 8s and retry recovery for `CANCELLED` and `ENDED`. No database setup.
+
+## 2026-11-01 — W4 Task 3 lot panel
+
+**Partial.** The work page reads `GET /api/works/:publicId/lot` through `useLot` (`apps/mobile/src/features/commerce/use-lot.ts`) and `commerceKeys.lot(publicId, viewerId)`. `presentLot` in `lot-view.ts` derives the visible state from `effectiveStatus`, `mark`, `serverNow`, and the viewer already on the payload. `LotPanel` shows price, timer, badges, a blocked-buyer reason, and retry. `useNow` runs only inside that panel for a live auction. The work query is unchanged. «Как проходит сделка» replaces the payment stub and appears only for an open sale; `tab=delivery` is cleared when that sale is known to be gone. `payment-delivery-stub.ts` is deleted. Checks: commerce/work/error specs 66 passed; mobile `tsc --noEmit` and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`; Chromium `e2e/commerce-lot.spec.ts` via `playwright.commerce-lot.config.ts` 6 passed, including at most 7 `/lot` requests in 60s, a 3s final window, no poll while hidden, and 390/1024/1440 without horizontal overflow. `pnpm docs:link-check` passed. No database setup.
+
+Not mounted, and not a completed screen: «Купить», «Сделать ставку», «История ставок», вход, подтверждение почты, контакты, «Выставить» / «Снять». `describeBuyer` does not return `BUYER_CONTACTS_REQUIRED` or `BUYER_ORDER_LIMIT` on the lot viewer. A null lot does not prove the viewer is the author. Exact 390/1024/1440 lot geometry and F7 are NEEDS-FIGMA. Tasks 4–11 stay Not implemented.
+
 ## 2026-11-01 — W4 settings switch web accessibility
 
 **Partial.** `SettingsRow` toggle on web now sets `aria-checked` and activates Space once without scrolling. Enter and click stay on `Pressable`. `[role='switch']` uses the shared focus outline in `apps/mobile/global.css`. Native `accessibilityState` is unchanged. Off, disabled, and black switch colors, and `StatusBadge`, stay NEEDS-FIGMA. Local: `SettingsList.web.spec.ts`, `SettingsList.spec.ts`, and `StatusBadge.spec.ts` — 15 passed; mobile `tsc --noEmit` and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist` with `[role=switch]:focus-visible`. Chromium loaded `global.css`: light outline `rgb(18, 18, 18)`, black `rgb(255, 255, 255)`, both solid 2px with offset 2px. `e2e/theme-computed-focus.spec.ts` was not run against `/login`. W4 screens (Tasks 3–11) stay Not implemented.
@@ -982,3 +1004,13 @@ No backend/API/auth/media changes. Owner regressions cover X/filter separation,
 section drafts, reload/Back/Forward, pagination/retry and result-tree identity.
 Verified:1047 mobile unit tests, typecheck/lint,70 Chromium/WebKit E2E +8 geometry checks, Web/iOS/Android exports, fence and docs links. PR44 reconciliation and remaining device/design gaps:
 Explore report.
+
+## 2026-11-02 — Web EXIF orientation
+
+**Partial (local Chromium pipeline verified; server save/reload and other devices need verification).**
+`PhotoCropSurface.web` leaves EXIF orientation to the shared browser decode instead
+of applying it again through cropper transforms and Expo export. The isolated
+`e2e/photo-harness` owner checks 39 pixel/crop scenarios across EXIF 1–8, user
+rotate/flip and work previews, plus two reopen cases; crop-only work keeps its
+original bytes. No API, storage, native or media lifecycle contract changed.
+The reported work-only right shift was not reproduced and received no speculative fix.

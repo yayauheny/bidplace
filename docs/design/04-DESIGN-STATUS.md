@@ -9,6 +9,38 @@
 
 **Partial.** `authorProfileDestination` in `use-seller-capability.ts` owns query-aware profile destinations. `header-chrome.ts` and `use-app-navigation.ts` reuse it for plus/footer: only confirmed absence opens intro; loading/error stay on the profile; suspended authors go to the cabinet and approved creation still goes to `/products/new`. Guest plus retains creation intent through `/products/new?entry=create`; this temporary resolver redirects by the same owner before mounting an editor, preserving it through later background query errors. Footer author entry retains onboarding in `redirectTo`. Paused first queries stay unknown. Parameterized owner tests and `e2e/navigation.spec.ts` cover statuses, absence, errors, guest continuation, Back and one-time intro. Chromium/WebKit routing matrix: 32 passed; mobile units: 1228 passed; owner routing/query tests: 43 passed. Typecheck, lint and web export passed. Physical iPhone acceptance remains NEEDS DEVICE VERIFICATION.
 
+## 2026-11-02 — Touch web input typography
+
+**Partial.** `apps/mobile/global.css` centralizes 16px touch browser fields without changing desktop/native tokens, OTP typography, viewport limits or gestures. `e2e/figma-text-field-focus.spec.ts` checks actual auth/profile sizes, browser control kinds, OTP, overflow and form reachability on touch and desktop. Physical iPhone focus/keyboard behavior remains **NEEDS DEVICE VERIFICATION**; Chromium/WebKit touch/desktop checks: 8 passed; mobile units: 1211 passed; typecheck, lint and web export passed.
+
+## 2026-11-02 — Bid and purchase sheets from the original frames
+
+**Partial.** Sources, read only: lot block `597:18789`, bid sheet `7464:3174`, purchase sheet `7464:3293`. Archive section `7454:2765` is not a source. The bid sheet keeps the title, one step down and up, the amount, and the obligation line (the frame’s «соглашетесь» is spelled «соглашаетесь»). The `+10/+50/+100` chips and «Выкуп» are not copied. The purchase sheet keeps the title, current price, and «Купить»; «Предложить цену» is not copied. The contact-window line replaces the auction sentence on that sheet. A second press «Подтвердите ставку N» is the brief, not a frame. The live timer is «Закончится через …». Price stays `workTitle`. 1024/1440 uses the existing work page; there is no desktop lot frame. Contacts, unlist, and the order card are not in these sheets.
+
+## 2026-11-02 — Extension hint lasts five seconds
+
+The live-auction line «Продлено на минуту: ставка в последние секунды» uses the existing caption for 5 seconds of device time. The brief does not set that duration, so this is a local ruling, not a Figma decision. Reserved, sold, ended, cancelled, and awaiting close do not show it. Lot geometry and F7 stay NEEDS-FIGMA. Buy, bid, history, list, and unlist stay unmounted.
+
+## 2026-11-01 — Stale portfolio lot keeps retry
+
+A cancelled or unmarked ended lot still renders as the portfolio. When that saved response fails to refresh, the existing stale line and «Повторить» stay visible. The retry does not add a price or a sale action. Lot geometry and F7 stay NEEDS-FIGMA. Buy, bid, history, list, and unlist stay unmounted.
+
+## 2026-11-01 — Work lot block
+
+**Partial. NEEDS-FIGMA.** Figma `4425:2872` («Страница работы») was read.
+Phone frames include a live auction price, an announcement start price, a
+completed price, and a not-for-sale page. They also contain a cart, a heart,
+and «Оплатить банковской картой», which the brief forbids. There is no
+product-correct frame for fixed «Купить», the leader, awaiting close, reserved,
+sold without a leftover button, the extension hint, or F7 (blocked buyer, hold
+limit, missing contacts). Desktop frames at 1800 exist and are not a named lot
+layout, so 1024/1440 lot geometry stays NEEDS-FIGMA. The price uses the existing
+`workTitle` role; the frame’s larger price type is not copied. `StatusBadge`
+and the black switch states stay NEEDS-FIGMA.
+
+The sale tab is «Как проходит сделка» only while the lot is an open sale.
+Buy, bid, history, list, and unlist are not mounted.
+
 ## 2026-11-01 — Settings switch web focus and keyboard
 
 `SettingsRow` toggle keeps role `switch`. On web it sets `aria-checked` and handles Space without scrolling; Enter stays on `Pressable`. The shared `focus-visible` rule now includes `[role='switch']` (`--bidplace-focus`, 2px, offset 2px). Off, disabled, and black switch colors, and `StatusBadge`, stay NEEDS-FIGMA.
