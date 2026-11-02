@@ -153,3 +153,19 @@ textarea:focus-visible,
 [inert][aria-hidden='true'] {
   overflow: clip;
 }
+
+/* Safari focus zoom: touch fields override RN Web's inline 14px; OTP stays larger. */
+@media (hover: none) and (pointer: coarse) {
+  input[type='search'],
+  select {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input:not([autocomplete='one-time-code']),
+  textarea,
+  select,
+  [contenteditable='true'] {
+    font-size: 16px !important;
+  }
+}
