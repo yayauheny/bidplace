@@ -341,6 +341,8 @@ Portfolio variant сохраняет визуальную галерею и ин
 
 ## 8. Author application
 
+2026-11-02: plus and author-entry links use the shared query-aware destination. Confirmed missing profile opens `/profile?intro=1`; DRAFT/PENDING_REVIEW/CHANGES_REQUESTED/REJECTED continue `/profile`, SUSPENDED uses `/cabinet`, and approved plus opens `/products/new`. Loading/error never imply absence. Guest plus continues after auth at `/products/new?entry=create`, resolves status through the same owner, and removes the entry parameter before mounting the approved editor. Guest author-entry continues at `/profile?intro=1`; the profile owner shows intro only after confirming absence and clears it for an existing profile. The temporary resolver owns loading/error/retry; later profile refetch errors cannot unmount the editor. Start consumes the intro parameter, preserving the existing wizard and Back behavior.
+
 Пять визуальных шагов (2026-10-23):
 
 1. Фотография профиля — `step=photo`.

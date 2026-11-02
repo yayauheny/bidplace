@@ -15,7 +15,13 @@ describe('author profile destination', () => {
     ['APPROVED', '/cabinet'],
     ['SUSPENDED', '/cabinet'],
   ] as const)('routes %s to %s', (status, destination) => {
-    expect(authorProfileDestination(status)).toBe(destination);
+    expect(
+      authorProfileDestination(status, {
+        isLoading: false,
+        isError: false,
+        isAbsent: status === null,
+      }),
+    ).toBe(destination);
   });
 
   it('enables cabinet data only for the owner statuses', () => {
@@ -24,3 +30,17 @@ describe('author profile destination', () => {
     expect(isAuthorCabinetAvailable('PENDING_REVIEW')).toBe(false);
   });
 });
+
+it.each([
+  [false, false, true, '/profile?intro=1'],
+  [true, false, true, '/profile'],
+  [false, true, true, '/profile'],
+  [false, false, false, '/profile'],
+] as const)(
+  'does not confuse unresolved availability loading=%s error=%s absent=%s with absence',
+  (isLoading, isError, isAbsent, expected) => {
+    expect(
+      authorProfileDestination(null, { isLoading, isError, isAbsent }),
+    ).toBe(expected);
+  },
+);

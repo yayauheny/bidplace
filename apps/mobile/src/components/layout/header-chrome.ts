@@ -1,13 +1,19 @@
 import type { Href } from 'expo-router';
 import type { SellerStatus } from '@bidplace/contracts';
+import {
+  authorProfileDestination,
+  type SellerProfileAvailability,
+} from '../../hooks/use-seller-capability';
 
 export function getMobileCreateHref({
   isAuthenticated,
   sellerStatus,
+  sellerState,
   returnPath,
 }: {
   isAuthenticated: boolean;
   sellerStatus: SellerStatus | null;
+  sellerState?: SellerProfileAvailability;
   returnPath?: string | null;
 }): Href {
   const redirectTo = returnPath?.trim() ? returnPath : '/';
@@ -18,7 +24,10 @@ export function getMobileCreateHref({
     } as Href;
   }
 
-  return (sellerStatus === 'APPROVED' ? '/products/new' : '/profile') as Href;
+  const destination = authorProfileDestination(sellerStatus, sellerState);
+  return sellerStatus === 'APPROVED' && destination === '/cabinet'
+    ? '/products/new'
+    : destination;
 }
 
 export function getProfileHref({

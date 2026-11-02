@@ -7,7 +7,11 @@
  */
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  onlineManager,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiClientError } from '@bidplace/api-client';
@@ -69,10 +73,7 @@ function mount(onResult: (capability: SellerCapability) => void) {
   return { queryClient };
 }
 
-async function until(
-  predicate: () => boolean,
-  label: string,
-) {
+async function until(predicate: () => boolean, label: string) {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     if (predicate()) return;
     await flush();
@@ -100,6 +101,7 @@ afterEach(() => {
     fixture.container.remove();
   }
   document.body.replaceChildren();
+  onlineManager.setOnline(true);
 });
 
 describe('useSellerCapability', () => {
@@ -149,4 +151,17 @@ describe('useSellerCapability', () => {
     await until(() => seen.current?.isError === true, 'error capability');
     expect(seen.current?.isAbsent).toBe(false);
   });
+});
+
+it('keeps a paused first profile request unknown instead of absent', async () => {
+  onlineManager.setOnline(false);
+  const seen: { current: SellerCapability | null } = { current: null };
+  mount((value) => {
+    seen.current = value;
+  });
+  await flush();
+  expect(harness.getMyProfile).not.toHaveBeenCalled();
+  expect(seen.current?.isLoading).toBe(false);
+  expect(seen.current?.isError).toBe(false);
+  expect(seen.current?.isAbsent).toBe(false);
 });

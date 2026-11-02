@@ -2,6 +2,11 @@ import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
+import {
+  portfolioAuthorApplicationResponseSchema,
+  sellerProfileResponseSchema,
+  type SellerStatus,
+} from '@bidplace/contracts';
 
 import { authenticatedPage } from './support/auth-session';
 import {
@@ -214,8 +219,12 @@ test('public shell stays fluid without horizontal overflow across accepted W2 vi
     }
 
     await page.goto('/');
-    const navigation = page.getByTestId(width >= 1024 ? 'desktop-navigation' : 'figma-floating-dock');
-    await navigation.getByRole('button', { name: 'Поиск', exact: true }).click();
+    const navigation = page.getByTestId(
+      width >= 1024 ? 'desktop-navigation' : 'figma-floating-dock',
+    );
+    await navigation
+      .getByRole('button', { name: 'Поиск', exact: true })
+      .click();
     await expectSearchOverlay(page, width);
     if (screenshotWidths.has(width)) {
       await page.screenshot({
@@ -401,3 +410,362 @@ for (const locksAvailable of [true, false]) {
     }
   });
 }
+
+const onboardingUser = {
+  id: '11111111-1111-4111-8111-111111111111',
+  email: 'navigation@bidplace.test',
+  phone: null,
+  emailVerifiedAt: '2026-10-01T00:00:00.000Z',
+  phoneVerifiedAt: null,
+  acceptedRulesVersion: null,
+  displayName: 'Navigation',
+  slug: null,
+  role: 'user',
+  status: 'active',
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
+};
+
+async function mockOnboarding(
+  page: Page,
+  state: SellerStatus | 'absent' | 'loading' | 'error',
+  guest = false,
+) {
+  let authenticated = !guest;
+  const gate = Promise.withResolvers<void>();
+  await page.route('**/api/**', async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/api/auth/me') {
+      await route.fulfill(
+        authenticated
+          ? { json: { user: onboardingUser } }
+          : { status: 401, json: { message: 'Unauthorized' } },
+      );
+    } else if (path === '/api/auth/login') {
+      authenticated = true;
+      await route.fulfill({ status: 201, json: { user: onboardingUser } });
+    } else if (path === '/api/seller/profile') {
+      if (state === 'loading') await gate.promise;
+      if (state === 'error')
+        await route.fulfill({ status: 503, json: { message: 'Unavailable' } });
+      else if (state === 'absent' || state === 'loading')
+        await route.fulfill({ status: 404, json: { message: 'Missing' } });
+      else
+        await route.fulfill({
+          json: sellerProfileResponseSchema.parse({
+            sellerProfile: {
+              id: '22222222-2222-4222-8222-222222222222',
+              userId: onboardingUser.id,
+              slug: 'navigation',
+              sellerType: 'creator',
+              discipline: 'Живопись',
+              fullName: 'Navigation',
+              country: 'BY',
+              city: null,
+              practice: null,
+              biography: null,
+              profilePhotoUrl: '/api/sellers/navigation/photo',
+              socialLink: null,
+              telegramUrl: null,
+              instagramUrl: null,
+              websiteUrl: null,
+              publicEmail: null,
+              shortDescription: null,
+              status: state,
+              applicationStage: 'CONTACTS',
+              createdAt: onboardingUser.createdAt,
+              updatedAt: onboardingUser.updatedAt,
+            },
+            editingRevision: [
+              'DRAFT',
+              'REJECTED',
+              'CHANGES_REQUESTED',
+            ].includes(state)
+              ? {
+                  id: '33333333-3333-4333-8333-333333333333',
+                  version: 1,
+                  status: 'DRAFT',
+                  updatedAt: onboardingUser.updatedAt,
+                }
+              : null,
+          }),
+        });
+    } else if (
+      path === '/api/author/application' &&
+      !['absent', 'loading', 'error'].includes(state)
+    ) {
+      await route.fulfill({
+        json: portfolioAuthorApplicationResponseSchema.parse({
+          application: {
+            slug: 'navigation',
+            fullName: 'Navigation',
+            country: 'BY',
+            city: null,
+            discipline: 'Живопись',
+            practice: null,
+            shortDescription: null,
+            status: state,
+            applicationStage: 'CONTACTS',
+          },
+          editingRevision: ['DRAFT', 'REJECTED', 'CHANGES_REQUESTED'].includes(
+            state,
+          )
+            ? {
+                id: '33333333-3333-4333-8333-333333333333',
+                version: 1,
+                status: 'DRAFT',
+                updatedAt: onboardingUser.updatedAt,
+              }
+            : null,
+          achievements: [],
+        }),
+      });
+    } else if (path === '/api/portfolio/home') {
+      await route.fulfill({
+        json: { curatorSelection: null, newWorks: [], newAuthors: [] },
+      });
+    } else if (path === '/api/categories') {
+      await route.fulfill({ json: { categories: [] } });
+    } else await route.fulfill({ status: 404, json: { message: 'Missing' } });
+  });
+  return gate.resolve;
+}
+
+test.describe('author onboarding navigation', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  for (const entry of ['plus', 'footer', 'account'] as const) {
+    test(`${entry} opens the same intro for a confirmed new author and does not reopen after Start`, async ({
+      page,
+    }) => {
+      await mockOnboarding(page, 'absent');
+      await page.goto(entry === 'account' ? '/account' : '/');
+      if (entry === 'plus') {
+        await expect(
+          page.getByRole('link', { name: 'Стать автором', exact: true }),
+        ).toHaveAttribute('href', '/profile?intro=1');
+        await page
+          .getByTestId('figma-floating-dock')
+          .getByLabel('Добавить')
+          .click();
+      } else
+        await page
+          .getByTestId(entry === 'account' ? 'account-identity' : 'site-footer')
+          .getByRole('link', { name: 'Стать автором', exact: true })
+          .click();
+      await expect(page).toHaveURL(
+        (url) =>
+          url.pathname === '/profile' && url.searchParams.get('intro') === '1',
+      );
+      const intro = page.getByRole('dialog', {
+        name: 'Стать автором',
+        exact: true,
+      });
+      await expect(intro).toBeVisible();
+      await intro.getByRole('button', { name: 'Начать', exact: true }).click();
+      await expect(intro).toHaveCount(0);
+      await page.reload();
+      await expect(
+        page.getByText('Фото профиля', { exact: true }),
+      ).toBeVisible();
+      await expect(intro).toHaveCount(0);
+    });
+  }
+
+  for (const [status, destination] of [
+    ['DRAFT', '/profile'],
+    ['PENDING_REVIEW', '/profile'],
+    ['CHANGES_REQUESTED', '/profile'],
+    ['REJECTED', '/profile'],
+    ['APPROVED', '/products/new'],
+    ['SUSPENDED', '/cabinet'],
+  ] as const) {
+    test(`plus respects ${status} without repeating intro`, async ({
+      page,
+    }) => {
+      await mockOnboarding(page, status);
+      await page.goto('/');
+      await expect(
+        page.getByRole('link', { name: 'Стать автором', exact: true }),
+      ).toHaveAttribute(
+        'href',
+        status === 'APPROVED' || status === 'SUSPENDED'
+          ? '/cabinet'
+          : '/profile',
+      );
+      await page
+        .getByTestId('figma-floating-dock')
+        .getByLabel('Добавить')
+        .click();
+      await expect(page).toHaveURL(new RegExp(`${destination}$`));
+      if (['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(status)) {
+        await expect(
+          page.getByRole('textbox', {
+            name: status === 'DRAFT' ? 'Instagram' : 'Описание достижения',
+            exact: true,
+          }),
+        ).toBeEditable();
+      }
+      await expect(
+        page.getByRole('dialog', { name: 'Стать автором', exact: true }),
+      ).toHaveCount(0);
+      await page.goBack();
+      await expect(page).toHaveURL(/\/$/);
+    });
+  }
+
+  for (const state of ['loading', 'error'] as const) {
+    test(`plus does not treat ${state} as a missing profile`, async ({
+      page,
+    }) => {
+      const release = await mockOnboarding(page, state);
+      try {
+        await page.goto('/');
+        await page
+          .getByTestId('figma-floating-dock')
+          .getByLabel('Добавить')
+          .click();
+        await expect(page).toHaveURL(/\/profile$/);
+        await expect(
+          page.getByRole('dialog', { name: 'Стать автором', exact: true }),
+        ).toHaveCount(0);
+        release();
+        if (state === 'loading')
+          await expect(
+            page.getByText('Фото профиля', { exact: true }),
+          ).toBeVisible();
+        await expect(
+          page.getByRole('dialog', { name: 'Стать автором', exact: true }),
+        ).toHaveCount(0);
+      } finally {
+        release();
+      }
+    });
+  }
+
+  for (const state of ['loading', 'error'] as const) {
+    test(`direct create waits for ${state} instead of mounting the editor`, async ({
+      page,
+    }) => {
+      const release = await mockOnboarding(page, state);
+      try {
+        await page.goto('/products/new?entry=create');
+        await expect(
+          page
+            .getByTestId(
+              state === 'error'
+                ? 'infrastructure-error-state-page'
+                : 'infrastructure-page-status-loading',
+            )
+            .first(),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('dialog', { name: 'Стать автором', exact: true }),
+        ).toHaveCount(0);
+        if (state === 'loading') {
+          release();
+          await expect(
+            page.getByRole('dialog', { name: 'Стать автором', exact: true }),
+          ).toBeVisible();
+        } else {
+          await page
+            .getByRole('button', { name: 'Повторить', exact: true })
+            .click();
+          await expect(
+            page.getByTestId('infrastructure-error-state-page'),
+          ).toBeVisible();
+        }
+      } finally {
+        release();
+      }
+    });
+  }
+
+  test('keeps the approved editor mounted when a later profile refetch fails', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.clock.install();
+    await mockOnboarding(page, 'APPROVED');
+    await page.goto('/');
+    await expect(
+      page
+        .getByTestId('site-footer')
+        .getByRole('link', { name: 'Стать автором', exact: true }),
+    ).toHaveAttribute('href', '/cabinet');
+    await page
+      .getByTestId('figma-floating-dock')
+      .getByLabel('Добавить')
+      .click();
+    await expect(page).toHaveURL(/\/products\/new$/);
+    const title = page.getByRole('textbox', {
+      name: 'Название *',
+      exact: true,
+    });
+    await title.fill('Несохранённая работа');
+    const editor = await title.elementHandle();
+    if (!editor) throw new Error('Expected mounted photo editor');
+    await page.route('**/api/seller/profile', (route) =>
+      route.fulfill({ status: 503, json: { message: 'Unavailable' } }),
+    );
+    const response = page.waitForResponse(
+      (result) =>
+        new URL(result.url()).pathname === '/api/seller/profile' &&
+        result.status() === 503,
+    );
+    await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+    await page.clock.fastForward(61_000);
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await response;
+    await expect(title).toHaveValue('Несохранённая работа');
+    expect(await editor.evaluate((node) => node.isConnected)).toBe(true);
+    await page.unroute('**/api/seller/profile');
+    const restored = page.waitForResponse(
+      (result) =>
+        new URL(result.url()).pathname === '/api/seller/profile' &&
+        result.status() === 200,
+    );
+    await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await restored;
+    expect(await editor.evaluate((node) => node.isConnected)).toBe(true);
+  });
+
+  for (const status of ['absent', 'APPROVED'] as const) {
+    test(`guest plus resumes the intended flow for ${status} after login`, async ({
+      page,
+    }) => {
+      await mockOnboarding(page, status, true);
+      await page.goto('/');
+      await page
+        .getByTestId('figma-floating-dock')
+        .getByLabel('Добавить')
+        .click();
+      await expect(page).toHaveURL(
+        /\/login\?redirectTo=%2Fproducts%2Fnew%3Fentry%3Dcreate/,
+      );
+      await page
+        .getByRole('textbox', { name: 'Электронная почта', exact: true })
+        .fill(onboardingUser.email);
+      await page
+        .getByLabel('Пароль', { exact: true })
+        .fill('synthetic-navigation-value');
+      await page.getByRole('button', { name: 'Войти', exact: true }).click();
+      if (status === 'absent') {
+        await expect(
+          page.getByRole('dialog', { name: 'Стать автором', exact: true }),
+        ).toBeVisible();
+        await expect(page).toHaveURL(
+          (url) =>
+            url.pathname === '/profile' &&
+            url.searchParams.get('intro') === '1',
+        );
+      } else {
+        await expect(page).toHaveURL(/\/products\/new$/);
+        await expect(
+          page.getByRole('dialog', { name: 'Стать автором', exact: true }),
+        ).toHaveCount(0);
+      }
+    });
+  }
+});

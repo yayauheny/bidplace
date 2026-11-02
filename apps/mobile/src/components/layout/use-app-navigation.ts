@@ -9,7 +9,10 @@ import { Platform } from 'react-native';
 import { getRouteSearchRedirect } from '../../features/auth/auth-redirect';
 import { parseExploreRoute } from '../../features/explore/explore-route';
 import { exploreSearchHref } from '../../features/explore/use-explore-state';
-import { useSellerCapability } from '../../hooks/use-seller-capability';
+import {
+  authorProfileDestination,
+  useSellerCapability,
+} from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
 import { rememberPendingOpener } from '../ui/use-return-focus';
 import { getMobileCreateHref, getProfileHref } from './header-chrome';
@@ -44,11 +47,13 @@ export function useAppNavigation(hostTestID: string) {
     isAdmin: auth.isAdmin,
     canModerate: auth.canModerate,
     canReadAnalytics: auth.isAdmin,
-    authorHref: getMobileCreateHref({
-      isAuthenticated: auth.isAuthenticated,
-      sellerStatus: null,
-      returnPath: '/profile',
-    }),
+    authorHref: auth.isAuthenticated
+      ? authorProfileDestination(capability.status, capability)
+      : getMobileCreateHref({
+          isAuthenticated: false,
+          sellerStatus: null,
+          returnPath: '/profile?intro=1',
+        }),
     profileHref: getProfileHref({ ...auth, returnPath }),
     rememberAuthOpener,
     create: (label: string) => {
@@ -57,7 +62,10 @@ export function useAppNavigation(hostTestID: string) {
         getMobileCreateHref({
           isAuthenticated: auth.isAuthenticated,
           sellerStatus: capability.status,
-          returnPath,
+          sellerState: capability,
+          returnPath: auth.isAuthenticated
+            ? returnPath
+            : '/products/new?entry=create',
         }),
       );
     },

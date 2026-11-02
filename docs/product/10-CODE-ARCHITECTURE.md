@@ -3,6 +3,10 @@
 Последнее обновление: 2026-10-31
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-11-02 — Query-aware author entry
+
+`authorProfileDestination` in `apps/mobile/src/hooks/use-seller-capability.ts` owns profile/cabinet/intro destinations and consumes the shared query classifier's confirmed absence. `header-chrome.ts` maps approved creation to `/products/new`. Guest plus resumes `/products/new?entry=create`; its route resolves availability and redirects before mounting the existing editor. This temporary resolver handles loading/error/retry without wrapping the active editor in a live capability gate. Flow details: [author application](../design/02-USER-FLOWS-AND-SCREENS.md#8-author-application).
+
 ## 2026-10-31 — Work deletion
 
 `DELETE /api/products/:id` takes the Product row lock, checks ownership without requiring a verified email or an approved seller, and uses `deleteProduct` in `product-publication.ts` to set `deletedAt` after the open-sale guard. Curator removal, audit and media revoke enqueue share the transaction; retained Product, revision, order and image rows are not cascaded. Active reads and late product writers reject tombstones. Order summaries expose `coverImageUrl` from the existing snapshot; after deletion `ImagesService.get` serves its private preview only to a buyer or seller on an order referencing that exact image. Public derivatives are revoked asynchronously through the existing lifecycle. Edge JSON may remain cached for 30 seconds on works, authors, home and facets.

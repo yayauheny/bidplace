@@ -5,6 +5,10 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-02 — Author onboarding entry navigation
+
+**Partial.** `authorProfileDestination` in `use-seller-capability.ts` owns query-aware profile destinations. `header-chrome.ts` and `use-app-navigation.ts` reuse it for plus/footer: only confirmed absence opens intro; loading/error stay on the profile; suspended authors go to the cabinet and approved creation still goes to `/products/new`. Guest plus retains creation intent through `/products/new?entry=create`; this temporary resolver redirects by the same owner before mounting an editor, preserving it through later background query errors. Footer author entry retains onboarding in `redirectTo`. Paused first queries stay unknown. Parameterized owner tests and `e2e/navigation.spec.ts` cover statuses, absence, errors, guest continuation, Back and one-time intro. Chromium/WebKit routing matrix: 32 passed; mobile units: 1228 passed; owner routing/query tests: 43 passed. Typecheck, lint and web export passed. Physical iPhone acceptance remains NEEDS DEVICE VERIFICATION.
+
 ## 2026-11-01 — W4 settings switch web accessibility
 
 **Partial.** `SettingsRow` toggle on web now sets `aria-checked` and activates Space once without scrolling. Enter and click stay on `Pressable`. `[role='switch']` uses the shared focus outline in `apps/mobile/global.css`. Native `accessibilityState` is unchanged. Off, disabled, and black switch colors, and `StatusBadge`, stay NEEDS-FIGMA. Local: `SettingsList.web.spec.ts`, `SettingsList.spec.ts`, and `StatusBadge.spec.ts` — 15 passed; mobile `tsc --noEmit` and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist` with `[role=switch]:focus-visible`. Chromium loaded `global.css`: light outline `rgb(18, 18, 18)`, black `rgb(255, 255, 255)`, both solid 2px with offset 2px. `e2e/theme-computed-focus.spec.ts` was not run against `/login`. W4 screens (Tasks 3–11) stay Not implemented.
