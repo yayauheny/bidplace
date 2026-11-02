@@ -1124,3 +1124,8 @@ repair is needed for the first character. The duplicate hint pill is removed by
 explicit user request; only «Начните писать здесь» remains. The reserved photo
 status row distinguishes «Подготовка фотографий», «Загрузка фотографий» during
 actual sending, and «Сохранение порядка»; its geometry does not change.
+
+
+### Touch web field readability — 2026-11-02
+
+On primary coarse pointers without hover, `global.css` sets editable browser controls to 16px above RN Web inline font sizes. Email, password, text/search inputs, textarea, select and contenteditable share this policy; `autocomplete="one-time-code"` retains its larger typography. Touch search/select controls disable native appearance so WebKit does not reduce the computed font below 16px; existing custom chrome is retained. Desktop and native tokens stay unchanged. This changes neither viewport limits nor touch gestures. Physical iPhone focus/keyboard acceptance remains **NEEDS DEVICE VERIFICATION**.

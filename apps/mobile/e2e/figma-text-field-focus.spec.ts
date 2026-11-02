@@ -385,3 +385,170 @@ test('calendar keyboard focus uses the shared monochrome role', async ({
     )
     .toBe(focusBorder);
 });
+
+for (const touch of [true, false]) {
+  test.describe(
+    touch ? 'touch field typography' : 'desktop field typography',
+    () => {
+      test.use({
+        viewport: { width: touch ? 390 : 1440, height: 844 },
+        isMobile: touch,
+        hasTouch: touch,
+      });
+
+      test('keeps auth and profile fields readable without changing desktop type', async ({
+        page,
+      }) => {
+        const fontSize = touch ? '16px' : '14px';
+        await mockApi(page, { 'GET /api/auth/me': anonymous });
+        await page.goto('/login');
+        const email = page.getByRole('textbox', {
+          name: 'Электронная почта',
+          exact: true,
+        });
+        const password = page.getByLabel('Пароль', { exact: true });
+        await expect(email).toHaveCSS('font-size', fontSize);
+        await expect(password).toHaveCSS('font-size', fontSize);
+        await email.fill('reader@bidplace.test');
+        await password.fill('local-input-probe');
+        await expect(email).not.toBeFocused();
+        await expect(password).toBeFocused();
+        await expect(email).toHaveValue('reader@bidplace.test');
+        await expect(password).toHaveValue('local-input-probe');
+        const submit = page.getByRole('button', { name: 'Войти', exact: true });
+        await submit.scrollIntoViewIfNeeded();
+        await expect(submit).toBeInViewport();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        ).toBe(true);
+        const viewport = await page
+          .locator('meta[name="viewport"]')
+          .getAttribute('content');
+        expect(viewport).not.toMatch(/maximum-scale|user-scalable/);
+
+        await mockApi(page, {
+          'GET /api/auth/me': { status: 200, body: { user: user(now) } },
+          'GET /api/seller/profile': {
+            status: 200,
+            body: {
+              ...pendingProfile,
+              sellerProfile: {
+                ...pendingProfile.sellerProfile,
+                status: 'APPROVED',
+              },
+              editingRevision: {
+                id: profileId,
+                version: 1,
+                status: 'DRAFT',
+                updatedAt: now,
+              },
+            },
+          },
+          'GET /api/author/application': {
+            status: 200,
+            body: pendingApplication,
+          },
+        });
+        await page.goto('/profile');
+        const nickname = page
+          .getByRole('textbox', { name: 'Никнейм', exact: true })
+          .filter({ visible: true });
+        const about = page
+          .getByRole('textbox', { name: 'Коротко о себе', exact: true })
+          .filter({ visible: true });
+        await expect(nickname).toHaveCSS('font-size', fontSize);
+        await about.scrollIntoViewIfNeeded();
+        await about.fill('Описание после прокрутки');
+        await expect(about).toHaveValue('Описание после прокрутки');
+        await expect(about).toHaveCSS('font-size', fontSize);
+        await expect(about).toBeInViewport();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        ).toBe(true);
+      });
+
+      test('covers browser editor controls and preserves larger OTP text', async ({
+        page,
+      }) => {
+        await mockApi(page, { 'GET /api/auth/me': anonymous });
+        await page.goto('/login');
+        await expect(
+          page.getByRole('textbox', { name: 'Электронная почта', exact: true }),
+        ).toBeVisible();
+        await page.evaluate((touch) => {
+          const probes = document.createElement('section');
+          for (const kind of [
+            'text',
+            'email',
+            'password',
+            'search',
+            'textarea',
+            'select',
+            'contenteditable',
+            'otp',
+          ]) {
+            const node = document.createElement(
+              ['textarea', 'select'].includes(kind)
+                ? kind
+                : kind === 'contenteditable'
+                  ? 'div'
+                  : 'input',
+            );
+            node.dataset.fontProbe = kind;
+            node.style.fontSize = kind === 'otp' ? '24px' : '14px';
+            if (!touch) node.style.appearance = 'none';
+            if (node instanceof HTMLInputElement) {
+              node.type = kind === 'otp' ? 'text' : kind;
+              if (kind === 'otp') node.autocomplete = 'one-time-code';
+            }
+            if (kind === 'contenteditable') node.contentEditable = 'true';
+            probes.append(node);
+          }
+          document.body.append(probes);
+        }, touch);
+        for (const kind of [
+          'text',
+          'email',
+          'password',
+          'search',
+          'textarea',
+          'select',
+          'contenteditable',
+        ]) {
+          await expect(page.locator(`[data-font-probe="${kind}"]`)).toHaveCSS(
+            'font-size',
+            touch ? '16px' : '14px',
+          );
+        }
+        await expect(page.locator('[data-font-probe="otp"]')).toHaveCSS(
+          'font-size',
+          '24px',
+        );
+        await mockApi(page, {
+          'GET /api/auth/me': { status: 200, body: { user: user(null) } },
+          'GET /api/auth/email/state': {
+            status: 200,
+            body: {
+              serverNow: now,
+              email: 'field-focus@bidplace.test',
+              verified: false,
+              sendStatus: 'accepted',
+              codeExpiresAt: null,
+              resendAvailableAt: null,
+              pausedUntil: null,
+              quotaResetsAt: null,
+            },
+          },
+        });
+        await page.goto('/verify-email');
+        await expect(
+          page.getByRole('textbox', { name: 'Код из письма' }),
+        ).toHaveCSS('font-size', '18px');
+      });
+    },
+  );
+}

@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Touch web input typography
+
+**Partial.** `apps/mobile/global.css` centralizes 16px touch browser fields without changing desktop/native tokens, OTP typography, viewport limits or gestures. `e2e/figma-text-field-focus.spec.ts` checks actual auth/profile sizes, browser control kinds, OTP, overflow and form reachability on touch and desktop. Physical iPhone focus/keyboard behavior remains **NEEDS DEVICE VERIFICATION**; Chromium/WebKit touch/desktop checks: 8 passed; mobile units: 1211 passed; typecheck, lint and web export passed.
+
 ## 2026-11-02 — Extension hint lasts five seconds
 
 The live-auction line «Продлено на минуту: ставка в последние секунды» uses the existing caption for 5 seconds of device time. The brief does not set that duration, so this is a local ruling, not a Figma decision. Reserved, sold, ended, cancelled, and awaiting close do not show it. Lot geometry and F7 stay NEEDS-FIGMA. Buy, bid, history, list, and unlist stay unmounted.

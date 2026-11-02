@@ -5,6 +5,10 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-02 — Touch web input typography
+
+**Partial.** `apps/mobile/global.css` centralizes 16px touch browser fields without changing desktop/native tokens, OTP typography, viewport limits or gestures. `e2e/figma-text-field-focus.spec.ts` checks actual auth/profile sizes, browser control kinds, OTP, overflow and form reachability on touch and desktop. Physical iPhone focus/keyboard behavior remains **NEEDS DEVICE VERIFICATION**; Chromium/WebKit touch/desktop checks: 8 passed; mobile units: 1211 passed; typecheck, lint and web export passed.
+
 ## 2026-11-02 — W4 Task 3 author cancel and extension hint
 
 **Partial.** `actionOf` keeps `cancel-lot` for the author on `SCHEDULED` and `AWAITING_CLOSE` when `bidCount` is 0, matching `canAuthorCancel` for an open stored status. A buyer `LISTING_NOT_OPEN` on those phases still has no buy or bid. An auction with bids stays locked with «Аукцион со ставками снять нельзя.» The cancel control is not mounted (Task 5). The extension line lasts 5s of device time (`LOT_EXTENSION_HINT_MS`); the brief does not set a duration. The same `endsAt` does not restart it. The screen stays NEEDS-FIGMA and NEEDS-DECISION. Tasks 4–11 stay Not implemented. Checks: commerce/work/error specs 103 passed; mobile typecheck and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`; Chromium `e2e/commerce-lot.spec.ts` 11 passed. No database setup.
@@ -992,3 +996,13 @@ No backend/API/auth/media changes. Owner regressions cover X/filter separation,
 section drafts, reload/Back/Forward, pagination/retry and result-tree identity.
 Verified:1047 mobile unit tests, typecheck/lint,70 Chromium/WebKit E2E +8 geometry checks, Web/iOS/Android exports, fence and docs links. PR44 reconciliation and remaining device/design gaps:
 Explore report.
+
+## 2026-11-02 — Web EXIF orientation
+
+**Partial (local Chromium pipeline verified; server save/reload and other devices need verification).**
+`PhotoCropSurface.web` leaves EXIF orientation to the shared browser decode instead
+of applying it again through cropper transforms and Expo export. The isolated
+`e2e/photo-harness` owner checks 39 pixel/crop scenarios across EXIF 1–8, user
+rotate/flip and work previews, plus two reopen cases; crop-only work keeps its
+original bytes. No API, storage, native or media lifecycle contract changed.
+The reported work-only right shift was not reproduced and received no speculative fix.
