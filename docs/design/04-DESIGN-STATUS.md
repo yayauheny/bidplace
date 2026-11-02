@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Deals hub and order card
+
+**Partial. NEEDS-FIGMA.** Brief F5–F10 have no handoff frames in live Figma `pAPQo6cADmG5XzVmBX76EE` or `design/figma-handoff`. The hub and card reuse `FormPageShell`, `FigmaTabs`, `StatusBadge`, `AppDialog`, and the existing buttons. The list does not draw deadlines the summary DTO does not carry. Exact 390/1024/1440 geometry is not claimed. There is no receipt control and no contacts route link.
+
 ## 2026-11-02 — Create and cancel a lot
 
 **Partial. NEEDS-FIGMA.** Live Figma `pAPQo6cADmG5XzVmBX76EE` and `design/figma-handoff` have no frame for the create-lot sheet (brief F4). The sheet is `AppDialog` presentation `sheet`, with `FigmaTabs`, `FigmaChoiceChip`, `TextField`, and `DateField`. It shows the work, the price or start price, and the currency before submit. Exact 390/1024/1440 geometry is not claimed. Cancel uses the existing dialog. An auction with bids has no button.
