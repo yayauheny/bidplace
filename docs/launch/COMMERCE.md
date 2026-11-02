@@ -508,7 +508,7 @@ CREATE UNIQUE INDEX one_open_report_per_reporter   ON reports(reporter_user_id, 
 | `POST /api/orders/:publicId/offer-next` | автор | следующему участнику |
 | `POST /api/orders/:publicId/reports` | участник | жалоба |
 | `GET /api/me/attention` | пользователь | список «требует внимания» |
-| `GET/PUT /api/me/notification-settings`, `PUT /api/me/contacts` (`{ phone?, telegram?, instagram?, vk?, showToBuyer? }`) | пользователь | настройки |
+| `GET/PUT /api/me/notification-settings`, `GET /api/me/contacts`, `PUT /api/me/contacts` (`{ phone?, telegram?, instagram?, vk?, showToBuyer? }`; чтение без пятиминутного окна, запись — с ним) | пользователь | настройки |
 | `PUT/DELETE /api/works/:productId/favorite`, `GET /api/me/favorites` | пользователь | избранное |
 | `GET /api/admin/reports`, `POST /api/admin/reports/:id/resolve` | админ | жалобы |
 | `GET /api/admin/attention` | админ | заказы с жалобой, без отметки 72 ч, автоблоки антифрода |
