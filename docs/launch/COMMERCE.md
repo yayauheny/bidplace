@@ -512,7 +512,7 @@ CREATE UNIQUE INDEX one_open_report_per_reporter   ON reports(reporter_user_id, 
 | `PUT/DELETE /api/works/:productId/favorite`, `GET /api/me/favorites` | пользователь | избранное |
 | `GET /api/admin/reports`, `POST /api/admin/reports/:id/resolve` | админ | жалобы |
 | `GET /api/admin/attention` | админ | заказы с жалобой, без отметки 72 ч, автоблоки антифрода |
-| `POST /api/admin/listings/:id/remove`, `POST /api/admin/orders/:publicId/void-strike`, `POST /api/admin/orders/:publicId/outcome`, `POST /api/admin/users/:id/ban` | админ | вмешательство, `reason` обязателен |
+| `POST /api/admin/listings/:id/remove`, `POST /api/admin/orders/:publicId/void-strike`, `POST /api/admin/orders/:publicId/outcome`, `POST /api/admin/users/:id/ban`, `POST /api/admin/users/:id/release-hold` | админ | вмешательство; `reason` или `note` обязателен |
 | `GET /api/admin/health`, `POST /api/admin/notifications/retry-failed` | админ | последний тик, Cron выключен при идущих аукционах, неотправленные письма, открытые жалобы ([OPERATIONS.md](OPERATIONS.md)) |
 | `POST /api/internal/tick` | Worker Cron и внутренний таймер (W2) | закрытие, напоминания, истечение предложений, письма, медиа |
 
