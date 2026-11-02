@@ -13,6 +13,7 @@ export function LotCommerce({
   imageUrl,
   mode,
   onClose,
+  onPurchased,
 }: {
   publicId: string;
   lot: PublicLot | null;
@@ -20,6 +21,7 @@ export function LotCommerce({
   imageUrl: string | null;
   mode: 'bid' | 'buy' | 'history' | null;
   onClose: () => void;
+  onPurchased?: (order: { publicId: string }) => void;
 }) {
   const auctionId = lot?.type === 'AUCTION' ? lot.id : null;
   const fixedId = lot?.type === 'FIXED' ? lot.id : null;
@@ -48,6 +50,7 @@ export function LotCommerce({
         error={purchase.error}
         onClose={onClose}
         onSubmit={purchase.submit}
+        onPurchased={onPurchased}
       />
       <BidHistorySheet
         open={mode === 'history'}

@@ -270,6 +270,11 @@ vi.mock('../auth/AccountLogoutButton', () => ({
     createElement('button', { type: 'button' }, 'Выйти'),
 }));
 
+vi.mock('../commerce/CreateLotSheet', () => ({
+  CreateLotSheet: () => null,
+  CancelLotDialog: () => null,
+}));
+
 vi.mock('../sellers/AuthorShare', () => ({
   AuthorShare: ({ sharePath }: { sharePath: string }) =>
     createElement(

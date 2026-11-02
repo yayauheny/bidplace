@@ -22,6 +22,7 @@ export function PurchaseDialog({
   error,
   onClose,
   onSubmit,
+  onPurchased,
 }: {
   open: boolean;
   lot: PublicLot | null;
@@ -32,7 +33,10 @@ export function PurchaseDialog({
   onClose: () => void;
   onSubmit: (
     comment: string,
-  ) => Promise<AttemptResult<{ publicId: string; dealCode: string }>>;
+  ) => Promise<
+    AttemptResult<{ publicId: string; dealCode: string; applied: boolean }>
+  >;
+  onPurchased?: (order: { publicId: string }) => void;
 }) {
   return (
     <AppDialog
@@ -51,6 +55,7 @@ export function PurchaseDialog({
           pending={pending}
           error={error}
           onSubmit={onSubmit}
+          onPurchased={onPurchased}
         />
       ) : null}
     </AppDialog>
@@ -65,6 +70,7 @@ function PurchaseForm({
   pending,
   error,
   onSubmit,
+  onPurchased,
 }: {
   lot: PublicLot;
   priceMinor: number;
@@ -74,18 +80,13 @@ function PurchaseForm({
   error: unknown;
   onSubmit: (
     comment: string,
-  ) => Promise<AttemptResult<{ publicId: string; dealCode: string }>>;
+  ) => Promise<
+    AttemptResult<{ publicId: string; dealCode: string; applied: boolean }>
+  >;
+  onPurchased?: (order: { publicId: string }) => void;
 }) {
   const [comment, setComment] = useState('');
-  const [order, setOrder] = useState<{ dealCode: string } | null>(null);
   const message = commerceActionError(error, 'Не удалось забронировать работу.');
-  if (order) {
-    return (
-      <AppText role="body">
-        {`Заказ создан. Код сделки ${order.dealCode}.`}
-      </AppText>
-    );
-  }
   return (
     <View style={{ gap: designTokens.space.x3 }}>
       <View
@@ -145,6 +146,8 @@ function PurchaseForm({
   async function submit() {
     if (pending) return;
     const result = await onSubmit(comment.trim());
-    if (result.status === 'accepted') setOrder({ dealCode: result.value.dealCode });
+    if (result.status === 'accepted' && result.value.applied) {
+      onPurchased?.({ publicId: result.value.publicId });
+    }
   }
 }
