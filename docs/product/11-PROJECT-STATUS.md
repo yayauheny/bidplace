@@ -5,6 +5,37 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-03 — Latency preflight: ENVIRONMENT BLOCKED
+
+**Needs verification.** Base `3d3b48a9`, initially clean. New acceptance run 1/2/3
+**NOT RUN**: host 8 CPU/16 GiB, idle 65–71%; three 15s-spaced samples recorded
+3361 swap-in pages (52.516 MiB/30s), compressor +344.766 MiB, swap-out delta 0;
+occupied swap ~24.0 GiB. Active paging/desktop work prevents a controlled latency
+claim; occupied swap alone is not the finding. No processes stopped/settings
+changed. Disposable 55434 only: PostgreSQL 16.14; Docker 8 CPU/12529836032 bytes,
+container quotas unset, snapshot 101.1 MiB/0.03% CPU. One synthetic `SELECT 1`
+with temporary CONNECT-only role confirmed installed Prisma6.19.3 default pool
+capacity 17; actual API pool wait was not measured. Role cleaned up.
+
+[New preflight evidence](../audits/current/evidence/commerce-integration/2026-11-03-latency-preflight.json)
+retains resource samples and old-evidence hash. Previous results unchanged:
+correctness PASS3/3, p95 1831.173/1306.011/1348.044 ms, overall latency FAIL.
+Those are previous measurements, not a new controlled result. Bounded source
+analysis identified startup/lock helper/critical-section/present boundaries;
+no avoidable API defect or cost breakdown proven, no optimization. Graph coverage
+excludes this worktree; conclusions use source reads only. [Exact command, stand
+requirements and bounded next diagnostic](../launch/waves/W7-final-checks.md#latency-контролируемый-стенд-и-следующий-диагностический-шаг):
+`pnpm build:api`, await quiet preflight, then securely supplied 55434 URL and
+`pnpm --filter @bidplace/api test:performance`; same three fresh processes/schemas,
+50 concurrent bids, login/lot read outside timing, full body timed. If repeated
+exceedance on that stand, instrument per-attempt startup/lock RTT/hold bounds and
+attributed query/CPU/I/O aggregates; do not infer pure pool wait or API slowness
+from backend queue counts. Runtime/E2E/locks/isolation/pool/retries/timeouts unchanged.
+Independent read-only docs/evidence review PASS after qualifying lock-hold bounds
+to confirmed successful commits. `pnpm docs:link-check` PASS (105 files), JSON/hash
+checks PASS, `git diff --check` PASS. No new load run, build or E2E rerun; runtime
+is unchanged. No deployment.
+
 ## 2026-11-03 — Reproducible commerce checks; latency gate still fails
 
 **Partial.** Base `8a45ecba`; DEC-153/trading runtime unchanged. Permanent tests:

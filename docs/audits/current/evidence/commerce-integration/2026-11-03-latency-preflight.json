@@ -1,0 +1,177 @@
+{
+  "baselineSha": "3d3b48a901514b7d8ee91660b0c1606c1c1b8961",
+  "branch": "fix/commerce-integration",
+  "initialWorkingTree": "clean",
+  "verdicts": {
+    "environment": "ENVIRONMENT BLOCKED",
+    "correctness": "NOT RUN in this stage; previous three runs PASS retained",
+    "latency": "NOT RUN in this stage; prior acceptance FAIL remains open",
+    "review": "PASS — independent read-only docs/evidence review; no blockers"
+  },
+  "newAcceptanceRuns": [
+    {
+      "run": 1,
+      "status": "NOT RUN: uncontrolled host",
+      "metrics": null
+    },
+    {
+      "run": 2,
+      "status": "NOT RUN: uncontrolled host",
+      "metrics": null
+    },
+    {
+      "run": 3,
+      "status": "NOT RUN: uncontrolled host",
+      "metrics": null
+    }
+  ],
+  "thresholdMs": 1500,
+  "preflight": {
+    "sampling": "three vm_stat/sysctl/memory_pressure/uptime samples 15s apart; no trade traffic",
+    "pageSizeBytes": 16384,
+    "hostCpus": 8,
+    "hostMemoryBytes": 17179869184,
+    "cpuIdlePercentSamples": [
+      65,
+      71
+    ],
+    "initialSwapUsageMiB": 24619.19,
+    "samples": [
+      {
+        "utc": "2026-11-03T14:20:50.111462+00:00",
+        "vm": {
+          "Pages free": 3630,
+          "Pages occupied by compressor": 442407,
+          "Pageins": 157129868,
+          "Pageouts": 3986476,
+          "Swapins": 39923895,
+          "Swapouts": 44928570
+        },
+        "swapUsage": "vm.swapusage: total = 25600.00M  used = 24657.62M  free = 942.38M  (encrypted)",
+        "load": "17:20  up 6 days,  5:14, 1 user, load averages: 6.15 6.77 7.34",
+        "pressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 35%"
+      },
+      {
+        "utc": "2026-11-03T14:21:05.134699+00:00",
+        "vm": {
+          "Pages free": 3989,
+          "Pages occupied by compressor": 447783,
+          "Pageins": 157131833,
+          "Pageouts": 3986683,
+          "Swapins": 39926682,
+          "Swapouts": 44928570
+        },
+        "swapUsage": "vm.swapusage: total = 25600.00M  used = 24593.62M  free = 1006.38M  (encrypted)",
+        "load": "17:21  up 6 days,  5:15, 1 user, load averages: 5.47 6.59 7.27",
+        "pressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 35%"
+      },
+      {
+        "utc": "2026-11-03T14:21:20.162621+00:00",
+        "vm": {
+          "Pages free": 3783,
+          "Pages occupied by compressor": 464472,
+          "Pageins": 157132797,
+          "Pageouts": 3986795,
+          "Swapins": 39927256,
+          "Swapouts": 44928570
+        },
+        "swapUsage": "vm.swapusage: total = 25600.00M  used = 24577.62M  free = 1022.38M  (encrypted)",
+        "load": "17:21  up 6 days,  5:15, 1 user, load averages: 6.76 6.79 7.33",
+        "pressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 33%"
+      }
+    ],
+    "deltas": {
+      "Pageins": 2929,
+      "Pageouts": 319,
+      "Swapins": 3361,
+      "Swapouts": 0,
+      "Pages occupied by compressor": 22065
+    },
+    "swapInMiB": 52.515625,
+    "compressorGrowthMiB": 344.765625,
+    "processObservation": "Read executable names and aggregate CPU only, no arguments/environment. Top CPU consumers were desktop apps/WindowServer. Generic interpreter processes do not prove absence of other work. No processes stopped or system settings changed.",
+    "interpretation": "Active swap-ins, changing compression and desktop CPU work make this unsuitable for controlled acceptance now; occupied swap alone was not used as proof. No API latency or I/O cause inferred.",
+    "cpuSampleWindowUtc": "2026-11-03T14:20:18Z to approximately 14:20:20Z",
+    "memorySampleWindowUtc": [
+      "2026-11-03T14:20:50.111462+00:00",
+      "2026-11-03T14:21:20.162621+00:00"
+    ]
+  },
+  "stand": {
+    "endpoint": "127.0.0.1:55434/bidplace_integration",
+    "postgres": "16.14",
+    "image": "postgres:16-alpine",
+    "dockerCpus": 8,
+    "dockerMemoryBytes": 12529836032,
+    "containerLimits": {
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "memory": 0,
+      "blkioWeight": 0
+    },
+    "postgresMaxConnections": 100,
+    "postgresSharedBuffers": "128MB",
+    "containerSnapshot": {
+      "cpuPercent": 0.03,
+      "memoryUsage": "101.1MiB / 11.67GiB",
+      "memoryPercent": 0.85,
+      "blockIoCumulative": "0B / 1.14GB",
+      "pids": 6
+    },
+    "poolProbe": {
+      "probe": "installed Prisma default pool; one SELECT 1; no trade/load",
+      "node": "v22.20.0",
+      "poolCapacity": 17
+    },
+    "prismaVersion": "6.19.3",
+    "poolInterpretation": "17 is the installed default pool capacity announced for a credential-free-in-output SELECT 1 probe with no connection_limit override. PrismaService uses default constructor settings. Actual API pool wait and pool occupancy were not measured this stage.",
+    "observedNodeVersion": "22.20.0",
+    "observedPnpmVersion": "11.7.0"
+  },
+  "plannedConditions": {
+    "build": "compiled Nest API; NODE_ENV=test APP_ENV=local; test Turnstile; existing test runtime stops background tick and calls HTTP tick explicitly",
+    "node": "22.20.0",
+    "pnpm": "11.7.0",
+    "dataset": "three independent fresh schemas and permission fixtures; 50 new buyers per run",
+    "warmup": "login and one lot read outside timing; fresh API process/bid route cold per run; OS/DB caches not flushed",
+    "concurrency": 50,
+    "measurement": "full response body; each p95 must be <=1500ms and all original correctness invariants must pass; no p95 averaging",
+    "command": "pnpm --filter @bidplace/api test:performance",
+    "prerequisites": "Clean checkout without env/credential files; Node 22.20.0/pnpm11.7.0; prebuilt API from pnpm build:api; securely supplied INTEGRATION_DATABASE_URL only for the endpoint above and a role with CONNECT/CREATE on that disposable database; quiet host with no active paging/builds/tests; capture actual pool and container limits without tuning them to pass."
+  },
+  "previousEvidence": {
+    "path": "docs/audits/current/evidence/commerce-integration/2026-11-03-load.json",
+    "sha256": "190695ed500d174fc103de831baa13985fd32132463a58d9348285655242bbcf",
+    "correctness": "PASS3/3",
+    "latency": "FAIL",
+    "p95Ms": [
+      1831.1732499999994,
+      1306.01075,
+      1348.0436249999998
+    ],
+    "notOverwritten": true
+  },
+  "analysisScope": {
+    "method": "bounded source reads; code graph reports this worktree outside indexed project; no completeness claims",
+    "owners": [
+      "apps/api/src/core/database/transaction.ts",
+      "apps/api/src/products/product-write-guard.ts",
+      "apps/api/src/commerce/bids.service.ts",
+      "apps/api/src/commerce/commerce-guards.ts",
+      "apps/api/src/core/database/prisma.service.ts"
+    ],
+    "confirmedApiDefect": null,
+    "unmeasured": [
+      "connection acquisition wait",
+      "BEGIN/driver scheduling",
+      "product lock wait duration",
+      "transaction/lock hold duration",
+      "per-transaction SQL round trips and timings",
+      "API CPU/event loop and database storage latency"
+    ],
+    "nextStep": "On a quiet controlled stand run existing three-run acceptance unchanged; if repeated exceedance, separately instrument existing transaction and product-lock owners per attempt plus operation labels, record tx-start upper bound rather than calling it pure pool wait, lock SELECT RTT, callback/settled intervals, query counts/durations with verified attribution, and CPU/I/O. No SQL text/params/contacts/cookies/credentials. Never infer cause from waiters alone. DB lock-hold bounds apply only to confirmed successful commits; errors/timeouts/disconnects retain raw client intervals and outcomes only."
+  },
+  "changes": "documentation/evidence only; no runtime, E2E, pool, lock order, isolation, limits, retries, timeouts, dependencies or migrations changed",
+  "reviewFindingAddressed": "Qualified hold bounds to confirmed successful commits; PostgreSQL abort may release locks before callback unwind/ROLLBACK. Independent reviewer confirmed the correction and approved the docs/evidence diff."
+}

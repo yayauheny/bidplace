@@ -73,6 +73,66 @@ Live E2E и скриншоты — `apps/mobile/e2e/commerce-live.spec.ts` и
 включая ошибку инициализации. Изменения времени/совместимости/восстановления
 не входят в эту проверочную задачу (`DEC-153`).
 
+### Latency: контролируемый стенд и следующий диагностический шаг
+
+Перед новым приёмочным набором — три ресурсных среза с интервалом 15 с:
+`uptime`, `iostat -c 2`, `vm_stat`, `sysctl vm.swapusage`, `memory_pressure -Q`;
+только имена/CPU процессов, не argv/env. Нужны стабильная доступная память и
+отсутствие активного paging/конкурирующих builds/tests/browser suites. Ненулевой
+накопленный swap сам по себе не запрещает измерение; важны дельты swap-in/out и
+компрессора. Чужие процессы не останавливать, настройки не менять. При активном
+paging/неконтролируемом фоне — **ENVIRONMENT BLOCKED**, новые run 1–3 `NOT RUN`,
+а не PASS/новый FAIL API. Не повторять шумный набор до смены условий.
+
+Сохранить SHA и fingerprint скрипта, Node 22.20.0/pnpm 11.7.0/PostgreSQL 16.14,
+режим сборки, host/VM CPU/RAM, container CPU/memory/I/O limits, фактическую ёмкость
+Prisma pool и отсутствие URL overrides. Текущий default-capacity probe Prisma
+6.19.3 объявил 17; это ёмкость, не число занятых соединений и не pool wait.
+При ином стенде/пуле явно записать разницу, не подбирать параметры ради PASS.
+Предыдущий стенд: host 8 CPU/16 GiB, Docker 8 CPU/12529836032 bytes, лимиты
+контейнера 0 (не заданы). Новая среда должна быть выделена под измерение;
+локальный PASS всё равно не production evidence.
+
+Точная команда из чистого checkout без env/credential-файлов, после активации
+Node 22.20.0/pnpm 11.7.0 и безопасной передачи `INTEGRATION_DATABASE_URL` только
+для `127.0.0.1:55434/bidplace_integration` (CONNECT/CREATE своей схемы):
+
+```sh
+node --version
+pnpm --version
+pnpm build:api
+# Дождаться завершения сборки и успешного ресурсного preflight.
+pnpm --filter @bidplace/api test:performance
+```
+
+Прогрев/dataset/конкурентность сохраняются из существующего теста выше. Не
+усреднять p95 и не заменять старый evidence новым. Каждый из трёх run должен
+пройти correctness и p95 ≤1500 мс; неполный набор остаётся неполным.
+
+Если превышение повторяется на пригодном стенде, отдельно от приёмки временно
+инструментировать существующие `core/database/transaction.ts`,
+`products/product-write-guard.ts` и `commerce/bids.service.ts` (без второго
+framework и без изменения поведения):
+
+| Интервал/метрика | Точная граница и ограничение вывода |
+| --- | --- |
+| Transaction startup | Перед `$transaction` → вход callback, по каждой попытке. Включает pool/BEGIN/driver scheduling; не называть чистым pool wait без отдельной engine-метрики. |
+| Product-lock RTT | До/после именно `SELECT FOR UPDATE`. Весь `lockProductRowForUpdate` ещё сохраняет/восстанавливает lock_timeout: время helper не равно lock wait. |
+| Транзакция/удержание | Вход/выход callback и settlement `$transaction`, по каждой попытке/outcome. Только для подтверждённого успешного commit: callback после lock-ack даёт нижнюю границу удержания, settlement минус начало lock-call — верхнюю. Для errors/timeouts/disconnect — только клиентские интервалы, без DB hold bounds. |
+| Queries/round trips | По каждому transaction attempt: только проверенно привязанные count/duration и статические operation labels (eligibility/write/outbox/antifraud/present). Глобальный `PrismaService.queryCount` под 50 запросами не является счётчиком отдельной транзакции. |
+| CPU/I/O | API CPU/event-loop, host paging/CPU, DB I/O и state/wait_event только собственных synthetic backend-процессов; cumulative BlockIO не является latency. |
+
+PostgreSQL может освободить locks при abort до последующего завершения клиентского
+callback/ROLLBACK; поэтому error-path не даёт таких границ ([PostgreSQL 16,
+transaction abort](https://github.com/postgres/postgres/blob/REL_16_STABLE/src/backend/access/transam/README)).
+Монотонные интервалы считать внутри одного процесса; часы разных процессов не
+вычитать. Не выводить SQL/params, cookies, контакты или credentials. `present`
+вызван под транзакцией после записи и дополнительно читает participant label и
+viewer eligibility; стоимость этих чтений пока не измерена. До controller также
+есть session/rate-limit работа. Очередь одного product ожидаема и не доказывает
+дефект. Если чистый pool wait либо per-transaction attribution недоступны,
+сохранить ограничение, не подменять их оценкой по числу backend-процессов.
+
 - [ ] **Шаг 1:** подготовить данные: сид + 200 работ и 20 лотов (скрипт в
   `scripts/perf/`, удаляется в конце, или флаг сида — `Ruling:`).
 - [ ] **Шаг 2:** выполнить 4 замера, заполнить таблицу фактами (числа, скриншоты
