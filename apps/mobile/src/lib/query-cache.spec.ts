@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 
 import {
+  adminKeys,
   authKeys,
   canWritePrivateCache,
   captureDraftWriteLease,
@@ -238,6 +239,7 @@ describe('commerce query keys', () => {
     expect(commerceKeys.contacts()[0]).toBe('user');
     expect(commerceKeys.notificationSettings()[0]).toBe('user');
     expect(commerceKeys.bids('listing-1')[0]).not.toBe('user');
+    expect(adminKeys.commerce('health')).toEqual(['admin', 'commerce', 'health']);
     expect(portfolioKeys.work('work-1')).toEqual(['portfolio-work', 'work-1']);
     expect(portfolioKeys.works({ page: 1 })).toEqual([
       'portfolio-works',
@@ -263,6 +265,7 @@ describe('commerce query keys', () => {
     });
     queryClient.setQueryData(commerceKeys.bids('listing-1'), [{ amount: 1 }]);
     queryClient.setQueryData(portfolioKeys.home, { ok: true });
+    queryClient.setQueryData(adminKeys.commerce('health'), { openReports: 1 });
 
     await clearAuthenticatedSession(queryClient);
 
@@ -284,6 +287,7 @@ describe('commerce query keys', () => {
       queryClient.getQueryData(commerceKeys.favorite('product-1')),
     ).toBeUndefined();
     expect(queryClient.getQueryData(commerceKeys.contacts())).toBeUndefined();
+    expect(queryClient.getQueryData(adminKeys.commerce('health'))).toBeUndefined();
     expect(
       queryClient.getQueryData(commerceKeys.notificationSettings()),
     ).toBeUndefined();

@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Admin deal operations
+
+**Partial. NEEDS-FIGMA.** DESIGN-BRIEF §12 has no mock and says to use the existing admin primitives. `/admin/commerce` uses `AppShell`, `PageHeader`, `TextField`, `SecondaryButton`, and `TextButton`. Reports do not show deal contacts. Attention orders and the selected order do. There is no separate dispute screen and no weekly analytics. Off, disabled, and black switch states are not part of this screen. Filled-screen screenshots at 390/1024/1440 were not taken.
+
 ## 2026-11-02 — Deal contacts and settings rows
 
 **Partial.** Settings keeps `SettingsGroup` / `SettingsRow` and adds the contacts row, a read-only email line, the outbid switch, and a support line with no link. `/account/contacts` reuses `FormPageShell` variant `settings`, `TextField`, and the seller switch. F9 (VK, show-to-buyer, notifications, support) has no frame; switch off/disabled/black stays NEEDS-FIGMA. No new tokens.
