@@ -141,7 +141,8 @@ function BuyerAction({
 }
 
 function buyerLabel(action: LotAction, type: PublicLot['type']): string | null {
-  if (action.kind === 'contacts' || action.kind === 'cancel-lot') return null;
+  if (action.kind === 'contacts') return 'Указать контакты';
+  if (action.kind === 'cancel-lot') return null;
   if (action.kind === 'buy') return 'Купить';
   if (action.kind === 'bid') return 'Сделать ставку';
   return type === 'FIXED' ? 'Купить' : 'Сделать ставку';

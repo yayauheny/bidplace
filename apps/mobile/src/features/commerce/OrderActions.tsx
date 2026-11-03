@@ -24,12 +24,14 @@ const STRIKE_WARNING =
 export function OrderActions({
   order,
   commands,
+  canStartSale = true,
 }: {
   order: OrderDetail;
   commands: ReturnType<typeof useOrderCommands>;
+  canStartSale?: boolean;
 }) {
   const router = useRouter();
-  const model = orderActions(order, Date.now());
+  const model = orderActions(order, Date.now(), { canStartSale });
   const [confirm, setConfirm] = useState<
     | null
     | { kind: 'refuse' }

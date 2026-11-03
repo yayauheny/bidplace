@@ -13,6 +13,8 @@ export const AUCTION_DAY_CHIPS = [1, 3, 7, 14] as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MINSK_OFFSET_MS = 3 * 60 * 60 * 1000;
+/** Immediate start is not the device clock. The server stamps its own now and keeps this length. */
+const IMMEDIATE_ANCHOR_MS = Date.parse('2000-01-01T00:00:00.000Z');
 
 const minskStamp = new Intl.DateTimeFormat('ru-RU', {
   timeZone: 'Europe/Minsk',
@@ -47,6 +49,16 @@ export function initialCreateLotDraft(): CreateLotDraft {
     startTime: '12:00',
     durationDays: 7,
     customDaysText: '',
+  };
+}
+
+export function sellerCommerceAccess(status: string | null): {
+  viewSales: boolean;
+  startSale: boolean;
+} {
+  return {
+    viewSales: status === 'APPROVED' || status === 'SUSPENDED',
+    startSale: status === 'APPROVED',
   };
 }
 
@@ -92,8 +104,6 @@ export function createLotRequest(
   if (amount === null || amount <= 0) {
     return { ok: false, message: 'Укажите цену больше нуля.' };
   }
-  const startsAt = resolveStartsAt(draft, nowMs);
-  if (!startsAt.ok) return startsAt;
   const days = draft.type === 'AUCTION' ? durationDays(draft) : null;
   if (draft.type === 'AUCTION' && days === null) {
     return { ok: false, message: 'Длительность аукциона — от 1 до 14 дней.' };
@@ -107,9 +117,23 @@ export function createLotRequest(
       message: 'Стартовая цена должна быть кратна шагу ставки.',
     };
   }
+  const immediate = draft.type === 'FIXED' || draft.startMode === 'now';
+  const startsAt = immediate
+    ? { ok: true as const, value: new Date(IMMEDIATE_ANCHOR_MS).toISOString() }
+    : resolveStartsAt(draft, nowMs);
+  if (!startsAt.ok) return startsAt;
   const endsAt =
     draft.type === 'AUCTION' && days !== null
-      ? new Date(Date.parse(startsAt.value) + days * DAY_MS).toISOString()
+      ? new Date(
+          (immediate ? IMMEDIATE_ANCHOR_MS : Date.parse(startsAt.value)) +
+            days * DAY_MS,
+        ).toISOString()
+      : null;
+  const previewEnd =
+    draft.type === 'AUCTION' && days !== null
+      ? new Date(
+          (immediate ? nowMs : Date.parse(startsAt.value)) + days * DAY_MS,
+        ).toISOString()
       : null;
   const value =
     draft.type === 'FIXED'
@@ -117,7 +141,7 @@ export function createLotRequest(
           type: 'FIXED' as const,
           priceMinor: amount,
           currency: draft.currency,
-          startsAt: new Date(nowMs - 5_000).toISOString(),
+          startsAt: startsAt.value,
           contactWindowHours: draft.contactWindowHours,
         }
       : {
@@ -135,7 +159,7 @@ export function createLotRequest(
   return {
     ok: true,
     value: parsed.data,
-    endsLabel: endsAt ? formatListingStamp(endsAt) : null,
+    endsLabel: previewEnd ? formatListingStamp(previewEnd) : null,
   };
 }
 
@@ -153,9 +177,6 @@ function resolveStartsAt(
   draft: CreateLotDraft,
   nowMs: number,
 ): { ok: true; value: string } | { ok: false; message: string } {
-  if (draft.type === 'FIXED' || draft.startMode === 'now') {
-    return { ok: true, value: new Date(nowMs).toISOString() };
-  }
   const date = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(draft.startDate.trim());
   const time = /^(\d{2}):(\d{2})$/.exec(draft.startTime.trim());
   if (!date || !time) {

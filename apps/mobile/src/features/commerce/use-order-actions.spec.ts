@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiClientError } from '@bidplace/api-client';
+
 import { authKeys, commerceKeys } from '../../lib/query-cache';
 import { useOrderCommands } from './use-order-actions';
 
@@ -152,5 +154,52 @@ describe('useOrderCommands', () => {
     expect(await pending).toEqual({ status: 'accepted', value: null });
     expect(client?.getQueryData(commerceKeys.order(ORDER_A))).toBeUndefined();
     expect(client?.getQueryData(commerceKeys.order(ORDER_B))).toBeUndefined();
+  });
+
+  it('refreshes the order when the transition is no longer allowed', async () => {
+    harness.acceptOrder.mockRejectedValue(
+      new ApiClientError('changed', {
+        kind: 'conflict',
+        status: 409,
+        code: 'ORDER_TRANSITION_NOT_ALLOWED',
+      }),
+    );
+    render();
+    client?.setQueryData(commerceKeys.order(ORDER_A), order(ORDER_A));
+    await act(async () => {
+      await harness.accept?.(undefined);
+    });
+    expect(client?.getQueryState(commerceKeys.order(ORDER_A))?.isInvalidated).toBe(true);
+  });
+
+  it('does not refresh another account when a late conflict arrives', async () => {
+    let rejectAccept: (error: unknown) => void = () => {};
+    harness.acceptOrder.mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectAccept = reject;
+        }),
+    );
+    render();
+    const pending = harness.accept?.(undefined);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    harness.userId = USER_B;
+    harness.publicId = ORDER_B;
+    client?.setQueryData(authKeys.session, { id: USER_B });
+    client?.setQueryData(commerceKeys.order(ORDER_B), order(ORDER_B));
+    act(() => harness.bump());
+    rejectAccept(
+      new ApiClientError('changed', {
+        kind: 'conflict',
+        status: 409,
+        code: 'ORDER_TRANSITION_NOT_ALLOWED',
+      }),
+    );
+    await act(async () => {
+      await pending;
+    });
+    expect(client?.getQueryState(commerceKeys.order(ORDER_B))?.isInvalidated).not.toBe(true);
   });
 });

@@ -33,7 +33,9 @@ export function apiErrorCodeMessage(code: string | null): string | null {
     case 'IDEMPOTENCY_KEY_REUSED':
       return 'Этот запрос уже отправлен с другими данными.';
     case 'ORDER_TRANSITION_NOT_ALLOWED':
-      return 'Это действие сейчас недоступно.';
+      return 'Заказ изменился. Смотрите актуальное состояние.';
+    case 'conflict':
+      return 'Данные изменились. Смотрите актуальное состояние.';
     case 'NO_NEXT_BIDDER':
       return 'Следующего участника нет.';
     case 'DEAL_RULES_NOT_ACCEPTED':

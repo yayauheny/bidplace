@@ -10,6 +10,7 @@ import { navigateBack } from '../../components/layout/navigate-back';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { AppText, PageState, SecondaryButton } from '../../components/ui';
 import { useSellerCapability } from '../../hooks/use-seller-capability';
+import { sellerCommerceAccess } from './create-lot-form';
 import { ATTENTION_LABEL } from './order-view';
 import { OrderRow } from './OrderRow';
 import { useAttention } from './use-order';
@@ -19,9 +20,9 @@ export function DealsScreen() {
   const router = useRouter();
   const panelId = useId();
   const capability = useSellerCapability();
-  const selling = capability.status === 'APPROVED';
+  const sales = sellerCommerceAccess(capability.status);
   const [role, setRole] = useState<'buyer' | 'seller'>('buyer');
-  const activeRole = selling ? role : 'buyer';
+  const activeRole = sales.viewSales ? role : 'buyer';
   const deals = useDeals(activeRole, true);
   const attention = useAttention();
   const loading =
@@ -32,7 +33,7 @@ export function DealsScreen() {
     <FormPageShell variant="account">
       <BackButton onPress={() => navigateBack(router, { fallbackHref: '/account' })} />
       <AppText role="sectionTitle">Сделки</AppText>
-      {selling ? (
+      {sales.viewSales ? (
         <FigmaTabs
           label="Сторона сделки"
           panelId={panelId}
@@ -50,6 +51,11 @@ export function DealsScreen() {
       <Attention
         items={attention.data?.items ?? []}
         onOpen={(publicId) => router.push(`/account/orders/${publicId}` as Href)}
+        onContacts={() =>
+          router.push(
+            `/account/contacts?redirectTo=${encodeURIComponent('/account/deals')}` as Href,
+          )
+        }
       />
       {loading ? <InfrastructurePageStatus status="loading" onRetry={() => undefined} /> : null}
       {failed ? (
@@ -69,7 +75,9 @@ export function DealsScreen() {
             empty={
               activeRole === 'buyer'
                 ? 'Пока нет покупок. Работы с ценой и аукционы — в разделе Обзор'
-                : 'Пока нет продаж. Выставить работу можно на её странице'
+                : sales.startSale
+                  ? 'Пока нет продаж. Выставить работу можно на её странице'
+                  : 'Пока нет продаж. Новая продажа недоступна, пока аккаунт приостановлен.'
             }
           />
           <OrderGroup
@@ -86,12 +94,14 @@ export function DealsScreen() {
 function Attention({
   items,
   onOpen,
+  onContacts,
 }: {
   items: Array<{
     kind: keyof typeof ATTENTION_LABEL;
     orderPublicId: string | null;
   }>;
   onOpen: (publicId: string) => void;
+  onContacts: () => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -104,6 +114,13 @@ function Attention({
             label={ATTENTION_LABEL[item.kind]}
             width="block"
             onPress={() => onOpen(item.orderPublicId ?? '')}
+          />
+        ) : item.kind === 'CONTACTS_REQUIRED' ? (
+          <SecondaryButton
+            key={item.kind}
+            label={ATTENTION_LABEL.CONTACTS_REQUIRED}
+            width="block"
+            onPress={onContacts}
           />
         ) : (
           <AppText key={`${item.kind}-${index}`} role="bodySmall">

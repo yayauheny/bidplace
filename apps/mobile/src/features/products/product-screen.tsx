@@ -28,7 +28,9 @@ import { LotCommerce } from '../commerce/LotCommerce';
 import { DEAL_STEPS, LotPanel } from '../commerce/LotPanel';
 import { useLot } from '../commerce/use-lot';
 import { useAuth } from '../../providers/auth-provider';
+import { sellerCommerceAccess } from '../commerce/create-lot-form';
 import { lotSaleOpen, presentLot, syncedNowMs } from '../commerce/lot-view';
+import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { resolvePublicWorkPageState } from './public-work-page-state';
 import { resolveWorkTab, workFacts, workTabs } from './work-content';
 import { navigateWorkPageBack } from './work-page-back';
@@ -48,6 +50,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     null,
   );
   const auth = useAuth();
+  const capability = useSellerCapability();
+  const sales = sellerCommerceAccess(capability.isLoading ? null : capability.status);
   const query = useQuery({
     queryKey: portfolioKeys.work(publicId),
     queryFn: ({ signal }) => api.portfolio.getWork(publicId, { signal }),
@@ -83,10 +87,21 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   useEffect(() => {
     if (sell !== '1' || consumedSell.current || !query.data) return;
     if (lot.status === 'loading' || lot.status === 'auth-loading') return;
+    if (auth.isAuthenticated && capability.isLoading) return;
     consumedSell.current = true;
-    if (isOwner && !lot.lot && lot.status === 'empty') setSheet('sell');
+    if (isOwner && sales.startSale && !lot.lot && lot.status === 'empty') setSheet('sell');
     router.setParams({ sell: undefined });
-  }, [sell, query.data, lot.status, lot.lot, isOwner, router]);
+  }, [
+    sell,
+    query.data,
+    lot.status,
+    lot.lot,
+    isOwner,
+    router,
+    auth.isAuthenticated,
+    capability.isLoading,
+    sales.startSale,
+  ]);
   useEffect(() => {
     if (!query.data || !requestedTab) return;
     if (sale === undefined && requestedTab === 'delivery') return;
@@ -177,11 +192,13 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               listOffer={
                 isOwner && !lot.lot && (lot.status === 'empty' || lot.status === 'empty-stale')
                   ? {
-                      enabled: lot.status === 'empty',
+                      enabled: lot.status === 'empty' && sales.startSale,
                       reason:
-                        lot.status === 'empty-stale'
-                          ? 'Данные продажи устарели.'
-                          : null,
+                        capability.status === 'SUSPENDED'
+                          ? 'Аккаунт автора приостановлен.'
+                          : lot.status === 'empty-stale'
+                            ? 'Данные продажи устарели.'
+                            : null,
                     }
                   : null
               }
@@ -199,6 +216,10 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 } else if (action.kind === 'verify-email') {
                   router.push(
                     `/verify-email?redirectTo=${encodeURIComponent(`/product/${publicId}`)}` as Href,
+                  );
+                } else if (action.kind === 'contacts') {
+                  router.push(
+                    `/account/contacts?redirectTo=${encodeURIComponent(`/product/${publicId}`)}` as Href,
                   );
                 }
               }}

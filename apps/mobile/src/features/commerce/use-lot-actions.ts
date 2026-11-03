@@ -22,6 +22,9 @@ const REFRESH_LOT = new Set([
   'BID_TOO_LOW',
   'LISTING_NOT_OPEN',
   'LISTING_CHANGED',
+  'PRODUCT_ALREADY_SOLD',
+  'conflict',
+  'BUYER_CONTACTS_REQUIRED',
 ]);
 
 const REFRESH_LISTING = new Set<string>([

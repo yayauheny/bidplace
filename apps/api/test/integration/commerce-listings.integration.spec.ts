@@ -447,6 +447,29 @@ describe('listing creation', () => {
 });
 
 describe('listing withdrawal', () => {
+  it('accepts a one-day auction when the client clock is behind the database', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const product = await publishedWork(fixture);
+    const client = await signedInOwner(fixture);
+    const before = await databaseNow();
+    const requestedStart = new Date(before.getTime() - 30_000);
+    const created = await client.post(`/works/${product.id}/listings`, {
+      type: 'AUCTION',
+      currency: 'BYN',
+      startPriceMinor: 1_000,
+      startsAt: requestedStart.toISOString(),
+      endsAt: new Date(requestedStart.getTime() + DAY_MS).toISOString(),
+    });
+    expect(created.status).toBe(201);
+    const body = (await created.json()) as { id: string; status: string };
+    expect(body.status).toBe('LIVE');
+    const row = await prisma.listing.findUniqueOrThrow({ where: { id: body.id } });
+    const after = await databaseNow();
+    expect(row.startsAt.getTime()).toBeGreaterThanOrEqual(before.getTime() - 1_000);
+    expect(row.startsAt.getTime()).toBeLessThanOrEqual(after.getTime() + 1_000);
+    expect(row.endsAt?.getTime()).toBe(row.startsAt.getTime() + DAY_MS);
+  });
+
   it('lets the author withdraw a fixed listing and an auction with no bids', async () => {
     const fixture = await createPermissionFixture(prisma);
     const product = await publishedWork(fixture);

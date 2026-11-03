@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-03 — Commerce integration screens
+
+**Partial. NEEDS-FIGMA.** No new frames and no new tokens. The lot panel reuses `PrimaryButton` for «Указать контакты». The deals hub reuses `FigmaTabs`; «Продаю» stays for a suspended author, and a new sale stays disabled. Exact 390/1024/1440 geometry is not claimed. Chromium and WebKit opened the mocked lot at those widths, focused the contacts button, and followed one purchase to the order URL. The contacts form, deals hub, and order card were not opened as filled screens.
+
 ## 2026-11-02 — Admin deal operations
 
 **Partial. NEEDS-FIGMA.** DESIGN-BRIEF §12 has no mock and says to use the existing admin primitives. `/admin/commerce` uses `AppShell`, `PageHeader`, `TextField`, `SecondaryButton`, and `TextButton`. Reports do not show deal contacts. Attention orders and the selected order do. There is no separate dispute screen and no weekly analytics. Off, disabled, and black switch states are not part of this screen. Filled-screen screenshots at 390/1024/1440 were not taken.

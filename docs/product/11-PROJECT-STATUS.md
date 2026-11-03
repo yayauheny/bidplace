@@ -5,6 +5,22 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-03 — Commerce wave integration
+
+**Partial.** `fix/commerce-integration` contains #88 `c0fb2494`, #89 `109fec02`, #90 `7ecc178a` (ancestor of #91), #91 `f5e5c64b`, #92 `158ec56c`, #93 `7d2bbdfe` (ancestor of #94), and #94 `d461f493`. Source branches were not rewritten.
+
+`listingSchedule` keeps the requested auction span. A start that is not after the database clock is `LIVE` at that clock, and `endsAt` is that clock plus the span (1–14 days). Immediate fixed and auction-now requests send `2000-01-01T00:00:00.000Z` plus that length, so request delay and a device clock ahead or behind do not shrink the auction or schedule a fixed price. A chosen future auction still sends that Europe/Minsk instant. The fixed-price offset of five seconds is gone.
+
+`sellerCommerceAccess`: `APPROVED` can view and start a sale; `SUSPENDED` can view existing sales only. «Продаю» stays visible. Offer-next and relist stay hidden. `assertApprovedSeller` still returns 403 for offer-next. Complete and fail of an existing order are unchanged.
+
+`scripts/perf/bid-load-check.mjs` makes `parallel-bids.mjs` exit non-zero on a network or unexpected HTTP result, a tick other than 200, an order count other than one after an accepted bid, or a mismatch of price, live bids, and `bid_count`. `BID_TOO_LOW` and `conflict` stay allowed refusals. The script still accepts only loopback `127.0.0.1:55434/bidplace_integration`.
+
+A purchase opens `/account/orders/:publicId` only when that response still belongs to the current viewer. Missing contacts open `/account/contacts?redirectTo=` and do not buy. Attention `CONTACTS_REQUIRED` without an order returns to `/account/deals`. An order conflict refreshes that order only while the same viewer still owns the screen.
+
+`DEAL_RULES_NOT_ACCEPTED` is still not thrown by any API service. W6 consent is not implemented. F4–F10 and admin commerce stay NEEDS-FIGMA. This is not completed W4 or W7.
+
+Checks on this tree, Node 22.20.0: eslint on the touched files exited 0; mobile commerce specs 59 passed (5 files, including `LotPanel`); listings service spec 9 passed; `commerce-listings` and `commerce-orders` integration 72 passed on local `127.0.0.1:5432/bidplace_integration`; `bid-load-check.spec.mjs` 3 passed. Chromium and WebKit `commerce-lot` (390/1024/1440, one purchase to the order URL, contacts button focus) 6 passed against mocked `/api`, because `prepare.mjs` runs `prisma migrate reset` on `bidplace_e2e` and that reset was not run. `pnpm docs:link-check` passed (105 files). `git diff --check` passed. API `tsc --noEmit -p tsconfig.typecheck.json` and mobile `tsc --noEmit` exited 0. `EXPO_NO_DOTENV=1` `build:web` exported `apps/mobile/dist`. `parallel-bids.mjs` was not executed. PITR, Cron, mail, and Cloudflare were not run. No push, merge, or deploy.
+
 ## 2026-11-02 — Sales launch checklist
 
 **Partial.** The only sales-launch checklist is `docs/ops/00-RELEASE-AND-BACKUP.md` («Запуск продаж»). The PITR baseline is the read-only snapshot at restore time `T`, including order/bid/listing connectivity. Commerce mail follows COMMERCE §9. The Cron test expects close, order and buyer mail within 10 minutes of `endsAt`, with heartbeat recorded separately. Live `GET /api/health` and `/api/health/ready` returned 200 with database ok at 2026-11-02T21:14:40Z. Public tick returned JSON 404 with `x-powered-by: Express`, which differs from the Worker empty 404; that single GET is not evidence of a tick run. Restore, mail, Turnstile, Cron and ★ values were not run. W6 consent stays a separate gap. No cloud mutation.

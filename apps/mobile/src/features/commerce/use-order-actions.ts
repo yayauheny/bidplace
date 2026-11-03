@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ApiClientError } from '@bidplace/api-client';
 import type { FailOrderRequest, OrderDetail } from '@bidplace/contracts';
 
 import {
@@ -10,6 +11,14 @@ import {
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import type { AttemptResult } from './use-lot-actions';
+
+const REFRESH_ORDER = new Set([
+  'ORDER_TRANSITION_NOT_ALLOWED',
+  'LISTING_CHANGED',
+  'NO_NEXT_BIDDER',
+  'PRODUCT_IN_SALE',
+  'conflict',
+]);
 
 export function useOrderCommands(publicId: string, workPublicId: string) {
   const api = useApiClient();
@@ -51,6 +60,11 @@ function useOrderWrite<TInput, TValue extends OrderDetail | { id: string }>(
   const viewerId = useRef<string | null>(null);
   const orderId = useRef(publicId);
   const workId = useRef(workPublicId);
+  const inflight = useRef<{
+    viewerId: string | null;
+    publicId: string;
+    workPublicId: string;
+  } | null>(null);
   viewerId.current = auth.user?.id ?? null;
   orderId.current = publicId;
   workId.current = workPublicId;
@@ -61,8 +75,19 @@ function useOrderWrite<TInput, TValue extends OrderDetail | { id: string }>(
         publicId: orderId.current,
         workPublicId: workId.current,
       };
+      inflight.current = captured;
       const value = await run(input);
       return { value, captured };
+    },
+    onError: (error) => {
+      const captured = inflight.current;
+      if (!captured || !refreshOrderError(error)) return;
+      if (!owns(captured, viewerId.current, orderId.current, workId.current)) return;
+      if (!canWritePrivateCache(queryClient)) return;
+      void queryClient.invalidateQueries({
+        queryKey: commerceKeys.order(captured.publicId),
+      });
+      void queryClient.invalidateQueries({ queryKey: commerceKeys.attention() });
     },
     onSuccess: (data) => {
       if (!owns(data.captured, viewerId.current, orderId.current, workId.current)) return;
@@ -96,6 +121,14 @@ function useOrderWrite<TInput, TValue extends OrderDetail | { id: string }>(
         return applied ? data.value : null;
       }),
   };
+}
+
+function refreshOrderError(error: unknown): boolean {
+  return (
+    error instanceof ApiClientError &&
+    error.code !== null &&
+    REFRESH_ORDER.has(error.code)
+  );
 }
 
 function owns(

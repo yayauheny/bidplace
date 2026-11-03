@@ -119,7 +119,11 @@ export function orderTiming(order: OrderSummary & {
   return null;
 }
 
-export function orderActions(order: OrderDetail, nowMs: number): OrderActionModel {
+export function orderActions(
+  order: OrderDetail,
+  nowMs: number,
+  access: { canStartSale: boolean } = { canStartSale: true },
+): OrderActionModel {
   const buyer = order.role === 'buyer';
   const seller = order.role === 'seller';
   const auction =
@@ -137,12 +141,13 @@ export function orderActions(order: OrderDetail, nowMs: number): OrderActionMode
     buyerRefuse: buyer && order.status === 'ACTIVE',
     complete: seller && order.status === 'ACTIVE',
     offerNext:
+      access.canStartSale &&
       seller &&
       order.status === 'FAILED' &&
       auction &&
       order.failReason !== null &&
       NEXT_OFFER_REASONS.has(order.failReason),
-    relist: seller && order.status === 'FAILED' && auction,
+    relist: access.canStartSale && seller && order.status === 'FAILED' && auction,
     report: (buyer || seller) && reportOpen(order, nowMs),
     resaleNote: seller && order.status === 'FAILED' && order.source === 'FIXED_PURCHASE',
     paymentWarning: buyer && order.status === 'ACTIVE',

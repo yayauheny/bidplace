@@ -5,6 +5,8 @@
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 
+import { assertDisposableTarget, bidLoadProblems } from './bid-load-check.mjs';
+
 const require = createRequire(new URL('../../apps/api/package.json', import.meta.url));
 const { Client } = require('pg');
 
@@ -30,20 +32,13 @@ function assertLocalTarget() {
       'PERF_DATABASE_URL, PERF_SELLER_EMAIL and PERF_PASSWORD are required',
     );
   }
-  const api = new URL(baseUrl);
-  const database = new URL(databaseUrl);
-  if (!['127.0.0.1', 'localhost'].includes(api.hostname)) {
-    throw new Error('Refusing a non-loopback API URL');
-  }
-  if (!['127.0.0.1', 'localhost'].includes(database.hostname)) {
-    throw new Error('Refusing a non-loopback database URL');
-  }
-  if (database.port !== '55434' || database.pathname !== '/bidplace_integration') {
-    throw new Error(
-      'Refusing a database other than 127.0.0.1:55434/bidplace_integration',
-    );
-  }
-  return { baseUrl: api.origin, databaseUrl, sellerEmail, sellerPassword };
+  assertDisposableTarget({ baseUrl, databaseUrl });
+  return {
+    baseUrl: new URL(baseUrl).origin,
+    databaseUrl,
+    sellerEmail,
+    sellerPassword,
+  };
 }
 
 function percentile(sorted, ratio) {
@@ -243,7 +238,6 @@ async function main() {
       codes[key] = (codes[key] ?? 0) + 1;
     }
     const accepted = bids.filter((bid) => bid.status === 200).length;
-    const serverErrors = bids.filter((bid) => bid.status >= 500).length;
 
     await db.query(
       `UPDATE listings
@@ -271,7 +265,6 @@ async function main() {
         phase: 'bids',
         http: codes,
         accepted,
-        serverErrors,
         bidRows: stored.rows[0].rows,
         liveBids: stored.rows[0].live,
         maxStoredAmount: stored.rows[0].max_amount,
@@ -285,12 +278,16 @@ async function main() {
         },
       }),
     );
-    if (serverErrors > 0 || accepted === 0) process.exitCode = 1;
-    const row = listing.rows[0];
-    if (
-      row.bid_count !== stored.rows[0].live ||
-      row.current_price_minor !== stored.rows[0].max_amount
-    ) {
+    const problems = bidLoadProblems({
+      bids,
+      tickStatus: tick.status,
+      orders: orders.rows[0].orders,
+      liveBids: stored.rows[0].live,
+      maxStoredAmount: stored.rows[0].max_amount,
+      listing: listing.rows[0],
+    });
+    if (problems.length > 0) {
+      console.error(problems.join(', '));
       process.exitCode = 1;
     }
   } finally {

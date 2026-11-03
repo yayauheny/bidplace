@@ -425,12 +425,13 @@ function listingSchedule(input: CreateListingRequest, now: Date) {
   const scheduled =
     input.type === 'AUCTION' && requested.getTime() > now.getTime();
   const startsAt = scheduled ? requested : now;
-  const endsAt = input.type === 'AUCTION' ? new Date(input.endsAt) : null;
+  const requestedEnds = input.type === 'AUCTION' ? new Date(input.endsAt) : null;
+  let endsAt: Date | null = null;
   if (input.type === 'AUCTION') {
-    if (!endsAt || Number.isNaN(endsAt.getTime())) {
+    if (!requestedEnds || Number.isNaN(requestedEnds.getTime())) {
       throw invalidListing('endsAt is not a time');
     }
-    const span = endsAt.getTime() - startsAt.getTime();
+    const span = requestedEnds.getTime() - requested.getTime();
     if (
       span < COMMERCE_LIMITS.auctionMinDays * DAY_MS ||
       span > COMMERCE_LIMITS.auctionMaxDays * DAY_MS
@@ -444,6 +445,7 @@ function listingSchedule(input: CreateListingRequest, now: Date) {
     ) {
       throw invalidListing('Start price must be a multiple of the bid step');
     }
+    endsAt = new Date(startsAt.getTime() + span);
   }
   return {
     startsAt,

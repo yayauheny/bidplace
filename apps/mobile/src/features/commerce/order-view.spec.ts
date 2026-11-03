@@ -54,6 +54,24 @@ describe('orderActions', () => {
     expect(enabled.sort()).toEqual([...keys].sort());
   });
 
+  it('hides a new sale on an existing order when the author cannot start one', () => {
+    const model = orderActions(
+      order({
+        role: 'seller',
+        status: 'FAILED',
+        source: 'AUCTION_WIN',
+        failReason: 'BUYER_NO_CONTACT',
+        failedAt: AFTER,
+      }),
+      NOW,
+      { canStartSale: false },
+    );
+    expect(model.offerNext).toBe(false);
+    expect(model.relist).toBe(false);
+    expect(model.report).toBe(true);
+    expect(model.complete).toBe(false);
+  });
+
   it('keeps contact reasons locked until the deadline and does not call a sale sold', () => {
     const early = orderActions(order({ role: 'seller' }), NOW);
     expect(early.failReasons.find((item) => item.reason === 'BUYER_NO_CONTACT')).toMatchObject({

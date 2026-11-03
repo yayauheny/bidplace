@@ -17,6 +17,8 @@ import {
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { getApiAssetUrl } from '../../lib/environment';
 import { formatMoney } from '../../lib/money';
+import { useSellerCapability } from '../../hooks/use-seller-capability';
+import { sellerCommerceAccess } from './create-lot-form';
 import { OrderActions } from './OrderActions';
 import { commerceActionError } from './use-lot-actions';
 import {
@@ -35,6 +37,8 @@ export function OrderScreen({ publicId }: { publicId: string }) {
 function OrderCard({ publicId }: { publicId: string }) {
   const router = useRouter();
   const order = useOrder(publicId);
+  const capability = useSellerCapability();
+  const sales = sellerCommerceAccess(capability.isLoading ? null : capability.status);
   const detail = order.data ?? null;
   const commands = useOrderCommands(publicId, detail?.workPublicId ?? '');
   if (order.isLoading && !detail) {
@@ -115,7 +119,11 @@ function OrderCard({ publicId }: { publicId: string }) {
           )}
         />
       ) : null}
-      <OrderActions order={detail} commands={commands} />
+      <OrderActions
+        order={detail}
+        commands={commands}
+        canStartSale={sales.startSale}
+      />
     </FormPageShell>
   );
 }

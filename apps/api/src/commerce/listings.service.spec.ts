@@ -129,6 +129,64 @@ describe('listing windows use the database clock', () => {
     );
   });
 
+  it('keeps a one-day auction length when the requested start is behind the database clock', async () => {
+    const create = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: '44444444-4444-4444-8444-444444444444',
+      status: data.status,
+      type: data.type,
+      contactWindowHours: data.contactWindowHours,
+      startsAt: data.startsAt,
+      endsAt: data.endsAt ?? null,
+    }));
+    const { prisma } = database(create);
+    const requestedStart = new Date(clock.getTime() - 30_000);
+    const requestedEnd = new Date(requestedStart.getTime() + DAY_MS);
+
+    await expect(
+      service(prisma).create(ownerId, productId, {
+        type: 'AUCTION',
+        currency: 'BYN',
+        startPriceMinor: 1_000,
+        startsAt: requestedStart.toISOString(),
+        endsAt: requestedEnd.toISOString(),
+        contactWindowHours: 24,
+      }),
+    ).resolves.toMatchObject({
+      status: 'LIVE',
+      startsAt: clock.toISOString(),
+      endsAt: new Date(clock.getTime() + DAY_MS).toISOString(),
+    });
+  });
+
+  it('keeps an explicit future auction on the requested instants', async () => {
+    const startsAt = new Date(clock.getTime() + 2 * 60 * 1000);
+    const endsAt = new Date(startsAt.getTime() + DAY_MS);
+    const create = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: '44444444-4444-4444-8444-444444444444',
+      status: data.status,
+      type: data.type,
+      contactWindowHours: data.contactWindowHours,
+      startsAt: data.startsAt,
+      endsAt: data.endsAt ?? null,
+    }));
+    const { prisma } = database(create);
+
+    await expect(
+      service(prisma).create(ownerId, productId, {
+        type: 'AUCTION',
+        currency: 'BYN',
+        startPriceMinor: 1_000,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        contactWindowHours: 24,
+      }),
+    ).resolves.toMatchObject({
+      status: 'SCHEDULED',
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+    });
+  });
+
   it('stamps an immediate fixed listing with the database clock', async () => {
     const create = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
       id: '44444444-4444-4444-8444-444444444444',

@@ -522,3 +522,37 @@ test('reserves a fixed lot once and opens the order', async ({ page }) => {
   await expect(page).toHaveURL(/orderPanel1/);
   await expect(page.getByText('Код сделки 123456')).toHaveCount(0);
 });
+
+test('opens contacts instead of buying when the buyer has none', async ({ page }) => {
+  const counts = await install(page, (route) =>
+    route.fulfill({
+      json: {
+        ...liveLot('2026-11-01T18:00:00.000Z'),
+        type: 'FIXED',
+        mark: 'BUY',
+        minimumBidMinor: null,
+        bidCount: 0,
+        endsAt: null,
+        viewer: {
+          role: 'buyer',
+          isLeading: false,
+          blockedReason: 'BUYER_CONTACTS_REQUIRED',
+        },
+      },
+    }),
+  );
+  await page.goto(`/product/${PUBLIC_ID}`);
+  for (const width of [390, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const contacts = page.getByRole('button', { name: 'Указать контакты' });
+    await expect(contacts).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Купить' })).toHaveCount(0);
+    await contacts.focus();
+    await expect(contacts).toBeFocused();
+  }
+  await page.getByRole('button', { name: 'Указать контакты' }).click();
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page).toHaveURL(/contacts/);
+  await expect(page).toHaveURL(new RegExp(PUBLIC_ID));
+  expect(counts.commerceWrites).toBe(0);
+});
