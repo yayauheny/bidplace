@@ -136,7 +136,10 @@ waiting or failing under slow delivery rather than succeeding ahead of a late PU
 The shared Product write guard bounds row-lock waits to 4s, below the default 5s
 request transaction timeout, maps only PostgreSQL `55P03` through Prisma `P2010`
 to `PRODUCT_STATE_CONFLICT` (409), and restores the prior transaction-local lock
-timeout after acquisition. Required early read and canonical write locks remain;
+timeout after acquisition. Prisma's interactive-transaction start timeout
+(`P2028` whose message contains `Unable to start a transaction in the given time`)
+is `conflict` (409) from `runTransaction` and is not retried; other `P2028`
+messages stay unexpected errors. Required early read and canonical write locks remain;
 archive sale checking belongs to the visibility owner, without a third caller lock.
 
 Work and suspended profile restore commit a PUBLIC-only REVOKE journal before delivery, under the
