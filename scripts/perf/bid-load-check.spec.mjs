@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { assertDisposableTarget, bidLoadProblems } from './bid-load-check.mjs';
+import { assertDisposableTarget, bidLoadProblems, bidLatency } from './bid-load-check.mjs';
 
 const consistent = {
   bids: [
@@ -62,4 +62,13 @@ test('refuses production and the default postgres port', () => {
       databaseUrl: 'postgres://127.0.0.1:55434/bidplace_integration',
     }),
   );
+});
+
+
+test('keeps the 1500ms latency boundary separate from correctness', () => {
+  assert.deepEqual(bidLoadProblems(consistent), []);
+  assert.equal(bidLatency(1500).pass, true);
+  assert.equal(bidLatency(1500.001).pass, false);
+  assert.equal(bidLatency(Number.NaN).pass, false);
+  assert.equal(bidLatency(Infinity).pass, false);
 });

@@ -48,3 +48,7 @@ export function bidLoadProblems(input) {
   }
   return problems;
 }
+
+export function bidLatency(p95Ms) {
+  return { p95Ms, thresholdMs: 1500, pass: Number.isFinite(p95Ms) && p95Ms <= 1500 };
+}

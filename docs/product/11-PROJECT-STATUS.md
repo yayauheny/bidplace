@@ -5,6 +5,54 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-03 — Reproducible commerce checks; latency gate still fails
+
+**Partial.** Base `8a45ecba`; DEC-153/trading runtime unchanged. Permanent tests:
+`apps/mobile/e2e/commerce-live.spec.ts` — UI fixed create/purchase/order/confirm;
+UI auction bids/HTTP tick/order/refusal/next offer/UI accept/completion; real POST
+success → lost response + failed read → preserved form/disabled POST → keyboard
+recheck → one POST/one DB row. Fresh compiled API child and guarded 55434 schema
+per test; own-schema cleanup also handles initialization/disconnect failures.
+Listings-owner cleanup regression preserves the caller schema. Perf cleanup now
+removes only its own bid counters. Existing contacts/report/admin owner specs are
+reused. No new credentials or session artifacts; Turnstile script uses the existing
+fixture, trading responses are real. [Commands/prerequisites](../launch/waves/W7-final-checks.md#task-1-четыре-замера).
+
+Checks: API/web builds; API/mobile typecheck + lint without auto-fix; common-config
+`.mjs` lint; perf units 4/4, DB-time units 14/14, recovery/session units 14/14.
+`test:e2e:commerce-live`: 6/6 Chromium/WebKit. Listings/orders/reports/contacts
+integration 91/91, then listings with cleanup regression 29/29. Unchanged full
+application suites were not repeated. Independent read-only reviewer approved
+final code, E2E safety, baseline time/session invariants and interpretation of
+all results; no implementation blockers, no heavy checks run by reviewer.
+
+`pnpm --filter @bidplace/api test:performance`: three independent 50-request
+fixtures, fresh schemas/API processes, no overlapping builds/browser suites.
+Node 22.20.0, pnpm 11.7.0, PostgreSQL 16.14; compiled Nest API/local test profile,
+test Turnstile; host 8 CPUs/16 GiB; Docker 8 CPUs/12529836032 bytes, no container
+quota. Login + one lot read outside timing, bid route cold, full body timed
+(older 1517ms was headers-only); caches not flushed. Conditions saved before load,
+SHA/script hash/all results + diagnostic: [evidence JSON](../audits/current/evidence/commerce-integration/2026-11-03-load.json).
+Desktop background remained: preflight 63% idle; run load1 10.99/11.87/11.59.
+Not a dedicated idle host or production evidence.
+
+| Run | HTTP 200 / 409 BID_TOO_LOW | Network / 5xx | p50 / p95 / max ms | Price / bidCount / rows | Tick / orders | Correctness / latency | Exit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 26 / 24 | 0 / 0 | 1162 / 1831.173 / 1862 | 25500 / 26 / 26 | 200 / 1 | PASS / FAIL | 1 |
+| 2 | 15 / 35 | 0 / 0 | 855 / 1306.011 / 1358 | 25500 / 15 / 15 | 200 / 1 | PASS / PASS | 0 |
+| 3 | 23 / 27 | 0 / 0 | 831 / 1348.044 / 1381 | 25500 / 23 / 23 | 200 / 1 | PASS / PASS | 0 |
+
+Overall correctness PASS; latency **FAIL**, exit 1. Threshold p95 ≤1500ms checked
+without rounding; original correctness criteria/retries/timeouts unchanged.
+UUID artifact directories prevent stale-result mixing. Separate instrumented
+diagnostic (not a gate replacement): p95 1668.358ms, correctness PASS, 67 samples,
+max 16 lock waiters/17 active; active tuple/transactionid wait samples 794/62 vs
+WALSync 4. This locates the serialized product-lock queue, not an avoidable API
+bug or cause of that particular exceedance. No speculative optimization. Latency
+remains open pending controlled representative measurements/evidence for an owner
+fix. W6, PITR, production Cron/mail, exact Figma/device gates remain separate.
+No push/merge/deploy/production mutations. Documentation links/diff checked.
+
 ## 2026-11-03 — Commerce integration correction and live verification
 
 **Partial.** Continued `fix/commerce-integration` from `40644f5a`, preserving its

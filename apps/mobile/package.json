@@ -72,7 +72,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "clean": "rm -rf dist .expo expo-env.d.ts .turbo"
+    "clean": "rm -rf dist .expo expo-env.d.ts .turbo",
+    "test:e2e:commerce-live": "playwright test --config=playwright.commerce-live.config.ts"
   },
   "private": true
 }

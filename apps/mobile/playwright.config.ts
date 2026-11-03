@@ -17,8 +17,10 @@ export default defineConfig({
   // R2 transport fault scenarios have their own server in playwright.media.config.ts.
   // Auth-abuse browser cases need the cookie proxy and an auth_browser_* database.
   // They are owned by playwright.auth-abuse.config.ts.
+  // Real commerce uses playwright.commerce-live.config.ts: guarded 55434 schemas, no reset.
   // Live sheet acceptance uses an already running seeded dev server.
   testIgnore: [
+    '**/commerce-live.spec.ts',
     '**/work-media-lifecycle.spec.ts',
     '**/auth-abuse.spec.ts',
     '**/sheet-live.spec.ts',

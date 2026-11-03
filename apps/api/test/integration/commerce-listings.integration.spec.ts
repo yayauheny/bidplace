@@ -179,6 +179,17 @@ async function insertOrder(
 }
 
 describe('listing creation', () => {
+  it('removes only its disposable schema and preserves the caller schema', async () => {
+    const isolated = await createIntegrationDatabaseContext();
+    try { expect(isolated.schemaName).not.toBe(database.schemaName); }
+    finally { await isolated.cleanup(); }
+    const [row] = await prisma.$queryRaw<Array<{ removed: boolean; caller: string }>>`
+      SELECT NOT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = ${isolated.schemaName}) AS removed,
+             current_schema() AS caller
+    `;
+    expect(row).toEqual({ removed: true, caller: database.schemaName });
+  });
+
   it.each([
     {
       reason: 'another author',

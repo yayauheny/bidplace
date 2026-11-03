@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 
-import { assertDisposableTarget, bidLoadProblems } from './bid-load-check.mjs';
+import { assertDisposableTarget, bidLoadProblems, bidLatency } from './bid-load-check.mjs';
 
 const require = createRequire(new URL('../../apps/api/package.json', import.meta.url));
 const { Client } = require('pg');
@@ -94,11 +94,12 @@ async function main() {
   const target = assertLocalTarget();
   const db = new Client({ connectionString: target.databaseUrl });
   await db.connect();
+  const runId = randomUUID();
   const buyerIds = [];
   let listingId = null;
   try {
     const product = await db.query(
-      `SELECT p.id
+      `SELECT p.id, p.public_id
        FROM products p
        JOIN seller_profiles s ON s.id = p.seller_profile_id
        JOIN users u ON u.id = s.user_id
@@ -125,7 +126,7 @@ async function main() {
          ) RETURNING id`,
         [
           randomUUID(),
-          `perf-buyer-${index}@perf.invalid`,
+          `perf-${runId}-${index}@perf.invalid`,
           PASSWORD_HASH,
           `perf ${index}`,
           `+37529113${String(index).padStart(4, '0')}`,
@@ -174,7 +175,7 @@ async function main() {
         jar,
         '/auth/login',
         {
-          email: `perf-buyer-${index}@perf.invalid`,
+          email: `perf-${runId}-${index}@perf.invalid`,
           password: BUYER_PASSWORD,
         },
         `198.51.100.${20 + index}`,
@@ -185,8 +186,14 @@ async function main() {
       jars.push(jar);
     }
 
+    // Warm authentication/read paths only; each run measures a fresh bid route.
+    const warmed = await request(target.baseUrl, seller, `/works/${product.rows[0].public_id}/lot`, undefined, '198.51.100.10');
+    if (warmed.response.status !== 200) throw new Error('Warm read failed');
+    await warmed.response.arrayBuffer();
+
     const bids = await Promise.all(
       jars.map(async (jar, index) => {
+        const started = performance.now();
         try {
           const result = await request(
             target.baseUrl,
@@ -204,10 +211,11 @@ async function main() {
             const body = await result.response.json().catch(() => null);
             code = body && typeof body.code === 'string' ? body.code : null;
           }
+          if (result.response.status === 200) await result.response.arrayBuffer();
           return {
             status: result.response.status,
             code,
-            elapsedMs: result.elapsedMs,
+            elapsedMs: performance.now() - started,
           };
         } catch (error) {
           return {
@@ -260,9 +268,24 @@ async function main() {
       [listingId],
     );
 
+    const problems = bidLoadProblems({
+      bids,
+      tickStatus: tick.status,
+      orders: orders.rows[0].orders,
+      liveBids: stored.rows[0].live,
+      maxStoredAmount: stored.rows[0].max_amount,
+      listing: listing.rows[0],
+    });
+    const latency = bidLatency(percentile(durations, 0.95));
     console.log(
       JSON.stringify({
         phase: 'bids',
+        concurrency: BUYERS,
+        warmup: 'login plus lot read; bid route cold; setup/auth excluded',
+        correctness: { pass: problems.length === 0, problems },
+        latency,
+        networkErrors: bids.filter((bid) => bid.status === 0).length,
+        serverErrors: bids.filter((bid) => bid.status >= 500).length,
         http: codes,
         accepted,
         bidRows: stored.rows[0].rows,
@@ -278,16 +301,8 @@ async function main() {
         },
       }),
     );
-    const problems = bidLoadProblems({
-      bids,
-      tickStatus: tick.status,
-      orders: orders.rows[0].orders,
-      liveBids: stored.rows[0].live,
-      maxStoredAmount: stored.rows[0].max_amount,
-      listing: listing.rows[0],
-    });
-    if (problems.length > 0) {
-      console.error(problems.join(', '));
+    if (problems.length > 0 || !latency.pass) {
+      console.error([...problems, ...(!latency.pass ? ['p95 exceeds 1500ms'] : [])].join(', '));
       process.exitCode = 1;
     }
   } finally {
@@ -312,7 +327,7 @@ async function main() {
       ]);
       await db.query(`DELETE FROM purchase_holds WHERE user_id = ANY($1::uuid[])`, [buyerIds]);
       await db.query(`DELETE FROM fraud_signals WHERE user_id = ANY($1::uuid[])`, [buyerIds]);
-      await db.query(`DELETE FROM rate_limit_counters WHERE key LIKE 'commerce:bid:%'`);
+      await db.query(`DELETE FROM rate_limit_counters WHERE key = ANY($1::text[])`, [buyerIds.map((id) => `commerce:bid:${id}:${listingId}`)]);
       await db.query(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [buyerIds]);
     }
     await db.end();

@@ -44,9 +44,34 @@
 | # | Что | Как | Порог «ок» | «Чинить до запуска» |
 | --- | --- | --- | --- | --- |
 | 1 | Холодный старт | остановить контейнер (`/_release/stop` основателем или рестарт образа локально), засечь время до первого ответа `GET /api/works/:publicId` и до первой отрисовки работы; 3 раза | ≤ 5 с до ответа API | > 8 с |
-| 2 | 50 ставок одновременно | `scripts/perf/parallel-bids.mjs` (создать): 50 тестовых покупателей, `Promise.all` HTTP-ставок по возрастающим суммам на один лот | 0 ответов 5xx; цена = максимум принятых; `bidCount` = строкам `bids`; p95 ≤ 1,5 с | любой 5xx или расхождение |
+| 2 | 50 ставок одновременно | `scripts/perf/parallel-bids.mjs`: 50 тестовых покупателей, `Promise.all` HTTP-ставок по возрастающим суммам на один лот | 0 ответов 5xx; цена = максимум принятых; `bidCount` = строкам `bids`; p95 ≤ 1,5 с | любой 5xx или расхождение |
 | 3 | Вес картинок и Lighthouse mobile | Chrome Lighthouse, режим Mobile (Slow 4G, CPU ×4), production-сборка (`pnpm build:web`), страницы: главная, работа, автор | LCP ≤ 2,5 с; Performance ≥ 70; картинки первого экрана ≤ 1,5 МБ | LCP > 4 с или картинка карточки > 2× отрисованного размера × DPR и > 300 КБ |
 | 4 | N+1 и индексы | включить логирование запросов Prisma локально (временно, через `log: ['query']` в ветке замера, не коммитить), посчитать запросы на `GET /api/works`, `/api/authors`, `/api/portfolio/home`, `/api/works/:publicId`, `/api/works/:publicId/lot`, `/api/me/orders`, `/api/me/attention`; `EXPLAIN ANALYZE` для 3 самых медленных | число запросов не растёт с размером страницы; ≤ 10 на запрос; индексы используются | рост с размером страницы или `Seq Scan` по таблице > 10 000 строк в горячем запросе |
+
+Повторяемые проверки commerce (без W6): Node 22, `pnpm build:api`;
+для браузеров — `EXPO_NO_DOTENV=1 EXPO_PUBLIC_API_URL=http://127.0.0.1:13001
+EXPO_PUBLIC_TURNSTILE_SITE_KEY=<публичный тестовый sitekey>` при
+`pnpm --filter @bidplace/mobile build:web`. Затем с безопасно переданным
+`INTEGRATION_DATABASE_URL` только для `127.0.0.1:55434/bidplace_integration`:
+`pnpm --filter @bidplace/mobile test:e2e:commerce-live` (Chromium/WebKit) и,
+отдельно от сборок/браузеров, `pnpm --filter @bidplace/api test:performance`.
+Обычный `test:e2e` с reset для этого не используется. Нужны права создать/удалить
+собственную схему; секреты в команды/документы не вставлять. API должен быть
+собран; браузеры Playwright установлены. Никаких файлов из прежнего `/private/tmp`
+harness не требуется. Торговые действия — реальный API/БД; только Turnstile-script
+использует существующую test fixture. Контакты/жалобы/admin decision остаются у
+`contacts`, `commerce-orders`, `commerce-reports` integration owners.
+
+Performance-команда сохраняет условия до запросов и все три результата в
+`apps/mobile/test-results/commerce-load/<run-id>/`: свежая схема, API-процесс
+и 50 покупателей на прогон; setup/login/lot-read вне измерения, bid route cold,
+конкурентность 50, время до полного тела ответа. `correctness` и `latency`
+раздельны; p95 ≤1500 мс проверяется без округления, превышение даёт exit 1.
+Все три прогона должны пройти; локальный PASS не является production evidence.
+Live E2E и скриншоты — `apps/mobile/e2e/commerce-live.spec.ts` и
+`apps/mobile/test-results/commerce-live/`; каждая схема удаляется в finally,
+включая ошибку инициализации. Изменения времени/совместимости/восстановления
+не входят в эту проверочную задачу (`DEC-153`).
 
 - [ ] **Шаг 1:** подготовить данные: сид + 200 работ и 20 лотов (скрипт в
   `scripts/perf/`, удаляется в конце, или флаг сида — `Ruling:`).
