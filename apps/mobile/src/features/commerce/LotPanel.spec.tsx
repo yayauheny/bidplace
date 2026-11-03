@@ -313,7 +313,8 @@ describe('LotPanel', () => {
     expect(shown()).not.toContain('Сделать ставку');
   });
 
-  it('does not mount a cancel button when the author may remove a scheduled lot', () => {
+  it('offers to withdraw a scheduled lot the author can remove', () => {
+    const onAction = vi.fn();
     render(
       read({
         lot: lot({
@@ -326,11 +327,18 @@ describe('LotPanel', () => {
           viewer: { role: 'seller', isLeading: false, blockedReason: 'LISTING_NOT_OPEN' },
         }),
       }),
+      'light',
+      { onAction },
     );
-    expect(shown()).not.toContain('Снять');
+    expect(shown()).toContain('Снять с продажи');
     expect(shown()).not.toContain('Купить');
     expect(shown()).not.toContain('Сделать ставку');
-    expect(host.querySelector('button')).toBeNull();
+    act(() => {
+      (host.querySelector('button') as HTMLButtonElement | null)?.click();
+    });
+    expect(onAction).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'cancel-lot', enabled: true }),
+    );
   });
 
   it('shows the author lock as text', () => {

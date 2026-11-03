@@ -461,7 +461,7 @@ test('sends one bid when the sheet is submitted twice', async ({ page }) => {
   await expect(page.getByText('Ваша ставка лидирует')).toBeVisible();
 });
 
-test('reserves a fixed lot once and shows the deal code', async ({ page }) => {
+test('reserves a fixed lot once and opens the order', async ({ page }) => {
   let purchases = 0;
   let release: () => void = () => {};
   const gate = new Promise<void>((resolve) => {
@@ -519,6 +519,6 @@ test('reserves a fixed lot once and shows the deal code', async ({ page }) => {
   await submit.click({ force: true });
   expect(purchases).toBe(1);
   release();
-  await expect(dialog.getByText('Код сделки 123456')).toBeVisible();
-  await expect(page.getByText('Забронировано')).toBeVisible();
+  await expect(page).toHaveURL(/orderPanel1/);
+  await expect(page.getByText('Код сделки 123456')).toHaveCount(0);
 });

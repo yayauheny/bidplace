@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -14,7 +15,10 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../../components/ui';
+import { getApiAssetUrl } from '../../lib/environment';
 import { useAppTheme } from '../../providers/theme-provider';
+import { CreateLotSheet } from '../commerce/CreateLotSheet';
+import { cabinetListOffer } from '../commerce/create-lot-form';
 import {
   authorCabinetPrimaryAction,
   authorCabinetVisibilityActions,
@@ -49,7 +53,12 @@ export function OwnerWorkCard({
   onRestore: () => void;
 }) {
   const palette = useAppTheme();
+  const [sellOpen, setSellOpen] = useState(false);
   const title = work.title ?? 'Без названия';
+  const listOffer = cabinetListOffer({
+    status: work.status,
+    isSuspended,
+  });
   const visibility = authorCabinetVisibilityActions({
     status: work.status,
     isSuspended,
@@ -89,6 +98,19 @@ export function OwnerWorkCard({
           </AppText>
         ) : null}
       </View>
+      <SecondaryButton
+        label="Выставить на продажу"
+        width="block"
+        disabled={!listOffer.enabled}
+        onPress={() => {
+          if (listOffer.enabled) setSellOpen(true);
+        }}
+      />
+      {listOffer.reason ? (
+        <AppText role="bodySmall" tone="secondary">
+          {listOffer.reason}
+        </AppText>
+      ) : null}
       <PrimaryButton
         label={authorCabinetPrimaryAction({
           status: work.status,
@@ -113,6 +135,18 @@ export function OwnerWorkCard({
           loading={visibilityPending}
           disabled={visibilityPending}
           onPress={onRestore}
+        />
+      ) : null}
+      {sellOpen ? (
+        <CreateLotSheet
+          open
+          productId={work.id}
+          publicId={work.publicId}
+          title={title}
+          imageUrl={
+            work.coverImage ? getApiAssetUrl(work.coverImage.url) : null
+          }
+          onClose={() => setSellOpen(false)}
         />
       ) : null}
     </View>

@@ -20,6 +20,23 @@ export function getApiUrl(): string {
   return url.origin;
 }
 
+export function getSupportTelegramUrl(): string | null {
+  const configured = process.env.EXPO_PUBLIC_SUPPORT_TELEGRAM_URL?.trim();
+  if (!configured) return null;
+  try {
+    const url = new URL(configured);
+    return url.protocol === 'https:' ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getSupportEmail(): string | null {
+  const configured = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim();
+  if (!configured || !/^[^\s@]+@[^\s@]+$/.test(configured)) return null;
+  return configured;
+}
+
 export function getTurnstileSiteKey(): string | null {
   const configured = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim();
   return configured ? configured : null;

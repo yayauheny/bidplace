@@ -187,6 +187,11 @@ export function AccountScreen() {
               label="Настройки"
               onPress={() => router.push('/account/settings')}
             />
+            <FigmaButton
+              label="Сделки"
+              variant="outline"
+              onPress={() => router.push('/account/deals')}
+            />
           </View>
         </View>
 
