@@ -5,6 +5,10 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-02 — Deal contacts and settings rows
+
+**Partial.** Settings keeps `SettingsGroup` / `SettingsRow` and adds the contacts row, a read-only email line, the outbid switch, and a support line with no link. `/account/contacts` reuses `FormPageShell` variant `settings`, `TextField`, and the seller switch. F9 (VK, show-to-buyer, notifications, support) has no frame; switch off/disabled/black stays NEEDS-FIGMA. No new tokens.
+
 ## 2026-11-02 — Deals hub and order card
 
 **Partial. NEEDS-FIGMA.** Brief F5–F10 have no handoff frames in live Figma `pAPQo6cADmG5XzVmBX76EE` or `design/figma-handoff`. The hub and card reuse `FormPageShell`, `FigmaTabs`, `StatusBadge`, `AppDialog`, and the existing buttons. The list does not draw deadlines the summary DTO does not carry. Exact 390/1024/1440 geometry is not claimed. There is no receipt control and no contacts route link.
@@ -400,7 +404,7 @@ has no public media mapping and retains existing placeholders.
 | Author application / Author Story / Work story | Implemented для проверенного web-среза, device parity Needs verification | Client/API cutover, ordered blocks, private media и сохранение перед переходом; UI completion. Старое «UI не переведён / B6 не начат» не текущее состояние. |
 | Work editor | Partial, updated 2026-10-23 | Portfolio audit: сетка177×236/12, tile-local состояния и bottomAction; четыре визуальных этапа, Review metadata, photo tiles, ordered block menu и revision/save guards; independent review. Source frames 390; 1024/1440 exact parity NEEDS-FIGMA. |
 | Фото Work и автора | Browser acceptance, native Needs verification | Portfolio audit: пять визуальных шагов автора, safe retry создания, Chromium/WebKit responsive evidence и 200% browser zoom.  Release-сетка/wizard, preview, пофайловый прогресс/retry/timeout/переходы объединены; 1023 mobile tests и 6 media E2E по merge-записи. Physical devices, live R2/CDN и Figma новых статусов Needs verification. |
-| Account / settings | Partial | Published identity, общий cabinet owner, navigation/scroll/long identity; account acceptance. Settings title примерно +7 px при 390 — явное исключение BackButton/FigmaIconButton, 2 geometry failures сохранены. Desktop 1024/1440 и black parity NEEDS-FIGMA. `SettingsRow` toggle matches Figma `7008:15192` on-state only; off/disabled/black switch and `StatusBadge` visual stay NEEDS-FIGMA. Delete CTA отсутствует до API. |
+| Account / settings | Partial | Published identity, общий cabinet owner, navigation/scroll/long identity; account acceptance. Settings title примерно +7 px при 390 — явное исключение BackButton/FigmaIconButton, 2 geometry failures сохранены. Desktop 1024/1440 и black parity NEEDS-FIGMA. `SettingsRow` toggle matches Figma `7008:15192` on-state only; off/disabled/black switch and `StatusBadge` visual stay NEEDS-FIGMA. Deal contacts (`/account/contacts`) and the outbid/support rows are F9 and NEEDS-FIGMA. Delete CTA отсутствует до API. |
 | Public author / category / sticky header | Partial | Bleed, identity, grid, About, action-row motion и focus; author parity. Master/MVP exclusions и desktop grid start 384 vs 387 px записаны там; 1024/1440 exact parity NEEDS-FIGMA. |
 | Public desktop navigation / footer / brand | Partial visual parity | Desktop header от 1024 CSS px, ordinary-page footer, shared chrome visibility; footer audit. 44px targets/MVP legal labels отличаются от static source; unavailable commerce controls дают честный feedback. |
 | Home empty/loading/error и shared sheets | Implemented для проверенных browser states | Empty CTA capped 420; 390/1024/1440/1920 no-overflow, непрерывный drag, reduced motion/focus/dirty-busy guards; UI completion. Desktop empty-state exact parity NEEDS-FIGMA. |
