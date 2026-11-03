@@ -88,6 +88,10 @@ jobs:
             src/images/images.service.spec.ts \
             src/sellers/sellers.profile-upload-limit.spec.ts
 
+      - name: Verify Cloudflare boundaries on draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        run: pnpm cloudflare:check
+
       - name: Legal registration regression tests for task-3 draft PR
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.head_ref == 'feat/portfolio-mvp-legal-ux'
         run: |
