@@ -5,6 +5,11 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-02 — Sales launch checklist
+
+**Partial.** The only sales-launch checklist is `docs/ops/00-RELEASE-AND-BACKUP.md` («Запуск продаж»). The PITR baseline is the read-only snapshot at restore time `T`, including order/bid/listing connectivity. Commerce mail follows COMMERCE §9. The Cron test expects close, order and buyer mail within 10 minutes of `endsAt`, with heartbeat recorded separately. Live `GET /api/health` and `/api/health/ready` returned 200 with database ok at 2026-11-02T21:14:40Z. Public tick returned JSON 404 with `x-powered-by: Express`, which differs from the Worker empty 404; that single GET is not evidence of a tick run. Restore, mail, Turnstile, Cron and ★ values were not run. W6 consent stays a separate gap. No cloud mutation.
+
+
 ## 2026-11-02 — W3 commerce races and preliminary W7 Task 1
 
 **Partial.** `commerce-races.integration.spec.ts` now covers a concurrent same bid key, the same key with a different amount, an in-flight purchase replay, purchase key reuse, and accept versus offer expiry. A later close tick still returns 0. Ban versus hold, admissible-bid recompute, one open order, and two-tick uniqueness stay in the existing specs. `runTransaction` maps Prisma `P2028` whose message contains `Unable to start a transaction in the given time` to 409 `conflict` and does not retry it. Other `P2028` messages stay unexpected errors. This is not final W7.

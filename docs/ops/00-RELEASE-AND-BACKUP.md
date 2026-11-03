@@ -243,6 +243,266 @@ STAGING_WEB_URL='https://staging.example' \
 pnpm ops:staging-smoke
 ```
 
+## Запуск продаж
+
+Единственный чек-лист перед реальным аукционом. Cloudflare-уточнения —
+[граница тика](CLOUDFLARE-DEPLOYMENT.md#w2-проверка-после-будущего-деплоя).
+W5 и W7 целиком сюда не входят. Согласие с правилами сделок (W6) остаётся
+отдельной незакрытой зависимостью: черновик текстов не является публикацией.
+
+Статусы: `LOCAL VERIFIED` — видно в исходниках этого SHA; `NEEDS LIVE VERIFICATION` —
+шаг для основателя в кабинете; `NOT RUN` — проверка не выполнялась и не считается
+пройденной. Дата свидетельств: 2026-11-02. SHA исходников: `14256245`. SHA
+выложенного Worker не читался.
+
+### 0. Обязательные ★
+
+Объект: каждое имя со ★ в [ENVIRONMENT.md](ENVIRONMENT.md). Исполнитель: основатель.
+Шаг: в GitHub Environment `prod` и в Cloudflare сверить, что имя задано. Значение
+не копировать в репозиторий, чат или этот файл. Ожидание: пустых обязательных
+имён нет; `TICK_CRON` для реального аукциона равен `*/5 * * * *`, а не пустой
+строке. Пустой `TICK_CRON` Cron не создаёт и спящий контейнер не будит.
+
+Статус: `NOT RUN`. Наличие имени в документации или пустая строка в
+`deploy/cloudflare/wrangler.jsonc` не считаются настройкой. Живые значения
+2026-11-02 не читались:
+
+`DATABASE_URL`, `SESSION_SECRET`, `OTP_HASH_SECRET`, `S3_ACCESS_KEY_ID`,
+`S3_SECRET_ACCESS_KEY`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `CLOUDFLARE_CACHE_TOKEN`,
+`TURNSTILE_SECRET_KEY`, `INTERNAL_TICK_SECRET`, `RELEASE_CONTROL`, `NODE_ENV`,
+`APP_ENV`, `API_URL`, `CORS_ORIGIN`, `PASSWORD_RESET_URL_BASE`, `TRUST_PROXY`,
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_AUTH_MODE`, `SMTP_FROM`,
+`SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`,
+`TURNSTILE_HOSTNAME`, `TEST_EMAIL_BYPASS`, `MEDIA_STORAGE_PROVIDER`, `S3_ENDPOINT`,
+`S3_REGION`, `S3_BUCKET`, `S3_PUBLIC_BUCKET`, `MEDIA_PUBLIC_BASE_URL`,
+`CLOUDFLARE_ZONE_ID`, `ANALYTICS_WEB_ENABLED`, `TURNSTILE_SITE_KEY`,
+`EXPO_PUBLIC_ANALYTICS_WEB_ENABLED`, `CLOUDFLARE_API_TOKEN`, `NEON_DIRECT_URL`,
+`TICK_CRON`, `SUPPORT_TELEGRAM_URL`, `SUPPORT_EMAIL`.
+
+### 1. Workers, Containers, Cron
+
+Объект: Worker `bidplace-production`, один Container, Cron. Исполнитель: основатель.
+Шаг: Cloudflare → Workers & Pages → `bidplace-production` → Settings → Containers
+и Cron Triggers. Ожидание: план Workers Paid, `max_instances` 1, при пустом
+`TICK_CRON` список Cron пуст. Статус плана и живого Cron: `NOT RUN`.
+Исходник расписания `LOCAL VERIFIED`: пустой `TICK_CRON` удаляет triggers и
+deploy записывает `crons: []` (`scripts/cloudflare/config.mjs`,
+`scripts/cloudflare/deploy.mjs`). В закоммиченном `wrangler.jsonc` ключа
+`triggers` нет.
+
+### 2. Приватная граница тика
+
+Объект: `GET https://bid.place/api/internal/tick`. Исполнитель: основатель после
+сверки выложенного Worker. Шаг уже сделан один раз, повтор не нужен для отчёта:
+
+```bash
+curl -sS -D - -o /dev/null --max-time 20 https://bid.place/api/internal/tick
+```
+
+Ожидание исходника: пустой HTTP 404 Worker, без тела и без `x-powered-by`.
+Наблюдение 2026-11-02T21:14:39Z: HTTP 404, `content-type: application/json`,
+`x-powered-by: Express`, есть `x-request-id`. Это расхождение формы ответа с
+ожидаемым ответом Worker. Один GET не показывает, выполнился ли тик, и не
+показывает, пропущена ли проверка внутреннего секрета. Статус границы:
+`NEEDS LIVE VERIFICATION`. Основатель сверяет выложенный маршрут `/api/*` с
+`deploy/cloudflare/src/router.ts` и повторяет одну проверку. Этот запрос не
+использовать как доказательство Cron.
+
+### 3. Neon: backup, PITR, отдельное восстановление
+
+Объект: ветка production Neon и копия в новой ветке. Исполнитель: основатель.
+Production `DATABASE_URL` и данные production не менять.
+
+Шаг:
+
+1. В одной read-only транзакции к production записать эталон и время точки `T`
+   (`BEGIN READ ONLY;` затем `SELECT now();`, затем запросы ниже, затем
+   `COMMIT`). Эталон — числа `orders`, `bids`, `listings` и нули запросов
+   связности. Позже снятый снимок production эталоном не является.
+2. Восстановить PITR **в новую ветку Neon** ровно на `T`. Записать
+   длительность и фактическую метку ветки. Если метка ветки не равна `T`,
+   проверку не засчитывать.
+3. Те же запросы выполнить по URL новой ветки. С production их не запускать
+   повторно вместо эталона.
+
+```sql
+SELECT count(*) AS orders FROM orders;
+SELECT count(*) AS bids FROM bids;
+SELECT count(*) AS listings FROM listings;
+
+SELECT count(*) AS bids_without_listing
+FROM bids b LEFT JOIN listings l ON l.id = b.listing_id
+WHERE l.id IS NULL;
+
+SELECT count(*) AS orders_without_listing
+FROM orders o LEFT JOIN listings l ON l.id = o.listing_id
+WHERE l.id IS NULL;
+
+SELECT count(*) AS orders_bid_mismatch
+FROM orders o LEFT JOIN bids b ON b.id = o.source_bid_id
+WHERE o.source_bid_id IS NOT NULL
+  AND (b.id IS NULL OR b.listing_id <> o.listing_id
+       OR b.bidder_user_id <> o.buyer_user_id);
+
+SELECT count(*) AS auction_order_without_bid
+FROM orders o
+WHERE o.source IN ('AUCTION_WIN', 'SECOND_CHANCE')
+  AND o.source_bid_id IS NULL;
+
+SELECT count(*) AS order_listing_mismatch
+FROM orders o JOIN listings l ON l.id = o.listing_id
+WHERE o.product_id <> l.product_id
+   OR o.seller_user_id <> l.seller_user_id;
+```
+
+Ожидание: числа строк совпали с эталоном точки `T`; пять проверок связности
+дали 0 и на эталоне, и на новой ветке. Статус: `NOT RUN`. Флага «backup
+включён» недостаточно.
+
+Локальный drill — другая проверка, тоже `NOT RUN`:
+
+```bash
+pnpm ops:backup
+TARGET_DATABASE_URL='postgresql://…/bidplace_restore?schema=public' pnpm ops:restore backups/bidplace-<timestamp>.dump
+TARGET_DATABASE_URL='postgresql://…/bidplace_restore?schema=public' pnpm ops:verify-restore
+```
+
+`scripts/ops/restore-db.sh` отказывается восстанавливать в базу `bidplace` и
+требует в имени `restore`, `integration`, `_test` или `_e2e`.
+`pnpm ops:verify-restore` печатает `users`, `listings`, `bids`, `orders`,
+`productImages`. Для дампа эталон — состояние источника в момент дампа, не
+позднейший production. Этот скрипт не заменяет PITR-сверку точки `T` и сам
+связность не проверяет. Дамп базы не восстанавливает байты медиа.
+
+### 4. R2, CDN, CORS, отзыв
+
+Объект: `https://media.bid.place` и кэш. Исполнитель: основатель.
+Шаг CORS, один запрос, URL взять из уже опубликованной работы:
+
+```bash
+curl -sI -H 'Origin: https://bid.place' 'https://media.bid.place/<path>'
+```
+
+Ожидание: ответ разрешает origin `https://bid.place`. Статус: `NOT RUN`.
+На главной 2026-11-02T21:14:21Z (HTTP 200, `cf-cache-status: HIT`, 1414 байт)
+ссылки на медиа не было.
+
+Отзыв, `NOT RUN`: скрыть одну работу существующим действием, дождаться REVOKE,
+запросить старый URL, тот же URL с `?media_retry=1` и с другим query.
+Ожидание: все три больше не отдают объект. `purge success=true` само по себе
+не считается успехом. Кабинеты и бакеты этой проверкой не менять заранее.
+
+### 5. Почта
+
+Объект: SPF, DKIM, DMARC, письма входа и обязательные письма сделок
+([COMMERCE §9](../launch/COMMERCE.md#9-уведомления)). Исполнитель: основатель.
+Шаг DNS: подтвердить записи Cloudflare Email Sending (MX, SPF, DKIM на
+`cf-bounce`, DMARC на `_dmarc`). Код входа и сброс пароля отправить на Gmail,
+Яндекс и Mail.ru, не на verified destination. Темы не менять:
+`bidplace email verification code`, `bidplace password reset`.
+
+Обязательные письма сделок проверять на двух-трёх тестовых аккаунтах
+основателя. Чужие заказы и оплату не создавать. Каждое письмо — на ящик
+Gmail, Яндекс и Mail.ru. SMTP `250` недостаточно: письмо видно в ящике и не
+только в спаме. Повтор после сбоя возможен; ровно одну доставку не обещать.
+Статус всей почты: `NOT RUN`.
+
+| Событие | Получатель | Безопасный сценарий | Ожидаемая доставка |
+| --- | --- | --- | --- |
+| Ваша ставка лучшая | покупатель | Тестовый аукцион с одной ставкой тестового покупателя, закрытие по Cron из пункта 9 | Тема «Ваша ставка лучшая» в ящике покупателя |
+| Аукцион завершён | автор | Тот же аукцион со ставкой | Тема «Аукцион завершён» в ящике автора |
+| Аукцион завершён без ставок | автор | Отдельный тестовый аукцион без ставок | Тема «Аукцион завершён», в тексте — без ставок |
+| Вы забронировали работу | покупатель | Фиксированная цена: тестовый покупатель подтверждает одну тестовую работу | Тема «Работа забронирована» в ящике покупателя |
+| Работа забронирована | автор | Та же фиксированная покупка | Тема «Работа забронирована» в ящике автора |
+| Вам предлагают работу | следующий покупатель | После срыва тестового аукциона автор нажимает «Предложить следующему» | Тема «Вам предлагают работу» |
+| Отметьте, состоялась ли сделка | автор | Тестовый заказ оставить без отметки | Тема «Отметьте, состоялась ли сделка» через 24 ч и повтор через 48 ч. Это не проверка 10 минут |
+| Сделка состоялась | оба | Автор отмечает «Сделка состоялась» на тестовом заказе | Тема «Сделка состоялась» обоим, со ссылкой на заказ |
+| Сделка не состоялась | вторая сторона | Тестовый покупатель отказывается или автор отмечает отказ | Тема «Сделка не состоялась» второй стороне, с причиной |
+| По вашему заказу открыта жалоба | вторая сторона | Участник тестового заказа отправляет одну жалобу | Тема «По вашему заказу открыта жалоба» без текста жалобы |
+| Аукцион остановлен администрацией | автор и участники | Администратор снимает один тестовый аукцион, на котором уже есть ставка | Тема «Аукцион остановлен» |
+| Контакты в профиле изменены | владелец аккаунта | Тестовый пользователь меняет свой контакт при входе не старше 5 минут | Тема «Контакты в профиле изменены» только ему |
+
+«Вашу ставку перебили» выключается в настройках и в этот обязательный список
+не входит.
+
+### 6. Turnstile
+
+Объект: виджет и WAF. Исполнитель: основатель.
+Шаг: Cloudflare → Turnstile: режим Invisible, hostname `bid.place`.
+В Security → Bots: Bot Fight Mode выключен. Один вход и одна регистрация не
+получают challenge на `/api/auth/*`. Ожидание: виджет невидимый, auth не
+блокируется WAF. Статус: `NOT RUN`. Имя `TURNSTILE_HOSTNAME` в репозитории
+не доказывает живой виджет.
+
+### 7. Поддержка и монитор
+
+Объект: UptimeRobot, `SUPPORT_TELEGRAM_URL`, `SUPPORT_EMAIL`. Исполнитель:
+основатель. Шаг: пока `TICK_CRON` пуст, монитор только на `https://bid.place/`,
+интервал 5 минут, ожидание HTTP 200. Монитор на `/api/*` не ставить: он будит
+контейнер. Открыть ссылку поддержки и отправить одно письмо на почту поддержки.
+Ожидание: пуш UptimeRobot пришёл, ссылка открылась, письмо дошло.
+Статус: `NOT RUN`. Состав — [MONITORING-AND-SUPPORT.md](../launch/MONITORING-AND-SUPPORT.md).
+
+Пока Cron выключен, ежедневный взгляд — админка «Здоровье»: свежий тик и
+предупреждение, если аукционы идут при пустом Cron. Это тоже `NOT RUN`.
+
+### 8. Откат
+
+Объект: предыдущий образ и схема. Исполнитель: основатель.
+Шаг: checkout последнего принятого release и полный повторный deploy Worker
+и image. Ожидание: работает предыдущий образ. Откат только версии Worker
+может оставить новый Container. Автоматического отката схемы нет; разрушающая
+миграция требует проверенного восстановления в отдельную ветку или прямого
+исправления вперёд. Данные базы не откатывать отдельно от медиа.
+Статус процедуры: `NOT RUN`. Исходник ограничения `LOCAL VERIFIED` в
+[откате Cloudflare](CLOUDFLARE-DEPLOYMENT.md#production-deploy-и-rollback).
+
+### 9. Тестовый аукцион и `TICK_CRON`
+
+Объект: один тестовый аукцион после `TICK_CRON=*/5 * * * *`. Исполнитель:
+основатель. С `endsAt` и все 10 минут ожидания сайт не открывать и не
+вызывать `/api/health`, `/api/health/ready`, `/api/internal/tick` и другой
+опрос API. Закрытие, время заказа и доставку смотреть в базе и в почтовом
+ящике.
+
+Критерий W6: лот закрыт, заказ лучшей ставки создан, письмо «Ваша ставка
+лучшая» доставлено покупателю. Все три момента — не позже 10 минут после
+`endsAt`. Секунда `endsAt` по-прежнему не обещается. Статус: `NOT RUN`.
+
+В Cloudflare → Cron Triggers записать запуски без ошибок. `system_heartbeats.at`
+для `name = 'tick'` записать отдельно. Heartbeat не подставляет время создания
+заказа и не подставляет время доставки письма.
+
+Если за эти 10 минут открывали сайт или вызывали API, проверка не зачтена,
+даже когда лот, заказ или письмо уже появились.
+
+### 10. Остановка торгов
+
+Объект: уже идущие лоты. Исполнитель: основатель.
+Шаг: только [OPERATIONS.md §3.8](../launch/OPERATIONS.md#38-мошенничество-захват-аккаунта-бан):
+снять каждый лот, заблокировать аккаунт, открытые заказы разобрать вручную.
+Ожидание: нового общего выключателя нет; `RELEASE_HOLD=closed` гасит весь API
+и не является процедурой остановки аукциона. Статус исполнения: `NOT RUN`.
+Отсутствие отдельного флага в исходниках: `LOCAL VERIFIED` на `14256245`.
+
+### 11. Согласие правил сделок
+
+Объект: публикация W6. Исполнитель: основатель после утверждения черновика.
+Шаг не выполнять из этого чек-листа. Реальные продажи остаются закрытыми,
+пока согласие текущей версии не требуется на ставку, покупку, принятие
+предложения и создание лота. Статус: `NOT RUN`.
+
+### Наружные ответы 2026-11-02
+
+Эти три запроса не доказывают Cron, почту, backup или Turnstile. `/api/health`
+и `/api/health/ready` будят контейнер.
+
+| Запрос | Результат |
+| --- | --- |
+| `GET https://bid.place/` | 200, `cf-cache-status: HIT`, 21:14:21Z |
+| `GET https://bid.place/api/health` | 200, `{"status":"ok"}`, 21:14:40Z |
+| `GET https://bid.place/api/health/ready` | 200, `{"status":"ok","database":"ok"}`, 21:14:40Z |
+
 ## Deferred (post-pilot)
 
 - Multi-instance API and shared rate-limit state
