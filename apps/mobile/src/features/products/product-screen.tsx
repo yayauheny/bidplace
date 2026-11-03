@@ -77,7 +77,9 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     lot.status === 'empty-stale';
   const sale = saleKnown ? lotSaleOpen(saleView) : undefined;
   const isOwner = Boolean(
-    auth.user?.id && query.data?.author.id === auth.user.id,
+    auth.user?.id &&
+      capability.profile?.userId === auth.user.id &&
+      query.data?.author.id === capability.profile.id,
   );
   const consumedSell = useRef(false);
   useEffect(() => {

@@ -5,6 +5,22 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-03 — Commerce integration live verification
+
+**Partial. NEEDS-FIGMA.** `CreateLotSheet` reuses the existing AppDialog, text
+and buttons for duration, explicitly estimated device-clock end, factual open-sale
+notice and manual recheck. `ProductScreen` matches the signed-in user's profile
+ID to the public author ID. Chromium/WebKit opened filled contacts, order and
+admin screens against the real API/55434 database at 390/1024/1440, with no
+horizontal page overflow. A real created-but-lost response plus failed read
+preserved the form; keyboard recheck showed the sale without a second POST.
+The recovery actions remained reachable at 390×560 with 200% zoom. Screenshots
+were inspected in `/private/tmp/commerce-resume-evidence`; the persistent owner
+entry browser regression passed in both engines. No new visual values/tokens or
+Figma edits. This supersedes the filled-screen verification gaps in the earlier
+integration entry below. Exact F4/F5–F10 geometry and physical-device keyboard/
+Safe Area acceptance stay unverified; no visual parity claim.
+
 ## 2026-11-03 — Commerce integration screens
 
 **Partial. NEEDS-FIGMA.** No new frames and no new tokens. The lot panel reuses `PrimaryButton` for «Указать контакты». The deals hub reuses `FigmaTabs`; «Продаю» stays for a suspended author, and a new sale stays disabled. Exact 390/1024/1440 geometry is not claimed. Chromium and WebKit opened the mocked lot at those widths, focused the contacts button, and followed one purchase to the order URL. The contacts form, deals hub, and order card were not opened as filled screens.

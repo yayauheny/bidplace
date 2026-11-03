@@ -5,6 +5,53 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-03 — Commerce integration correction and live verification
+
+**Partial.** Continued `fix/commerce-integration` from `40644f5a`, preserving its
+11 uncommitted files and suspended-author/load-check fixes. Supersedes earlier
+time/recovery claims below. `DEC-153` / [COMMERCE §3](../launch/COMMERCE.md#3-лот)
+own the explicit start contract: `CreateListingRequest`, `listingSchedule`,
+API client and `createLotRequest` now separate server-timed duration from fixed
+scheduled instants. No persistence migration; release API → UI. Legacy format
+remains accepted with intentional changed behavior for passed auction starts;
+fake-date clients require an update. `useCreateListing` owns fresh-read recovery,
+blocks POST while uncertain, preserves the form and rejects stale account/work/
+generation responses. Found sales are never attributed to the failed POST.
+`ProductScreen` compares profile IDs and binds the profile to the current user.
+
+Checks on Node 22.20.0: API units 1156, mobile 1363, contracts 111, API client 59,
+load-check units 3 passed. API/mobile dependency-graph typecheck, API/web builds,
+API/mobile and contracts/client/perf lint (no auto-fix) passed. Web dotenv loading
+was disabled. Real integrations used only disposable `127.0.0.1:55434/bidplace_integration`,
+new schemas and temporary restricted roles: 200/201 passed in the 11-file run;
+the calendar-aged attention fixture was corrected, then its package passed 11/11.
+Actual lock waits cover immediate 1/14 days and expired explicit/legacy starts.
+Earlier failures: one image-processing timeout under concurrent full suites
+(23 passed alone, then full API passed with two workers); a purchase setup hook
+hit 10s during competing builds (passed in the final integration run); two stale
+conflict-message expectations were aligned with unchanged HEAD behavior,
+preserving dialog/retry checks. No thresholds, retries or timeouts were relaxed.
+
+Live harness `/private/tmp/commerce-resume-live.spec.ts` passed: fixed create →
+purchase → contacts → report → admin decision → completion; auction → bids →
+HTTP tick → order → refusal → next bidder → accept → completion. Chromium/WebKit
+filled contacts/order/admin screens at 390/1024/1440. A real successful POST with
+lost response + failed GET preserved the form; keyboard recheck found the sale
+with one POST/one row, also reachable at 390×560/200% zoom. Persistent profile-ID
+browser regression: 2/2. Live `parallel-bids.mjs` exited 0; one measured run had
+33×200 + 17×409 `BID_TOO_LOW`, no network/5xx, matching price/bid count and one
+order after HTTP tick; p50/p95/max 966/1517/1572ms. Local latency does not prove
+the production 1.5s gate. Evidence: `/private/tmp/commerce-resume-evidence`.
+
+The earlier 5432 report below and helper default are configuration/report evidence,
+not a reconstruction of all previous SQL. No 5432 test was repeated. W6 consent,
+PITR, production Cron and mail remain release blockers; exact Figma parity and
+physical-device acceptance stay unverified. No env/secret files, reset, push,
+merge, deploy or production migrations. Ownership stays in existing contracts,
+service and hook; no operation store or duplicated commerce rules. Final scoped
+review found no remaining blocker. `docs:link-check` passed 105 files;
+`git diff --check` passed.
+
 ## 2026-11-03 — Commerce wave integration
 
 **Partial.** `fix/commerce-integration` contains #88 `c0fb2494`, #89 `109fec02`, #90 `7ecc178a` (ancestor of #91), #91 `f5e5c64b`, #92 `158ec56c`, #93 `7d2bbdfe` (ancestor of #94), and #94 `d461f493`. Source branches were not rewritten.

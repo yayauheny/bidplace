@@ -383,7 +383,7 @@ describe('listing creation', () => {
 
     const immediateAuction = await client.post(
       `/works/${product.id}/listings`,
-      auctionBody(new Date((await databaseNow()).getTime() - 1_000)),
+      { type: 'AUCTION', currency: 'BYN', startPriceMinor: 1_000, startMode: 'now', durationDays: 2 },
     );
     expect(immediateAuction.status).toBe(201);
     const immediate = (await immediateAuction.json()) as { id: string; status: string };
@@ -447,7 +447,57 @@ describe('listing creation', () => {
 });
 
 describe('listing withdrawal', () => {
-  it('accepts a one-day auction when the client clock is behind the database', async () => {
+  it.each([1, 14])('keeps exactly %i days after waiting for the product lock', async (durationDays) => {
+    const fixture = await createPermissionFixture(prisma);
+    const product = await publishedWork(fixture);
+    const client = await signedInOwner(fixture);
+    let release: () => void = () => {};
+    let locked: () => void = () => {};
+    const acquired = new Promise<void>((resolve) => { locked = resolve; });
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    const blocker = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM products WHERE id = ${product.id}::uuid FOR UPDATE`;
+      locked();
+      await held;
+    });
+    await acquired;
+    const request = client.post(`/works/${product.id}/listings`, {
+      type: 'AUCTION', currency: 'BYN', startPriceMinor: 1_000, startMode: 'now', durationDays,
+    });
+    let releasedAt: Date;
+    try { await waitForProductLock(); releasedAt = await databaseNow(); }
+    finally { release(); await blocker; }
+    const response = await request;
+    expect(response.status).toBe(201);
+    const body = await response.json() as { startsAt: string; endsAt: string };
+    expect(Date.parse(body.startsAt)).toBeGreaterThanOrEqual(releasedAt!.getTime());
+    expect(Date.parse(body.endsAt) - Date.parse(body.startsAt)).toBe(durationDays * DAY_MS);
+  });
+
+  it.each([undefined, 'scheduled'])('rejects a scheduled start that passes under the lock (mode %s)', async (startMode) => {
+    const fixture = await createPermissionFixture(prisma);
+    const product = await publishedWork(fixture);
+    const client = await signedInOwner(fixture);
+    let release: () => void = () => {};
+    let locked: () => void = () => {};
+    const acquired = new Promise<void>((resolve) => { locked = resolve; });
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    const blocker = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM products WHERE id = ${product.id}::uuid FOR UPDATE`;
+      locked(); await held;
+    });
+    await acquired;
+    const start = new Date((await databaseNow()).getTime() + 300);
+    const request = client.post(`/works/${product.id}/listings`, { ...auctionBody(start), ...(startMode ? { startMode } : {}) });
+    try { await waitForProductLock(); await new Promise((resolve) => setTimeout(resolve, 350)); }
+    finally { release(); await blocker; }
+    const response = await request;
+    expect(response.status).toBe(400);
+    expect(await errorBody(response)).toMatchObject({ message: 'Auction start has passed' });
+    expect(await prisma.listing.count({ where: { productId: product.id, status: { in: ['LIVE', 'SCHEDULED'] } } })).toBe(0);
+  });
+
+  it('rejects a late one-day auction instead of moving its end', async () => {
     const fixture = await createPermissionFixture(prisma);
     const product = await publishedWork(fixture);
     const client = await signedInOwner(fixture);
@@ -460,14 +510,16 @@ describe('listing withdrawal', () => {
       startsAt: requestedStart.toISOString(),
       endsAt: new Date(requestedStart.getTime() + DAY_MS).toISOString(),
     });
-    expect(created.status).toBe(201);
-    const body = (await created.json()) as { id: string; status: string };
-    expect(body.status).toBe('LIVE');
-    const row = await prisma.listing.findUniqueOrThrow({ where: { id: body.id } });
-    const after = await databaseNow();
-    expect(row.startsAt.getTime()).toBeGreaterThanOrEqual(before.getTime() - 1_000);
-    expect(row.startsAt.getTime()).toBeLessThanOrEqual(after.getTime() + 1_000);
-    expect(row.endsAt?.getTime()).toBe(row.startsAt.getTime() + DAY_MS);
+    expect(created.status).toBe(400);
+    expect(await errorBody(created)).toMatchObject({
+      code: 'validation_error',
+      message: 'Auction start has passed',
+    });
+    expect(
+      await prisma.listing.count({
+        where: { productId: product.id, status: { in: ['SCHEDULED', 'LIVE'] } },
+      }),
+    ).toBe(0);
   });
 
   it('lets the author withdraw a fixed listing and an auction with no bids', async () => {
@@ -495,7 +547,7 @@ describe('listing withdrawal', () => {
     const auction = (await (
       await client.post(
         `/works/${product.id}/listings`,
-        auctionBody(new Date((await databaseNow()).getTime() - 1_000)),
+        { type: 'AUCTION', currency: 'BYN', startPriceMinor: 1_000, startMode: 'now', durationDays: 2 },
       )
     ).json()) as { id: string };
     expect((await client.post(`/listings/${auction.id}/cancel`)).status).toBe(201);
@@ -511,7 +563,7 @@ describe('listing withdrawal', () => {
     const created = (await (
       await client.post(
         `/works/${product.id}/listings`,
-        auctionBody(new Date((await databaseNow()).getTime() - 1_000)),
+        { type: 'AUCTION', currency: 'BYN', startPriceMinor: 1_000, startMode: 'now', durationDays: 2 },
       )
     ).json()) as { id: string };
     await prisma.bid.create({
@@ -624,7 +676,7 @@ describe('listing withdrawal', () => {
     const created = (await (
       await client.post(
         `/works/${product.id}/listings`,
-        auctionBody(new Date((await databaseNow()).getTime() - 1_000)),
+        { type: 'AUCTION', currency: 'BYN', startPriceMinor: 1_000, startMode: 'now', durationDays: 2 },
       )
     ).json()) as { id: string };
     const pastEnd = new Date((await databaseNow()).getTime() - 60_000);
@@ -762,7 +814,7 @@ describe('public lot', () => {
       const created = (await (
         await client.post(
           `/works/${product.id}/listings`,
-          auctionBody(new Date((await databaseNow()).getTime() - 1_000)),
+          { type: 'AUCTION', currency: 'BYN', startPriceMinor: 1_000, startMode: 'now', durationDays: 2 },
         )
       ).json()) as { id: string };
       const viewer = ownerClient();

@@ -48,6 +48,18 @@ describe('apiErrorMessage', () => {
     },
   );
 
+  it('explains a passed auction start without moving the end', () => {
+    expect(
+      apiErrorMessage(
+        new ApiClientError('Auction start has passed', {
+          kind: 'validation',
+          status: 400,
+          code: 'validation_error',
+        }),
+      ),
+    ).toBe('Начало уже прошло. Измените даты или выберите «Сейчас».');
+  });
+
   it.each([new Error('network'), null, { code: 'PRODUCT_IN_SALE' }])(
     'leaves non-API errors to the consumer fallback',
     (error) => {

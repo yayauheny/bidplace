@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { COMMERCE_CURRENCIES } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -55,6 +56,9 @@ export function CreateLotSheet({
           imageUrl={imageUrl}
           pending={listing.pending}
           error={listing.error}
+          recovery={listing.recovery}
+          onCheckAgain={listing.checkAgain}
+          onOpenSale={() => { onClose(); router.push(`/product/${publicId}`); }}
           onSubmit={listing.submit}
           onDone={onClose}
         />
@@ -69,6 +73,9 @@ function CreateLotForm({
   pending,
   error,
   onSubmit,
+  recovery,
+  onCheckAgain,
+  onOpenSale,
   onDone,
 }: {
   title: string;
@@ -76,6 +83,9 @@ function CreateLotForm({
   pending: boolean;
   error: unknown;
   onSubmit: ReturnType<typeof useCreateListing>['submit'];
+  recovery: ReturnType<typeof useCreateListing>['recovery'];
+  onCheckAgain: ReturnType<typeof useCreateListing>['checkAgain'];
+  onOpenSale: () => void;
   onDone: () => void;
 }) {
   const [draft, setDraft] = useState<CreateLotDraft>(initialCreateLotDraft);
@@ -168,6 +178,7 @@ function CreateLotForm({
         <AuctionFields
           draft={draft}
           pending={pending}
+          durationLabel={preview.ok ? preview.durationLabel : null}
           endsLabel={preview.ok ? preview.endsLabel : null}
           onChange={setDraft}
         />
@@ -175,7 +186,8 @@ function CreateLotForm({
       <AppText role="caption">
         Лот нельзя изменить. Чтобы поменять цену — снимите и выставьте заново. Аукцион со ставками снять нельзя.
       </AppText>
-      {localError || serverError ? (
+      {recovery?.notice ? <AppText role="bodySmall" accessibilityLiveRegion="polite">{recovery.notice}</AppText> : null}
+      {!recovery && (localError || serverError) ? (
         <AppText role="bodySmall" tone="danger">
           {localError ?? serverError}
         </AppText>
@@ -184,9 +196,11 @@ function CreateLotForm({
         label="Выставить"
         width="full"
         loading={pending}
-        disabled={pending}
+        disabled={pending || recovery !== null}
         onPress={() => void send()}
       />
+      {recovery?.outcome === 'open' ? <SecondaryButton label="Открыть продажу" width="full" onPress={onOpenSale} /> : null}
+      {recovery ? <SecondaryButton label="Проверить снова" width="full" loading={pending} disabled={pending} onPress={() => void onCheckAgain()} /> : null}
     </View>
   );
 
@@ -199,18 +213,20 @@ function CreateLotForm({
     }
     setLocalError(null);
     const result = await onSubmit(next.value);
-    if (result.status === 'accepted' && result.value) onDone();
+    if (result.status === 'accepted' && result.value.applied && result.value.outcome === 'created') onDone();
   }
 }
 
 function AuctionFields({
   draft,
   pending,
+  durationLabel,
   endsLabel,
   onChange,
 }: {
   draft: CreateLotDraft;
   pending: boolean;
+  durationLabel: string | null;
   endsLabel: string | null;
   onChange: (update: (current: CreateLotDraft) => CreateLotDraft) => void;
 }) {
@@ -286,8 +302,9 @@ function AuctionFields({
           }
         />
       ) : null}
+      {durationLabel ? <AppText role="bodySmall">{durationLabel}</AppText> : null}
       {endsLabel ? (
-        <AppText role="bodySmall">{`Окончание ${endsLabel}`}</AppText>
+        <AppText role="bodySmall">{endsLabel}</AppText>
       ) : null}
     </View>
   );

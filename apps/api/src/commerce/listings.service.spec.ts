@@ -57,6 +57,23 @@ function service(prisma: { $transaction: unknown }) {
 }
 
 describe('listing windows use the database clock', () => {
+  it.each([1, 14])('stamps an immediate %i-day auction entirely with database time', async (durationDays) => {
+    const create = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: productId, ...data }));
+    const { prisma } = database(create);
+    await expect(service(prisma).create(ownerId, productId, {
+      type: 'AUCTION', startMode: 'now', durationDays,
+      currency: 'BYN', startPriceMinor: 1_000, contactWindowHours: 24,
+    })).resolves.toMatchObject({ status: 'LIVE', startsAt: clock.toISOString(), endsAt: new Date(clock.getTime() + durationDays * DAY_MS).toISOString() });
+  });
+
+  it('starts the new fixed-price request now without a client timestamp', async () => {
+    const create = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: productId, ...data }));
+    const { prisma } = database(create);
+    await expect(service(prisma).create(ownerId, productId, {
+      type: 'FIXED', startMode: 'now', currency: 'BYN', priceMinor: 1_500, contactWindowHours: 24,
+    })).resolves.toMatchObject({ status: 'LIVE', startsAt: clock.toISOString(), endsAt: null });
+  });
+
   it('rejects a start more than 30 days after the database clock', async () => {
     const { tx, prisma } = database();
     const startsAt = new Date(clock.getTime() + 31 * DAY_MS);
@@ -129,7 +146,7 @@ describe('listing windows use the database clock', () => {
     );
   });
 
-  it('keeps a one-day auction length when the requested start is behind the database clock', async () => {
+  it('rejects a passed scheduled start even with two days remaining', async () => {
     const create = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
       id: '44444444-4444-4444-8444-444444444444',
       status: data.status,
@@ -140,7 +157,7 @@ describe('listing windows use the database clock', () => {
     }));
     const { prisma } = database(create);
     const requestedStart = new Date(clock.getTime() - 30_000);
-    const requestedEnd = new Date(requestedStart.getTime() + DAY_MS);
+    const requestedEnd = new Date(requestedStart.getTime() + 2 * DAY_MS);
 
     await expect(
       service(prisma).create(ownerId, productId, {
@@ -151,11 +168,46 @@ describe('listing windows use the database clock', () => {
         endsAt: requestedEnd.toISOString(),
         contactWindowHours: 24,
       }),
-    ).resolves.toMatchObject({
-      status: 'LIVE',
-      startsAt: clock.toISOString(),
-      endsAt: new Date(clock.getTime() + DAY_MS).toISOString(),
+    ).rejects.toMatchObject({ message: 'Auction start has passed' });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a passed start when keeping the end would leave less than one day', async () => {
+    const create = vi.fn();
+    const { prisma } = database(create);
+    const requestedStart = new Date(clock.getTime() - 30_000);
+
+    await expect(
+      service(prisma).create(ownerId, productId, {
+        type: 'AUCTION',
+        currency: 'BYN',
+        startPriceMinor: 1_000,
+        startsAt: requestedStart.toISOString(),
+        endsAt: new Date(requestedStart.getTime() + DAY_MS).toISOString(),
+        contactWindowHours: 24,
+      }),
+    ).rejects.toMatchObject({
+      apiCode: ApiErrorCode.VALIDATION_ERROR,
+      message: 'Auction start has passed',
     });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rejects an auction whose requested end is already past', async () => {
+    const create = vi.fn();
+    const { prisma } = database(create);
+
+    await expect(
+      service(prisma).create(ownerId, productId, {
+        type: 'AUCTION',
+        currency: 'BYN',
+        startPriceMinor: 1_000,
+        startsAt: '2000-01-01T00:00:00.000Z',
+        endsAt: '2000-01-02T00:00:00.000Z',
+        contactWindowHours: 24,
+      }),
+    ).rejects.toMatchObject({ message: 'Auction start has passed' });
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('keeps an explicit future auction on the requested instants', async () => {

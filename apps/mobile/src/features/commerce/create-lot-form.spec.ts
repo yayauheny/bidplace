@@ -23,14 +23,15 @@ describe('createLotRequest', () => {
       currency: 'BYN',
       priceMinor: 1250,
       contactWindowHours: 24,
-      startsAt: '2000-01-01T00:00:00.000Z',
+      startMode: 'now',
     });
-    expect(parsed.value.startsAt).not.toBe(new Date(NOW - 5_000).toISOString());
+    expect(parsed.value).not.toHaveProperty('startsAt');
     expect(createListingRequestSchema.safeParse(parsed.value).success).toBe(true);
+    expect(parsed.durationLabel).toBeNull();
     expect(parsed.endsLabel).toBeNull();
   });
 
-  it('switches an auction to a start price and an explicit end', () => {
+  it('sends duration and labels the device-clock end as an estimate', () => {
     const draft = {
       ...initialCreateLotDraft(),
       type: 'AUCTION' as const,
@@ -45,16 +46,25 @@ describe('createLotRequest', () => {
     expect(parsed.value.startPriceMinor).toBe(50_000);
     expect(parsed.value.currency).toBe('RUB');
     expect(parsed.value.contactWindowHours).toBe(6);
-    expect(parsed.value.startsAt).toBe('2000-01-01T00:00:00.000Z');
-    expect(Date.parse(parsed.value.endsAt) - Date.parse(parsed.value.startsAt)).toBe(
-      3 * 24 * 60 * 60 * 1000,
-    );
-    expect(parsed.value.startsAt).not.toBe(new Date(NOW).toISOString());
-    expect(parsed.endsLabel).toMatch(/05\.11\.2026 15:00/);
+    expect(parsed.value).toMatchObject({ startMode: 'now', durationDays: 3 });
+    expect(parsed.value).not.toHaveProperty('startsAt');
+    expect(parsed.value).not.toHaveProperty('endsAt');
+    expect(parsed.durationLabel).toBe('Длительность 3 дн.');
+    expect(parsed.endsLabel).toBe('Ориентировочное окончание 05.11.2026 15:00 (по часам устройства)');
     expect(createListingRequestSchema.safeParse(parsed.value).success).toBe(true);
   });
 
-  it('keeps a chosen future start and does not replace it with the immediate anchor', () => {
+  it.each([-2, 2])('sends the same immediate intent with a clock skew of %i days', (skew) => {
+    const draft = { ...initialCreateLotDraft(), type: 'AUCTION' as const, amountText: '25', durationDays: 1 as const };
+    const original = createLotRequest(draft, NOW);
+    const skewed = createLotRequest(draft, NOW + skew * 86_400_000);
+    expect(original.ok).toBe(true);
+    expect(skewed.ok).toBe(true);
+    if (!original.ok || !skewed.ok) return;
+    expect(skewed.value).toEqual(original.value);
+  });
+
+  it('keeps a chosen future start and its confirmed end', () => {
     const parsed = createLotRequest(
       {
         ...initialCreateLotDraft(),
@@ -68,7 +78,7 @@ describe('createLotRequest', () => {
       NOW,
     );
     expect(parsed.ok).toBe(true);
-    if (!parsed.ok || parsed.value.type !== 'AUCTION') return;
+    if (!parsed.ok || parsed.value.type !== 'AUCTION' || parsed.value.startMode === 'now') return;
     expect(parsed.value.startsAt).toBe('2026-12-01T12:00:00.000Z');
     expect(Date.parse(parsed.value.endsAt) - Date.parse(parsed.value.startsAt)).toBe(
       24 * 60 * 60 * 1000,

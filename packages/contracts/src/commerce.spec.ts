@@ -127,8 +127,33 @@ describe('createListingRequestSchema', () => {
     ).toMatchObject({ type: 'AUCTION' });
   });
 
+  it.each([1, 14])('accepts an immediate auction lasting %i days without dates', (durationDays) => {
+    expect(createListingRequestSchema.parse({
+      type: 'AUCTION', startMode: 'now', durationDays,
+      currency: 'BYN', startPriceMinor: 1_000,
+    })).toMatchObject({ startMode: 'now', durationDays, contactWindowHours: 24 });
+  });
+
+  it('accepts a fixed sale now without a client timestamp', () => {
+    expect(createListingRequestSchema.safeParse({
+      type: 'FIXED', startMode: 'now', currency: 'BYN', priceMinor: 1_000,
+    }).success).toBe(true);
+  });
+
+  it.each([0, 15, 1.5])('rejects immediate duration %s', (durationDays) => {
+    expect(createListingRequestSchema.safeParse({
+      type: 'AUCTION', startMode: 'now', durationDays,
+      currency: 'BYN', startPriceMinor: 1_000,
+    }).success).toBe(false);
+  });
+
+  it('accepts explicit scheduled instants and rejects mixed time modes', () => {
+    expect(createListingRequestSchema.safeParse(auction({ startMode: 'scheduled' })).success).toBe(true);
+    expect(createListingRequestSchema.safeParse(auction({ startMode: 'now', durationDays: 1 })).success).toBe(false);
+  });
+
   it('defaults the contact window to 24 hours', () => {
-    const { contactWindowHours: _ignored, ...withoutWindow } = fixed();
+    const withoutWindow = { ...fixed(), contactWindowHours: undefined };
     expect(
       createListingRequestSchema.parse(withoutWindow).contactWindowHours,
     ).toBe(COMMERCE_LIMITS.defaultContactWindowHours);

@@ -1,4 +1,4 @@
-import { getApiErrorCode } from '@bidplace/api-client';
+import { ApiClientError, getApiErrorCode } from '@bidplace/api-client';
 
 export function apiErrorCodeMessage(code: string | null): string | null {
   switch (code) {
@@ -46,5 +46,12 @@ export function apiErrorCodeMessage(code: string | null): string | null {
 }
 
 export function apiErrorMessage(error: unknown): string | null {
+  if (
+    error instanceof ApiClientError &&
+    error.code === 'validation_error' &&
+    error.message === 'Auction start has passed'
+  ) {
+    return 'Начало уже прошло. Измените даты или выберите «Сейчас».';
+  }
   return apiErrorCodeMessage(getApiErrorCode(error));
 }

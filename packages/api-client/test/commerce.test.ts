@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { CreateListingRequest } from '@bidplace/contracts';
+
 import { createApiClient } from '../src';
 
 const now = '2026-10-30T09:00:00.000Z';
@@ -63,6 +65,20 @@ function client(fetchImpl: typeof fetch) {
 }
 
 describe('commerce client', () => {
+  it.each([
+    { type: 'FIXED', startMode: 'now', currency: 'BYN', priceMinor: 1_500, contactWindowHours: 24 },
+    { type: 'AUCTION', startMode: 'now', durationDays: 1, currency: 'BYN', startPriceMinor: 1_000, contactWindowHours: 24 },
+    { type: 'AUCTION', startMode: 'scheduled', startsAt: '2026-11-05T12:00:00.000Z', endsAt: '2026-11-06T12:00:00.000Z', currency: 'BYN', startPriceMinor: 1_000, contactWindowHours: 24 },
+  ] satisfies CreateListingRequest[])('sends the explicit $type $startMode contract unchanged', async (body) => {
+    let sent: unknown;
+    const api = client(async (_url, init) => {
+      sent = JSON.parse(String(init?.body));
+      return new Response(JSON.stringify({ id: listingId, type: body.type, status: body.startMode === 'scheduled' ? 'SCHEDULED' : 'LIVE', startsAt: now, endsAt: body.type === 'AUCTION' ? '2026-11-06T12:00:00.000Z' : null, contactWindowHours: 24 }), { headers: { 'content-type': 'application/json' } });
+    });
+    await api.commerce.createListing(productId, body);
+    expect(sent).toEqual(body);
+  });
+
   it('places a bid on the listing path and parses the bid and lot', async () => {
     const calls: { url: string; method: string; body: unknown }[] = [];
     const api = client(async (input, init) => {

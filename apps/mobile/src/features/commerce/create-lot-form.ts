@@ -6,15 +6,13 @@ import {
   type Currency,
 } from '@bidplace/contracts';
 
-import { parseMoneyInput } from '../../lib/money';
+import { formatMoney, parseMoneyInput } from '../../lib/money';
 
 export const CONTACT_WINDOW_HOURS = COMMERCE_LIMITS.contactWindowHours;
 export const AUCTION_DAY_CHIPS = [1, 3, 7, 14] as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MINSK_OFFSET_MS = 3 * 60 * 60 * 1000;
-/** Immediate start is not the device clock. The server stamps its own now and keeps this length. */
-const IMMEDIATE_ANCHOR_MS = Date.parse('2000-01-01T00:00:00.000Z');
 
 const minskStamp = new Intl.DateTimeFormat('ru-RU', {
   timeZone: 'Europe/Minsk',
@@ -98,7 +96,12 @@ export function createLotRequest(
   draft: CreateLotDraft,
   nowMs: number,
 ):
-  | { ok: true; value: CreateListingRequest; endsLabel: string | null }
+  | {
+      ok: true;
+      value: CreateListingRequest;
+      durationLabel: string | null;
+      endsLabel: string | null;
+    }
   | { ok: false; message: string } {
   const amount = parseMoneyInput(draft.amountText, draft.currency);
   if (amount === null || amount <= 0) {
@@ -118,40 +121,17 @@ export function createLotRequest(
     };
   }
   const immediate = draft.type === 'FIXED' || draft.startMode === 'now';
-  const startsAt = immediate
-    ? { ok: true as const, value: new Date(IMMEDIATE_ANCHOR_MS).toISOString() }
-    : resolveStartsAt(draft, nowMs);
-  if (!startsAt.ok) return startsAt;
-  const endsAt =
-    draft.type === 'AUCTION' && days !== null
-      ? new Date(
-          (immediate ? IMMEDIATE_ANCHOR_MS : Date.parse(startsAt.value)) +
-            days * DAY_MS,
-        ).toISOString()
-      : null;
-  const previewEnd =
-    draft.type === 'AUCTION' && days !== null
-      ? new Date(
-          (immediate ? nowMs : Date.parse(startsAt.value)) + days * DAY_MS,
-        ).toISOString()
-      : null;
-  const value =
-    draft.type === 'FIXED'
-      ? {
-          type: 'FIXED' as const,
-          priceMinor: amount,
-          currency: draft.currency,
-          startsAt: startsAt.value,
-          contactWindowHours: draft.contactWindowHours,
-        }
-      : {
-          type: 'AUCTION' as const,
-          startPriceMinor: amount,
-          currency: draft.currency,
-          startsAt: startsAt.value,
-          endsAt: endsAt ?? startsAt.value,
-          contactWindowHours: draft.contactWindowHours,
-        };
+  const startsAt = immediate ? null : resolveStartsAt(draft, nowMs);
+  if (startsAt && !startsAt.ok) return startsAt;
+  const endsAt = draft.type === 'AUCTION' && days !== null
+    ? new Date((startsAt?.value ? Date.parse(startsAt.value) : nowMs) + days * DAY_MS).toISOString()
+    : null;
+  const fields = { currency: draft.currency, contactWindowHours: draft.contactWindowHours };
+  const value = draft.type === 'FIXED'
+    ? { ...fields, type: 'FIXED' as const, startMode: 'now' as const, priceMinor: amount }
+    : immediate
+      ? { ...fields, type: 'AUCTION' as const, startMode: 'now' as const, durationDays: days, startPriceMinor: amount }
+      : { ...fields, type: 'AUCTION' as const, startMode: 'scheduled' as const, startsAt: startsAt?.value, endsAt, startPriceMinor: amount };
   const parsed = createListingRequestSchema.safeParse(value);
   if (!parsed.success) {
     return { ok: false, message: schemaMessage(parsed.error.issues[0]?.message) };
@@ -159,8 +139,26 @@ export function createLotRequest(
   return {
     ok: true,
     value: parsed.data,
-    endsLabel: previewEnd ? formatListingStamp(previewEnd) : null,
+    durationLabel:
+      immediate && days !== null ? `Длительность ${days} дн.` : null,
+    endsLabel:
+      endsAt !== null ? `${immediate ? 'Ориентировочное окончание' : 'Окончание'} ${formatListingStamp(endsAt)}${immediate ? ' (по часам устройства)' : ''}` : null,
   };
+}
+
+export function openSaleNotice(lot: {
+  type: 'FIXED' | 'AUCTION';
+  currency: Currency;
+  priceMinor: number | null;
+  startsAt: string;
+  endsAt: string | null;
+}): string {
+  const price =
+    lot.priceMinor === null ? '' : ` ${formatMoney(lot.priceMinor, lot.currency)}`;
+  if (lot.type === 'AUCTION' && lot.endsAt) {
+    return `Работа уже в продаже:${price}. Начало ${formatListingStamp(lot.startsAt)}. Окончание ${formatListingStamp(lot.endsAt)}.`;
+  }
+  return `Работа уже в продаже:${price}.`;
 }
 
 function durationDays(draft: CreateLotDraft): number | null {
@@ -199,7 +197,7 @@ function resolveStartsAt(
   ) {
     return { ok: false, message: 'Укажите существующую дату.' };
   }
-  if (utc < nowMs - 60_000) {
+  if (utc <= nowMs) {
     return { ok: false, message: 'Начало уже прошло.' };
   }
   return { ok: true, value: new Date(utc).toISOString() };

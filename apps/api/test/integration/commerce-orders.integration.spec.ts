@@ -965,8 +965,8 @@ describe('next participant', () => {
       type: 'AUCTION',
       currency: 'BYN',
       startPriceMinor: 1_000,
-      startsAt: new Date(now.getTime() - 1_000).toISOString(),
-      endsAt: new Date(now.getTime() + 2 * DAY_MS).toISOString(),
+      startMode: 'now',
+      durationDays: 2,
       contactWindowHours: 24,
     });
     expect(created.status).toBe(201);
@@ -991,8 +991,8 @@ describe('next participant', () => {
       type: 'AUCTION',
       currency: 'BYN',
       startPriceMinor: 1_000,
-      startsAt: new Date(now.getTime() - 1_000).toISOString(),
-      endsAt: new Date(now.getTime() + 3 * DAY_MS).toISOString(),
+      startMode: 'now',
+      durationDays: 3,
     });
     expect(again.status).toBe(201);
   });

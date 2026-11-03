@@ -49,7 +49,6 @@ afterAll(async () => {
 });
 
 const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
 const PASS = 'XXXX.DUMMY.TOKEN.XXXX';
 let clientSerial = 0;
 
@@ -140,15 +139,14 @@ async function users(count: number, label: string) {
 
 async function liveAuction(fixture: PermissionFixture) {
   const seller = await signedIn(fixture.sellers.approved.email);
-  const now = await databaseNow();
   const response = await seller.post(
     `/works/${fixture.approvedProductId}/listings`,
     {
       type: 'AUCTION',
       currency: 'BYN',
       startPriceMinor: 1_000,
-      startsAt: new Date(now.getTime() - 1_000).toISOString(),
-      endsAt: new Date(now.getTime() + 2 * DAY_MS).toISOString(),
+      startMode: 'now',
+      durationDays: 2,
     },
   );
   expect(response.status).toBe(201);

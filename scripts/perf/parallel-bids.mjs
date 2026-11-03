@@ -156,8 +156,8 @@ async function main() {
         type: 'AUCTION',
         currency: 'BYN',
         startPriceMinor: 1_000,
-        startsAt: new Date(Date.now() - 1_000).toISOString(),
-        endsAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        startMode: 'now',
+        durationDays: 2,
       },
       '198.51.100.10',
     );

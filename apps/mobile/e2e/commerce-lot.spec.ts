@@ -1,5 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
+import { installAccountPresentation } from './support/account-presentation-fixture';
+
 const PUBLIC_ID = 'lotPanelW01';
 const TITLE = 'Длинное название работы для проверки строки лота';
 const checksum = 'a'.repeat(64);
@@ -555,4 +557,17 @@ test('opens contacts instead of buying when the buyer has none', async ({ page }
   await expect(page).toHaveURL(/contacts/);
   await expect(page).toHaveURL(new RegExp(PUBLIC_ID));
   expect(counts.commerceWrites).toBe(0);
+});
+
+test('opens sale creation for the matching author profile, whose id differs from the user', async ({ page }) => {
+  await installAccountPresentation(page, { author: true });
+  const fixture = workFixture();
+  fixture.author.id = '22222222-2222-4222-8222-222222222222';
+  await page.route(`**/api/works/${PUBLIC_ID}`, (route) => route.fulfill({ json: fixture }));
+  await page.route(`**/api/works/${PUBLIC_ID}/lot`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: 'null' }));
+  await page.route('**/api/images/**', (route) => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="390" height="520"/>' }));
+  await page.goto(`/product/${PUBLIC_ID}?sell=1`);
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('textbox', { name: 'Цена', exact: true })).toBeEditable();
 });

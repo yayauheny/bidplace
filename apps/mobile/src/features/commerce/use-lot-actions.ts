@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiClientError } from '@bidplace/api-client';
 import {
@@ -17,6 +17,7 @@ import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { useInvisibleTurnstile } from '../auth/turnstile-widget';
 import { attemptKey, attemptOutcome } from './bid-amount';
+import { openSaleNotice } from './create-lot-form';
 
 const REFRESH_LOT = new Set([
   'BID_TOO_LOW',
@@ -205,6 +206,7 @@ export function usePurchase(publicId: string, listingId: string | null) {
 }
 
 type ListingSnapshot = {
+  generation: number;
   viewerId: string | null;
   publicId: string;
   productId: string;
@@ -218,12 +220,21 @@ function useListingCommand(publicId: string, productId: string) {
   const viewerId = useRef<string | null>(null);
   const workId = useRef(publicId);
   const product = useRef(productId);
-  viewerId.current = auth.user?.id ?? null;
+  const generation = useRef(0);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const nextViewer = auth.user?.id ?? null;
+  if (viewerId.current !== nextViewer || workId.current !== publicId || product.current !== productId) generation.current += 1;
+  viewerId.current = nextViewer;
   workId.current = publicId;
   product.current = productId;
 
   function snapshot(): ListingSnapshot {
     return {
+      generation: generation.current,
       viewerId: viewerId.current,
       publicId: workId.current,
       productId: product.current,
@@ -232,6 +243,8 @@ function useListingCommand(publicId: string, productId: string) {
 
   function owned(captured: ListingSnapshot) {
     return (
+      mounted.current &&
+      captured.generation === generation.current &&
       captured.viewerId !== null &&
       captured.viewerId === viewerId.current &&
       captured.publicId === workId.current &&
@@ -248,35 +261,66 @@ function useListingCommand(publicId: string, productId: string) {
   return { api, gate, snapshot, owned, refresh, productId };
 }
 
+export type CreateListingResult = {
+  applied: boolean;
+  outcome: 'created' | 'open' | 'unknown';
+  notice: string | null;
+};
+
+const UNKNOWN_CREATE_NOTICE = 'Результат создания пока неизвестен. Проверьте снова; повторная отправка отключена.';
+
 export function useCreateListing(publicId: string, productId: string) {
   const command = useListingCommand(publicId, productId);
+  const uncertain = useRef<ListingSnapshot | null>(null);
+  const [recovery, setRecovery] = useState<{ captured: ListingSnapshot; result: CreateListingResult } | null>(null);
   const mutation = useMutation({
-    mutationFn: async (input: CreateListingRequest) => {
-      const captured = command.snapshot();
-      try {
-        // shortcut: create listing has no idempotency key; a lost success retries and the server returns PRODUCT_IN_SALE
-        const created = await command.api.commerce.createListing(
-          captured.productId,
-          input,
-        );
-        return { created, captured };
-      } catch (error) {
-        refreshListingError(command.refresh, captured, error);
-        throw error;
+    retry: false,
+    mutationFn: async ({ input, captured }: { input: CreateListingRequest | null; captured: ListingSnapshot }) => {
+      if (!command.owned(captured)) return { captured, outcome: 'unknown' as const, notice: null };
+      const checking = uncertain.current !== null && command.owned(uncertain.current);
+      if (!input && !checking) return { captured, outcome: 'unknown' as const, notice: UNKNOWN_CREATE_NOTICE };
+      if (input && !checking) {
+        try {
+          await command.api.commerce.createListing(captured.productId, input);
+          return { captured, outcome: 'created' as const, notice: null };
+        } catch (error) {
+          if (!command.owned(captured)) return { captured, outcome: 'unknown' as const, notice: null };
+          if (!recoverableCreate(error)) {
+            refreshListingError(command.refresh, captured, error);
+            throw error;
+          }
+          uncertain.current = captured;
+        }
       }
+      if (!command.owned(captured)) return { captured, outcome: 'unknown' as const, notice: null };
+      const lot = await readCreateState(command.api, captured.publicId);
+      if (!command.owned(captured)) return { captured, outcome: 'unknown' as const, notice: null };
+      if (lot && lot.viewer?.role === 'seller' && (lot.effectiveStatus === 'LIVE' || lot.effectiveStatus === 'SCHEDULED')) {
+        return { captured, outcome: 'open' as const, notice: openSaleNotice(lot) };
+      }
+      return { captured, outcome: 'unknown' as const, notice: UNKNOWN_CREATE_NOTICE };
     },
-    onSuccess: (data) => command.refresh(data.captured),
+    onSuccess: (data) => {
+      if (!command.owned(data.captured)) return;
+      command.refresh(data.captured);
+      if (data.outcome !== 'created') setRecovery({ captured: data.captured, result: { applied: true, outcome: data.outcome, notice: data.notice } });
+    },
   });
+  function run(input: CreateListingRequest | null): Promise<AttemptResult<CreateListingResult>> {
+    const captured = command.snapshot();
+    const canCheck = uncertain.current !== null && command.owned(uncertain.current);
+    return runAttempt(command.gate, Boolean(command.productId) && (input !== null || canCheck), async () => {
+      const data = await mutation.mutateAsync({ input, captured });
+      const applied = command.owned(data.captured);
+      return { applied, outcome: data.outcome, notice: applied ? data.notice : null };
+    });
+  }
   return {
     pending: mutation.isPending,
     error: mutation.error,
-    submit: (
-      input: CreateListingRequest,
-    ): Promise<AttemptResult<boolean>> =>
-      runAttempt(command.gate, Boolean(command.productId), async () => {
-        const data = await mutation.mutateAsync(input);
-        return command.owned(data.captured);
-      }),
+    recovery: recovery && command.owned(recovery.captured) ? recovery.result : null,
+    submit: (input: CreateListingRequest) => run(input),
+    checkAgain: () => run(null),
   };
 }
 
@@ -306,6 +350,26 @@ export function useCancelListing(publicId: string, listingId: string | null) {
         return command.owned(data.captured);
       }),
   };
+}
+
+async function readCreateState(
+  api: ReturnType<typeof useApiClient>,
+  publicId: string,
+): Promise<PublicLot | null> {
+  try {
+    return await api.commerce.getLot(publicId);
+  } catch {
+    // A failed read cannot resolve an uncertain write; keep creation blocked.
+    return null;
+  }
+}
+
+function recoverableCreate(error: unknown): boolean {
+  return (
+    error instanceof ApiClientError &&
+    (error.code === ApiErrorCode.PRODUCT_IN_SALE ||
+      attemptOutcome(error.kind) === 'unknown')
+  );
 }
 
 function refreshListingError(
