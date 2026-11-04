@@ -570,6 +570,26 @@ describe('order access', () => {
     expect(card.sellerNote).toBe('Left a message');
     expect(card.buyerContacts?.phone).toBe('+375291112233');
   });
+
+  it('still lists an existing order after the author is suspended', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const order = await insertOrder(fixture, {
+      buyerId: fixture.buyer.id,
+      status: 'ACTIVE',
+    });
+    await prisma.sellerProfile.update({
+      where: { userId: fixture.sellers.approved.id },
+      data: { status: 'SUSPENDED' },
+    });
+    const seller = await signedIn(fixture.sellers.approved.email);
+    const listed = await seller.get('/me/orders?role=seller&state=open');
+    expect(listed.status).toBe(200);
+    expect(JSON.stringify(await listed.json())).toContain(order.publicId);
+    expect((await seller.get(`/orders/${order.publicId}`)).status).toBe(200);
+    expect(
+      (await seller.post(`/orders/${order.publicId}/offer-next`)).status,
+    ).toBe(403);
+  });
 });
 
 describe('order transitions', () => {
@@ -945,8 +965,8 @@ describe('next participant', () => {
       type: 'AUCTION',
       currency: 'BYN',
       startPriceMinor: 1_000,
-      startsAt: new Date(now.getTime() - 1_000).toISOString(),
-      endsAt: new Date(now.getTime() + 2 * DAY_MS).toISOString(),
+      startMode: 'now',
+      durationDays: 2,
       contactWindowHours: 24,
     });
     expect(created.status).toBe(201);
@@ -971,8 +991,8 @@ describe('next participant', () => {
       type: 'AUCTION',
       currency: 'BYN',
       startPriceMinor: 1_000,
-      startsAt: new Date(now.getTime() - 1_000).toISOString(),
-      endsAt: new Date(now.getTime() + 3 * DAY_MS).toISOString(),
+      startMode: 'now',
+      durationDays: 3,
     });
     expect(again.status).toBe(201);
   });

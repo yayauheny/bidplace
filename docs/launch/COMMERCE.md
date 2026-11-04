@@ -66,6 +66,26 @@
 Деньги — целые копейки (`Int`, минимальные единицы), без конвертации валют.
 Верхний предел суммы — 100 000 000 минимальных единиц (1 000 000 BYN/RUB).
 
+Создание различает намерение старта (`DEC-153`): фиксированная продажа —
+`startMode: "now"` без дат; немедленный аукцион — `startMode: "now"` и целое
+`durationDays` 1–14. Сервер вычисляет начало и окончание по времени БД после
+блокировок. UI до отправки показывает длительность и ориентировочное окончание
+с пометкой о часах устройства; после создания — фактические даты сервера.
+Запланированный аукцион передаёт `startMode: "scheduled"`, `startsAt`, `endsAt`
+как однозначные моменты времени. Прошедшее к обработке начало отклоняется;
+даты не сдвигаются и режим не меняется. Форма сохраняется для явного исправления.
+Старый формат с датами принимается: AUCTION трактуется как запланированный
+(поведение прошедших дат намеренно изменено), FIXED сохраняет прежние правила.
+Существующие лоты не меняются. Порядок выпуска — API → UI; старые клиенты,
+использующие фиктивные/прошедшие даты для «сейчас», требуют обновления.
+
+После потерянного ответа создания UI актуально перечитывает `/lot`. Открытая
+продажа — установленный факт без утверждения, что её создал этот POST;
+повторное создание блокируется. Отсутствие, терминальный лот или ошибка чтения
+сохраняют неопределённый результат и форму с действием «Проверить снова».
+Автоповтора POST нет; поздние ответы после смены работы/аккаунта игнорируются.
+Для этого этапа отдельная таблица операций и идемпотентность создания не нужны.
+
 ### 3.2 Статусы лота
 
 | Статус | Значение | Как попадает |
@@ -508,11 +528,11 @@ CREATE UNIQUE INDEX one_open_report_per_reporter   ON reports(reporter_user_id, 
 | `POST /api/orders/:publicId/offer-next` | автор | следующему участнику |
 | `POST /api/orders/:publicId/reports` | участник | жалоба |
 | `GET /api/me/attention` | пользователь | список «требует внимания» |
-| `GET/PUT /api/me/notification-settings`, `PUT /api/me/contacts` (`{ phone?, telegram?, instagram?, vk?, showToBuyer? }`) | пользователь | настройки |
+| `GET/PUT /api/me/notification-settings`, `GET /api/me/contacts`, `PUT /api/me/contacts` (`{ phone?, telegram?, instagram?, vk?, showToBuyer? }`; чтение без пятиминутного окна, запись — с ним) | пользователь | настройки |
 | `PUT/DELETE /api/works/:productId/favorite`, `GET /api/me/favorites` | пользователь | избранное |
 | `GET /api/admin/reports`, `POST /api/admin/reports/:id/resolve` | админ | жалобы |
 | `GET /api/admin/attention` | админ | заказы с жалобой, без отметки 72 ч, автоблоки антифрода |
-| `POST /api/admin/listings/:id/remove`, `POST /api/admin/orders/:publicId/void-strike`, `POST /api/admin/orders/:publicId/outcome`, `POST /api/admin/users/:id/ban` | админ | вмешательство, `reason` обязателен |
+| `POST /api/admin/listings/:id/remove`, `POST /api/admin/orders/:publicId/void-strike`, `POST /api/admin/orders/:publicId/outcome`, `POST /api/admin/users/:id/ban`, `POST /api/admin/users/:id/release-hold` | админ | вмешательство; `reason` или `note` обязателен |
 | `GET /api/admin/health`, `POST /api/admin/notifications/retry-failed` | админ | последний тик, Cron выключен при идущих аукционах, неотправленные письма, открытые жалобы ([OPERATIONS.md](OPERATIONS.md)) |
 | `POST /api/internal/tick` | Worker Cron и внутренний таймер (W2) | закрытие, напоминания, истечение предложений, письма, медиа |
 

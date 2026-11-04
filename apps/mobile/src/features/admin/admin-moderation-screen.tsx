@@ -16,6 +16,7 @@ import {
   MotionPressable,
   PageHeader,
   SecondaryButton,
+  TextButton,
   TextField,
 } from '../../components/ui';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
@@ -95,6 +96,10 @@ export function AdminModerationScreen() {
     >
       <PageHeader title="Модерация" description="Проверка работ и авторов" />
       <AccountLogoutButton />
+      <TextButton
+        label="Сделки и жалобы"
+        onPress={() => router.push('/admin/commerce')}
+      />
       <FigmaTabs
         selection
         tabs={tabs}

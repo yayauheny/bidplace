@@ -44,9 +44,100 @@
 | # | Что | Как | Порог «ок» | «Чинить до запуска» |
 | --- | --- | --- | --- | --- |
 | 1 | Холодный старт | остановить контейнер (`/_release/stop` основателем или рестарт образа локально), засечь время до первого ответа `GET /api/works/:publicId` и до первой отрисовки работы; 3 раза | ≤ 5 с до ответа API | > 8 с |
-| 2 | 50 ставок одновременно | `scripts/perf/parallel-bids.mjs` (создать): 50 тестовых покупателей, `Promise.all` HTTP-ставок по возрастающим суммам на один лот | 0 ответов 5xx; цена = максимум принятых; `bidCount` = строкам `bids`; p95 ≤ 1,5 с | любой 5xx или расхождение |
+| 2 | 50 ставок одновременно | `scripts/perf/parallel-bids.mjs`: 50 тестовых покупателей, `Promise.all` HTTP-ставок по возрастающим суммам на один лот | 0 ответов 5xx; цена = максимум принятых; `bidCount` = строкам `bids`; p95 ≤ 1,5 с | любой 5xx или расхождение |
 | 3 | Вес картинок и Lighthouse mobile | Chrome Lighthouse, режим Mobile (Slow 4G, CPU ×4), production-сборка (`pnpm build:web`), страницы: главная, работа, автор | LCP ≤ 2,5 с; Performance ≥ 70; картинки первого экрана ≤ 1,5 МБ | LCP > 4 с или картинка карточки > 2× отрисованного размера × DPR и > 300 КБ |
 | 4 | N+1 и индексы | включить логирование запросов Prisma локально (временно, через `log: ['query']` в ветке замера, не коммитить), посчитать запросы на `GET /api/works`, `/api/authors`, `/api/portfolio/home`, `/api/works/:publicId`, `/api/works/:publicId/lot`, `/api/me/orders`, `/api/me/attention`; `EXPLAIN ANALYZE` для 3 самых медленных | число запросов не растёт с размером страницы; ≤ 10 на запрос; индексы используются | рост с размером страницы или `Seq Scan` по таблице > 10 000 строк в горячем запросе |
+
+Повторяемые проверки commerce (без W6): Node 22, `pnpm build:api`;
+для браузеров — `EXPO_NO_DOTENV=1 EXPO_PUBLIC_API_URL=http://127.0.0.1:13001
+EXPO_PUBLIC_TURNSTILE_SITE_KEY=<публичный тестовый sitekey>` при
+`pnpm --filter @bidplace/mobile build:web`. Затем с безопасно переданным
+`INTEGRATION_DATABASE_URL` только для `127.0.0.1:55434/bidplace_integration`:
+`pnpm --filter @bidplace/mobile test:e2e:commerce-live` (Chromium/WebKit) и,
+отдельно от сборок/браузеров, `pnpm --filter @bidplace/api test:performance`.
+Обычный `test:e2e` с reset для этого не используется. Нужны права создать/удалить
+собственную схему; секреты в команды/документы не вставлять. API должен быть
+собран; браузеры Playwright установлены. Никаких файлов из прежнего `/private/tmp`
+harness не требуется. Торговые действия — реальный API/БД; только Turnstile-script
+использует существующую test fixture. Контакты/жалобы/admin decision остаются у
+`contacts`, `commerce-orders`, `commerce-reports` integration owners.
+
+Performance-команда сохраняет условия до запросов и все три результата в
+`apps/mobile/test-results/commerce-load/<run-id>/`: свежая схема, API-процесс
+и 50 покупателей на прогон; setup/login/lot-read вне измерения, bid route cold,
+конкурентность 50, время до полного тела ответа. `correctness` и `latency`
+раздельны; p95 ≤1500 мс проверяется без округления, превышение даёт exit 1.
+Все три прогона должны пройти; локальный PASS не является production evidence.
+Live E2E и скриншоты — `apps/mobile/e2e/commerce-live.spec.ts` и
+`apps/mobile/test-results/commerce-live/`; каждая схема удаляется в finally,
+включая ошибку инициализации. Изменения времени/совместимости/восстановления
+не входят в эту проверочную задачу (`DEC-153`).
+
+### Latency: контролируемый стенд и следующий диагностический шаг
+
+Для ресурсного контекста до/во время приёмочного набора — лёгкие срезы:
+`uptime`, `iostat -c 2`, `vm_stat`, `sysctl vm.swapusage`, `memory_pressure -Q`;
+только имена/CPU процессов, не argv/env. По уточнению допуска 2026-11-04 нулевой
+swap-in не требуется: paging и фоновые приложения сами по себе не блокируют
+запуск. Проверять доступность disposable БД и устойчивость машины, наблюдать
+ресурсы также во время трёх прогонов. Прерывать только при конкретной ошибке
+инфраструктуры либо реальной угрозе устойчивости; указывать её факты. Сборки
+завершать до измерения, не менять настройки и не очищать системные кеши.
+Накопленный swap, дельты swap-in/out, компрессор, CPU и memory pressure сохранять
+вместе с результатами. Существенную постороннюю нагрузку описывать показателями
+и ограничением вывода; не объявлять результат недостоверным только из-за swap.
+Не запускать повторные серии ради зелёного результата. Остановка процессов —
+только в явно разрешённой пользователем области; приложения/системные службы
+в этой серии не останавливать.
+
+Сохранить SHA и fingerprint скрипта, Node 22.20.0/pnpm 11.7.0/PostgreSQL 16.14,
+режим сборки, host/VM CPU/RAM, container CPU/memory/I/O limits, фактическую ёмкость
+Prisma pool и отсутствие URL overrides. Текущий default-capacity probe Prisma
+6.19.3 объявил 17; это ёмкость, не число занятых соединений и не pool wait.
+При ином стенде/пуле явно записать разницу, не подбирать параметры ради PASS.
+Предыдущий стенд: host 8 CPU/16 GiB, Docker 8 CPU/12529836032 bytes, лимиты
+контейнера 0 (не заданы). Общий desktop-стенд допускается с ресурсными метриками
+и явными ограничениями вывода; локальный PASS не production evidence.
+
+Точная команда из чистого checkout без env/credential-файлов, после активации
+Node 22.20.0/pnpm 11.7.0 и безопасной передачи `INTEGRATION_DATABASE_URL` только
+для `127.0.0.1:55434/bidplace_integration` (CONNECT/CREATE своей схемы):
+
+```sh
+node --version
+pnpm --version
+# Если сборки нет или исходники изменились: pnpm build:api
+# Сборка должна завершиться до измерения; проверить работоспособность стенда.
+pnpm --filter @bidplace/api test:performance
+```
+
+Прогрев/dataset/конкурентность сохраняются из существующего теста выше. Не
+усреднять p95 и не заменять старый evidence новым. Каждый из трёх run должен
+пройти correctness и p95 ≤1500 мс; неполный набор остаётся неполным.
+
+Если превышение повторяется на пригодном стенде, отдельно от приёмки временно
+инструментировать существующие `core/database/transaction.ts`,
+`products/product-write-guard.ts` и `commerce/bids.service.ts` (без второго
+framework и без изменения поведения):
+
+| Интервал/метрика | Точная граница и ограничение вывода |
+| --- | --- |
+| Transaction startup | Перед `$transaction` → вход callback, по каждой попытке. Включает pool/BEGIN/driver scheduling; не называть чистым pool wait без отдельной engine-метрики. |
+| Product-lock RTT | До/после именно `SELECT FOR UPDATE`. Весь `lockProductRowForUpdate` ещё сохраняет/восстанавливает lock_timeout: время helper не равно lock wait. |
+| Транзакция/удержание | Вход/выход callback и settlement `$transaction`, по каждой попытке/outcome. Только для подтверждённого успешного commit: callback после lock-ack даёт нижнюю границу удержания, settlement минус начало lock-call — верхнюю. Для errors/timeouts/disconnect — только клиентские интервалы, без DB hold bounds. |
+| Queries/round trips | По каждому transaction attempt: только проверенно привязанные count/duration и статические operation labels (eligibility/write/outbox/antifraud/present). Глобальный `PrismaService.queryCount` под 50 запросами не является счётчиком отдельной транзакции. |
+| CPU/I/O | API CPU/event-loop, host paging/CPU, DB I/O и state/wait_event только собственных synthetic backend-процессов; cumulative BlockIO не является latency. |
+
+PostgreSQL может освободить locks при abort до последующего завершения клиентского
+callback/ROLLBACK; поэтому error-path не даёт таких границ ([PostgreSQL 16,
+transaction abort](https://github.com/postgres/postgres/blob/REL_16_STABLE/src/backend/access/transam/README)).
+Монотонные интервалы считать внутри одного процесса; часы разных процессов не
+вычитать. Не выводить SQL/params, cookies, контакты или credentials. `present`
+вызван под транзакцией после записи и дополнительно читает participant label и
+viewer eligibility; стоимость этих чтений пока не измерена. До controller также
+есть session/rate-limit работа. Очередь одного product ожидаема и не доказывает
+дефект. Если чистый pool wait либо per-transaction attribution недоступны,
+сохранить ограничение, не подменять их оценкой по числу backend-процессов.
 
 - [ ] **Шаг 1:** подготовить данные: сид + 200 работ и 20 лотов (скрипт в
   `scripts/perf/`, удаляется в конце, или флаг сида — `Ruling:`).

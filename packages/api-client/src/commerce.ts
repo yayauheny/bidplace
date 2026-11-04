@@ -390,7 +390,10 @@ export function createCommerceClient(context: RequestContext) {
         signalRequestOptions(options),
       );
     },
-    updateNotificationSettings(input: NotificationSettings) {
+    updateNotificationSettings(
+      input: NotificationSettings,
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         '/api/me/notification-settings',
@@ -398,10 +401,19 @@ export function createCommerceClient(context: RequestContext) {
         {
           method: 'PUT',
           body: parseRequest(notificationSettingsSchema, input),
+          ...signalRequestOptions(options),
         },
       );
     },
-    updateContacts(input: UserContactsRequest) {
+    getContacts(options?: ReadCallOptions) {
+      return requestJson(
+        context,
+        '/api/me/contacts',
+        userContactsResponseSchema,
+        signalRequestOptions(options),
+      );
+    },
+    updateContacts(input: UserContactsRequest, options?: ReadCallOptions) {
       return requestJson(
         context,
         '/api/me/contacts',
@@ -409,6 +421,7 @@ export function createCommerceClient(context: RequestContext) {
         {
           method: 'PUT',
           body: parseRequest(userContactsRequestSchema, input),
+          ...signalRequestOptions(options),
         },
       );
     },

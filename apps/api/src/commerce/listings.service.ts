@@ -409,47 +409,39 @@ const listingCancelSelect = {
 } satisfies Prisma.ListingSelect;
 
 function listingSchedule(input: CreateListingRequest, now: Date) {
-  const requested = new Date(input.startsAt);
-  if (Number.isNaN(requested.getTime())) {
-    throw invalidListing('startsAt is not a time');
+  if (input.type === 'AUCTION' && input.startPriceMinor % bidStepMinor(input.currency, input.startPriceMinor) !== 0) {
+    throw invalidListing('Start price must be a multiple of the bid step');
   }
-  if (
-    requested.getTime() >
-    now.getTime() + COMMERCE_LIMITS.scheduleMaxDays * DAY_MS
-  ) {
-    throw invalidListing('startsAt is further than 30 days');
-  }
-  if (input.type === 'FIXED' && requested.getTime() > now.getTime()) {
-    throw invalidListing('Fixed price starts now');
-  }
-  const scheduled =
-    input.type === 'AUCTION' && requested.getTime() > now.getTime();
-  const startsAt = scheduled ? requested : now;
-  const endsAt = input.type === 'AUCTION' ? new Date(input.endsAt) : null;
-  if (input.type === 'AUCTION') {
-    if (!endsAt || Number.isNaN(endsAt.getTime())) {
-      throw invalidListing('endsAt is not a time');
+  if (input.startMode === 'now') {
+    if (input.type === 'FIXED') {
+      return { startsAt: now, endsAt: null, status: 'LIVE' as ListingStatus };
     }
-    const span = endsAt.getTime() - startsAt.getTime();
-    if (
-      span < COMMERCE_LIMITS.auctionMinDays * DAY_MS ||
-      span > COMMERCE_LIMITS.auctionMaxDays * DAY_MS
-    ) {
+    if (!Number.isInteger(input.durationDays) || input.durationDays < COMMERCE_LIMITS.auctionMinDays || input.durationDays > COMMERCE_LIMITS.auctionMaxDays) {
       throw invalidListing('Auction length must be from 1 to 14 days');
     }
-    if (
-      input.startPriceMinor %
-        bidStepMinor(input.currency, input.startPriceMinor) !==
-      0
-    ) {
-      throw invalidListing('Start price must be a multiple of the bid step');
-    }
+    return {
+      startsAt: now,
+      endsAt: new Date(now.getTime() + input.durationDays * DAY_MS),
+      status: 'LIVE' as ListingStatus,
+    };
   }
-  return {
-    startsAt,
-    endsAt,
-    status: (scheduled ? 'SCHEDULED' : 'LIVE') as ListingStatus,
-  };
+  const requested = new Date(input.startsAt);
+  if (Number.isNaN(requested.getTime())) throw invalidListing('startsAt is not a time');
+  if (requested.getTime() > now.getTime() + COMMERCE_LIMITS.scheduleMaxDays * DAY_MS) {
+    throw invalidListing('startsAt is further than 30 days');
+  }
+  if (input.type === 'FIXED') {
+    if (requested.getTime() > now.getTime()) throw invalidListing('Fixed price starts now');
+    return { startsAt: now, endsAt: null, status: 'LIVE' as ListingStatus };
+  }
+  const endsAt = new Date(input.endsAt);
+  if (Number.isNaN(endsAt.getTime())) throw invalidListing('endsAt is not a time');
+  const span = endsAt.getTime() - requested.getTime();
+  if (span < COMMERCE_LIMITS.auctionMinDays * DAY_MS || span > COMMERCE_LIMITS.auctionMaxDays * DAY_MS) {
+    throw invalidListing('Auction length must be from 1 to 14 days');
+  }
+  if (requested.getTime() <= now.getTime()) throw invalidListing('Auction start has passed');
+  return { startsAt: requested, endsAt, status: 'SCHEDULED' as ListingStatus };
 }
 
 function stepTableCode(currency: Currency): string {

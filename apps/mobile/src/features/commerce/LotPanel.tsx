@@ -20,10 +20,14 @@ export function LotPanel({
   read,
   onAction,
   onHistory,
+  listOffer,
+  onList,
 }: {
   read: LotRead;
   onAction?: (action: LotAction) => void;
   onHistory?: () => void;
+  listOffer?: { enabled: boolean; reason: string | null } | null;
+  onList?: () => void;
 }) {
   const clock =
     read.lot?.type === 'AUCTION' && read.lot.effectiveStatus === 'LIVE';
@@ -52,9 +56,16 @@ export function LotPanel({
       })
     : null;
   if (!view || view.phase === 'portfolio') {
-    return read.status === 'empty-stale' || read.status === 'stale' ? (
-      <StaleSale onRetry={() => void read.refetch()} />
-    ) : null;
+    const stale = read.status === 'empty-stale' || read.status === 'stale';
+    if (!stale && !listOffer) return null;
+    return (
+      <View style={{ gap: designTokens.space.x2, paddingTop: designTokens.space.x4 }}>
+        {stale ? <StaleSale onRetry={() => void read.refetch()} /> : null}
+        {listOffer ? (
+          <ListOffer offer={listOffer} onList={onList} />
+        ) : null}
+      </View>
+    );
   }
   const reason =
     view.action?.kind === 'cancel-lot' ? view.authorHint : view.action?.reason;
@@ -86,7 +97,17 @@ export function LotPanel({
         <AppText role="caption">{view.extensionLabel}</AppText>
       ) : null}
       {reason ? <AppText role="bodySmall">{reason}</AppText> : null}
-      {view.action && read.lot && onAction ? (
+      {view.action?.kind === 'cancel-lot' && view.action.enabled ? (
+        <PrimaryButton
+          label="Снять с продажи"
+          width="full"
+          disabled={!onAction}
+          onPress={() => {
+            if (view.action) onAction?.(view.action);
+          }}
+        />
+      ) : null}
+      {view.action && read.lot && onAction && view.action.kind !== 'cancel-lot' ? (
         <BuyerAction action={view.action} lot={read.lot} onAction={onAction} />
       ) : null}
       {view.showsBidHistory && onHistory ? (
@@ -120,10 +141,33 @@ function BuyerAction({
 }
 
 function buyerLabel(action: LotAction, type: PublicLot['type']): string | null {
-  if (action.kind === 'contacts' || action.kind === 'cancel-lot') return null;
+  if (action.kind === 'contacts') return 'Указать контакты';
+  if (action.kind === 'cancel-lot') return null;
   if (action.kind === 'buy') return 'Купить';
   if (action.kind === 'bid') return 'Сделать ставку';
   return type === 'FIXED' ? 'Купить' : 'Сделать ставку';
+}
+
+function ListOffer({
+  offer,
+  onList,
+}: {
+  offer: { enabled: boolean; reason: string | null };
+  onList?: () => void;
+}) {
+  return (
+    <View style={{ gap: designTokens.space.x2 }}>
+      {offer.reason ? <AppText role="bodySmall">{offer.reason}</AppText> : null}
+      <PrimaryButton
+        label="Выставить на продажу"
+        width="full"
+        disabled={!offer.enabled || !onList}
+        onPress={() => {
+          if (offer.enabled) onList?.();
+        }}
+      />
+    </View>
+  );
 }
 
 function StaleSale({ onRetry }: { onRetry: () => void }) {

@@ -1,5 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
+import { installAccountPresentation } from './support/account-presentation-fixture';
+
 const PUBLIC_ID = 'lotPanelW01';
 const TITLE = 'Длинное название работы для проверки строки лота';
 const checksum = 'a'.repeat(64);
@@ -461,7 +463,7 @@ test('sends one bid when the sheet is submitted twice', async ({ page }) => {
   await expect(page.getByText('Ваша ставка лидирует')).toBeVisible();
 });
 
-test('reserves a fixed lot once and shows the deal code', async ({ page }) => {
+test('reserves a fixed lot once and opens the order', async ({ page }) => {
   let purchases = 0;
   let release: () => void = () => {};
   const gate = new Promise<void>((resolve) => {
@@ -519,6 +521,53 @@ test('reserves a fixed lot once and shows the deal code', async ({ page }) => {
   await submit.click({ force: true });
   expect(purchases).toBe(1);
   release();
-  await expect(dialog.getByText('Код сделки 123456')).toBeVisible();
-  await expect(page.getByText('Забронировано')).toBeVisible();
+  await expect(page).toHaveURL(/orderPanel1/);
+  await expect(page.getByText('Код сделки 123456')).toHaveCount(0);
+});
+
+test('opens contacts instead of buying when the buyer has none', async ({ page }) => {
+  const counts = await install(page, (route) =>
+    route.fulfill({
+      json: {
+        ...liveLot('2026-11-01T18:00:00.000Z'),
+        type: 'FIXED',
+        mark: 'BUY',
+        minimumBidMinor: null,
+        bidCount: 0,
+        endsAt: null,
+        viewer: {
+          role: 'buyer',
+          isLeading: false,
+          blockedReason: 'BUYER_CONTACTS_REQUIRED',
+        },
+      },
+    }),
+  );
+  await page.goto(`/product/${PUBLIC_ID}`);
+  for (const width of [390, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const contacts = page.getByRole('button', { name: 'Указать контакты' });
+    await expect(contacts).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Купить' })).toHaveCount(0);
+    await contacts.focus();
+    await expect(contacts).toBeFocused();
+  }
+  await page.getByRole('button', { name: 'Указать контакты' }).click();
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page).toHaveURL(/contacts/);
+  await expect(page).toHaveURL(new RegExp(PUBLIC_ID));
+  expect(counts.commerceWrites).toBe(0);
+});
+
+test('opens sale creation for the matching author profile, whose id differs from the user', async ({ page }) => {
+  await installAccountPresentation(page, { author: true });
+  const fixture = workFixture();
+  fixture.author.id = '22222222-2222-4222-8222-222222222222';
+  await page.route(`**/api/works/${PUBLIC_ID}`, (route) => route.fulfill({ json: fixture }));
+  await page.route(`**/api/works/${PUBLIC_ID}/lot`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: 'null' }));
+  await page.route('**/api/images/**', (route) => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="390" height="520"/>' }));
+  await page.goto(`/product/${PUBLIC_ID}?sell=1`);
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('textbox', { name: 'Цена', exact: true })).toBeEditable();
 });

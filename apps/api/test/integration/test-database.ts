@@ -118,6 +118,7 @@ function migrateSchema(databaseUrl: string): void {
           HOME: process.env.HOME,
           TMPDIR: process.env.TMPDIR,
           DATABASE_URL: databaseUrl,
+          NODE_ENV: 'test',
         },
         stdio: 'pipe',
       },
@@ -133,7 +134,7 @@ async function dropSchema(databaseUrl: URL, schemaName: string): Promise<void> {
   const adminClient = new PrismaClient({
     datasources: {
       db: {
-        url: buildAdminDatabaseUrl(databaseUrl),
+        url: buildSchemaUrl(databaseUrl, 'public'),
       },
     },
   });
@@ -154,26 +155,25 @@ export async function createIntegrationDatabaseContext(schemaPrefix: 'itest_' | 
   const schemaName = createSchemaName(schemaPrefix);
   const databaseUrl = buildSchemaUrl(baseUrl, schemaName);
 
-  await ensureDatabaseExists(baseUrl);
-  migrateSchema(databaseUrl);
-
-  const prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: databaseUrl,
+  let prisma: PrismaClient | undefined;
+  try {
+    await ensureDatabaseExists(baseUrl);
+    migrateSchema(databaseUrl);
+    prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+    await prisma.$connect();
+    const connected = prisma;
+    return {
+      prisma: connected,
+      databaseUrl,
+      schemaName,
+      cleanup: async () => {
+        try { await connected.$disconnect(); }
+        finally { await dropSchema(baseUrl, schemaName); }
       },
-    },
-  });
-
-  await prisma.$connect();
-
-  return {
-    prisma,
-    databaseUrl,
-    schemaName,
-    cleanup: async () => {
-      await prisma.$disconnect();
-      await dropSchema(baseUrl, schemaName);
-    },
-  };
+    };
+  } catch (error) {
+    try { await prisma?.$disconnect(); }
+    finally { await dropSchema(baseUrl, schemaName); }
+    throw error;
+  }
 }

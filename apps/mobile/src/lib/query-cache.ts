@@ -61,6 +61,8 @@ export const adminKeys = {
     ['admin', 'history', kind, id] as const,
   analyticsFoundation: (range: unknown) =>
     ['admin', 'analytics', 'foundation', range] as const,
+  commerceRoot: ['admin', 'commerce'] as const,
+  commerce: (part: string) => ['admin', 'commerce', part] as const,
 };
 
 export const commerceKeys = {
@@ -215,6 +217,20 @@ export function canWritePrivateCache(
   const session = queryClient.getQueryState(authKeys.session);
   if (!session || session.data == null) return false;
   return true;
+}
+
+export async function refreshAfterContactSave(
+  queryClient: QueryClient,
+  epoch = currentAuthEpoch(queryClient),
+): Promise<void> {
+  if (!canWritePrivateCache(queryClient, epoch)) return;
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: commerceKeys.contacts() }),
+    queryClient.invalidateQueries({ queryKey: commerceKeys.attention() }),
+    queryClient.invalidateQueries({
+      predicate: (query) => isLotQueryKey(query.queryKey),
+    }),
+  ]);
 }
 
 export async function refreshPrivateQuery(

@@ -1,0 +1,237 @@
+{
+  "correctness": "PASS (all three runs)",
+  "latency": "FAIL (run 1 p95 exceeds 1500ms)",
+  "conditions": {
+    "sha": "8a45ecba76b7df620134f1d7c4f2ea320f15b728",
+    "scriptSha256": "31151888681965475366e3ffad97bffe3496cf9d303eac0f688c1890b586d8dc",
+    "node": "v22.20.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "pnpm": "11.7.0",
+    "build": "nest build; NODE_ENV=test APP_ENV=local; test Turnstile; no browser/build during measurement",
+    "resources": {
+      "cpus": 8,
+      "memoryBytes": 17179869184
+    },
+    "concurrency": 50,
+    "runs": 3,
+    "database": "existing disposable cluster; OS/DB caches not flushed; fresh schema each run",
+    "data": "fresh schema and permission fixture, new API process/application per run, 50 new buyers",
+    "warmup": "logins and one lot read; bid route cold; setup/auth excluded; full response body timed"
+  },
+  "docker": {
+    "image": "postgres:16-alpine",
+    "cpus": 8,
+    "memoryBytes": 12529836032,
+    "containerCpuQuota": 0,
+    "containerMemoryLimit": 0
+  },
+  "hostContext": "No concurrent builds/browser suites during the three measurements. Normal desktop processes remained; preflight CPU idle 63%, load averages remained above CPU count. Not production or a fully idle dedicated machine.",
+  "reports": [
+    {
+      "run": 1,
+      "exitCode": 1,
+      "report": {
+        "phase": "bids",
+        "concurrency": 50,
+        "warmup": "login plus lot read; bid route cold; setup/auth excluded",
+        "correctness": {
+          "pass": true,
+          "problems": []
+        },
+        "latency": {
+          "p95Ms": 1831.1732499999994,
+          "thresholdMs": 1500,
+          "pass": false
+        },
+        "networkErrors": 0,
+        "serverErrors": 0,
+        "http": {
+          "200": 26,
+          "409 BID_TOO_LOW": 24
+        },
+        "accepted": 26,
+        "bidRows": 26,
+        "liveBids": 26,
+        "maxStoredAmount": 25500,
+        "listing": {
+          "status": "LIVE",
+          "current_price_minor": 25500,
+          "bid_count": 26
+        },
+        "p50Ms": 1162,
+        "p95Ms": 1831,
+        "maxMs": 1862,
+        "closePhase": {
+          "tickStatus": 200,
+          "orders": 1
+        }
+      },
+      "load": [
+        10.98583984375,
+        9.23974609375,
+        8.84521484375
+      ],
+      "postgres": "PostgreSQL 16.14 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"
+    },
+    {
+      "run": 2,
+      "exitCode": 0,
+      "report": {
+        "phase": "bids",
+        "concurrency": 50,
+        "warmup": "login plus lot read; bid route cold; setup/auth excluded",
+        "correctness": {
+          "pass": true,
+          "problems": []
+        },
+        "latency": {
+          "p95Ms": 1306.01075,
+          "thresholdMs": 1500,
+          "pass": true
+        },
+        "networkErrors": 0,
+        "serverErrors": 0,
+        "http": {
+          "200": 15,
+          "409 BID_TOO_LOW": 35
+        },
+        "accepted": 15,
+        "bidRows": 15,
+        "liveBids": 15,
+        "maxStoredAmount": 25500,
+        "listing": {
+          "status": "LIVE",
+          "current_price_minor": 25500,
+          "bid_count": 15
+        },
+        "p50Ms": 855,
+        "p95Ms": 1306,
+        "maxMs": 1358,
+        "closePhase": {
+          "tickStatus": 200,
+          "orders": 1
+        }
+      },
+      "load": [
+        11.86767578125,
+        9.451171875,
+        8.921875
+      ],
+      "postgres": "PostgreSQL 16.14 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"
+    },
+    {
+      "run": 3,
+      "exitCode": 0,
+      "report": {
+        "phase": "bids",
+        "concurrency": 50,
+        "warmup": "login plus lot read; bid route cold; setup/auth excluded",
+        "correctness": {
+          "pass": true,
+          "problems": []
+        },
+        "latency": {
+          "p95Ms": 1348.0436249999998,
+          "thresholdMs": 1500,
+          "pass": true
+        },
+        "networkErrors": 0,
+        "serverErrors": 0,
+        "http": {
+          "200": 23,
+          "409 BID_TOO_LOW": 27
+        },
+        "accepted": 23,
+        "bidRows": 23,
+        "liveBids": 23,
+        "maxStoredAmount": 25500,
+        "listing": {
+          "status": "LIVE",
+          "current_price_minor": 25500,
+          "bid_count": 23
+        },
+        "p50Ms": 831,
+        "p95Ms": 1348,
+        "maxMs": 1381,
+        "closePhase": {
+          "tickStatus": 200,
+          "orders": 1
+        }
+      },
+      "load": [
+        11.5927734375,
+        9.46923828125,
+        8.93408203125
+      ],
+      "postgres": "PostgreSQL 16.14 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"
+    }
+  ],
+  "diagnosticOnly": {
+    "notAGateReplacement": true,
+    "report": {
+      "run": 1,
+      "exitCode": 1,
+      "report": {
+        "phase": "bids",
+        "diagnosticOnlyWaitSamples": {
+          "samples": 67,
+          "maxLockWaiters": 16,
+          "maxIoWaiters": 1,
+          "maxActive": 17,
+          "groups": {
+            "idle/Client/ClientRead": 440,
+            "idle/null/null": 1,
+            "idle in transaction/Client/ClientRead": 49,
+            "idle in transaction/null/null": 9,
+            "active/Lock/transactionid": 62,
+            "active/Lock/tuple": 794,
+            "active/null/null": 14,
+            "active/IO/WALSync": 4
+          }
+        },
+        "concurrency": 50,
+        "warmup": "login plus lot read; bid route cold; setup/auth excluded",
+        "correctness": {
+          "pass": true,
+          "problems": []
+        },
+        "latency": {
+          "p95Ms": 1668.3577080000005,
+          "thresholdMs": 1500,
+          "pass": false
+        },
+        "networkErrors": 0,
+        "serverErrors": 0,
+        "http": {
+          "200": 23,
+          "409 BID_TOO_LOW": 27
+        },
+        "accepted": 23,
+        "bidRows": 23,
+        "liveBids": 23,
+        "maxStoredAmount": 25500,
+        "listing": {
+          "status": "LIVE",
+          "current_price_minor": 25500,
+          "bid_count": 23
+        },
+        "p50Ms": 1052,
+        "p95Ms": 1668,
+        "maxMs": 1731,
+        "closePhase": {
+          "tickStatus": 200,
+          "orders": 1
+        }
+      },
+      "load": [
+        9.65283203125,
+        9.38720703125,
+        8.982421875
+      ],
+      "postgres": "PostgreSQL 16.14 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"
+    },
+    "interpretation": "Observed product-row lock queue; no avoidable API defect or attribution of the specific threshold exceedance proven. API runtime unchanged."
+  },
+  "review": "Independent read-only review approved implementation; latency remains an open blocker."
+}

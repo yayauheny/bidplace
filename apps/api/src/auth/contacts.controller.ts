@@ -10,6 +10,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Header,
   Put,
   Req,
@@ -28,6 +29,29 @@ import { VerifiedEmailGuard } from './verified-email.guard';
 
 const CONTACT_FRESHNESS_MS = 5 * 60_000;
 
+async function readOwnContacts(db: Prisma.TransactionClient, userId: string) {
+  const user = await db.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: {
+      contactPhone: true,
+      contactTelegram: true,
+      contactInstagram: true,
+      contactVk: true,
+    },
+  });
+  const seller = await db.sellerProfile.findUnique({
+    where: { userId },
+    select: { showContactsToBuyer: true },
+  });
+  return {
+    phone: user.contactPhone,
+    telegram: user.contactTelegram,
+    instagram: user.contactInstagram,
+    vk: user.contactVk,
+    showToBuyer: seller ? seller.showContactsToBuyer : null,
+  };
+}
+
 function storedTelegram(value: string): string {
   const link = /^https:\/\/t\.me\/([A-Za-z0-9_]{5,32})$/.exec(value);
   if (link?.[1]) return `@${link[1]}`;
@@ -41,6 +65,15 @@ export class ContactsController {
     private readonly prisma: PrismaService,
     private readonly antifraud: AntifraudService,
   ) {}
+
+  @Get('contacts')
+  @Header('Cache-Control', 'private, no-store')
+  async read(@CurrentUser() auth: AuthPrincipal) {
+    const stored = await runReadCommittedTransaction(this.prisma, (tx) =>
+      readOwnContacts(tx, auth.sub),
+    );
+    return userContactsResponseSchema.parse(stored);
+  }
 
   @Put('contacts')
   @UseGuards(RateLimitGuard)
@@ -107,26 +140,7 @@ export class ContactsController {
         kind: 'CONTACTS_CHANGED',
         payload: { eventId: randomUUID() },
       });
-      const user = await tx.user.findUniqueOrThrow({
-        where: { id: auth.sub },
-        select: {
-          contactPhone: true,
-          contactTelegram: true,
-          contactInstagram: true,
-          contactVk: true,
-        },
-      });
-      const seller = await tx.sellerProfile.findUnique({
-        where: { userId: auth.sub },
-        select: { showContactsToBuyer: true },
-      });
-      return {
-        phone: user.contactPhone,
-        telegram: user.contactTelegram,
-        instagram: user.contactInstagram,
-        vk: user.contactVk,
-        showToBuyer: seller ? seller.showContactsToBuyer : null,
-      };
+      return readOwnContacts(tx, auth.sub);
     });
     return userContactsResponseSchema.parse(stored);
   }

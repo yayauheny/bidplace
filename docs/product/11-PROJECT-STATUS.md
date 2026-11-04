@@ -5,6 +5,271 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-04 — PR 99 listing lifecycle and ban confirmation
+
+**Partial.** `useListingCommand` captures auth epoch for create/recovery and
+cancel; queued cancel checks ownership before POST and stale responses do not
+refresh private state. `admin-commerce-screen` asks for confirmation with role,
+target and reason, checks session/selection/target again and retains the existing
+single-flight guard. Owner specs cover queued cancellation, same-account session
+replacement, recovery, recheck, late responses, confirmation and cancellation.
+Four affected owner specs: 41/41 PASS; mobile typecheck, lint without auto-fix
+and web build PASS. Existing commerce Chromium/WebKit E2E: 6/6 PASS after the
+listing fix and before the final admin-only cache recheck; these scenarios do not
+exercise the admin confirmation. No commerce API or trading rules changed.
+Visual acceptance remains open.
+
+## 2026-11-04 — Integration PR preparation and session review fixes
+
+**Partial (integration candidate; sales release gates remain open).** Full diff
+from `origin/main` `14256245` through `19101991`: heads of PR #88–94 are included;
+28 commits before these review fixes. Independent risk-focused review found
+late private order cache writes, stale purchase/navigation and queued/Turnstile
+POST boundaries, plus lookup→ban continuing under a replacement session.
+`use-order-actions`, shared bid/purchase `useAttempt` and admin commerce actions
+now bind each intent to its originating auth epoch and mounted/scope generation;
+late results/errors are dropped and retired intents cannot send later POSTs.
+The typed lookup→ban sequence stays in the existing admin action owner. Existing
+owner specs cover unmount, same-account session replacement, scope round trips,
+queued execution and delayed Turnstile/lookup. Regression failures were observed
+before fixes; final targeted six specs: 43/43 PASS. Time contracts, API/runtime
+and performance script unchanged; measured latency series is not repeated.
+PITR runbook no longer equates READ ONLY/now() with a restore-point snapshot:
+consistent reference reads and a verified snapshot↔T protocol are prerequisites;
+PITR remains NOT RUN.
+
+Read-only release-trigger check: GitHub production deploy is workflow_dispatch
+only; production/staging Workers Builds triggers both empty. No repo webhooks;
+`main` is not protected, so required Verify/review must be enforced operationally
+before merge. No Cloudflare/GitHub settings changed. W6, PITR, production Cron/mail
+and visual acceptance still block real sales; integration is not launch approval.
+Mobile typecheck, lint without auto-fix and web build PASS; docs links PASS (105
+files), diff check PASS. Six real commerce Chromium/WebKit E2E checks PASS (38.7s) after client guard
+changes, on disposable 55434; temporary role removed and own schemas cleaned.
+Independent re-review PASS: all four findings closed, no remaining blockers in
+the reviewed scope. No new API integration/latency series or production action
+in this review fix.
+
+## 2026-11-04 — Three measured latency runs pass locally
+
+**Partial (measured local PASS; production latency unverified).** Base `59f4248c`,
+initially clean. One unchanged `pnpm --filter @bidplace/api test:performance`
+series on Node 22.20.0/PostgreSQL 16.14, disposable 55434 only: fresh schema/API
+process and 50 buyers per run, auth/setup outside bid timing, bid route cold,
+full response body timed. Existing build reused; no new build or process stops.
+Correctness PASS3/3; raw p95 **1174.381291 / 1072.119375 / 1110.421250 ms**,
+each ≤1500; all run exits and suite exit 0. HTTP accepted/refused: 26/24, 22/28,
+22/28; refusals only 409 `BID_TOO_LOW`, network/5xx 0 throughout. Each final price
+25500 minor, bidCount/rows 26/26, 22/22, 22/22; tick200/order1 each.
+[Measured reports and resource evidence](../audits/current/evidence/commerce-integration/2026-11-04-latency-results.json)
+retain all three reports, source SHA/fingerprint, resource samples and historical
+FAIL hash. During observed 20s: CPU idle43–63%, memory_pressure free34–39%,
+swap-in141.625 MiB/swap-out0, compressor+678.531 MiB. Aggregate samples (~4s)
+include setup/auth/background work; approximate run windows do not isolate bid
+CPU/I/O or attribute paging. Nonzero swap does not invalidate measured PASS;
+[W7 admission wording](../launch/waves/W7-final-checks.md#latency-контролируемый-стенд-и-следующий-диагностический-шаг)
+now reflects the explicit user clarification. Historical latency FAIL remains
+recorded; this pass under different conditions does not erase it or prove an API
+fix. No runtime/threshold/retries/timeouts/W6 changes. Own schemas cleaned and
+temporary restricted role dropped; no extra diagnostics or acceptance series.
+Performance owner test PASS (3 runs, suite exit0); docs links PASS (105 files),
+JSON/arithmetic/old evidence hash PASS, diff check PASS; independent read-only
+review PASS. E2E/typecheck/lint/build not rerun: runtime unchanged.
+
+## 2026-11-04 — Local process cleanup; latency still blocked
+
+**Needs verification.** Base `de9e4aad`, initially clean. Authorized exact SIGTERM
+stopped orphan mobile dev PID 8085 (8081) and temporary demo API PID 54850 (3001);
+both exited, no SIGKILL/restart. Containers, data, editors, browsers, agent support
+and system services retained. `pnpm build:api` PASS on Node 22.20.0 (5 tasks,
+4 cached). After build, three resource samples over 32s still showed swap-in
+14.297 MiB, swap-out 0, compressor −193.875 MiB, CPU idle 76/69/77%; protected
+Planet VPN/Kimi/Spotlight activity varied. Occupied swap alone is not the blocker.
+**ENVIRONMENT BLOCKED**; new runs 1/2/3 NOT RUN, no acceptance exit codes/latency
+metrics. Historical correctness PASS3/3 and latency FAIL remain unchanged; no API
+defect inferred or runtime optimization. Only disposable 55434 metadata checked
+(PostgreSQL 16.14, Docker 8 CPU/11.67 GiB); no database writes this stage.
+[Cleanup and resource evidence](../audits/current/evidence/commerce-integration/2026-11-04-latency-cleanup.json)
+records PID/owner/parent/cwd/RAM, remaining protected processes, manual restart
+requirements and all samples. The owner must settle protected background work,
+then use the existing [controlled runbook](../launch/waves/W7-final-checks.md#latency-контролируемый-стенд-и-следующий-диагностический-шаг)
+for three unchanged 50-bid runs. Docs links PASS (105 files), JSON/arithmetic/old
+evidence hash PASS, diff check PASS; independent read-only review PASS.
+No E2E rerun, push, merge, deploy, W6 or production action.
+
+## 2026-11-03 — Latency preflight: ENVIRONMENT BLOCKED
+
+**Needs verification.** Base `3d3b48a9`, initially clean. New acceptance run 1/2/3
+**NOT RUN**: host 8 CPU/16 GiB, idle 65–71%; three 15s-spaced samples recorded
+3361 swap-in pages (52.516 MiB/30s), compressor +344.766 MiB, swap-out delta 0;
+occupied swap ~24.0 GiB. Active paging/desktop work prevents a controlled latency
+claim; occupied swap alone is not the finding. No processes stopped/settings
+changed. Disposable 55434 only: PostgreSQL 16.14; Docker 8 CPU/12529836032 bytes,
+container quotas unset, snapshot 101.1 MiB/0.03% CPU. One synthetic `SELECT 1`
+with temporary CONNECT-only role confirmed installed Prisma6.19.3 default pool
+capacity 17; actual API pool wait was not measured. Role cleaned up.
+
+[New preflight evidence](../audits/current/evidence/commerce-integration/2026-11-03-latency-preflight.json)
+retains resource samples and old-evidence hash. Previous results unchanged:
+correctness PASS3/3, p95 1831.173/1306.011/1348.044 ms, overall latency FAIL.
+Those are previous measurements, not a new controlled result. Bounded source
+analysis identified startup/lock helper/critical-section/present boundaries;
+no avoidable API defect or cost breakdown proven, no optimization. Graph coverage
+excludes this worktree; conclusions use source reads only. [Exact command, stand
+requirements and bounded next diagnostic](../launch/waves/W7-final-checks.md#latency-контролируемый-стенд-и-следующий-диагностический-шаг):
+`pnpm build:api`, await quiet preflight, then securely supplied 55434 URL and
+`pnpm --filter @bidplace/api test:performance`; same three fresh processes/schemas,
+50 concurrent bids, login/lot read outside timing, full body timed. If repeated
+exceedance on that stand, instrument per-attempt startup/lock RTT/hold bounds and
+attributed query/CPU/I/O aggregates; do not infer pure pool wait or API slowness
+from backend queue counts. Runtime/E2E/locks/isolation/pool/retries/timeouts unchanged.
+Independent read-only docs/evidence review PASS after qualifying lock-hold bounds
+to confirmed successful commits. `pnpm docs:link-check` PASS (105 files), JSON/hash
+checks PASS, `git diff --check` PASS. No new load run, build or E2E rerun; runtime
+is unchanged. No deployment.
+
+## 2026-11-03 — Reproducible commerce checks; latency gate still fails
+
+**Partial.** Base `8a45ecba`; DEC-153/trading runtime unchanged. Permanent tests:
+`apps/mobile/e2e/commerce-live.spec.ts` — UI fixed create/purchase/order/confirm;
+UI auction bids/HTTP tick/order/refusal/next offer/UI accept/completion; real POST
+success → lost response + failed read → preserved form/disabled POST → keyboard
+recheck → one POST/one DB row. Fresh compiled API child and guarded 55434 schema
+per test; own-schema cleanup also handles initialization/disconnect failures.
+Listings-owner cleanup regression preserves the caller schema. Perf cleanup now
+removes only its own bid counters. Existing contacts/report/admin owner specs are
+reused. No new credentials or session artifacts; Turnstile script uses the existing
+fixture, trading responses are real. [Commands/prerequisites](../launch/waves/W7-final-checks.md#task-1-четыре-замера).
+
+Checks: API/web builds; API/mobile typecheck + lint without auto-fix; common-config
+`.mjs` lint; perf units 4/4, DB-time units 14/14, recovery/session units 14/14.
+`test:e2e:commerce-live`: 6/6 Chromium/WebKit. Listings/orders/reports/contacts
+integration 91/91, then listings with cleanup regression 29/29. Unchanged full
+application suites were not repeated. Independent read-only reviewer approved
+final code, E2E safety, baseline time/session invariants and interpretation of
+all results; no implementation blockers, no heavy checks run by reviewer.
+
+`pnpm --filter @bidplace/api test:performance`: three independent 50-request
+fixtures, fresh schemas/API processes, no overlapping builds/browser suites.
+Node 22.20.0, pnpm 11.7.0, PostgreSQL 16.14; compiled Nest API/local test profile,
+test Turnstile; host 8 CPUs/16 GiB; Docker 8 CPUs/12529836032 bytes, no container
+quota. Login + one lot read outside timing, bid route cold, full body timed
+(older 1517ms was headers-only); caches not flushed. Conditions saved before load,
+SHA/script hash/all results + diagnostic: [evidence JSON](../audits/current/evidence/commerce-integration/2026-11-03-load.json).
+Desktop background remained: preflight 63% idle; run load1 10.99/11.87/11.59.
+Not a dedicated idle host or production evidence.
+
+| Run | HTTP 200 / 409 BID_TOO_LOW | Network / 5xx | p50 / p95 / max ms | Price / bidCount / rows | Tick / orders | Correctness / latency | Exit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 26 / 24 | 0 / 0 | 1162 / 1831.173 / 1862 | 25500 / 26 / 26 | 200 / 1 | PASS / FAIL | 1 |
+| 2 | 15 / 35 | 0 / 0 | 855 / 1306.011 / 1358 | 25500 / 15 / 15 | 200 / 1 | PASS / PASS | 0 |
+| 3 | 23 / 27 | 0 / 0 | 831 / 1348.044 / 1381 | 25500 / 23 / 23 | 200 / 1 | PASS / PASS | 0 |
+
+Overall correctness PASS; latency **FAIL**, exit 1. Threshold p95 ≤1500ms checked
+without rounding; original correctness criteria/retries/timeouts unchanged.
+UUID artifact directories prevent stale-result mixing. Separate instrumented
+diagnostic (not a gate replacement): p95 1668.358ms, correctness PASS, 67 samples,
+max 16 lock waiters/17 active; active tuple/transactionid wait samples 794/62 vs
+WALSync 4. This locates the serialized product-lock queue, not an avoidable API
+bug or cause of that particular exceedance. No speculative optimization. Latency
+remains open pending controlled representative measurements/evidence for an owner
+fix. W6, PITR, production Cron/mail, exact Figma/device gates remain separate.
+No push/merge/deploy/production mutations. Documentation links/diff checked.
+
+## 2026-11-03 — Commerce integration correction and live verification
+
+**Partial.** Continued `fix/commerce-integration` from `40644f5a`, preserving its
+11 uncommitted files and suspended-author/load-check fixes. Supersedes earlier
+time/recovery claims below. `DEC-153` / [COMMERCE §3](../launch/COMMERCE.md#3-лот)
+own the explicit start contract: `CreateListingRequest`, `listingSchedule`,
+API client and `createLotRequest` now separate server-timed duration from fixed
+scheduled instants. No persistence migration; release API → UI. Legacy format
+remains accepted with intentional changed behavior for passed auction starts;
+fake-date clients require an update. `useCreateListing` owns fresh-read recovery,
+blocks POST while uncertain, preserves the form and rejects stale account/work/
+generation responses. Found sales are never attributed to the failed POST.
+`ProductScreen` compares profile IDs and binds the profile to the current user.
+
+Checks on Node 22.20.0: API units 1156, mobile 1363, contracts 111, API client 59,
+load-check units 3 passed. API/mobile dependency-graph typecheck, API/web builds,
+API/mobile and contracts/client/perf lint (no auto-fix) passed. Web dotenv loading
+was disabled. Real integrations used only disposable `127.0.0.1:55434/bidplace_integration`,
+new schemas and temporary restricted roles: 200/201 passed in the 11-file run;
+the calendar-aged attention fixture was corrected, then its package passed 11/11.
+Actual lock waits cover immediate 1/14 days and expired explicit/legacy starts.
+Earlier failures: one image-processing timeout under concurrent full suites
+(23 passed alone, then full API passed with two workers); a purchase setup hook
+hit 10s during competing builds (passed in the final integration run); two stale
+conflict-message expectations were aligned with unchanged HEAD behavior,
+preserving dialog/retry checks. No thresholds, retries or timeouts were relaxed.
+
+Live harness `/private/tmp/commerce-resume-live.spec.ts` passed: fixed create →
+purchase → contacts → report → admin decision → completion; auction → bids →
+HTTP tick → order → refusal → next bidder → accept → completion. Chromium/WebKit
+filled contacts/order/admin screens at 390/1024/1440. A real successful POST with
+lost response + failed GET preserved the form; keyboard recheck found the sale
+with one POST/one row, also reachable at 390×560/200% zoom. Persistent profile-ID
+browser regression: 2/2. Live `parallel-bids.mjs` exited 0; one measured run had
+33×200 + 17×409 `BID_TOO_LOW`, no network/5xx, matching price/bid count and one
+order after HTTP tick; p50/p95/max 966/1517/1572ms. Local latency does not prove
+the production 1.5s gate. Evidence: `/private/tmp/commerce-resume-evidence`.
+
+The earlier 5432 report below and helper default are configuration/report evidence,
+not a reconstruction of all previous SQL. No 5432 test was repeated. W6 consent,
+PITR, production Cron and mail remain release blockers; exact Figma parity and
+physical-device acceptance stay unverified. No env/secret files, reset, push,
+merge, deploy or production migrations. Ownership stays in existing contracts,
+service and hook; no operation store or duplicated commerce rules. Final scoped
+review found no remaining blocker. `docs:link-check` passed 105 files;
+`git diff --check` passed.
+
+## 2026-11-03 — Commerce wave integration
+
+**Partial.** `fix/commerce-integration` contains #88 `c0fb2494`, #89 `109fec02`, #90 `7ecc178a` (ancestor of #91), #91 `f5e5c64b`, #92 `158ec56c`, #93 `7d2bbdfe` (ancestor of #94), and #94 `d461f493`. Source branches were not rewritten.
+
+`listingSchedule` keeps the requested auction span. A start that is not after the database clock is `LIVE` at that clock, and `endsAt` is that clock plus the span (1–14 days). Immediate fixed and auction-now requests send `2000-01-01T00:00:00.000Z` plus that length, so request delay and a device clock ahead or behind do not shrink the auction or schedule a fixed price. A chosen future auction still sends that Europe/Minsk instant. The fixed-price offset of five seconds is gone.
+
+`sellerCommerceAccess`: `APPROVED` can view and start a sale; `SUSPENDED` can view existing sales only. «Продаю» stays visible. Offer-next and relist stay hidden. `assertApprovedSeller` still returns 403 for offer-next. Complete and fail of an existing order are unchanged.
+
+`scripts/perf/bid-load-check.mjs` makes `parallel-bids.mjs` exit non-zero on a network or unexpected HTTP result, a tick other than 200, an order count other than one after an accepted bid, or a mismatch of price, live bids, and `bid_count`. `BID_TOO_LOW` and `conflict` stay allowed refusals. The script still accepts only loopback `127.0.0.1:55434/bidplace_integration`.
+
+A purchase opens `/account/orders/:publicId` only when that response still belongs to the current viewer. Missing contacts open `/account/contacts?redirectTo=` and do not buy. Attention `CONTACTS_REQUIRED` without an order returns to `/account/deals`. An order conflict refreshes that order only while the same viewer still owns the screen.
+
+`DEAL_RULES_NOT_ACCEPTED` is still not thrown by any API service. W6 consent is not implemented. F4–F10 and admin commerce stay NEEDS-FIGMA. This is not completed W4 or W7.
+
+Checks on this tree, Node 22.20.0: eslint on the touched files exited 0; mobile commerce specs 59 passed (5 files, including `LotPanel`); listings service spec 9 passed; `commerce-listings` and `commerce-orders` integration 72 passed on local `127.0.0.1:5432/bidplace_integration`; `bid-load-check.spec.mjs` 3 passed. Chromium and WebKit `commerce-lot` (390/1024/1440, one purchase to the order URL, contacts button focus) 6 passed against mocked `/api`, because `prepare.mjs` runs `prisma migrate reset` on `bidplace_e2e` and that reset was not run. `pnpm docs:link-check` passed (105 files). `git diff --check` passed. API `tsc --noEmit -p tsconfig.typecheck.json` and mobile `tsc --noEmit` exited 0. `EXPO_NO_DOTENV=1` `build:web` exported `apps/mobile/dist`. `parallel-bids.mjs` was not executed. PITR, Cron, mail, and Cloudflare were not run. No push, merge, or deploy.
+
+## 2026-11-02 — Sales launch checklist
+
+**Partial.** The only sales-launch checklist is `docs/ops/00-RELEASE-AND-BACKUP.md` («Запуск продаж»). The PITR baseline is the read-only snapshot at restore time `T`, including order/bid/listing connectivity. Commerce mail follows COMMERCE §9. The Cron test expects close, order and buyer mail within 10 minutes of `endsAt`, with heartbeat recorded separately. Live `GET /api/health` and `/api/health/ready` returned 200 with database ok at 2026-11-02T21:14:40Z. Public tick returned JSON 404 with `x-powered-by: Express`, which differs from the Worker empty 404; that single GET is not evidence of a tick run. Restore, mail, Turnstile, Cron and ★ values were not run. W6 consent stays a separate gap. No cloud mutation.
+
+
+## 2026-11-02 — W3 commerce races and preliminary W7 Task 1
+
+**Partial.** `commerce-races.integration.spec.ts` now covers a concurrent same bid key, the same key with a different amount, an in-flight purchase replay, purchase key reuse, and accept versus offer expiry. A later close tick still returns 0. Ban versus hold, admissible-bid recompute, one open order, and two-tick uniqueness stay in the existing specs. `runTransaction` maps Prisma `P2028` whose message contains `Unable to start a transaction in the given time` to 409 `conflict` and does not retry it. Other `P2028` messages stay unexpected errors. This is not final W7.
+
+Local measurements used disposable Postgres `127.0.0.1:55434/bidplace_integration`, base `14256245`, Node 22.20.0, and pnpm 11.7.0. Load average was about 18–33 on 8 CPUs and 16 GB, so latency is contaminated and is not production evidence. Production-profile cold start of `GET /api/works/aliceGlass1`: 5552 ms, 1274 ms, 790 ms. The first run is above 5s and below 8s. Later runs are warm process caches. Cloudflare cold start is **NOT RUN**. Fifty HTTP bids, after separate logins: 31×200, 13×409 `BID_TOO_LOW`, 6×409 `conflict`, 0×5xx. Live rows 31, `bid_count` 31, and `current_price_minor` 22500 matched the highest stored admissible bid. The close tick returned 200 and created one order. p50 5730 ms, p95 8214 ms, max 8453 ms, so the 1.5s line is not met here. The same shape returned 4×500 `internal_error` before the mapping. `scripts/perf/parallel-bids.mjs` repeats that check on the disposable database only. Rerun on 2026-11-03, load average about 13–18: cold start 1991 ms, 648 ms, 639 ms, all HTTP 200; fifty bids 16×200, 34×409 `BID_TOO_LOW`, 0×5xx, `bid_count` 16, price 25500 matching the highest stored bid, one order, p50 891 ms, p95 1360 ms, max 1391 ms. The 1.5s line is met on that local run. Load stayed above the CPU count, so this is still not production evidence.
+
+`pg_stat_statements` on 9 approved products and 0 orders, anonymous public reads: `GET /api/works` 11 statements at limits 9, 20, and 100 (12 once at limit 1); `GET /api/authors` 6 at limits 1, 20, and 100; `GET /api/portfolio/home` 35; `GET /api/works/aliceGlass1` 24; `GET /api/works/aliceGlass1/lot` 6. Authenticated empty orders were 5 statements; attention was 9. The count does not grow with page size. Three `EXPLAIN ANALYZE` plans were sub-millisecond: the work page seq-scans `seller_profiles` (5 rows) and `users` (6 rows) and index-scans products and revisions; the author page seq-scans those same small tables; a product read is one row. Those seq scans are not a missing-index defect on this dataset. Home and work detail stay above 10 statements because they compose several reads. No query or cache change. Lighthouse mobile and browser first paint are **NOT RUN**: no production web build and no `lighthouse` CLI, on a saturated machine.
+
+Checks: API typecheck passed; `eslint .` in `apps/api` passed; unit specs 1146 passed in the full run, then the three load-failed files (`antifraud-boundary`, `turnstile-verifier`, `media-pipeline`) passed 35/35 alone; commerce races/bids/purchase/tick integration 85 passed; `pnpm docs:link-check` passed. Independent review of the bid run is **REVIEW NOT RUN**. UI and consent from other windows are outside this verification.
+
+
+## 2026-11-02 — W4 admin deal operations
+
+**Partial.** `/admin/commerce` lists open reports without deal contacts, attention orders with both parties' contacts, orders unmarked for 72 hours, and antifraud holds. Actions use the existing admin API: resolve a report, void a strike, set `COMPLETED` or `FAILED`, ban, remove a listing, release a hold, read health, and retry failed mail. `packages/api-client` `admin.releaseHold` calls the existing `POST /api/admin/users/:id/release-hold`. Weekly sales figures are not on this screen. A signed-in non-admin is sent to `/`. The admin commerce cache is removed on logout. Existing server 401/403 tests for health, retry, release-hold, and attention were not edited. Checks here: mobile `tsc --noEmit` and eslint on the touched files exited 0; mobile vitest for the commerce actions, query cache, admin gate, and moderation screen — 38 passed; api-client release-hold — 1 passed; `EXPO_NO_DOTENV=1` `build:web` exported `apps/mobile/dist`; `docs:link-check` passed 105 files. A production bundle without `EXPO_PUBLIC_API_URL` does not mount, so the filled screen was not opened in a browser. Keyboard and 390/1024/1440 of that screen were not run. No admin mock: NEEDS-FIGMA.
+
+## 2026-11-02 — Deal contacts read and settings
+
+**Partial.** `GET /api/me/contacts` is on `ContactsController` with the existing session and verified-email guards, `private, no-store`, and `userContactsResponseSchema`. `users.phone` is not a deal contact. `PUT` still requires a session authenticated within five minutes. `api.commerce.getContacts` / `updateContacts` accept cancellation. `/account/contacts?redirectTo=` loads that payload; empty fields submit null; omitted fields are not sent. A 401 on save opens the existing login and returns to the form. Account switch remounts the form and aborts the save. Outbid email rolls back on failure. Support has no public `SUPPORT_TELEGRAM_URL` / `SUPPORT_EMAIL` delivery, so the settings row is text only. F9 and the switch off-state stay NEEDS-FIGMA. Window 1 owns the lot CTA; the return contract is `/account/contacts?redirectTo=<safe internal path>`, default `/account/settings`. Checks: contacts integration 3 passed; api-client 55 passed; mobile contact/cache specs 20 passed; mobile `tsc --noEmit` and API `tsc --noEmit -p tsconfig.typecheck.json` exited 0; mobile eslint on the touched files exited 0. Browser and web export are not in this entry yet.
+
+## 2026-11-02 — W4 Task 6 deals hub and order card
+
+**Partial.** `/account/deals` lists «Покупаю» and, for an approved seller, «Продаю». Open and closed orders come from `GET /api/me/orders?role&state`. That response has no page or cursor, so the screen renders the full list and does not invent a pager. Attention is a section from `GET /api/me/attention`, not the global dot. `CONTACTS_REQUIRED` has no link. `/account/orders/:publicId` opens from the hub, from a row, and from a purchase that still belongs to the current viewer. The card shows the work snapshot, amount, deal code, deadlines from the detail, and contacts only when the detail includes them. The author note is shown only for `role === 'seller'`. `ACTIVE` is «Ждёт связи», not «Продано». Buyer accept and decline, buyer refusal with the strike warning and `confirm: true`, seller complete and fail, offer-next, relist through `/product/:workPublicId?sell=1`, and report are mounted. Offer-next has no candidate flag; the server can return `NO_NEXT_BIDDER`. There is no receipt button because W5 export is absent. Support controls render only when `EXPO_PUBLIC_SUPPORT_TELEGRAM_URL` is https or `EXPO_PUBLIC_SUPPORT_EMAIL` is set. `DEAL_RULES_NOT_ACCEPTED` is shown only if the server returns it; W6 consent is not a trading gate here. Draft PR #88 adds `/account/contacts` and is not linked, because that route is not on this branch. F5–F10 geometry is NEEDS-FIGMA. Real fixed-purchase, auction, refuse, and contacts chains were not run. Physical device is NEEDS DEVICE VERIFICATION. Checks are the Task 5 run on the parent: mobile unit 1334 passed, typecheck, `eslint .`, web export, and Chromium commerce-lot 13 passed. This branch adds the hub and card on that tree.
+
+## 2026-11-02 — W4 Task 5 create and cancel a lot
+
+**Partial.** An author can open «Выставить на продажу» from an empty lot on the work page and from a cabinet card. `CreateLotSheet` posts `createListing` with the work uuid, not `publicId`. The form uses `createListingRequestSchema`: BYN or RUB, integer minor units, contact window 1/6/24/48/72 (default 24), auction length 1–14 days. Fixed `startsAt` is five seconds before the device clock so a skewed server clock still counts as “now”. Auction “now” uses the device clock. A chosen start is read as Europe/Minsk (UTC+3). The sheet shows the work, the price or start price, and the currency before submit, and it does not edit an existing lot. `cabinetListOffer` disables hidden, unapproved, and suspended works. Sold and an open listing are not on the cabinet DTO; the server answers those. «Снять с продажи» is mounted only when `cancel-lot` is enabled. An auction with bids stays the text «Аукцион со ставками снять нельзя.» Create has no idempotency key. A double press sends one request. A lost success retries; `PRODUCT_IN_SALE` refreshes the captured work and is not treated as a new success. A late response after an account switch does not invalidate the other account. A purchase that still belongs to the current viewer leaves the deal-code panel and opens `/account/orders/:publicId`. F4 geometry is NEEDS-FIGMA. Contacts stay unmounted; draft PR #88 has the route and is not on this branch. Checks: mobile unit 1334 passed; mobile typecheck and `eslint .` exited 0; `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile build:web` exported `apps/mobile/dist`; Chromium `e2e/commerce-lot.spec.ts` 13 passed, including one purchase that leaves the work URL. That config is Chromium only. No database setup. Not a completed sale screen.
 ## 2026-11-02 — Author onboarding entry navigation
 
 **Partial.** `authorProfileDestination` in `use-seller-capability.ts` owns query-aware profile destinations. `header-chrome.ts` and `use-app-navigation.ts` reuse it for plus/footer: only confirmed absence opens intro; loading/error stay on the profile; suspended authors go to the cabinet and approved creation still goes to `/products/new`. Guest plus retains creation intent through `/products/new?entry=create`; this temporary resolver redirects by the same owner before mounting an editor, preserving it through later background query errors. Footer author entry retains onboarding in `redirectTo`. Paused first queries stay unknown. Parameterized owner tests and `e2e/navigation.spec.ts` cover statuses, absence, errors, guest continuation, Back and one-time intro. Chromium/WebKit routing matrix: 32 passed; mobile units: 1228 passed; owner routing/query tests: 43 passed. Typecheck, lint and web export passed. Physical iPhone acceptance remains NEEDS DEVICE VERIFICATION.

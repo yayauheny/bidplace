@@ -5,6 +5,57 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-04 — Admin ban confirmation
+
+**Partial; NEEDS-FIGMA.** Admin commerce uses the existing AppDialog and button
+primitives to confirm the target role, identifier/email and reason. Interaction
+regressions cover confirmation, cancellation and stale context. Visual parity
+and device acceptance remain unverified; no Figma access was performed.
+
+## 2026-11-04 — Commerce async session boundaries
+
+**Partial; visual acceptance unchanged.** Order commands, bid/purchase intents
+and admin lookup→ban reject retired sessions/unmounted pages before later writes,
+private cache effects or purchase navigation. Existing owner regressions cover
+these boundaries; no geometry, tokens or visual components changed. Earlier
+NEEDS-FIGMA and physical-device/visual acceptance gaps remain open.
+
+## 2026-11-03 — Commerce integration live verification
+
+**Partial. NEEDS-FIGMA.** `CreateLotSheet` reuses the existing AppDialog, text
+and buttons for duration, explicitly estimated device-clock end, factual open-sale
+notice and manual recheck. `ProductScreen` matches the signed-in user's profile
+ID to the public author ID. Chromium/WebKit opened filled contacts, order and
+admin screens against the real API/55434 database at 390/1024/1440, with no
+horizontal page overflow. A real created-but-lost response plus failed read
+preserved the form; keyboard recheck showed the sale without a second POST.
+The recovery actions remained reachable at 390×560 with 200% zoom. Screenshots
+were inspected in `/private/tmp/commerce-resume-evidence`; the persistent owner
+entry browser regression passed in both engines. No new visual values/tokens or
+Figma edits. This supersedes the filled-screen verification gaps in the earlier
+integration entry below. Exact F4/F5–F10 geometry and physical-device keyboard/
+Safe Area acceptance stay unverified; no visual parity claim.
+
+## 2026-11-03 — Commerce integration screens
+
+**Partial. NEEDS-FIGMA.** No new frames and no new tokens. The lot panel reuses `PrimaryButton` for «Указать контакты». The deals hub reuses `FigmaTabs`; «Продаю» stays for a suspended author, and a new sale stays disabled. Exact 390/1024/1440 geometry is not claimed. Chromium and WebKit opened the mocked lot at those widths, focused the contacts button, and followed one purchase to the order URL. The contacts form, deals hub, and order card were not opened as filled screens.
+
+## 2026-11-02 — Admin deal operations
+
+**Partial. NEEDS-FIGMA.** DESIGN-BRIEF §12 has no mock and says to use the existing admin primitives. `/admin/commerce` uses `AppShell`, `PageHeader`, `TextField`, `SecondaryButton`, and `TextButton`. Reports do not show deal contacts. Attention orders and the selected order do. There is no separate dispute screen and no weekly analytics. Off, disabled, and black switch states are not part of this screen. Filled-screen screenshots at 390/1024/1440 were not taken.
+
+## 2026-11-02 — Deal contacts and settings rows
+
+**Partial.** Settings keeps `SettingsGroup` / `SettingsRow` and adds the contacts row, a read-only email line, the outbid switch, and a support line with no link. `/account/contacts` reuses `FormPageShell` variant `settings`, `TextField`, and the seller switch. F9 (VK, show-to-buyer, notifications, support) has no frame; switch off/disabled/black stays NEEDS-FIGMA. No new tokens.
+
+## 2026-11-02 — Deals hub and order card
+
+**Partial. NEEDS-FIGMA.** Brief F5–F10 have no handoff frames in live Figma `pAPQo6cADmG5XzVmBX76EE` or `design/figma-handoff`. The hub and card reuse `FormPageShell`, `FigmaTabs`, `StatusBadge`, `AppDialog`, and the existing buttons. The list does not draw deadlines the summary DTO does not carry. Exact 390/1024/1440 geometry is not claimed. There is no receipt control and no contacts route link.
+
+## 2026-11-02 — Create and cancel a lot
+
+**Partial. NEEDS-FIGMA.** Live Figma `pAPQo6cADmG5XzVmBX76EE` and `design/figma-handoff` have no frame for the create-lot sheet (brief F4). The sheet is `AppDialog` presentation `sheet`, with `FigmaTabs`, `FigmaChoiceChip`, `TextField`, and `DateField`. It shows the work, the price or start price, and the currency before submit. Exact 390/1024/1440 geometry is not claimed. Cancel uses the existing dialog. An auction with bids has no button.
+
 ## 2026-11-02 — Author onboarding entry navigation
 
 **Partial.** `authorProfileDestination` in `use-seller-capability.ts` owns query-aware profile destinations. `header-chrome.ts` and `use-app-navigation.ts` reuse it for plus/footer: only confirmed absence opens intro; loading/error stay on the profile; suspended authors go to the cabinet and approved creation still goes to `/products/new`. Guest plus retains creation intent through `/products/new?entry=create`; this temporary resolver redirects by the same owner before mounting an editor, preserving it through later background query errors. Footer author entry retains onboarding in `redirectTo`. Paused first queries stay unknown. Parameterized owner tests and `e2e/navigation.spec.ts` cover statuses, absence, errors, guest continuation, Back and one-time intro. Chromium/WebKit routing matrix: 32 passed; mobile units: 1228 passed; owner routing/query tests: 43 passed. Typecheck, lint and web export passed. Physical iPhone acceptance remains NEEDS DEVICE VERIFICATION.
@@ -392,7 +443,7 @@ has no public media mapping and retains existing placeholders.
 | Author application / Author Story / Work story | Implemented для проверенного web-среза, device parity Needs verification | Client/API cutover, ordered blocks, private media и сохранение перед переходом; UI completion. Старое «UI не переведён / B6 не начат» не текущее состояние. |
 | Work editor | Partial, updated 2026-10-23 | Portfolio audit: сетка177×236/12, tile-local состояния и bottomAction; четыре визуальных этапа, Review metadata, photo tiles, ordered block menu и revision/save guards; independent review. Source frames 390; 1024/1440 exact parity NEEDS-FIGMA. |
 | Фото Work и автора | Browser acceptance, native Needs verification | Portfolio audit: пять визуальных шагов автора, safe retry создания, Chromium/WebKit responsive evidence и 200% browser zoom.  Release-сетка/wizard, preview, пофайловый прогресс/retry/timeout/переходы объединены; 1023 mobile tests и 6 media E2E по merge-записи. Physical devices, live R2/CDN и Figma новых статусов Needs verification. |
-| Account / settings | Partial | Published identity, общий cabinet owner, navigation/scroll/long identity; account acceptance. Settings title примерно +7 px при 390 — явное исключение BackButton/FigmaIconButton, 2 geometry failures сохранены. Desktop 1024/1440 и black parity NEEDS-FIGMA. `SettingsRow` toggle matches Figma `7008:15192` on-state only; off/disabled/black switch and `StatusBadge` visual stay NEEDS-FIGMA. Delete CTA отсутствует до API. |
+| Account / settings | Partial | Published identity, общий cabinet owner, navigation/scroll/long identity; account acceptance. Settings title примерно +7 px при 390 — явное исключение BackButton/FigmaIconButton, 2 geometry failures сохранены. Desktop 1024/1440 и black parity NEEDS-FIGMA. `SettingsRow` toggle matches Figma `7008:15192` on-state only; off/disabled/black switch and `StatusBadge` visual stay NEEDS-FIGMA. Deal contacts (`/account/contacts`) and the outbid/support rows are F9 and NEEDS-FIGMA. Delete CTA отсутствует до API. |
 | Public author / category / sticky header | Partial | Bleed, identity, grid, About, action-row motion и focus; author parity. Master/MVP exclusions и desktop grid start 384 vs 387 px записаны там; 1024/1440 exact parity NEEDS-FIGMA. |
 | Public desktop navigation / footer / brand | Partial visual parity | Desktop header от 1024 CSS px, ordinary-page footer, shared chrome visibility; footer audit. 44px targets/MVP legal labels отличаются от static source; unavailable commerce controls дают честный feedback. |
 | Home empty/loading/error и shared sheets | Implemented для проверенных browser states | Empty CTA capped 420; 390/1024/1440/1920 no-overflow, непрерывный drag, reduced motion/focus/dirty-busy guards; UI completion. Desktop empty-state exact parity NEEDS-FIGMA. |

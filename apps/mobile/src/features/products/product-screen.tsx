@@ -1,5 +1,5 @@
 import { PageScrollView } from '../../components/layout/PageScrollView';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { ScrollView, View } from 'react-native';
@@ -23,10 +23,14 @@ import { portfolioKeys } from '../../lib/query-cache';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { useAppTheme } from '../../providers/theme-provider';
+import { CancelLotDialog, CreateLotSheet } from '../commerce/CreateLotSheet';
 import { LotCommerce } from '../commerce/LotCommerce';
 import { DEAL_STEPS, LotPanel } from '../commerce/LotPanel';
 import { useLot } from '../commerce/use-lot';
+import { useAuth } from '../../providers/auth-provider';
+import { sellerCommerceAccess } from '../commerce/create-lot-form';
 import { lotSaleOpen, presentLot, syncedNowMs } from '../commerce/lot-view';
+import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { resolvePublicWorkPageState } from './public-work-page-state';
 import { resolveWorkTab, workFacts, workTabs } from './work-content';
 import { navigateWorkPageBack } from './work-page-back';
@@ -35,11 +39,19 @@ import { WorkHeader } from './WorkHeader';
 export function ProductScreen({ publicId }: { publicId: string }) {
   const api = useApiClient();
   const router = useRouter();
-  const { tab: requestedTab } = useLocalSearchParams<{ tab?: string }>();
+  const { tab: requestedTab, sell } = useLocalSearchParams<{
+    tab?: string;
+    sell?: string;
+  }>();
   const panelId = useId();
   const palette = useAppTheme();
   const [shareOpen, setShareOpen] = useState(false);
-  const [sheet, setSheet] = useState<'bid' | 'buy' | 'history' | null>(null);
+  const [sheet, setSheet] = useState<'bid' | 'buy' | 'history' | 'sell' | 'cancel' | null>(
+    null,
+  );
+  const auth = useAuth();
+  const capability = useSellerCapability();
+  const sales = sellerCommerceAccess(capability.isLoading ? null : capability.status);
   const query = useQuery({
     queryKey: portfolioKeys.work(publicId),
     queryFn: ({ signal }) => api.portfolio.getWork(publicId, { signal }),
@@ -64,9 +76,34 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     lot.status === 'empty' ||
     lot.status === 'empty-stale';
   const sale = saleKnown ? lotSaleOpen(saleView) : undefined;
+  const isOwner = Boolean(
+    auth.user?.id &&
+      capability.profile?.userId === auth.user.id &&
+      query.data?.author.id === capability.profile.id,
+  );
+  const consumedSell = useRef(false);
   useEffect(() => {
+    consumedSell.current = false;
     setSheet(null);
   }, [publicId]);
+  useEffect(() => {
+    if (sell !== '1' || consumedSell.current || !query.data) return;
+    if (lot.status === 'loading' || lot.status === 'auth-loading') return;
+    if (auth.isAuthenticated && capability.isLoading) return;
+    consumedSell.current = true;
+    if (isOwner && sales.startSale && !lot.lot && lot.status === 'empty') setSheet('sell');
+    router.setParams({ sell: undefined });
+  }, [
+    sell,
+    query.data,
+    lot.status,
+    lot.lot,
+    isOwner,
+    router,
+    auth.isAuthenticated,
+    capability.isLoading,
+    sales.startSale,
+  ]);
   useEffect(() => {
     if (!query.data || !requestedTab) return;
     if (sale === undefined && requestedTab === 'delivery') return;
@@ -154,9 +191,24 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           summary={
             <LotPanel
               read={lot}
+              listOffer={
+                isOwner && !lot.lot && (lot.status === 'empty' || lot.status === 'empty-stale')
+                  ? {
+                      enabled: lot.status === 'empty' && sales.startSale,
+                      reason:
+                        capability.status === 'SUSPENDED'
+                          ? 'Аккаунт автора приостановлен.'
+                          : lot.status === 'empty-stale'
+                            ? 'Данные продажи устарели.'
+                            : null,
+                    }
+                  : null
+              }
+              onList={() => setSheet('sell')}
               onAction={(action) => {
                 if (!action.enabled) return;
-                if (action.kind === 'bid') setSheet('bid');
+                if (action.kind === 'cancel-lot') setSheet('cancel');
+                else if (action.kind === 'bid') setSheet('bid');
                 else if (action.kind === 'buy') setSheet('buy');
                 else if (action.kind === 'sign-in') {
                   router.push({
@@ -166,6 +218,10 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 } else if (action.kind === 'verify-email') {
                   router.push(
                     `/verify-email?redirectTo=${encodeURIComponent(`/product/${publicId}`)}` as Href,
+                  );
+                } else if (action.kind === 'contacts') {
+                  router.push(
+                    `/account/contacts?redirectTo=${encodeURIComponent(`/product/${publicId}`)}` as Href,
                   );
                 }
               }}
@@ -293,7 +349,25 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         imageUrl={
           work.images[0] ? getApiAssetUrl(work.images[0].url) : null
         }
-        mode={sheet}
+        mode={sheet === 'bid' || sheet === 'buy' || sheet === 'history' ? sheet : null}
+        onClose={() => setSheet(null)}
+        onPurchased={(order) => {
+          setSheet(null);
+          router.push(`/account/orders/${order.publicId}` as Href);
+        }}
+      />
+      <CreateLotSheet
+        open={sheet === 'sell'}
+        productId={work.id}
+        publicId={publicId}
+        title={work.title}
+        imageUrl={work.images[0] ? getApiAssetUrl(work.images[0].url) : null}
+        onClose={() => setSheet(null)}
+      />
+      <CancelLotDialog
+        open={sheet === 'cancel'}
+        publicId={publicId}
+        listingId={lot.lot?.id ?? null}
         onClose={() => setSheet(null)}
       />
     </AppShell>

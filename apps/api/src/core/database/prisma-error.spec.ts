@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   isPrismaSerializableConflictError,
+  isPrismaTransactionStartTimeout,
   isPrismaUniqueConstraintError,
   prismaUniqueTargets,
 } from './prisma-error';
@@ -40,6 +41,30 @@ describe('prisma error helpers', () => {
     expect(
       prismaUniqueTargets({ code: 'P2034', meta: { target: ['slug'] } }),
     ).toEqual([]);
+  });
+
+  it('detects only the interactive transaction start timeout', () => {
+    expect(
+      isPrismaTransactionStartTimeout({
+        code: 'P2028',
+        message:
+          'Transaction API error: Unable to start a transaction in the given time.',
+      }),
+    ).toBe(true);
+    expect(
+      isPrismaTransactionStartTimeout({
+        code: 'P2028',
+        message:
+          'Transaction API error: A query cannot be executed on an expired transaction.',
+      }),
+    ).toBe(false);
+    expect(
+      isPrismaTransactionStartTimeout({
+        code: 'P2034',
+        message: 'Unable to start a transaction in the given time.',
+      }),
+    ).toBe(false);
+    expect(isPrismaTransactionStartTimeout(new Error('P2028'))).toBe(false);
   });
 
   it('returns false for non-prisma values', () => {

@@ -3,6 +3,10 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed (engineering owner)
 
+## 2026-11-02 — Own deal contacts read
+
+**Implemented** locally. `GET /api/me/contacts` requires a session and a verified email. A guest is 401. An unverified account is 403. The handler reads `auth.sub` only; a `userId` query is ignored. The response is `userContactsResponseSchema` (`Cache-Control: private, no-store`) from `users.contact_phone`, `contact_telegram`, `contact_instagram`, and `contact_vk`. `users.phone` is not copied into that payload, and `GET /auth/me` does not return the deal fields. `showToBuyer` is the seller profile flag, or null when there is no profile. The read does not check the five-minute freshness window and does not enqueue `CONTACTS_CHANGED`. `PUT` still refuses a session whose `authenticatedAt` is older than five minutes while the session itself remains inside `SESSION_TTL_MS`.
+
 ## 2026-10-31 — Work deletion
 
 **Implemented locally / live Needs verification.** Session and ownership are required for deletion; strangers and missing works receive 404, repeated owner deletion receives 204. Suspended and unverified owners may delete. Product row locks serialize deletion with publication, save, submit, media attachment and listing creation; open listings or orders block deletion. Public media is queued for revoke and purge while private SOURCE is retained. An order participant may read only the exact retained cover preview with private, no-store caching; role alone and SOURCE do not grant access after deletion. Final independent branch review and live R2/CDN verification remain open.

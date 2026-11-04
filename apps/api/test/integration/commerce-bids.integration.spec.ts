@@ -109,8 +109,8 @@ async function liveAuction(fixture: PermissionFixture) {
       type: 'AUCTION',
       currency: 'BYN',
       startPriceMinor: 1_000,
-      startsAt: new Date(now.getTime() - 1_000).toISOString(),
-      endsAt: new Date(now.getTime() + 2 * DAY_MS).toISOString(),
+      startMode: 'now',
+      durationDays: 2,
     },
   );
   expect(response.status).toBe(201);

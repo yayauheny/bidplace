@@ -504,6 +504,10 @@ describe('admin attention', () => {
         status: 'OPEN',
       },
     });
+    await prisma.$executeRaw`
+      UPDATE orders SET activated_at = clock_timestamp()
+      WHERE id = ${reported.id}::uuid
+    `;
     const stale = await insertOrder(fixture, {
       buyerId: buyer.id,
       status: 'ACTIVE',

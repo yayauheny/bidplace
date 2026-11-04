@@ -126,13 +126,14 @@ export function bidStepMinor(currency: Currency, currentMinor: number): number {
 
 const listingFields = {
   currency: currencySchema,
-  startsAt: isoDateTimeSchema,
   contactWindowHours: contactWindowHoursSchema,
 };
 
 const fixedListingSchema = z
   .object({
     type: z.literal('FIXED'),
+    startMode: z.never().optional(),
+    startsAt: isoDateTimeSchema,
     priceMinor: amountMinorSchema,
     ...listingFields,
   })
@@ -141,6 +142,8 @@ const fixedListingSchema = z
 const auctionListingSchema = z
   .object({
     type: z.literal('AUCTION'),
+    startMode: z.literal('scheduled').optional(),
+    startsAt: isoDateTimeSchema,
     startPriceMinor: amountMinorSchema,
     endsAt: isoDateTimeSchema,
     ...listingFields,
@@ -153,34 +156,45 @@ export const adminRemoveListingRequestSchema = z
   })
   .strict();
 
-export const createListingRequestSchema = z
-  .discriminatedUnion('type', [fixedListingSchema, auctionListingSchema])
-  .superRefine((value, context) => {
-    const start = Date.parse(value.startsAt);
-    if (
-      start >
-      Date.now() + COMMERCE_LIMITS.scheduleMaxDays * DAY_MS
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['startsAt'],
-        message: 'startsAt is further than 30 days',
-      });
-    }
-    if (value.type !== 'AUCTION') return;
+const immediateFixedListingSchema = z.object({
+  type: z.literal('FIXED'),
+  startMode: z.literal('now'),
+  priceMinor: amountMinorSchema,
+  ...listingFields,
+}).strict();
 
-    const span = Date.parse(value.endsAt) - start;
-    if (
-      span < COMMERCE_LIMITS.auctionMinDays * DAY_MS ||
-      span > COMMERCE_LIMITS.auctionMaxDays * DAY_MS
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['endsAt'],
-        message: 'Auction length must be from 1 to 14 days',
-      });
+const immediateAuctionListingSchema = z.object({
+  type: z.literal('AUCTION'),
+  startMode: z.literal('now'),
+  durationDays: z.number().int().min(COMMERCE_LIMITS.auctionMinDays).max(COMMERCE_LIMITS.auctionMaxDays),
+  startPriceMinor: amountMinorSchema,
+  ...listingFields,
+}).strict();
+
+export const createListingRequestSchema = z
+  .union([fixedListingSchema, auctionListingSchema, immediateFixedListingSchema, immediateAuctionListingSchema])
+  .superRefine((value, context) => {
+    if (value.startMode !== 'now') {
+      const start = Date.parse(value.startsAt);
+      if (start > Date.now() + COMMERCE_LIMITS.scheduleMaxDays * DAY_MS) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['startsAt'],
+          message: 'startsAt is further than 30 days',
+        });
+      }
+      if (value.type === 'AUCTION') {
+        const span = Date.parse(value.endsAt) - start;
+        if (span < COMMERCE_LIMITS.auctionMinDays * DAY_MS || span > COMMERCE_LIMITS.auctionMaxDays * DAY_MS) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['endsAt'],
+            message: 'Auction length must be from 1 to 14 days',
+          });
+        }
+      }
     }
-    if (value.startPriceMinor % bidStepMinor(value.currency, value.startPriceMinor) !== 0) {
+    if (value.type === 'AUCTION' && value.startPriceMinor % bidStepMinor(value.currency, value.startPriceMinor) !== 0) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['startPriceMinor'],

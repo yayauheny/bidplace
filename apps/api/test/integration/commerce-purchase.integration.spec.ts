@@ -468,15 +468,14 @@ describe('fixed price purchase', () => {
         fixture.sellers.approved.email,
         fixture.sellers.approved.password,
       );
-      const now = await databaseNow();
       const created = await seller.post(
         `/works/${fixture.approvedProductId}/listings`,
         {
           type: 'AUCTION',
           currency: 'BYN',
           startPriceMinor: 1_000,
-          startsAt: new Date(now.getTime() - 1_000).toISOString(),
-          endsAt: new Date(now.getTime() + 2 * 24 * HOUR_MS).toISOString(),
+          startMode: 'now',
+          durationDays: 2,
         },
       );
       expect(created.status).toBe(201);

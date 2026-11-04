@@ -22,6 +22,7 @@ import {
   adminCuratorSelectionRequestSchema,
   adminCuratorSelectionResponseSchema,
   adminOkResponseSchema,
+  adminReleaseHoldRequestSchema,
   adminProductStatusUpdateRequestSchema,
   adminSellerStatusResponseSchema,
   adminSellerProfilesResponseSchema,
@@ -237,6 +238,17 @@ export function createAdminClient(context: RequestContext) {
         {
           method: 'PATCH',
           body: parseRequest(adminProductStatusUpdateRequestSchema, input),
+        },
+      );
+    },
+    releaseHold(id: string, input: { note: string }) {
+      return requestJson(
+        context,
+        `/api/admin/users/${id}/release-hold`,
+        adminOkResponseSchema,
+        {
+          method: 'POST',
+          body: parseRequest(adminReleaseHoldRequestSchema, input),
         },
       );
     },

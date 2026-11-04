@@ -270,6 +270,11 @@ vi.mock('../auth/AccountLogoutButton', () => ({
     createElement('button', { type: 'button' }, 'Выйти'),
 }));
 
+vi.mock('../commerce/CreateLotSheet', () => ({
+  CreateLotSheet: () => null,
+  CancelLotDialog: () => null,
+}));
+
 vi.mock('../sellers/AuthorShare', () => ({
   AuthorShare: ({ sharePath }: { sharePath: string }) =>
     createElement(
@@ -557,7 +562,7 @@ describe('account screen consumers', () => {
   it.each([
     ['PRODUCT_IN_SALE', 'Работа сейчас в продаже. Снимите лот, чтобы изменить или скрыть её'],
     ['PRODUCT_STATE_CONFLICT', 'Работа изменилась. Обновите страницу и попробуйте снова'],
-    ['conflict', 'Не удалось скрыть работу. Попробуйте ещё раз.'],
+    ['conflict', 'Данные изменились. Смотрите актуальное состояние.'],
   ] as const)('shows the hide failure for %s inside the existing dialog', async (code, message) => {
     harness.getMyProfile.mockResolvedValue(sellerProfile('APPROVED'));
     harness.hideWork.mockRejectedValue(new ApiClientError('Internal detail', {
@@ -578,7 +583,7 @@ describe('account screen consumers', () => {
   it.each([
     ['PRODUCT_IN_SALE', 'Работа сейчас в продаже. Снимите лот, чтобы изменить или скрыть её'],
     ['PRODUCT_STATE_CONFLICT', 'Работа изменилась. Обновите страницу и попробуйте снова'],
-    ['conflict', 'Не удалось изменить видимость работы. Попробуйте ещё раз.'],
+    ['conflict', 'Данные изменились. Смотрите актуальное состояние.'],
   ] as const)('keeps the cabinet hide reason for %s reachable inside the dialog', async (code, message) => {
     harness.getMyProfile.mockResolvedValue(sellerProfile('APPROVED'));
     harness.hideWork.mockRejectedValue(new ApiClientError('Internal detail', {

@@ -3526,3 +3526,26 @@ Refines: `DEC-150` (ban voids bids); [COMMERCE §7](../launch/COMMERCE.md#7-за
 - The closed pilot is evaluated 14 days after start. Guide values: 10–20 invited
   authors, ≥ 60 % published a Work, ≥ 30 % created a listing, zero critical
   technical errors. Other pilot metrics are measured without required thresholds.
+
+
+## DEC-153 — Явное намерение старта и неопределённый результат создания продажи
+
+Date: 2026-11-03
+Status: Confirmed
+Source: explicit founder answers to all four commerce-integration questions in this chat
+Refines: `DEC-149`, `DEC-150`; [COMMERCE §3](../launch/COMMERCE.md#3-лот)
+
+The founder selected explicit immediate/scheduled requests, database time after
+locks, whole-day immediate auctions (1–14), labelled estimated device-clock end
+before submission, and authoritative server dates afterward. A passed scheduled
+start is rejected without moving dates or changing modes. Legacy date-shaped
+requests remain parseable, with an intentional behavior change for passed
+auction starts; legacy FIXED and existing rows stay unchanged. Release API → UI;
+old fake-date immediate clients require an update.
+
+After an uncertain create, fresh state reads may establish an open sale but
+cannot attribute it to the POST. Open/absent/terminal/failed reads never trigger
+automatic create retries. Preserve the form, block repeat POST, expose a manual
+check and ignore stale work/account responses. No operation table or create
+idempotency infrastructure at this stage. Other commerce rules and W6 are outside
+this change. Owner: [COMMERCE](../launch/COMMERCE.md).

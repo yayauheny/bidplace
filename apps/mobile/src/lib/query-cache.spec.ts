@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 
 import {
+  adminKeys,
   authKeys,
   canWritePrivateCache,
   captureDraftWriteLease,
@@ -13,6 +14,7 @@ import {
   draftWriteLeaseIsValid,
   invalidateWorkSurfaces,
   isAuthScopedQueryKey,
+  refreshAfterContactSave,
   issueDraftWriteLease,
   ownerWorkKeys,
   portfolioKeys,
@@ -237,6 +239,7 @@ describe('commerce query keys', () => {
     expect(commerceKeys.contacts()[0]).toBe('user');
     expect(commerceKeys.notificationSettings()[0]).toBe('user');
     expect(commerceKeys.bids('listing-1')[0]).not.toBe('user');
+    expect(adminKeys.commerce('health')).toEqual(['admin', 'commerce', 'health']);
     expect(portfolioKeys.work('work-1')).toEqual(['portfolio-work', 'work-1']);
     expect(portfolioKeys.works({ page: 1 })).toEqual([
       'portfolio-works',
@@ -262,6 +265,7 @@ describe('commerce query keys', () => {
     });
     queryClient.setQueryData(commerceKeys.bids('listing-1'), [{ amount: 1 }]);
     queryClient.setQueryData(portfolioKeys.home, { ok: true });
+    queryClient.setQueryData(adminKeys.commerce('health'), { openReports: 1 });
 
     await clearAuthenticatedSession(queryClient);
 
@@ -283,6 +287,7 @@ describe('commerce query keys', () => {
       queryClient.getQueryData(commerceKeys.favorite('product-1')),
     ).toBeUndefined();
     expect(queryClient.getQueryData(commerceKeys.contacts())).toBeUndefined();
+    expect(queryClient.getQueryData(adminKeys.commerce('health'))).toBeUndefined();
     expect(
       queryClient.getQueryData(commerceKeys.notificationSettings()),
     ).toBeUndefined();
@@ -373,5 +378,40 @@ describe('commerce query keys', () => {
     expect(
       queryClient.getQueryState(commerceKeys.lot('w1', null))?.isInvalidated,
     ).toBe(true);
+  });
+
+  it('refreshes contacts, attention, and lots only for the current session', async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(authKeys.session, { id: 'viewer-1' });
+    queryClient.setQueryData(commerceKeys.contacts(), { phone: '1' });
+    queryClient.setQueryData(commerceKeys.attention(), { count: 1 });
+    queryClient.setQueryData(commerceKeys.lot('w1', 'viewer-1'), {});
+    queryClient.setQueryData(commerceKeys.bids('listing-1'), []);
+
+    await refreshAfterContactSave(queryClient);
+
+    expect(
+      queryClient.getQueryState(commerceKeys.contacts())?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(commerceKeys.attention())?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(commerceKeys.lot('w1', 'viewer-1'))
+        ?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(commerceKeys.bids('listing-1'))?.isInvalidated,
+    ).toBe(false);
+
+    await replaceAuthenticatedSession(queryClient, { id: 'viewer-2' });
+    queryClient.setQueryData(commerceKeys.contacts(), { phone: '2' });
+    await refreshAfterContactSave(queryClient, 0);
+    expect(
+      queryClient.getQueryState(commerceKeys.contacts())?.isInvalidated,
+    ).toBe(false);
+    expect(queryClient.getQueryData(commerceKeys.contacts())).toEqual({
+      phone: '2',
+    });
   });
 });

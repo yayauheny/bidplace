@@ -29,10 +29,10 @@ describe('apiErrorMessage', () => {
       'Укажите контакты, чтобы автор мог с вами связаться.',
     ],
     ['IDEMPOTENCY_KEY_REUSED', 'Этот запрос уже отправлен с другими данными.'],
-    ['ORDER_TRANSITION_NOT_ALLOWED', 'Это действие сейчас недоступно.'],
+    ['ORDER_TRANSITION_NOT_ALLOWED', 'Заказ изменился. Смотрите актуальное состояние.'],
     ['NO_NEXT_BIDDER', 'Следующего участника нет.'],
     ['DEAL_RULES_NOT_ACCEPTED', 'Примите правила сделки.'],
-    ['conflict', null],
+    ['conflict', 'Данные изменились. Смотрите актуальное состояние.'],
   ] as const)(
     'maps %s to its approved work message or leaves the fallback',
     (code, message) => {
@@ -47,6 +47,18 @@ describe('apiErrorMessage', () => {
       ).toBe(message);
     },
   );
+
+  it('explains a passed auction start without moving the end', () => {
+    expect(
+      apiErrorMessage(
+        new ApiClientError('Auction start has passed', {
+          kind: 'validation',
+          status: 400,
+          code: 'validation_error',
+        }),
+      ),
+    ).toBe('Начало уже прошло. Измените даты или выберите «Сейчас».');
+  });
 
   it.each([new Error('network'), null, { code: 'PRODUCT_IN_SALE' }])(
     'leaves non-API errors to the consumer fallback',

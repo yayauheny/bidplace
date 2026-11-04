@@ -8,8 +8,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PublicLot } from '@bidplace/contracts';
 
-import { commerceKeys } from '../../lib/query-cache';
-import { usePlaceBid } from './use-lot-actions';
+import { advanceAuthEpoch, authKeys, commerceKeys } from '../../lib/query-cache';
+import { usePlaceBid, usePurchase } from './use-lot-actions';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -24,6 +24,9 @@ const harness = vi.hoisted(() => ({
   publicId: 'lotPanelAa1',
   listingId: '11111111-1111-4111-8111-111111111111' as string | null,
   placeBid: vi.fn(),
+  purchase: vi.fn(),
+  getToken: vi.fn(async () => null as string | null),
+  buy: null as null | ((comment: string) => Promise<{ status: string; value?: { applied: boolean } }>),
   submit: null as
     | null
     | ((amountMinor: number) => Promise<{ status: string }>),
@@ -37,11 +40,11 @@ vi.mock('../../providers/auth-provider', () => ({
 }));
 
 vi.mock('../../providers/api-provider', () => ({
-  useApiClient: () => ({ commerce: { placeBid: harness.placeBid } }),
+  useApiClient: () => ({ commerce: { placeBid: harness.placeBid, purchase: harness.purchase } }),
 }));
 
 vi.mock('../auth/turnstile-widget', () => ({
-  useInvisibleTurnstile: () => ({ getToken: async () => null }),
+  useInvisibleTurnstile: () => ({ getToken: harness.getToken }),
 }));
 
 function lot(): PublicLot {
@@ -65,6 +68,7 @@ function lot(): PublicLot {
 function Probe() {
   const bid = usePlaceBid(harness.publicId, harness.listingId);
   harness.submit = bid.submit;
+  harness.buy = usePurchase(harness.publicId, harness.listingId).submit;
   return null;
 }
 
@@ -87,6 +91,9 @@ describe('usePlaceBid', () => {
     harness.publicId = WORK_A;
     harness.listingId = LISTING;
     harness.placeBid.mockReset();
+    harness.purchase.mockReset();
+    harness.getToken.mockReset().mockResolvedValue(null);
+    harness.buy = null;
     harness.submit = null;
   });
 
@@ -94,6 +101,7 @@ describe('usePlaceBid', () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
+    queryClient.setQueryData(authKeys.session, { id: USER_A });
     client = queryClient;
     const host = document.createElement('div');
     document.body.append(host);
@@ -190,4 +198,56 @@ describe('usePlaceBid', () => {
       client?.getQueryState(commerceKeys.lot(WORK_A, USER_A))?.isInvalidated,
     ).toBe(true);
   });
+
+  it.each(['unmount', 'session replacement', 'work round trip'] as const)(
+    'does not apply a late purchase after %s',
+    async (transition) => {
+      let resolvePurchase: (value: { lot: PublicLot; order: { publicId: string; dealCode: string } }) => void = () => {};
+      harness.purchase.mockImplementation(() => new Promise((resolve) => { resolvePurchase = resolve; }));
+      render();
+      const pending = harness.buy?.('');
+      await act(async () => { await Promise.resolve(); });
+      if (transition === 'unmount') {
+        act(() => root?.unmount());
+        root = null;
+      } else if (transition === 'session replacement') {
+        if (client) advanceAuthEpoch(client);
+      } else {
+        harness.publicId = WORK_B;
+        act(() => harness.bump());
+        harness.publicId = WORK_A;
+        act(() => harness.bump());
+      }
+      resolvePurchase({ lot: lot(), order: { publicId: 'orderPanel1', dealCode: '123456' } });
+      await act(async () => { await pending; });
+      expect((await pending)?.value?.applied).toBe(false);
+      expect(client?.getQueryData(commerceKeys.lot(WORK_A, USER_A))).toBeUndefined();
+    },
+  );
+
+  it.each(['bid', 'purchase'] as const)('does not send %s when the session retires during Turnstile', async (action) => {
+    let resolveToken: (value: string | null) => void = () => {};
+    harness.getToken.mockImplementation(() => new Promise((resolve) => { resolveToken = resolve; }));
+    render();
+    const pending = action === 'bid' ? harness.submit?.(50100) : harness.buy?.('');
+    await act(async () => { await Promise.resolve(); });
+    if (client) advanceAuthEpoch(client);
+    resolveToken(null);
+    await act(async () => { await pending; });
+    expect(harness.placeBid).not.toHaveBeenCalled();
+    expect(harness.purchase).not.toHaveBeenCalled();
+  });
+
+
+  it.each(['bid', 'purchase'] as const)('does not start %s queued by a retired session', async (action) => {
+    harness.placeBid.mockResolvedValue({ lot: lot() });
+    harness.purchase.mockResolvedValue({ lot: lot(), order: { publicId: 'orderPanel1', dealCode: '123456' } });
+    render();
+    const pending = action === 'bid' ? harness.submit?.(50100) : harness.buy?.('');
+    if (client) advanceAuthEpoch(client);
+    await act(async () => { await pending; });
+    expect(harness.placeBid).not.toHaveBeenCalled();
+    expect(harness.purchase).not.toHaveBeenCalled();
+  });
+
 });
