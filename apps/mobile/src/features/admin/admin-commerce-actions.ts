@@ -1,4 +1,4 @@
-import { ApiClientError } from '@bidplace/api-client';
+import { ApiClientError, type ApiClient } from '@bidplace/api-client';
 import {
   FAULT_SIDES,
   ORDER_FAIL_REASONS,
@@ -90,4 +90,20 @@ export function commerceActionMessage(error: unknown): string {
     if (error.status === 409) return 'Запись уже изменилась. Список обновлён.';
   }
   return 'Не удалось выполнить действие.';
+}
+
+
+export async function banUserByEmail(
+  api: { admin: Pick<ApiClient['admin'], 'lookupUsers'>; commerce: Pick<ApiClient['commerce'], 'banUser'> },
+  email: string,
+  reason: string,
+  isCurrent: () => boolean,
+): Promise<boolean | null> {
+  if (!isCurrent()) return null;
+  const found = await api.admin.lookupUsers({ email });
+  if (!isCurrent()) return null;
+  const user = found.users.length === 1 ? found.users[0] : null;
+  if (!user) return false;
+  await api.commerce.banUser(user.id, { reason });
+  return true;
 }

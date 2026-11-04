@@ -1,7 +1,8 @@
-import { ApiClientError } from '@bidplace/api-client';
-import { describe, expect, it } from 'vitest';
+import { ApiClientError, type ApiClient } from '@bidplace/api-client';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
+  banUserByEmail,
   commerceActionMessage,
   orderOutcomeBody,
   releaseHoldBody,
@@ -87,4 +88,25 @@ describe('admin commerce actions', () => {
       ),
     ).toBe('Запись уже изменилась. Список обновлён.');
   });
+
+  it('does not ban when lookup outlives the originating operation', async () => {
+    let resolveLookup: (value: Awaited<ReturnType<ApiClient['admin']['lookupUsers']>>) => void = () => {};
+    const lookupUsers = vi.fn<ApiClient['admin']['lookupUsers']>().mockImplementation(() => new Promise((resolve) => { resolveLookup = resolve; }));
+    const banUser = vi.fn<ApiClient['commerce']['banUser']>();
+    let current = true;
+    const pending = banUserByEmail({ admin: { lookupUsers }, commerce: { banUser } }, 'synthetic@example.invalid', 'Synthetic reason', () => current);
+    current = false;
+    resolveLookup({ users: [{ id: '11111111-1111-4111-8111-111111111111', email: 'synthetic@example.invalid', displayName: null, role: 'user', status: 'active' }] });
+    expect(await pending).toBeNull();
+    expect(banUser).not.toHaveBeenCalled();
+  });
+
+  it('bans the uniquely found user while the originating operation is current', async () => {
+    const user = { id: '11111111-1111-4111-8111-111111111111', email: 'synthetic@example.invalid', displayName: null, role: 'user' as const, status: 'active' as const };
+    const lookupUsers = vi.fn<ApiClient['admin']['lookupUsers']>().mockResolvedValue({ users: [user] });
+    const banUser = vi.fn<ApiClient['commerce']['banUser']>();
+    expect(await banUserByEmail({ admin: { lookupUsers }, commerce: { banUser } }, user.email, 'Synthetic reason', () => true)).toBe(true);
+    expect(banUser).toHaveBeenCalledWith(user.id, { reason: 'Synthetic reason' });
+  });
+
 });

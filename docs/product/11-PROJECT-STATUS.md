@@ -5,6 +5,37 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-04 — Integration PR preparation and session review fixes
+
+**Partial (integration candidate; sales release gates remain open).** Full diff
+from `origin/main` `14256245` through `19101991`: heads of PR #88–94 are included;
+28 commits before these review fixes. Independent risk-focused review found
+late private order cache writes, stale purchase/navigation and queued/Turnstile
+POST boundaries, plus lookup→ban continuing under a replacement session.
+`use-order-actions`, shared bid/purchase `useAttempt` and admin commerce actions
+now bind each intent to its originating auth epoch and mounted/scope generation;
+late results/errors are dropped and retired intents cannot send later POSTs.
+The typed lookup→ban sequence stays in the existing admin action owner. Existing
+owner specs cover unmount, same-account session replacement, scope round trips,
+queued execution and delayed Turnstile/lookup. Regression failures were observed
+before fixes; final targeted six specs: 43/43 PASS. Time contracts, API/runtime
+and performance script unchanged; measured latency series is not repeated.
+PITR runbook no longer equates READ ONLY/now() with a restore-point snapshot:
+consistent reference reads and a verified snapshot↔T protocol are prerequisites;
+PITR remains NOT RUN.
+
+Read-only release-trigger check: GitHub production deploy is workflow_dispatch
+only; production/staging Workers Builds triggers both empty. No repo webhooks;
+`main` is not protected, so required Verify/review must be enforced operationally
+before merge. No Cloudflare/GitHub settings changed. W6, PITR, production Cron/mail
+and visual acceptance still block real sales; integration is not launch approval.
+Mobile typecheck, lint without auto-fix and web build PASS; docs links PASS (105
+files), diff check PASS. Six real commerce Chromium/WebKit E2E checks PASS (38.7s) after client guard
+changes, on disposable 55434; temporary role removed and own schemas cleaned.
+Independent re-review PASS: all four findings closed, no remaining blockers in
+the reviewed scope. No new API integration/latency series or production action
+in this review fix.
+
 ## 2026-11-04 — Three measured latency runs pass locally
 
 **Partial (measured local PASS; production latency unverified).** Base `59f4248c`,

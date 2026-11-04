@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiClientError } from '@bidplace/api-client';
 import type { FailOrderRequest, OrderDetail } from '@bidplace/contracts';
@@ -6,6 +6,7 @@ import type { FailOrderRequest, OrderDetail } from '@bidplace/contracts';
 import {
   canWritePrivateCache,
   commerceKeys,
+  currentAuthEpoch,
   invalidateWorkSurfaces,
 } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
@@ -57,6 +58,12 @@ function useOrderWrite<TInput, TValue extends OrderDetail | { id: string }>(
   const auth = useAuth();
   const queryClient = useQueryClient();
   const gate = useRef(false);
+  const mounted = useRef(true);
+  const generation = useRef(0);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const viewerId = useRef<string | null>(null);
   const orderId = useRef(publicId);
   const workId = useRef(workPublicId);
@@ -64,34 +71,37 @@ function useOrderWrite<TInput, TValue extends OrderDetail | { id: string }>(
     viewerId: string | null;
     publicId: string;
     workPublicId: string;
+    epoch: number;
+    generation: number;
   } | null>(null);
-  viewerId.current = auth.user?.id ?? null;
+  const nextViewer = auth.user?.id ?? null;
+  if (viewerId.current !== nextViewer || orderId.current !== publicId || workId.current !== workPublicId) generation.current += 1;
+  viewerId.current = nextViewer;
   orderId.current = publicId;
   workId.current = workPublicId;
+  function owned(captured: NonNullable<typeof inflight.current>) {
+    return mounted.current && captured.generation === generation.current &&
+      owns(captured, viewerId.current, orderId.current, workId.current) &&
+      canWritePrivateCache(queryClient, captured.epoch);
+  }
   const mutation = useMutation({
-    mutationFn: async (input: TInput) => {
-      const captured = {
-        viewerId: viewerId.current,
-        publicId: orderId.current,
-        workPublicId: workId.current,
-      };
+    mutationFn: async ({ input, captured }: { input: TInput; captured: NonNullable<typeof inflight.current> }) => {
       inflight.current = captured;
+      if (!owned(captured)) throw new Error('Order operation is no longer current');
       const value = await run(input);
       return { value, captured };
     },
     onError: (error) => {
       const captured = inflight.current;
       if (!captured || !refreshOrderError(error)) return;
-      if (!owns(captured, viewerId.current, orderId.current, workId.current)) return;
-      if (!canWritePrivateCache(queryClient)) return;
+      if (!owned(captured)) return;
       void queryClient.invalidateQueries({
         queryKey: commerceKeys.order(captured.publicId),
       });
       void queryClient.invalidateQueries({ queryKey: commerceKeys.attention() });
     },
     onSuccess: (data) => {
-      if (!owns(data.captured, viewerId.current, orderId.current, workId.current)) return;
-      if (!canWritePrivateCache(queryClient)) return;
+      if (!owned(data.captured)) return;
       if ('status' in data.value && 'publicId' in data.value) {
         queryClient.setQueryData(commerceKeys.order(data.value.publicId), data.value);
       }
@@ -110,14 +120,14 @@ function useOrderWrite<TInput, TValue extends OrderDetail | { id: string }>(
     error: mutation.error,
     submit: (input: TInput): Promise<AttemptResult<TValue | null>> =>
       send(gate, Boolean(publicId), async () => {
-        const data = await mutation.mutateAsync(input);
-        const applied =
-          owns(
-            data.captured,
-            viewerId.current,
-            orderId.current,
-            workId.current,
-          ) && canWritePrivateCache(queryClient);
+        const data = await mutation.mutateAsync({ input, captured: {
+          epoch: currentAuthEpoch(queryClient),
+          generation: generation.current,
+          viewerId: viewerId.current,
+          publicId: orderId.current,
+          workPublicId: workId.current,
+        } });
+        const applied = owned(data.captured);
         return applied ? data.value : null;
       }),
   };

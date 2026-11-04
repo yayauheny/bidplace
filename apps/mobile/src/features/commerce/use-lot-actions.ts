@@ -11,6 +11,7 @@ import { apiErrorMessage } from '../../lib/api-error-messages';
 import {
   canWritePrivateCache,
   commerceKeys,
+  currentAuthEpoch,
   invalidateWorkSurfaces,
 } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
@@ -70,12 +71,32 @@ function useAttempt(
   const viewerId = useRef<string | null>(null);
   const workId = useRef(publicId);
   const listing = useRef(listingId);
-  viewerId.current = auth.user?.id ?? null;
+  const mounted = useRef(true);
+  const generation = useRef(0);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const nextViewer = auth.user?.id ?? null;
+  if (viewerId.current !== nextViewer || workId.current !== publicId || listing.current !== listingId) generation.current += 1;
+  viewerId.current = nextViewer;
   workId.current = publicId;
   if (listing.current !== listingId) {
     listing.current = listingId;
     key.current = null;
     body.current = null;
+  }
+
+  const inflight = useRef<{ viewerId: string | null; publicId: string; epoch: number; generation: number } | null>(null);
+  function snapshot() {
+    const captured = { viewerId: viewerId.current, publicId: workId.current, epoch: currentAuthEpoch(queryClient), generation: generation.current };
+    inflight.current = captured;
+    return captured;
+  }
+  function owned(captured: NonNullable<typeof inflight.current>) {
+    return mounted.current && captured.generation === generation.current &&
+      captured.viewerId !== null && captured.viewerId === viewerId.current &&
+      captured.publicId === workId.current && canWritePrivateCache(queryClient, captured.epoch);
   }
 
   function remember(nextBody: string): string {
@@ -91,14 +112,9 @@ function useAttempt(
 
   function applyLot(
     lot: PublicLot,
-    captured: { viewerId: string | null; publicId: string },
+    captured: NonNullable<typeof inflight.current>,
   ) {
-    if (
-      captured.viewerId !== viewerId.current ||
-      captured.publicId !== workId.current
-    ) {
-      return;
-    }
+    if (!owned(captured)) return;
     queryClient.setQueryData(
       commerceKeys.lot(captured.publicId, captured.viewerId),
       lot,
@@ -109,6 +125,7 @@ function useAttempt(
   }
 
   function refreshOn(error: unknown) {
+    if (!inflight.current || !owned(inflight.current)) return;
     if (
       !(error instanceof ApiClientError) ||
       error.code === null ||
@@ -129,18 +146,18 @@ function useAttempt(
     applyLot,
     refreshOn,
     listingId,
+    snapshot,
+    owned,
   };
 }
 
 export function usePlaceBid(publicId: string, listingId: string | null) {
   const attempt = useAttempt('bid', publicId, listingId);
   const mutation = useMutation({
-    mutationFn: async (amountMinor: number) => {
-      const captured = {
-        viewerId: attempt.viewerId.current,
-        publicId: attempt.workId.current,
-      };
+    mutationFn: async ({ amountMinor, captured }: { amountMinor: number; captured: ReturnType<typeof attempt.snapshot> }) => {
+      if (!attempt.owned(captured)) throw new Error('Commerce operation is no longer current');
       const token = await attempt.getToken();
+      if (!attempt.owned(captured)) throw new Error('Commerce operation is no longer current');
       const result = await attempt.api.commerce.placeBid(listingId ?? '', {
         amountMinor,
         idempotencyKey: attempt.remember(String(amountMinor)),
@@ -157,7 +174,7 @@ export function usePlaceBid(publicId: string, listingId: string | null) {
     reset: mutation.reset,
     submit: (amountMinor: number): Promise<AttemptResult<null>> =>
       runAttempt(attempt.gate, Boolean(listingId), async () => {
-        await mutation.mutateAsync(amountMinor);
+        await mutation.mutateAsync({ amountMinor, captured: attempt.snapshot() });
         return null;
       }),
   };
@@ -166,12 +183,10 @@ export function usePlaceBid(publicId: string, listingId: string | null) {
 export function usePurchase(publicId: string, listingId: string | null) {
   const attempt = useAttempt('purchase', publicId, listingId);
   const mutation = useMutation({
-    mutationFn: async (comment: string) => {
-      const captured = {
-        viewerId: attempt.viewerId.current,
-        publicId: attempt.workId.current,
-      };
+    mutationFn: async ({ comment, captured }: { comment: string; captured: ReturnType<typeof attempt.snapshot> }) => {
+      if (!attempt.owned(captured)) throw new Error('Commerce operation is no longer current');
       const token = await attempt.getToken();
+      if (!attempt.owned(captured)) throw new Error('Commerce operation is no longer current');
       const result = await attempt.api.commerce.purchase(listingId ?? '', {
         idempotencyKey: attempt.remember(comment),
         ...(comment ? { comment } : {}),
@@ -192,10 +207,8 @@ export function usePurchase(publicId: string, listingId: string | null) {
       AttemptResult<{ publicId: string; dealCode: string; applied: boolean }>
     > =>
       runAttempt(attempt.gate, Boolean(listingId), async () => {
-        const data = await mutation.mutateAsync(comment);
-        const applied =
-          data.captured.viewerId === attempt.viewerId.current &&
-          data.captured.publicId === attempt.workId.current;
+        const data = await mutation.mutateAsync({ comment, captured: attempt.snapshot() });
+        const applied = attempt.owned(data.captured);
         return {
           publicId: data.order.publicId,
           dealCode: data.order.dealCode,

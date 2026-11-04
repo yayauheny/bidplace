@@ -5,6 +5,14 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-04 — Commerce async session boundaries
+
+**Partial; visual acceptance unchanged.** Order commands, bid/purchase intents
+and admin lookup→ban reject retired sessions/unmounted pages before later writes,
+private cache effects or purchase navigation. Existing owner regressions cover
+these boundaries; no geometry, tokens or visual components changed. Earlier
+NEEDS-FIGMA and physical-device/visual acceptance gaps remain open.
+
 ## 2026-11-03 — Commerce integration live verification
 
 **Partial. NEEDS-FIGMA.** `CreateLotSheet` reuses the existing AppDialog, text

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,9 +21,10 @@ import {
   TextField,
 } from '../../components/ui';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
-import { adminKeys } from '../../lib/query-cache';
+import { adminKeys, canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import {
+  banUserByEmail,
   FAIL_CHOICES,
   FAULT_CHOICES,
   commerceActionMessage,
@@ -89,6 +90,14 @@ export function AdminCommerceScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { reserve } = useDockInset();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  function ownsAction(epoch: number) {
+    return mounted.current && canWritePrivateCache(queryClient, epoch);
+  }
   const loginSent = useRef(false);
   const busyRef = useRef(false);
   const [reason, setReason] = useState('');
@@ -136,16 +145,19 @@ export function AdminCommerceScreen() {
   }
 
   async function run(action: () => Promise<unknown>, success: string) {
-    if (busyRef.current) return;
+    const epoch = currentAuthEpoch(queryClient);
+    if (busyRef.current || !ownsAction(epoch)) return;
     busyRef.current = true;
     setBusy(true);
     setNotice(null);
     try {
       const message = await action();
+      if (!ownsAction(epoch)) return;
       setReason('');
       setNotice(typeof message === 'string' ? message : success);
       await refresh();
     } catch (error) {
+      if (!ownsAction(epoch)) return;
       setNotice(commerceActionMessage(error));
       if (
         error instanceof ApiClientError &&
@@ -156,6 +168,7 @@ export function AdminCommerceScreen() {
       if (
         error instanceof ApiClientError &&
         error.status === 401 &&
+        ownsAction(epoch) &&
         !loginSent.current
       ) {
         loginSent.current = true;
@@ -166,7 +179,7 @@ export function AdminCommerceScreen() {
       }
     } finally {
       busyRef.current = false;
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   }
 
@@ -208,23 +221,23 @@ export function AdminCommerceScreen() {
       setNotice('Укажите причину. Без адреса блокировка не отправляется.');
       return;
     }
-    if (busyRef.current) return;
+    const epoch = currentAuthEpoch(queryClient);
+    if (busyRef.current || !ownsAction(epoch)) return;
     busyRef.current = true;
     setBusy(true);
     setNotice(null);
     try {
-      const found = await api.admin.lookupUsers({ email });
-      if (found.users.length !== 1) {
+      const banned = await banUserByEmail(api, email, note, () => ownsAction(epoch));
+      if (!ownsAction(epoch) || banned === null) return;
+      if (!banned) {
         setNotice('По этому адресу нет одного пользователя. Блокировка не отправлена.');
         return;
       }
-      const user = found.users[0];
-      if (!user) return;
-      await api.commerce.banUser(user.id, { reason: note });
       setReason('');
       setNotice('Пользователь заблокирован.');
       await refresh();
     } catch (error) {
+      if (!ownsAction(epoch)) return;
       setNotice(commerceActionMessage(error));
       if (error instanceof ApiClientError && error.status === 401 && !loginSent.current) {
         loginSent.current = true;
@@ -241,7 +254,7 @@ export function AdminCommerceScreen() {
       }
     } finally {
       busyRef.current = false;
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   }
 
