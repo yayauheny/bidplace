@@ -14,7 +14,9 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
 import { useDockInset } from '../../components/layout/use-dock-inset';
 import {
+  AppDialog,
   AppText,
+  PrimaryButton,
   PageHeader,
   SecondaryButton,
   TextButton,
@@ -106,6 +108,37 @@ export function AdminCommerceScreen() {
     (typeof FAIL_CHOICES)[number] | ''
   >('');
   const [orderId, setOrderId] = useState<string | null>(null);
+  const selection = useRef(0);
+  const [confirmation, setConfirmation] = useState<{
+    role: 'buyer' | 'seller'; target: string; kind: 'id' | 'email';
+    source: string; reason: string; epoch: number; selection: number;
+  } | null>(null);
+  function selectOrder(id: string) {
+    selection.current += 1;
+    setConfirmation(null);
+    setOrderId(id);
+  }
+  function requestBan(role: 'buyer' | 'seller', target: string, kind: 'id' | 'email', source: string) {
+    const note = requiredReason(reason);
+    const epoch = currentAuthEpoch(queryClient);
+    if (!note || !target || busyRef.current || !ownsAction(epoch)) return;
+    setConfirmation({ role, target, kind, source, reason: note, epoch, selection: selection.current });
+  }
+  function confirmBan() {
+    const captured = confirmation;
+    if (!captured || busyRef.current || !ownsAction(captured.epoch) || captured.selection !== selection.current) return;
+    const latestOrder = queryClient.getQueryData<OrderDetail>(adminKeys.commerce(`order:${captured.source}`));
+    const latestReports = queryClient.getQueryData<{ reports: AdminReport[] }>(adminKeys.commerce('reports'));
+    const stillSelected = captured.kind === 'email'
+      ? orderId === captured.source && latestOrder?.publicId === captured.source &&
+        (captured.role === 'buyer' ? latestOrder.buyerContacts?.email : latestOrder.sellerContacts?.email) === captured.target
+      : latestReports?.reports.some((report) => report.id === captured.source &&
+        (captured.role === 'buyer' ? report.buyerUserId : report.sellerUserId) === captured.target);
+    setConfirmation(null);
+    if (!stillSelected) return;
+    if (captured.kind === 'id') ban(captured.target, captured.reason);
+    else void banByEmail(captured.target, captured.reason, captured.selection, captured.source, captured.role);
+  }
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const reasonReady = requiredReason(reason) !== null;
@@ -203,8 +236,7 @@ export function AdminCommerceScreen() {
     );
   }
 
-  function ban(userId: string) {
-    const note = requiredReason(reason);
+  function ban(userId: string, note: string) {
     if (!note) {
       setNotice('Укажите причину.');
       return;
@@ -215,8 +247,7 @@ export function AdminCommerceScreen() {
     );
   }
 
-  async function banByEmail(email: string | undefined) {
-    const note = requiredReason(reason);
+  async function banByEmail(email: string | undefined, note: string, selected: number, source: string, role: 'buyer' | 'seller') {
     if (!email || !note) {
       setNotice('Укажите причину. Без адреса блокировка не отправляется.');
       return;
@@ -227,8 +258,13 @@ export function AdminCommerceScreen() {
     setBusy(true);
     setNotice(null);
     try {
-      const banned = await banUserByEmail(api, email, note, () => ownsAction(epoch));
-      if (!ownsAction(epoch) || banned === null) return;
+      const isCurrent = () => {
+        const currentOrder = queryClient.getQueryData<OrderDetail>(adminKeys.commerce(`order:${source}`));
+        const currentEmail = role === 'buyer' ? currentOrder?.buyerContacts?.email : currentOrder?.sellerContacts?.email;
+        return ownsAction(epoch) && selection.current === selected && currentOrder?.publicId === source && currentEmail === email;
+      };
+      const banned = await banUserByEmail(api, email, note, isCurrent);
+      if (!isCurrent() || banned === null) return;
       if (!banned) {
         setNotice('По этому адресу нет одного пользователя. Блокировка не отправлена.');
         return;
@@ -374,7 +410,7 @@ export function AdminCommerceScreen() {
               <SecondaryButton
                 label="Открыть сделку"
                 disabled={busy}
-                onPress={() => setOrderId(row.orderPublicId)}
+                onPress={() => selectOrder(row.orderPublicId)}
               />
               <SecondaryButton
                 label="Признать"
@@ -389,12 +425,12 @@ export function AdminCommerceScreen() {
               <SecondaryButton
                 label="Заблокировать покупателя"
                 disabled={busy || !reasonReady}
-                onPress={() => ban(row.buyerUserId)}
+                onPress={() => requestBan('buyer', row.buyerUserId, 'id', row.id)}
               />
               <SecondaryButton
                 label="Заблокировать автора"
                 disabled={busy || !reasonReady}
-                onPress={() => ban(row.sellerUserId)}
+                onPress={() => requestBan('seller', row.sellerUserId, 'id', row.id)}
               />
             </View>
           );
@@ -408,7 +444,7 @@ export function AdminCommerceScreen() {
             key={`reported-${item.publicId}`}
             order={item}
             busy={busy}
-            onOpen={() => setOrderId(item.publicId)}
+            onOpen={() => selectOrder(item.publicId)}
           />
         ))}
         {attention.data && attention.data.reportedOrders.length === 0 ? (
@@ -420,7 +456,7 @@ export function AdminCommerceScreen() {
             key={`unmarked-${item.publicId}`}
             order={item}
             busy={busy}
-            onOpen={() => setOrderId(item.publicId)}
+            onOpen={() => selectOrder(item.publicId)}
           />
         ))}
         {attention.data && attention.data.unmarkedOrders.length === 0 ? (
@@ -478,8 +514,8 @@ export function AdminCommerceScreen() {
                     'Страйк снят.',
                   )
                 }
-                onBanBuyer={(email) => void banByEmail(email)}
-                onBanSeller={(email) => void banByEmail(email)}
+                onBanBuyer={(email) => requestBan('buyer', email, 'email', order.data.publicId)}
+                onBanSeller={(email) => requestBan('seller', email, 'email', order.data.publicId)}
                 onRemove={(listingId, body) =>
                   void run(
                     () => api.commerce.removeListing(listingId, body),
@@ -494,6 +530,14 @@ export function AdminCommerceScreen() {
           </View>
         ) : null}
       </ScrollView>
+      <AppDialog open={confirmation !== null} title="Подтвердите блокировку" onClose={() => setConfirmation(null)}>
+        <View style={{ gap: designTokens.space.x3 }}>
+          <AppText role="bodySmall">{confirmation?.role === 'buyer' ? 'Покупатель' : 'Автор'}: {confirmation?.target}</AppText>
+          <AppText role="bodySmall">Причина: {confirmation?.reason}</AppText>
+          <PrimaryButton label="Заблокировать" width="full" disabled={busy} loading={busy} onPress={confirmBan} />
+          <SecondaryButton label="Отмена" width="full" disabled={busy} onPress={() => setConfirmation(null)} />
+        </View>
+      </AppDialog>
     </AppShell>
   );
 }

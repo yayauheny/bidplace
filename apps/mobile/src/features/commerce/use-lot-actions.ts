@@ -219,6 +219,7 @@ export function usePurchase(publicId: string, listingId: string | null) {
 }
 
 type ListingSnapshot = {
+  epoch: number;
   generation: number;
   viewerId: string | null;
   publicId: string;
@@ -247,6 +248,7 @@ function useListingCommand(publicId: string, productId: string) {
 
   function snapshot(): ListingSnapshot {
     return {
+      epoch: currentAuthEpoch(queryClient),
       generation: generation.current,
       viewerId: viewerId.current,
       publicId: workId.current,
@@ -262,7 +264,7 @@ function useListingCommand(publicId: string, productId: string) {
       captured.viewerId === viewerId.current &&
       captured.publicId === workId.current &&
       captured.productId === product.current &&
-      canWritePrivateCache(queryClient)
+      canWritePrivateCache(queryClient, captured.epoch)
     );
   }
 
@@ -340,8 +342,9 @@ export function useCreateListing(publicId: string, productId: string) {
 export function useCancelListing(publicId: string, listingId: string | null) {
   const command = useListingCommand(publicId, listingId ?? '');
   const mutation = useMutation({
-    mutationFn: async () => {
-      const captured = command.snapshot();
+    retry: false,
+    mutationFn: async (captured: ListingSnapshot) => {
+      if (!command.owned(captured)) return { cancelled: false, captured };
       try {
         const cancelled = await command.api.commerce.cancelListing(
           captured.productId,
@@ -359,7 +362,7 @@ export function useCancelListing(publicId: string, listingId: string | null) {
     error: mutation.error,
     submit: (): Promise<AttemptResult<boolean>> =>
       runAttempt(command.gate, Boolean(listingId), async () => {
-        const data = await mutation.mutateAsync();
+        const data = await mutation.mutateAsync(command.snapshot());
         return command.owned(data.captured);
       }),
   };

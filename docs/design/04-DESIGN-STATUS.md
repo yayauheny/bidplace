@@ -5,6 +5,13 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-04 — Admin ban confirmation
+
+**Partial; NEEDS-FIGMA.** Admin commerce uses the existing AppDialog and button
+primitives to confirm the target role, identifier/email and reason. Interaction
+regressions cover confirmation, cancellation and stale context. Visual parity
+and device acceptance remain unverified; no Figma access was performed.
+
 ## 2026-11-04 — Commerce async session boundaries
 
 **Partial; visual acceptance unchanged.** Order commands, bid/purchase intents

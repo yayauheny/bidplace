@@ -8,7 +8,7 @@ import { ApiErrorCode, type CreateListingRequest } from '@bidplace/contracts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { authKeys, portfolioKeys } from '../../lib/query-cache';
+import { advanceAuthEpoch, authKeys, portfolioKeys } from '../../lib/query-cache';
 import { useCancelListing, useCreateListing } from './use-lot-actions';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -364,4 +364,75 @@ describe('listing commands', () => {
     });
     expect(await first).toEqual({ status: 'accepted', value: true });
   });
+
+  it('drops a create response from a retired session of the same user', async () => {
+    let resolveCreate: (value: { id: string }) => void = () => {};
+    harness.createListing.mockImplementation(() => new Promise((resolve) => { resolveCreate = resolve; }));
+    render();
+    const pending = harness.create?.(REQUEST);
+    await act(async () => { await Promise.resolve(); });
+    if (client) advanceAuthEpoch(client);
+    resolveCreate({ id: LISTING });
+    await act(async () => { await pending; });
+    expect((await pending)?.value?.applied).toBe(false);
+    expect(client?.getQueryState(portfolioKeys.work(WORK_A))?.isInvalidated).not.toBe(true);
+  });
+
+  it.each(['session', 'unmount', 'work', 'listing'] as const)('does not send queued cancel after %s changes', async (change) => {
+    harness.cancelListing.mockResolvedValue({});
+    render();
+    const pending = harness.cancel?.();
+    if (change === 'session' && client) advanceAuthEpoch(client);
+    if (change === 'unmount') { act(() => root?.unmount()); root = null; }
+    if (change === 'work') { harness.publicId = WORK_B; act(() => harness.bump()); }
+    if (change === 'listing') { harness.listingId = null; act(() => harness.bump()); }
+    await act(async () => { await pending; });
+    expect(harness.cancelListing).not.toHaveBeenCalled();
+  });
+
+
+  it('ignores a recovery read after the same account starts a new session', async () => {
+    let resolveLot: (value: ReturnType<typeof openLot>) => void = () => {};
+    harness.createListing.mockRejectedValue(new ApiClientError('timeout', { kind: 'network', status: 0, code: null }));
+    harness.getLot.mockImplementation(() => new Promise((resolve) => { resolveLot = resolve; }));
+    render();
+    const pending = harness.create?.(REQUEST);
+    await act(async () => { await Promise.resolve(); });
+    if (client) advanceAuthEpoch(client);
+    resolveLot(openLot());
+    await act(async () => { await pending; });
+    expect(await pending).toMatchObject({ value: { applied: false, notice: null } });
+    expect(harness.createListing).toHaveBeenCalledTimes(1);
+    expect(client?.getQueryState(portfolioKeys.work(WORK_A))?.isInvalidated).not.toBe(true);
+  });
+
+  it('ignores a successful cancellation response after session retirement', async () => {
+    let resolveCancel: (value: { id: string }) => void = () => {};
+    harness.cancelListing.mockImplementation(() => new Promise((resolve) => { resolveCancel = resolve; }));
+    render();
+    const pending = harness.cancel?.();
+    await act(async () => { await Promise.resolve(); });
+    if (client) advanceAuthEpoch(client);
+    resolveCancel({ id: LISTING });
+    await act(async () => { await pending; });
+    expect(await pending).toEqual({ status: 'accepted', value: false });
+    expect(client?.getQueryState(portfolioKeys.work(WORK_A))?.isInvalidated).not.toBe(true);
+  });
+
+
+  it('drops a pending manual recheck when the auth epoch changes', async () => {
+    harness.createListing.mockRejectedValue(new ApiClientError('timeout', { kind: 'network', status: 0, code: null }));
+    render();
+    await act(async () => { await harness.create?.(REQUEST); });
+    let resolveLot: (value: ReturnType<typeof openLot>) => void = () => {};
+    harness.getLot.mockImplementation(() => new Promise((resolve) => { resolveLot = resolve; }));
+    const pending = harness.check?.();
+    await act(async () => { await Promise.resolve(); });
+    if (client) advanceAuthEpoch(client);
+    resolveLot(openLot());
+    await act(async () => { await pending; });
+    expect(await pending).toMatchObject({ value: { applied: false, notice: null } });
+    expect(harness.createListing).toHaveBeenCalledTimes(1);
+  });
+
 });

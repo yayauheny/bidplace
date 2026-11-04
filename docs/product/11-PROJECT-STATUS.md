@@ -5,6 +5,20 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-04 — PR 99 listing lifecycle and ban confirmation
+
+**Partial.** `useListingCommand` captures auth epoch for create/recovery and
+cancel; queued cancel checks ownership before POST and stale responses do not
+refresh private state. `admin-commerce-screen` asks for confirmation with role,
+target and reason, checks session/selection/target again and retains the existing
+single-flight guard. Owner specs cover queued cancellation, same-account session
+replacement, recovery, recheck, late responses, confirmation and cancellation.
+Four affected owner specs: 41/41 PASS; mobile typecheck, lint without auto-fix
+and web build PASS. Existing commerce Chromium/WebKit E2E: 6/6 PASS after the
+listing fix and before the final admin-only cache recheck; these scenarios do not
+exercise the admin confirmation. No commerce API or trading rules changed.
+Visual acceptance remains open.
+
 ## 2026-11-04 — Integration PR preparation and session review fixes
 
 **Partial (integration candidate; sales release gates remain open).** Full diff
