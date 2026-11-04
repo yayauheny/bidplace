@@ -5,6 +5,23 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-04 — W5 share export groundwork
+
+**Partial; NEEDS-FIGMA.** `apps/mobile/src/lib/share-card/layout.ts` provides
+format dimensions, centred cover/contain geometry and grapheme-aware text
+wrapping; `share-file.ts` provides file sharing, cancellation and download URL
+cleanup. Owner unit specs pass. Neither helper is connected to a screen; Canvas
+renderer, templates, work export and COMPLETED-order PNG are not implemented.
+Live Figma file `pAPQo6cADmG5XzVmBX76EE` did not contain requested node
+`5091:30095`; local handoff index and portfolio library search did not locate it.
+Exact layouts, five screenshots and visual acceptance remain blocked pending an
+approved source. Order cover snapshots use `/api/images/:id`, whose access is
+session-sensitive; privacy-safe export mapping and anonymous/public image access
+must be verified before connecting the renderer. `OrderDetail` has no author name;
+its existing public-work lookup and unavailable-work behavior need verification.
+No API, Prisma or trading rules changed. Mobile typecheck/lint/web build and
+unit checks are recorded in the draft PR; Chromium/WebKit export E2E not run.
+
 ## 2026-11-04 — PR 99 listing lifecycle and ban confirmation
 
 **Partial.** `useListingCommand` captures auth epoch for create/recovery and
