@@ -1,0 +1,521 @@
+{
+  "baselineSha": "de9e4aad782cb723c1592df7a263ece81e4ed2a7",
+  "branch": "fix/commerce-integration",
+  "initialWorkingTree": "clean",
+  "date": "2026-11-04",
+  "thresholdMs": 1500,
+  "verdicts": {
+    "environment": "ENVIRONMENT BLOCKED after authorized cleanup and completed build",
+    "correctness": "NOT RUN; historical PASS3/3 retained",
+    "latency": "NOT RUN; historical FAIL remains open",
+    "review": "PASS — independent read-only review: process scope, arithmetic, environment conclusions and docs/evidence; no blockers"
+  },
+  "newAcceptanceRuns": [
+    {
+      "run": 1,
+      "status": "NOT RUN: active paging and uncontrolled protected background processes",
+      "metrics": null,
+      "exitCode": null
+    },
+    {
+      "run": 2,
+      "status": "NOT RUN: active paging and uncontrolled protected background processes",
+      "metrics": null,
+      "exitCode": null
+    },
+    {
+      "run": 3,
+      "status": "NOT RUN: active paging and uncontrolled protected background processes",
+      "metrics": null,
+      "exitCode": null
+    }
+  ],
+  "processCleanup": {
+    "authorization": "User explicitly authorized stopping local dev/test/build processes, excluding protected applications/system services and unsafe writes.",
+    "stopped": [
+      {
+        "pid": 8085,
+        "ppid": 1,
+        "owner": "yayauheny",
+        "cpu": 0.0,
+        "rssKiB": 5312,
+        "executable": "node",
+        "parent": "/sbin/launchd",
+        "cwd": [
+          "/Users/yayauheny/.codex/worktrees/iphone-input-onboarding/bidplace/apps/mobile"
+        ],
+        "listen": [
+          "*:8081"
+        ],
+        "signal": "SIGTERM",
+        "exited": true,
+        "purpose": "orphan mobile development server listening on 8081"
+      },
+      {
+        "pid": 54850,
+        "ppid": 1,
+        "owner": "yayauheny",
+        "cpu": 0.0,
+        "rssKiB": 21024,
+        "executable": "/Users/yayauheny/.nvm/versions/node/v22.20.0/bin/node",
+        "parent": "/sbin/launchd",
+        "cwd": [
+          "/private/tmp/bidplace-demo-20261102"
+        ],
+        "listen": [
+          "*:3001"
+        ],
+        "signal": "SIGTERM",
+        "exited": true,
+        "purpose": "orphan temporary demo API listening on 3001; DB connections only to separate demo 55432"
+      }
+    ],
+    "method": "Rechecked PID executable and cwd before exact SIGTERM; rechecked exit after 5s. No SIGKILL. No environment or full arguments read.",
+    "otherDevelopmentCandidates": "Codex artifact runtime and xcodebuild MCP retained as application/session support; no confirmed active build/test/watch or Playwright suite identified. Generic interpreter names do not prove absence.",
+    "containers": "All retained: commerce 55434; separate demo 55432; existing postgres 5432. Only commerce container metadata/version checked; other databases not accessed. No container/volume/data deleted.",
+    "manualRestart": [
+      "Mobile development server from /Users/yayauheny/.codex/worktrees/iphone-input-onboarding/bidplace/apps/mobile on 8081 if needed",
+      "Temporary demo API from /private/tmp/bidplace-demo-20261102 on 3001 if needed; reconstruct original invocation from its owner, credentials not inspected"
+    ],
+    "notRestarted": true
+  },
+  "stand": {
+    "hostCpus": 8,
+    "hostMemoryBytes": 17179869184,
+    "node": "22.20.0",
+    "pnpm": "11.7.0",
+    "postgres": "16.14",
+    "endpoint": "127.0.0.1:55434/bidplace_integration",
+    "dockerCpus": 8,
+    "dockerMemoryBytes": 12529836032,
+    "containerLimits": {
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "memory": 0,
+      "blkioWeight": 0
+    },
+    "containerSnapshot": {
+      "cpuPercent": 0.02,
+      "memory": "101MiB / 11.67GiB",
+      "blockIoCumulative": "0B / 1.14GB"
+    },
+    "pool": "API not started; prior installed Prisma 6.19.3 default capacity probe 17 retained, not a current occupancy/acquisition-wait measurement"
+  },
+  "build": {
+    "command": "pnpm build:api",
+    "node": "22.20.0",
+    "exitCode": 0,
+    "tasksSuccessful": 5,
+    "tasksCached": 4,
+    "durationSeconds": 6.548,
+    "mode": "nest build; intended test runtime NODE_ENV=test APP_ENV=local; no API process launched this stage",
+    "concurrentWithMeasurement": false
+  },
+  "preflightAfterCleanup": {
+    "samples": [
+      {
+        "utc": "2026-11-04T08:42:36.829850+00:00",
+        "vm": {
+          "Pages free": 6156,
+          "Pages occupied by compressor": 272808,
+          "Pageins": 168985214,
+          "Pageouts": 4463898,
+          "Swapins": 43247188,
+          "Swapouts": 48063376
+        },
+        "swap": "vm.swapusage: total = 17408.00M  used = 16126.44M  free = 1281.56M  (encrypted)",
+        "load": "11:42  up 6 days, 23:36, 1 user, load averages: 6.74 8.17 7.83",
+        "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 55%",
+        "cpuIdlePercentInterval": 80,
+        "topCpuProcesses": [
+          {
+            "pid": 93066,
+            "ppid": 1,
+            "owner": "yayauheny",
+            "cpuPercent": 29.3,
+            "rssKiB": 63624,
+            "executable": "/Applications/Planet VPN.app/Contents/MacOS/Planet VPN"
+          },
+          {
+            "pid": 86221,
+            "ppid": 86206,
+            "owner": "yayauheny",
+            "cpuPercent": 23.2,
+            "rssKiB": 442176,
+            "executable": "/Applications/Kimi.app/Contents/Frameworks/Kimi Helper (Renderer).app/Contents/MacOS/Kimi Helper (Renderer)"
+          },
+          {
+            "pid": 395,
+            "ppid": 1,
+            "owner": "_windowserver",
+            "cpuPercent": 18.1,
+            "rssKiB": 79504,
+            "executable": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+          },
+          {
+            "pid": 66413,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 12.1,
+            "rssKiB": 53376,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Service).app/Contents/MacOS/Codex (Service)"
+          },
+          {
+            "pid": 66953,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 9.6,
+            "rssKiB": 1153376,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Renderer).app/Contents/MacOS/Codex (Renderer)"
+          }
+        ]
+      },
+      {
+        "utc": "2026-11-04T08:42:52.926606+00:00",
+        "vm": {
+          "Pages free": 4647,
+          "Pages occupied by compressor": 275016,
+          "Pageins": 168988484,
+          "Pageouts": 4464073,
+          "Swapins": 43249397,
+          "Swapouts": 48063376
+        },
+        "swap": "vm.swapusage: total = 17408.00M  used = 16086.44M  free = 1321.56M  (encrypted)",
+        "load": "11:42  up 6 days, 23:36, 1 user, load averages: 5.80 7.90 7.74",
+        "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 54%",
+        "cpuIdlePercentInterval": 76,
+        "topCpuProcesses": [
+          {
+            "pid": 93066,
+            "ppid": 1,
+            "owner": "yayauheny",
+            "cpuPercent": 27.5,
+            "rssKiB": 60564,
+            "executable": "/Applications/Planet VPN.app/Contents/MacOS/Planet VPN"
+          },
+          {
+            "pid": 86221,
+            "ppid": 86206,
+            "owner": "yayauheny",
+            "cpuPercent": 21.9,
+            "rssKiB": 441856,
+            "executable": "/Applications/Kimi.app/Contents/Frameworks/Kimi Helper (Renderer).app/Contents/MacOS/Kimi Helper (Renderer)"
+          },
+          {
+            "pid": 395,
+            "ppid": 1,
+            "owner": "_windowserver",
+            "cpuPercent": 21.0,
+            "rssKiB": 77808,
+            "executable": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+          },
+          {
+            "pid": 66953,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 10.9,
+            "rssKiB": 1156992,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Renderer).app/Contents/MacOS/Codex (Renderer)"
+          },
+          {
+            "pid": 66413,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 9.6,
+            "rssKiB": 54432,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Service).app/Contents/MacOS/Codex (Service)"
+          }
+        ]
+      },
+      {
+        "utc": "2026-11-04T08:43:09.019716+00:00",
+        "vm": {
+          "Pages free": 6187,
+          "Pages occupied by compressor": 274965,
+          "Pageins": 168989407,
+          "Pageouts": 4464192,
+          "Swapins": 43249949,
+          "Swapouts": 48063376
+        },
+        "swap": "vm.swapusage: total = 17408.00M  used = 16086.44M  free = 1321.56M  (encrypted)",
+        "load": "11:43  up 6 days, 23:37, 1 user, load averages: 5.52 7.72 7.68",
+        "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 55%",
+        "cpuIdlePercentInterval": 76,
+        "topCpuProcesses": [
+          {
+            "pid": 93066,
+            "ppid": 1,
+            "owner": "yayauheny",
+            "cpuPercent": 54.1,
+            "rssKiB": 59092,
+            "executable": "/Applications/Planet VPN.app/Contents/MacOS/Planet VPN"
+          },
+          {
+            "pid": 86221,
+            "ppid": 86206,
+            "owner": "yayauheny",
+            "cpuPercent": 22.3,
+            "rssKiB": 441904,
+            "executable": "/Applications/Kimi.app/Contents/Frameworks/Kimi Helper (Renderer).app/Contents/MacOS/Kimi Helper (Renderer)"
+          },
+          {
+            "pid": 395,
+            "ppid": 1,
+            "owner": "_windowserver",
+            "cpuPercent": 11.0,
+            "rssKiB": 76608,
+            "executable": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+          },
+          {
+            "pid": 66953,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 7.3,
+            "rssKiB": 1112480,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Renderer).app/Contents/MacOS/Codex (Renderer)"
+          },
+          {
+            "pid": 66413,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 5.3,
+            "rssKiB": 54368,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Service).app/Contents/MacOS/Codex (Service)"
+          }
+        ]
+      }
+    ],
+    "deltaPages": {
+      "Pages free": 31,
+      "Pages occupied by compressor": 2157,
+      "Pageins": 4193,
+      "Pageouts": 294,
+      "Swapins": 2761,
+      "Swapouts": 0
+    },
+    "swapInMiB": 43.140625,
+    "swapOutMiB": 0.0,
+    "compressorChangeMiB": 33.703125
+  },
+  "preflightAfterBuild": {
+    "samples": [
+      {
+        "utc": "2026-11-04T08:44:07.168523+00:00",
+        "vm": {
+          "Pages free": 39604,
+          "Pages occupied by compressor": 312434,
+          "Pageins": 169019993,
+          "Pageouts": 4464514,
+          "Swapins": 43252531,
+          "Swapouts": 48063376
+        },
+        "swap": "vm.swapusage: total = 17408.00M  used = 16022.31M  free = 1385.69M  (encrypted)",
+        "load": "11:44  up 6 days, 23:38, 1 user, load averages: 9.18 8.30 7.89",
+        "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 51%",
+        "cpuIdlePercentInterval": 76,
+        "topCpuProcesses": [
+          {
+            "pid": 93066,
+            "ppid": 1,
+            "owner": "yayauheny",
+            "cpuPercent": 52.4,
+            "rssKiB": 58432,
+            "executable": "/Applications/Planet VPN.app/Contents/MacOS/Planet VPN"
+          },
+          {
+            "pid": 86221,
+            "ppid": 86206,
+            "owner": "yayauheny",
+            "cpuPercent": 24.9,
+            "rssKiB": 439680,
+            "executable": "/Applications/Kimi.app/Contents/Frameworks/Kimi Helper (Renderer).app/Contents/MacOS/Kimi Helper (Renderer)"
+          },
+          {
+            "pid": 395,
+            "ppid": 1,
+            "owner": "_windowserver",
+            "cpuPercent": 15.0,
+            "rssKiB": 74304,
+            "executable": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+          },
+          {
+            "pid": 66953,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 14.3,
+            "rssKiB": 681712,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Renderer).app/Contents/MacOS/Codex (Renderer)"
+          },
+          {
+            "pid": 66413,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 5.6,
+            "rssKiB": 47312,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Service).app/Contents/MacOS/Codex (Service)"
+          }
+        ]
+      },
+      {
+        "utc": "2026-11-04T08:44:23.253010+00:00",
+        "vm": {
+          "Pages free": 17885,
+          "Pages occupied by compressor": 304958,
+          "Pageins": 169021442,
+          "Pageouts": 4464514,
+          "Swapins": 43252659,
+          "Swapouts": 48063376
+        },
+        "swap": "vm.swapusage: total = 17408.00M  used = 16022.31M  free = 1385.69M  (encrypted)",
+        "load": "11:44  up 6 days, 23:38, 1 user, load averages: 7.66 8.01 7.79",
+        "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 51%",
+        "cpuIdlePercentInterval": 69,
+        "topCpuProcesses": [
+          {
+            "pid": 573,
+            "ppid": 1,
+            "owner": "root",
+            "cpuPercent": 46.3,
+            "rssKiB": 241632,
+            "executable": "/System/Library/Frameworks/CoreServices.framework/Frameworks/Metadata.framework/Versions/A/Support/mds_stores"
+          },
+          {
+            "pid": 93066,
+            "ppid": 1,
+            "owner": "yayauheny",
+            "cpuPercent": 35.6,
+            "rssKiB": 58596,
+            "executable": "/Applications/Planet VPN.app/Contents/MacOS/Planet VPN"
+          },
+          {
+            "pid": 64548,
+            "ppid": 1,
+            "owner": "yayauheny",
+            "cpuPercent": 24.8,
+            "rssKiB": 32400,
+            "executable": "/System/Library/Frameworks/CoreServices.framework/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared"
+          },
+          {
+            "pid": 86221,
+            "ppid": 86206,
+            "owner": "yayauheny",
+            "cpuPercent": 22.7,
+            "rssKiB": 440032,
+            "executable": "/Applications/Kimi.app/Contents/Frameworks/Kimi Helper (Renderer).app/Contents/MacOS/Kimi Helper (Renderer)"
+          },
+          {
+            "pid": 395,
+            "ppid": 1,
+            "owner": "_windowserver",
+            "cpuPercent": 20.0,
+            "rssKiB": 75120,
+            "executable": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+          }
+        ]
+      },
+      {
+        "utc": "2026-11-04T08:44:39.375283+00:00",
+        "vm": {
+          "Pages free": 16093,
+          "Pages occupied by compressor": 300026,
+          "Pageins": 169022847,
+          "Pageouts": 4464514,
+          "Swapins": 43253446,
+          "Swapouts": 48063376
+        },
+        "swap": "vm.swapusage: total = 17408.00M  used = 16006.31M  free = 1401.69M  (encrypted)",
+        "load": "11:44  up 6 days, 23:38, 1 user, load averages: 7.54 7.97 7.78",
+        "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 52%",
+        "cpuIdlePercentInterval": 77,
+        "topCpuProcesses": [
+          {
+            "pid": 93066,
+            "ppid": 1,
+            "owner": "yayauheny",
+            "cpuPercent": 33.6,
+            "rssKiB": 62444,
+            "executable": "/Applications/Planet VPN.app/Contents/MacOS/Planet VPN"
+          },
+          {
+            "pid": 86221,
+            "ppid": 86206,
+            "owner": "yayauheny",
+            "cpuPercent": 25.3,
+            "rssKiB": 441360,
+            "executable": "/Applications/Kimi.app/Contents/Frameworks/Kimi Helper (Renderer).app/Contents/MacOS/Kimi Helper (Renderer)"
+          },
+          {
+            "pid": 395,
+            "ppid": 1,
+            "owner": "_windowserver",
+            "cpuPercent": 18.1,
+            "rssKiB": 75264,
+            "executable": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+          },
+          {
+            "pid": 66953,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 11.2,
+            "rssKiB": 706144,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Renderer).app/Contents/MacOS/Codex (Renderer)"
+          },
+          {
+            "pid": 66413,
+            "ppid": 66383,
+            "owner": "yayauheny",
+            "cpuPercent": 9.3,
+            "rssKiB": 48320,
+            "executable": "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Service).app/Contents/MacOS/Codex (Service)"
+          }
+        ]
+      }
+    ],
+    "deltaPages": {
+      "Pages free": -23511,
+      "Pages occupied by compressor": -12408,
+      "Pageins": 2854,
+      "Pageouts": 0,
+      "Swapins": 915,
+      "Swapouts": 0
+    },
+    "swapInMiB": 14.296875,
+    "swapOutMiB": 0.0,
+    "compressorChangeMiB": -193.875
+  },
+  "interpretation": {
+    "blocker": "Active swap-ins remained after cleanup/build; protected system and desktop CPU activity varied during samples. Occupied swap alone was not used as a blocker.",
+    "protectedProcesses": "Planet VPN PID93066; Kimi Renderer PID86221 (parent86206); WindowServer PID395; Spotlight mds_stores PID573/mdworker_shared PID64548; current Codex Renderer PID66953. Not terminated. Cwd observed / for desktop processes; system cwd unavailable via permitted observation.",
+    "causality": "No claim that one specific application caused paging or an API defect; no API latency measured. Historical lock queue alone does not prove a defect.",
+    "nextAction": "Owner may save work and manually close unneeded Kimi/Planet VPN applications if appropriate, allow system indexing and memory activity to settle, then repeat preflight. Do not terminate WindowServer/Spotlight/Codex. Run existing performance command only after controlled conditions are available.",
+    "diagnostics": "No acceptance traffic or extra transaction diagnostics: no new controlled exceedance to diagnose."
+  },
+  "plannedAcceptance": {
+    "command": "pnpm --filter @bidplace/api test:performance",
+    "data": "3 independent fresh schemas/API processes, 50 new buyers/run; only disposable 55434",
+    "warmup": "login and one lot read outside bid timing; bid route cold; full response body timed; OS/DB caches not cleared",
+    "concurrency": 50,
+    "pass": "All three correctness checks and every raw p95 <=1500ms, no averaging/best-run selection",
+    "credentials": "No .env or credentials read; no new connection role/secret needed because acceptance not started"
+  },
+  "previousEvidence": {
+    "path": "docs/audits/current/evidence/commerce-integration/2026-11-03-load.json",
+    "sha256": "190695ed500d174fc103de831baa13985fd32132463a58d9348285655242bbcf",
+    "correctness": "PASS3/3",
+    "latency": "FAIL",
+    "p95Ms": [
+      1831.1732499999994,
+      1306.01075,
+      1348.0436249999998
+    ],
+    "unchanged": true
+  },
+  "changes": "Evidence/status only. No runtime, W6, pool, trade rules, isolation, retries, timeouts or thresholds changed.",
+  "checks": {
+    "build": "PASS",
+    "docsLinkCheck": "PASS — 105 files",
+    "json": "PASS — parsed, deltas/units/NOT RUN invariants and historical SHA256 validated",
+    "diffCheck": "PASS"
+  }
+}

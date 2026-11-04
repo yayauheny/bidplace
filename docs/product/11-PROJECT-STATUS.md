@@ -5,6 +5,27 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-04 — Local process cleanup; latency still blocked
+
+**Needs verification.** Base `de9e4aad`, initially clean. Authorized exact SIGTERM
+stopped orphan mobile dev PID 8085 (8081) and temporary demo API PID 54850 (3001);
+both exited, no SIGKILL/restart. Containers, data, editors, browsers, agent support
+and system services retained. `pnpm build:api` PASS on Node 22.20.0 (5 tasks,
+4 cached). After build, three resource samples over 32s still showed swap-in
+14.297 MiB, swap-out 0, compressor −193.875 MiB, CPU idle 76/69/77%; protected
+Planet VPN/Kimi/Spotlight activity varied. Occupied swap alone is not the blocker.
+**ENVIRONMENT BLOCKED**; new runs 1/2/3 NOT RUN, no acceptance exit codes/latency
+metrics. Historical correctness PASS3/3 and latency FAIL remain unchanged; no API
+defect inferred or runtime optimization. Only disposable 55434 metadata checked
+(PostgreSQL 16.14, Docker 8 CPU/11.67 GiB); no database writes this stage.
+[Cleanup and resource evidence](../audits/current/evidence/commerce-integration/2026-11-04-latency-cleanup.json)
+records PID/owner/parent/cwd/RAM, remaining protected processes, manual restart
+requirements and all samples. The owner must settle protected background work,
+then use the existing [controlled runbook](../launch/waves/W7-final-checks.md#latency-контролируемый-стенд-и-следующий-диагностический-шаг)
+for three unchanged 50-bid runs. Docs links PASS (105 files), JSON/arithmetic/old
+evidence hash PASS, diff check PASS; independent read-only review PASS.
+No E2E rerun, push, merge, deploy, W6 or production action.
+
 ## 2026-11-03 — Latency preflight: ENVIRONMENT BLOCKED
 
 **Needs verification.** Base `3d3b48a9`, initially clean. New acceptance run 1/2/3
