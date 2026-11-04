@@ -5,6 +5,32 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-04 — Three measured latency runs pass locally
+
+**Partial (measured local PASS; production latency unverified).** Base `59f4248c`,
+initially clean. One unchanged `pnpm --filter @bidplace/api test:performance`
+series on Node 22.20.0/PostgreSQL 16.14, disposable 55434 only: fresh schema/API
+process and 50 buyers per run, auth/setup outside bid timing, bid route cold,
+full response body timed. Existing build reused; no new build or process stops.
+Correctness PASS3/3; raw p95 **1174.381291 / 1072.119375 / 1110.421250 ms**,
+each ≤1500; all run exits and suite exit 0. HTTP accepted/refused: 26/24, 22/28,
+22/28; refusals only 409 `BID_TOO_LOW`, network/5xx 0 throughout. Each final price
+25500 minor, bidCount/rows 26/26, 22/22, 22/22; tick200/order1 each.
+[Measured reports and resource evidence](../audits/current/evidence/commerce-integration/2026-11-04-latency-results.json)
+retain all three reports, source SHA/fingerprint, resource samples and historical
+FAIL hash. During observed 20s: CPU idle43–63%, memory_pressure free34–39%,
+swap-in141.625 MiB/swap-out0, compressor+678.531 MiB. Aggregate samples (~4s)
+include setup/auth/background work; approximate run windows do not isolate bid
+CPU/I/O or attribute paging. Nonzero swap does not invalidate measured PASS;
+[W7 admission wording](../launch/waves/W7-final-checks.md#latency-контролируемый-стенд-и-следующий-диагностический-шаг)
+now reflects the explicit user clarification. Historical latency FAIL remains
+recorded; this pass under different conditions does not erase it or prove an API
+fix. No runtime/threshold/retries/timeouts/W6 changes. Own schemas cleaned and
+temporary restricted role dropped; no extra diagnostics or acceptance series.
+Performance owner test PASS (3 runs, suite exit0); docs links PASS (105 files),
+JSON/arithmetic/old evidence hash PASS, diff check PASS; independent read-only
+review PASS. E2E/typecheck/lint/build not rerun: runtime unchanged.
+
 ## 2026-11-04 — Local process cleanup; latency still blocked
 
 **Needs verification.** Base `de9e4aad`, initially clean. Authorized exact SIGTERM

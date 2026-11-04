@@ -1,0 +1,463 @@
+{
+  "baselineSha": "59f4248c30afe08245967e48c8e91094304373f2",
+  "date": "2026-11-04",
+  "command": "pnpm --filter @bidplace/api test:performance",
+  "suiteExitCode": 0,
+  "seriesCount": 1,
+  "verdicts": {
+    "correctness": "PASS3/3",
+    "measuredLatency": "PASS3/3 — each raw p95 <=1500ms",
+    "review": "PASS — independent read-only review of reports, arithmetic, script/historical hashes, admission wording, cleanup evidence and limitations; no blockers"
+  },
+  "conditions": {
+    "sha": "59f4248c30afe08245967e48c8e91094304373f2",
+    "scriptSha256": "31151888681965475366e3ffad97bffe3496cf9d303eac0f688c1890b586d8dc",
+    "node": "v22.20.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "pnpm": "11.7.0",
+    "build": "nest build; NODE_ENV=test APP_ENV=local; test Turnstile; no browser/build during measurement",
+    "resources": {
+      "cpus": 8,
+      "memoryBytes": 17179869184
+    },
+    "concurrency": 50,
+    "runs": 3,
+    "database": "existing disposable cluster; OS/DB caches not flushed; fresh schema each run",
+    "data": "fresh schema and permission fixture, new API process/application per run, 50 new buyers",
+    "warmup": "logins and one lot read; bid route cold; setup/auth excluded; full response body timed"
+  },
+  "stand": {
+    "endpoint": "127.0.0.1:55434/bidplace_integration",
+    "postgres": "16.14",
+    "dockerCpus": 8,
+    "dockerMemoryBytes": 12529836032,
+    "containerLimitsObservedAfterSeries": {
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "memory": 0,
+      "blkioWeight": 0
+    },
+    "pool": "Installed Prisma6.19.3 default capacity previously probed as17; default configuration unchanged. Actual pool occupancy/acquisition wait not instrumented in this series.",
+    "build": "Existing Node22 build from preceding stage; no rebuild, runtime/source changes, extra process termination or cache flushing in this series."
+  },
+  "reports": [
+    {
+      "run": 1,
+      "exitCode": 0,
+      "report": {
+        "phase": "bids",
+        "concurrency": 50,
+        "warmup": "login plus lot read; bid route cold; setup/auth excluded",
+        "correctness": {
+          "pass": true,
+          "problems": []
+        },
+        "latency": {
+          "p95Ms": 1174.3812910000001,
+          "thresholdMs": 1500,
+          "pass": true
+        },
+        "networkErrors": 0,
+        "serverErrors": 0,
+        "http": {
+          "200": 26,
+          "409 BID_TOO_LOW": 24
+        },
+        "accepted": 26,
+        "bidRows": 26,
+        "liveBids": 26,
+        "maxStoredAmount": 25500,
+        "listing": {
+          "status": "LIVE",
+          "current_price_minor": 25500,
+          "bid_count": 26
+        },
+        "p50Ms": 739,
+        "p95Ms": 1174,
+        "maxMs": 1218,
+        "closePhase": {
+          "tickStatus": 200,
+          "orders": 1
+        }
+      },
+      "load": [
+        4.49609375,
+        4.748046875,
+        3.83154296875
+      ],
+      "postgres": "PostgreSQL 16.14 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"
+    },
+    {
+      "run": 2,
+      "exitCode": 0,
+      "report": {
+        "phase": "bids",
+        "concurrency": 50,
+        "warmup": "login plus lot read; bid route cold; setup/auth excluded",
+        "correctness": {
+          "pass": true,
+          "problems": []
+        },
+        "latency": {
+          "p95Ms": 1072.1193749999998,
+          "thresholdMs": 1500,
+          "pass": true
+        },
+        "networkErrors": 0,
+        "serverErrors": 0,
+        "http": {
+          "200": 22,
+          "409 BID_TOO_LOW": 28
+        },
+        "accepted": 22,
+        "bidRows": 22,
+        "liveBids": 22,
+        "maxStoredAmount": 25500,
+        "listing": {
+          "status": "LIVE",
+          "current_price_minor": 25500,
+          "bid_count": 22
+        },
+        "p50Ms": 711,
+        "p95Ms": 1072,
+        "maxMs": 1118,
+        "closePhase": {
+          "tickStatus": 200,
+          "orders": 1
+        }
+      },
+      "load": [
+        4.5361328125,
+        4.751953125,
+        3.83837890625
+      ],
+      "postgres": "PostgreSQL 16.14 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"
+    },
+    {
+      "run": 3,
+      "exitCode": 0,
+      "report": {
+        "phase": "bids",
+        "concurrency": 50,
+        "warmup": "login plus lot read; bid route cold; setup/auth excluded",
+        "correctness": {
+          "pass": true,
+          "problems": []
+        },
+        "latency": {
+          "p95Ms": 1110.4212499999999,
+          "thresholdMs": 1500,
+          "pass": true
+        },
+        "networkErrors": 0,
+        "serverErrors": 0,
+        "http": {
+          "200": 22,
+          "409 BID_TOO_LOW": 28
+        },
+        "accepted": 22,
+        "bidRows": 22,
+        "liveBids": 22,
+        "maxStoredAmount": 25500,
+        "listing": {
+          "status": "LIVE",
+          "current_price_minor": 25500,
+          "bid_count": 22
+        },
+        "p50Ms": 707,
+        "p95Ms": 1110,
+        "maxMs": 1159,
+        "closePhase": {
+          "tickStatus": 200,
+          "orders": 1
+        }
+      },
+      "load": [
+        4.4931640625,
+        4.7392578125,
+        3.8388671875
+      ],
+      "postgres": "PostgreSQL 16.14 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"
+    }
+  ],
+  "resourceSamplePeriod": "approximately 4s: sequential vm_stat/sysctl/memory_pressure -Q, iostat 1s interval and uptime; 16KiB pages",
+  "resourceSamples": [
+    {
+      "utc": "2026-11-04T11:10:02.714647+00:00",
+      "cpuUserPercent": 22,
+      "cpuSystemPercent": 15,
+      "cpuIdlePercent": 63,
+      "memoryFreeReportedPercent": 39,
+      "pagesFree": 4998,
+      "compressorPages": 432917,
+      "swapInPages": 43523551,
+      "swapOutPages": 48181923,
+      "swapUsage": "vm.swapusage: total = 14336.00M  used = 13029.06M  free = 1306.94M  (encrypted)",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.63 4.78 3.84",
+      "disk0ReportedMBPerSecond": 86.1
+    },
+    {
+      "utc": "2026-11-04T11:10:06.754107+00:00",
+      "cpuUserPercent": 42,
+      "cpuSystemPercent": 13,
+      "cpuIdlePercent": 45,
+      "memoryFreeReportedPercent": 36,
+      "pagesFree": 3556,
+      "compressorPages": 458136,
+      "swapInPages": 43526723,
+      "swapOutPages": 48181923,
+      "swapUsage": "vm.swapusage: total = 14336.00M  used = 12973.06M  free = 1362.94M  (encrypted)",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.50 4.75 3.83",
+      "disk0ReportedMBPerSecond": 8.15
+    },
+    {
+      "utc": "2026-11-04T11:10:10.778948+00:00",
+      "cpuUserPercent": 29,
+      "cpuSystemPercent": 12,
+      "cpuIdlePercent": 59,
+      "memoryFreeReportedPercent": 35,
+      "pagesFree": 4021,
+      "compressorPages": 462345,
+      "swapInPages": 43527073,
+      "swapOutPages": 48181923,
+      "swapUsage": "vm.swapusage: total = 14336.00M  used = 12973.06M  free = 1362.94M  (encrypted)",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.54 4.75 3.84",
+      "disk0ReportedMBPerSecond": 52.17
+    },
+    {
+      "utc": "2026-11-04T11:10:14.806479+00:00",
+      "cpuUserPercent": 45,
+      "cpuSystemPercent": 12,
+      "cpuIdlePercent": 43,
+      "memoryFreeReportedPercent": 35,
+      "pagesFree": 3995,
+      "compressorPages": 463969,
+      "swapInPages": 43529178,
+      "swapOutPages": 48181923,
+      "swapUsage": "vm.swapusage: total = 14336.00M  used = 12949.06M  free = 1386.94M  (encrypted)",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.54 4.75 3.84",
+      "disk0ReportedMBPerSecond": 9.62
+    },
+    {
+      "utc": "2026-11-04T11:10:18.832741+00:00",
+      "cpuUserPercent": 27,
+      "cpuSystemPercent": 15,
+      "cpuIdlePercent": 58,
+      "memoryFreeReportedPercent": 34,
+      "pagesFree": 4028,
+      "compressorPages": 470513,
+      "swapInPages": 43530417,
+      "swapOutPages": 48181923,
+      "swapUsage": "vm.swapusage: total = 14336.00M  used = 12941.06M  free = 1394.94M  (encrypted)",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.49 4.74 3.84",
+      "disk0ReportedMBPerSecond": 32.34
+    },
+    {
+      "utc": "2026-11-04T11:10:22.869126+00:00",
+      "cpuUserPercent": 26,
+      "cpuSystemPercent": 18,
+      "cpuIdlePercent": 56,
+      "memoryFreeReportedPercent": 34,
+      "pagesFree": 4071,
+      "compressorPages": 476343,
+      "swapInPages": 43532615,
+      "swapOutPages": 48181923,
+      "swapUsage": "vm.swapusage: total = 14336.00M  used = 12901.06M  free = 1434.94M  (encrypted)",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.61 4.76 3.85",
+      "disk0ReportedMBPerSecond": 13.79
+    }
+  ],
+  "resourceWindows": [
+    {
+      "run": 1,
+      "runCycleStartUtc": "2026-11-04T11:10:04.048302+00:00",
+      "reportReceivedUtc": "2026-11-04T11:10:10.990566+00:00",
+      "sampleStartUtc": "2026-11-04T11:10:02.714647+00:00",
+      "sampleEndUtc": "2026-11-04T11:10:10.778948+00:00",
+      "sampleIndices": [
+        0,
+        1,
+        2
+      ],
+      "cpuIdlePercentRange": [
+        45,
+        63
+      ],
+      "memoryFreeReportedPercentRange": [
+        35,
+        39
+      ],
+      "swapInMiB": 55.03125,
+      "swapOutMiB": 0.0,
+      "compressorChangeMiB": 459.8125
+    },
+    {
+      "run": 2,
+      "runCycleStartUtc": "2026-11-04T11:10:10.990566+00:00",
+      "reportReceivedUtc": "2026-11-04T11:10:17.598333+00:00",
+      "sampleStartUtc": "2026-11-04T11:10:10.778948+00:00",
+      "sampleEndUtc": "2026-11-04T11:10:18.832741+00:00",
+      "sampleIndices": [
+        2,
+        3,
+        4
+      ],
+      "cpuIdlePercentRange": [
+        43,
+        59
+      ],
+      "memoryFreeReportedPercentRange": [
+        34,
+        35
+      ],
+      "swapInMiB": 52.25,
+      "swapOutMiB": 0.0,
+      "compressorChangeMiB": 127.625
+    },
+    {
+      "run": 3,
+      "runCycleStartUtc": "2026-11-04T11:10:17.598333+00:00",
+      "reportReceivedUtc": "2026-11-04T11:10:24.088276+00:00",
+      "sampleStartUtc": "2026-11-04T11:10:18.832741+00:00",
+      "sampleEndUtc": "2026-11-04T11:10:22.869126+00:00",
+      "sampleIndices": [
+        4,
+        5
+      ],
+      "cpuIdlePercentRange": [
+        56,
+        58
+      ],
+      "memoryFreeReportedPercentRange": [
+        34,
+        34
+      ],
+      "swapInMiB": 34.34375,
+      "swapOutMiB": 0.0,
+      "compressorChangeMiB": 91.09375
+    }
+  ],
+  "rawResourceOutput": [
+    {
+      "utc": "2026-11-04T11:10:02.714647+00:00",
+      "vm": "Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                                4998.\nPages active:                            195735.\nPages inactive:                          194287.\nPages speculative:                          834.\nPages throttled:                              0.\nPages wired down:                        180389.\nPages purgeable:                              6.\n\"Translation faults\":               11717916804.\nPages copy-on-write:                  796119097.\nPages zero filled:                   2748381138.\nPages reactivated:                   2974588600.\nPages purged:                         102732002.\nFile-backed pages:                       136112.\nAnonymous pages:                         254744.\nPages stored in compressor:             2356413.\nPages occupied by compressor:            432917.\nDecompressions:                      3171032181.\nCompressions:                        3360041287.\nPageins:                              170504966.\nPageouts:                               4496052.\nSwapins:                               43523551.\nSwapouts:                              48181923.",
+      "swap": "vm.swapusage: total = 14336.00M  used = 13029.06M  free = 1306.94M  (encrypted)",
+      "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 39%",
+      "cpu": "disk0               disk4       cpu    load average\n    KB/t  tps  MB/s     KB/t  tps  MB/s  us sy id   1m   5m   15m\n   25.32  385  9.51   428.05    0  0.00  18 10 72  4.63 4.78 3.84\n   28.41 3103 86.10     0.00    0  0.00  22 15 63  4.63 4.78 3.84",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.63 4.78 3.84"
+    },
+    {
+      "utc": "2026-11-04T11:10:06.754107+00:00",
+      "vm": "Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                                3556.\nPages active:                            183744.\nPages inactive:                          175042.\nPages speculative:                         7580.\nPages throttled:                              0.\nPages wired down:                        181051.\nPages purgeable:                              2.\n\"Translation faults\":               11718129906.\nPages copy-on-write:                  796125044.\nPages zero filled:                   2748449614.\nPages reactivated:                   2974693133.\nPages purged:                         102734243.\nFile-backed pages:                       140410.\nAnonymous pages:                         225956.\nPages stored in compressor:             2412850.\nPages occupied by compressor:            458136.\nDecompressions:                      3171098374.\nCompressions:                        3360164357.\nPageins:                              170521424.\nPageouts:                               4496095.\nSwapins:                               43526723.\nSwapouts:                              48181923.",
+      "swap": "vm.swapusage: total = 14336.00M  used = 12973.06M  free = 1362.94M  (encrypted)",
+      "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 36%",
+      "cpu": "disk0               disk4       cpu    load average\n    KB/t  tps  MB/s     KB/t  tps  MB/s  us sy id   1m   5m   15m\n   25.32  385  9.51   428.05    0  0.00  18 10 72  4.50 4.75 3.83\n   17.63  474  8.15     0.00    0  0.00  42 13 45  4.50 4.75 3.83",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.50 4.75 3.83"
+    },
+    {
+      "utc": "2026-11-04T11:10:10.778948+00:00",
+      "vm": "Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                                4021.\nPages active:                            179454.\nPages inactive:                          175364.\nPages speculative:                         3177.\nPages throttled:                              0.\nPages wired down:                        184732.\nPages purgeable:                              0.\n\"Translation faults\":               11718219093.\nPages copy-on-write:                  796127603.\nPages zero filled:                   2748466876.\nPages reactivated:                   2974727252.\nPages purged:                         102734696.\nFile-backed pages:                       133152.\nAnonymous pages:                         224843.\nPages stored in compressor:             2415753.\nPages occupied by compressor:            462345.\nDecompressions:                      3171126760.\nCompressions:                        3360195693.\nPageins:                              170521685.\nPageouts:                               4496167.\nSwapins:                               43527073.\nSwapouts:                              48181923.",
+      "swap": "vm.swapusage: total = 14336.00M  used = 12973.06M  free = 1362.94M  (encrypted)",
+      "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 35%",
+      "cpu": "disk0               disk4       cpu    load average\n    KB/t  tps  MB/s     KB/t  tps  MB/s  us sy id   1m   5m   15m\n   25.32  385  9.51   428.05    0  0.00  18 10 72  4.50 4.75 3.83\n   42.81 1248 52.17     0.00    0  0.00  29 12 59  4.54 4.75 3.84",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.54 4.75 3.84"
+    },
+    {
+      "utc": "2026-11-04T11:10:14.806479+00:00",
+      "vm": "Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                                3995.\nPages active:                            180084.\nPages inactive:                          175485.\nPages speculative:                         3712.\nPages throttled:                              0.\nPages wired down:                        181853.\nPages purgeable:                              0.\n\"Translation faults\":               11718366866.\nPages copy-on-write:                  796137081.\nPages zero filled:                   2748512843.\nPages reactivated:                   2974762729.\nPages purged:                         102735340.\nFile-backed pages:                       130965.\nAnonymous pages:                         228316.\nPages stored in compressor:             2412094.\nPages occupied by compressor:            463969.\nDecompressions:                      3171152680.\nCompressions:                        3360218368.\nPageins:                              170522199.\nPageouts:                               4496204.\nSwapins:                               43529178.\nSwapouts:                              48181923.",
+      "swap": "vm.swapusage: total = 14336.00M  used = 12949.06M  free = 1386.94M  (encrypted)",
+      "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 35%",
+      "cpu": "disk0               disk4       cpu    load average\n    KB/t  tps  MB/s     KB/t  tps  MB/s  us sy id   1m   5m   15m\n   25.32  385  9.51   428.05    0  0.00  18 10 72  4.54 4.75 3.84\n   14.07  700  9.62     0.00    0  0.00  45 12 43  4.54 4.75 3.84",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.54 4.75 3.84"
+    },
+    {
+      "utc": "2026-11-04T11:10:18.832741+00:00",
+      "vm": "Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                                4028.\nPages active:                            174748.\nPages inactive:                          168942.\nPages speculative:                         4636.\nPages throttled:                              0.\nPages wired down:                        186209.\nPages purgeable:                              2.\n\"Translation faults\":               11718459475.\nPages copy-on-write:                  796140104.\nPages zero filled:                   2748540709.\nPages reactivated:                   2974774960.\nPages purged:                         102736026.\nFile-backed pages:                       130067.\nAnonymous pages:                         218259.\nPages stored in compressor:             2420155.\nPages occupied by compressor:            470513.\nDecompressions:                      3171172915.\nCompressions:                        3360246733.\nPageins:                              170522875.\nPageouts:                               4496216.\nSwapins:                               43530417.\nSwapouts:                              48181923.",
+      "swap": "vm.swapusage: total = 14336.00M  used = 12941.06M  free = 1394.94M  (encrypted)",
+      "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 34%",
+      "cpu": "disk0               disk4       cpu    load average\n    KB/t  tps  MB/s     KB/t  tps  MB/s  us sy id   1m   5m   15m\n   25.32  385  9.51   428.05    0  0.00  18 10 72  4.49 4.74 3.84\n   13.73 2412 32.34     0.00    0  0.00  27 15 58  4.49 4.74 3.84",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.49 4.74 3.84"
+    },
+    {
+      "utc": "2026-11-04T11:10:22.869126+00:00",
+      "vm": "Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                                4071.\nPages active:                            174234.\nPages inactive:                          169419.\nPages speculative:                         4255.\nPages throttled:                              0.\nPages wired down:                        180817.\nPages purgeable:                              0.\n\"Translation faults\":               11718574296.\nPages copy-on-write:                  796149384.\nPages zero filled:                   2748573232.\nPages reactivated:                   2974791474.\nPages purged:                         102736815.\nFile-backed pages:                       129897.\nAnonymous pages:                         218011.\nPages stored in compressor:             2424882.\nPages occupied by compressor:            476343.\nDecompressions:                      3171187321.\nCompressions:                        3360265895.\nPageins:                              170524260.\nPageouts:                               4496219.\nSwapins:                               43532615.\nSwapouts:                              48181923.",
+      "swap": "vm.swapusage: total = 14336.00M  used = 12901.06M  free = 1434.94M  (encrypted)",
+      "memoryPressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\nSystem-wide memory free percentage: 34%",
+      "cpu": "disk0               disk4       cpu    load average\n    KB/t  tps  MB/s     KB/t  tps  MB/s  us sy id   1m   5m   15m\n   25.32  385  9.51   428.05    0  0.00  18 10 72  4.61 4.76 3.85\n   44.14  320 13.79     0.00    0  0.00  26 18 56  4.61 4.76 3.85",
+      "load": "14:10  up 7 days,  2:04, 1 user, load averages: 4.61 4.76 3.85"
+    }
+  ],
+  "eventTimestamps": [
+    {
+      "utc": "2026-11-04T11:10:04.048302+00:00",
+      "phase": "conditions",
+      "run": null
+    },
+    {
+      "utc": "2026-11-04T11:10:10.990566+00:00",
+      "phase": "run-report",
+      "run": 1
+    },
+    {
+      "utc": "2026-11-04T11:10:17.598333+00:00",
+      "phase": "run-report",
+      "run": 2
+    },
+    {
+      "utc": "2026-11-04T11:10:24.088276+00:00",
+      "phase": "run-report",
+      "run": 3
+    }
+  ],
+  "resourceInterpretation": {
+    "wholeObservedInterval": {
+      "startUtc": "2026-11-04T11:10:02.714647+00:00",
+      "endUtc": "2026-11-04T11:10:22.869126+00:00",
+      "swapInMiB": 141.625,
+      "swapOutMiB": 0.0,
+      "compressorChangeMiB": 678.53125,
+      "cpuIdlePercentRange": [
+        43,
+        63
+      ],
+      "memoryFreeReportedPercentRange": [
+        34,
+        39
+      ]
+    },
+    "limitations": [
+      "Shared desktop host; aggregate counters include test setup/auth/migrations and background work. No specific background application cost or API-only CPU/I/O attribution measured.",
+      "Resource windows approximate each complete run cycle at ~4s resolution, not the bid-only interval. Adjacent windows share boundary snapshots; run3 sampled memory window ends ~1.2s before its report. Do not infer phase-specific causality or subsecond spikes.",
+      "iostat CPU values use its final 1s interval, not its cumulative first row. memory_pressure -Q free percentage is reported directly, not a pressure severity classification.",
+      "Nonzero swap is not an invalidation criterion. No observed infrastructure failure or stability threat; measured thresholds pass under these recorded conditions. Dedicated-host repeatability and production latency are unproven.",
+      "Light monitoring itself adds some overhead; no diagnostic or second acceptance series was run."
+    ]
+  },
+  "cleanup": {
+    "temporaryRoleDropped": true,
+    "remainingOwnedSchemas": 0
+  },
+  "security": "Temporary NOSUPERUSER/NOCREATEDB/NOCREATEROLE role granted CONNECT/CREATE only for own schemas on existing disposable DB, plus CONNECT postgres catalog check. Generated password stayed in memory; SQL via stdin; no env/credential files read. Role dropped; no schemas remained for fallback cleanup. No host5432 or other database used.",
+  "previousEvidence": {
+    "path": "docs/audits/current/evidence/commerce-integration/2026-11-03-load.json",
+    "sha256": "190695ed500d174fc103de831baa13985fd32132463a58d9348285655242bbcf",
+    "correctness": "PASS3/3",
+    "latency": "FAIL",
+    "p95Ms": [
+      1831.1732499999994,
+      1306.01075,
+      1348.0436249999998
+    ],
+    "unchanged": true,
+    "interpretation": "Historical failure retained; this new local pass records different host conditions and does not retroactively erase it."
+  },
+  "changes": "Evidence and documentation only; no threshold/retries/timeouts/runtime/W6 changes.",
+  "checks": {
+    "performance": "PASS — 1 owner test, three runs, suite exit0",
+    "docsLinkCheck": "PASS — 105 files",
+    "json": "PASS — three reports, threshold/invariants, resource arithmetic, cleanup and historical SHA256 verified",
+    "diffCheck": "PASS"
+  }
+}
