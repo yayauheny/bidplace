@@ -67,6 +67,46 @@ async function login(
 }
 
 describe('admin user emergency controls HTTP transport', () => {
+  it.each(['demoted', 'banned'] as const)('refuses queued session revoke after the admin is %s', async (revocation) => {
+    const fixture = await createPermissionFixture(prisma);
+    const admin = await createAdmin();
+    const client = new HttpTestClient(http.baseUrl, 'http://localhost:8081', revocation === 'demoted' ? '198.51.100.80' : '198.51.100.81');
+    await login(client, admin);
+    const before = await prisma.user.findUniqueOrThrow({ where: { id: fixture.buyer.id } });
+    let release!: () => void;
+    let acquired!: () => void;
+    const released = new Promise<void>((resolve) => { release = resolve; });
+    const ready = new Promise<void>((resolve) => { acquired = resolve; });
+    const holder = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${admin.id}::uuid FOR UPDATE`;
+      acquired();
+      await released;
+      await tx.user.update({ where: { id: admin.id }, data:
+        revocation === 'demoted' ? { role: 'user' } : { status: 'banned', sessionVersion: { increment: 1 } },
+      });
+    }, { timeout: 15_000 });
+    await ready;
+    const pending = client.post(`/admin/users/${fixture.buyer.id}/revoke-sessions`, { reason: 'Queued revoke' });
+    try {
+      await expect.poll(async () => {
+        const [row] = await prisma.$queryRaw<Array<{ waiting: boolean }>>`
+          SELECT EXISTS (
+            SELECT 1 FROM pg_locks l JOIN pg_class c ON c.oid = l.relation
+            JOIN pg_namespace n ON n.oid = c.relnamespace JOIN pg_stat_activity a ON a.pid = l.pid
+            WHERE c.relname = 'users' AND n.nspname = current_schema() AND a.wait_event_type = 'Lock'
+          ) AS waiting
+        `;
+        return row?.waiting;
+      }, { timeout: 5_000 }).toBe(true);
+    } finally {
+      release();
+      await holder;
+    }
+    expect((await pending).status).toBe(403);
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: fixture.buyer.id } })).toEqual(before);
+    expect(await prisma.auditEvent.count({ where: { targetId: fixture.buyer.id } })).toBe(0);
+  });
+
   it('looks up users, bans and unbans with session invalidation', async () => {
     const fixture = await createPermissionFixture(prisma);
     const admin = await createAdmin();

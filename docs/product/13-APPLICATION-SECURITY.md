@@ -425,3 +425,7 @@ queries, forms, client timestamps, user identity or environment are accepted.
 Database uniqueness/row locks own deduplication and inactivity sessions. New admin
 reports require the existing session/admin guards and private no-store responses.
 [Proof, configuration and production prerequisites](analytics-contract.md).
+
+## 2026-11-05 — Authorization audit (Partial)
+
+Queued moderation and emergency session-revoke writes now recheck active admin role inside the locked transaction. API product/story previews use public revalidation rather than a year-long immutable policy; private SOURCE/owner/admin/retained-cover responses remain no-store. Ten HTTP regressions were observed failing before their fixes and pass afterward. Existing downloaded/immutable-cached responses cannot be recalled. [Full matrix, reproduction, checks and remaining pilot gates](../audits/current/2026-11-05-AUTHORIZATION-AUDIT.md). Live storage/CDN and browser/device behavior remain Needs verification.

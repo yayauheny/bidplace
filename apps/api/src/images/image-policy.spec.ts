@@ -224,7 +224,7 @@ describe('image policy', () => {
     ],
     [
       { isPublic: true, kind: 'product' as const },
-      'public, max-age=31536000, immutable',
+      'public, max-age=0, must-revalidate',
     ],
     [
       { isPublic: true, kind: 'seller-photo' as const },

@@ -123,8 +123,6 @@ export function detectImageMimeType(
 }
 
 export const PRIVATE_IMAGE_CACHE_CONTROL = 'private, no-store';
-export const IMMUTABLE_PUBLIC_IMAGE_CACHE_CONTROL =
-  'public, max-age=31536000, immutable';
 export const MUTABLE_PUBLIC_IMAGE_CACHE_CONTROL =
   'public, max-age=0, must-revalidate';
 
@@ -136,9 +134,6 @@ export function getImageCacheControl(input: {
 }): string {
   if (!input.isPublic) {
     return PRIVATE_IMAGE_CACHE_CONTROL;
-  }
-  if (input.kind === 'product') {
-    return IMMUTABLE_PUBLIC_IMAGE_CACHE_CONTROL;
   }
   return MUTABLE_PUBLIC_IMAGE_CACHE_CONTROL;
 }

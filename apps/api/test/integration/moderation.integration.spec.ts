@@ -145,6 +145,61 @@ async function adminAndApplicant(fixture: PermissionFixture) {
 }
 
 describe('seller application and moderation audit over HTTP and PostgreSQL', () => {
+  it.each([
+    ['product', 'demoted'],
+    ['product', 'banned'],
+    ['seller', 'demoted'],
+    ['seller', 'banned'],
+  ] as const)('refuses queued %s moderation after the admin is %s', async (resource, revoke) => {
+    const fixture = await createPermissionFixture(prisma);
+    const { admin, adminClient } = await adminAndApplicant(fixture);
+    const product = resource === 'product';
+    const id = product ? fixture.approvedProductId : fixture.sellers.approved.profileId;
+    const body = product
+      ? await productModerationRequest(prisma, id, 'ARCHIVED', 'Audit queued action')
+      : await sellerModerationRequest(prisma, id, 'SUSPENDED', 'Audit queued action');
+    const table = product ? 'products' : 'seller_profiles';
+    let release!: () => void;
+    let acquired!: () => void;
+    const released = new Promise<void>((resolve) => { release = resolve; });
+    const ready = new Promise<void>((resolve) => { acquired = resolve; });
+    const holder = prisma.$transaction(async (tx) => {
+      if (product) await tx.$queryRaw`SELECT id FROM products WHERE id = ${id}::uuid FOR UPDATE`;
+      else await tx.$queryRaw`SELECT id FROM seller_profiles WHERE id = ${id}::uuid FOR UPDATE`;
+      acquired();
+      await released;
+    }, { timeout: 15_000 });
+    await ready;
+    const pending = adminClient.patch(`/admin/${product ? 'products' : 'seller-profiles'}/${id}/status`, body);
+    try {
+      await expect.poll(async () => {
+        const [row] = await prisma.$queryRaw<Array<{ waiting: boolean }>>`
+          SELECT EXISTS (
+            SELECT 1 FROM pg_locks l
+            JOIN pg_class c ON c.oid = l.relation
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            JOIN pg_stat_activity a ON a.pid = l.pid
+            WHERE c.relname = ${table} AND n.nspname = current_schema()
+              AND a.wait_event_type = 'Lock'
+          ) AS waiting
+        `;
+        return row?.waiting;
+      }, { timeout: 5_000 }).toBe(true);
+      await prisma.user.update({ where: { id: admin.id }, data:
+        revoke === 'demoted' ? { role: 'user' } : { status: 'banned', sessionVersion: { increment: 1 } },
+      });
+    } finally {
+      release();
+      await holder;
+    }
+    expect((await pending).status).toBe(403);
+    const stored = product
+      ? await prisma.product.findUniqueOrThrow({ where: { id } })
+      : await prisma.sellerProfile.findUniqueOrThrow({ where: { id } });
+    expect(stored.status).toBe('APPROVED');
+    expect(await auditFor(product ? 'PRODUCT' : 'SELLER_PROFILE', id)).toEqual([]);
+  });
+
   it('rejects approval of a submitted revision without a direction and preserves its unpublished state', async () => {
     const fixture = await createPermissionFixture(prisma);
     const { adminClient, applicantClient } = await adminAndApplicant(fixture);

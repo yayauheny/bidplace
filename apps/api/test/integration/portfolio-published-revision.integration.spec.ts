@@ -578,7 +578,7 @@ describe('portfolio published revision HTTP transport', () => {
       /^image\/png/,
     );
     expect(publishedResponse.headers.get('cache-control')).toBe(
-      'public, max-age=31536000, immutable',
+      'public, max-age=0, must-revalidate',
     );
     expect(Buffer.from(await publishedResponse.arrayBuffer())).toEqual(
       permissionImage,

@@ -1279,3 +1279,7 @@ of applying it again through cropper transforms and Expo export. The isolated
 rotate/flip and work previews, plus two reopen cases; crop-only work keeps its
 original bytes. No API, storage, native or media lifecycle contract changed.
 The reported work-only right shift was not reproduced and received no speculative fix.
+
+## 2026-11-05 — Authorization audit (Partial)
+
+`admin-moderation.service.ts` and `admin-user.service.ts` recheck the current active admin under actor row locks; six HTTP role/ban race regressions now reject unauthorized queued writes. `image-upload-policy.ts` requires API preview revalidation; four revoke/header regressions cover hide/delete/suspension/ban. API integration 630 passed (602 general + 28 isolated auth-abuse), API unit 1156 passed, client cache/commerce 161 passed; browser smoke and live storage/CDN remain Needs verification. [Matrix, findings and limits](../audits/current/2026-11-05-AUTHORIZATION-AUDIT.md). W5 code and production untouched.
