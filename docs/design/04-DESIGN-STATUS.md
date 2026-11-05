@@ -5,6 +5,14 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-05 — W5 export logo quality
+
+**Partial; NEEDS-FIGMA.** In WebKit the logo SVG previously decoded at 164×53
+pixels and was enlarged to approximately 430×139 in the full export. The same
+vector viewBox is now decoded at canvas width (1080×351 for a 1080px card).
+The local review gallery includes matching JPEG/PNG and 100%/200% crops. The
+additional card fields and receipt composition still require visual acceptance.
+
 ## 2026-11-05 — W5 export visual follow-up
 
 **Partial; NEEDS-FIGMA.** Work-card rendering now keeps the full image and uses

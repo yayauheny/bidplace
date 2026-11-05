@@ -5,6 +5,13 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-05 — W5 logo export quality
+
+**Partial.** `share-card/logo.ts` sizes the original SVG viewBox before browser
+decode instead of enlarging its intrinsic 164×53 raster; the renderer checks
+Inter loading. Work-card link text uses the canonical bid.place path with a
+dark stroke for contrast. Physical Safari and visual acceptance remain open.
+
 ## 2026-11-05 — W5 image and receipt follow-up
 
 **Partial.** Work templates use a contained image and blurred backdrop so framed

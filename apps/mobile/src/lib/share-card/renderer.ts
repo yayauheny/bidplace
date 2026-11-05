@@ -1,6 +1,7 @@
 import { lightColorMap } from '@bidplace/design-tokens';
 import { canvasSize, fitCroppedImage, pillFontSize, textFontSize, textLineLimit, wrapText, type ShareFormat } from './layout';
 import type { CardLayer } from './templates';
+import { sizedLogoSvg } from './logo';
 
 type Dimensions = { width: number; height: number };
 
@@ -25,7 +26,9 @@ export async function renderCard(input: {
   const imageUrl = input.cover ? URL.createObjectURL(input.cover) : null;
   let canvas: HTMLCanvasElement | undefined;
   try {
-    const [image, logo] = await Promise.all([imageUrl ? decode(imageUrl) : Promise.resolve(null), decode(input.logoUrl)]);
+    const [image, logoResponse] = await Promise.all([imageUrl ? decode(imageUrl) : Promise.resolve(null), fetch(input.logoUrl, { credentials: 'omit' })]);
+    if (!logoResponse.ok) throw new Error('Логотип недоступен.');
+    const logoSource = await logoResponse.text();
     const fonts = await document.fonts.load('16px Inter_500Medium');
     if (!fonts.length) throw new Error('Шрифт недоступен.');
     const size: Dimensions = input.format === 'receipt'
@@ -35,6 +38,10 @@ export async function renderCard(input: {
     canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(size.width * scale));
     canvas.height = Math.max(1, Math.round(size.height * scale));
+    const logoSvg = sizedLogoSvg(logoSource, canvas.width);
+    const logoObjectUrl = URL.createObjectURL(new Blob([logoSvg], { type: 'image/svg+xml' }));
+    let logo: HTMLImageElement;
+    try { logo = await decode(logoObjectUrl); } finally { URL.revokeObjectURL(logoObjectUrl); }
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Не удалось создать изображение.');
     const w = canvas.width;
@@ -70,7 +77,12 @@ export async function renderCard(input: {
         if (layer.color === 'light') { ctx.shadowColor = lightColorMap.inkStrong; ctx.shadowBlur = font / 4; }
         const maxLines = textLineLimit(layer.lines, (nextText - layer.y) * h, font * 1.3);
         const lines = wrapText((value) => ctx.measureText(value).width, layer.text, w * layer.width, maxLines);
-        lines.forEach((line, index) => ctx.fillText(line, w * layer.x, h * layer.y + index * font * 1.3));
+        lines.forEach((line, index) => {
+          const x = w * layer.x;
+          const y = h * layer.y + index * font * 1.3;
+          if (layer.color === 'light') { ctx.strokeStyle = lightColorMap.inkStrong; ctx.lineWidth = Math.max(1, font * 0.1); ctx.lineJoin = 'round'; ctx.strokeText(line, x, y); }
+          ctx.fillText(line, x, y);
+        });
         ctx.shadowBlur = 0;
       } else {
         const start = Math.max(h * layer.y, logoBottom + w * 0.025);

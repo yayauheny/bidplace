@@ -54,7 +54,7 @@ export function ShareCardExport({ publicId, imageId, crop, card, url }: { public
       stage = 'логотип';
       if (!logoUrl) throw new Error('Логотип недоступен.');
       stage = 'изображение';
-      const layers = workTemplate(format, { ...card, link: new URL(url).host + new URL(url).pathname, price: view?.priceLabel && (view.phase === 'auction-live' || view.phase === 'fixed-live') ? `${lot?.type === 'AUCTION' ? 'Ставка ' : ''}${view.priceLabel}` : null, timer: view?.timerLabel ?? null, status: view?.statusLabel ?? null, description: includeDescription ? card.description : null });
+      const layers = workTemplate(format, { ...card, link: `bid.place${new URL(url).pathname}`, price: view?.priceLabel && (view.phase === 'auction-live' || view.phase === 'fixed-live') ? `${lot?.type === 'AUCTION' ? 'Ставка ' : ''}${view.priceLabel}` : null, timer: view?.timerLabel ?? null, status: view?.statusLabel ?? null, description: includeDescription ? card.description : null });
       const image = await renderCard({ cover, logoUrl, format, layers, crop, preview: !full });
       if (operation !== generation.current) return;
       if (full) setFile(new File([image], `bidplace-${format}.jpg`, { type: image.type }));

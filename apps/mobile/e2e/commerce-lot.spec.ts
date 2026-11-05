@@ -576,6 +576,14 @@ test('exports work cards in all four formats with a public link', async ({ page 
   const { readFile, writeFile } = await import('node:fs/promises');
   const { resolve } = await import('node:path');
   await page.addInitScript(() => {
+    const fill = CanvasRenderingContext2D.prototype.fillText;
+    const texts: string[] = [];
+    Object.assign(window, { __workCardTexts: texts });
+    CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+      texts.push(text);
+      if (maxWidth === undefined) return fill.call(this, text, x, y);
+      return fill.call(this, text, x, y, maxWidth);
+    };
     Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
     Object.defineProperty(navigator, 'share', { configurable: true, value: async (data: ShareData) => {
       const file = data.files?.[0];
@@ -591,6 +599,7 @@ test('exports work cards in all four formats with a public link', async ({ page 
   await page.route('**/api/images/**', (route) => route.fulfill({ contentType: 'image/png', body: imageBytes, headers: { 'access-control-allow-origin': '*' } }));
   await page.goto(`/product/${PUBLIC_ID}`);
   await page.getByRole('button', { name: 'Поделиться работой' }).click();
+  expect(await page.evaluate(() => document.fonts.check('16px Inter_500Medium'))).toBe(true);
   const dialog = page.getByRole('dialog', { name: 'Поделиться' });
   for (const format of ['История', 'Публикация', 'Квадрат', 'Оригинал']) {
     await dialog.getByRole('button', { name: format, exact: true }).click();
@@ -602,6 +611,9 @@ test('exports work cards in all four formats with a public link', async ({ page 
     await expect.poll(() => page.evaluate(() => Boolean(Reflect.get(window, '__sharedCard')))).toBe(true);
     const shared = await page.evaluate(() => Reflect.get(window, '__sharedCard') as { bytes: number[]; url: string; type: string; width: number; height: number });
     expect(shared.url).toContain(`/works/${PUBLIC_ID}`);
+    const texts = await page.evaluate(() => Reflect.get(window, '__workCardTexts') as string[]);
+    expect(texts).toContain(`bid.place/works/${PUBLIC_ID}`);
+    expect(texts.join(' ')).not.toContain('127.0.0.1');
     expect(shared.type).toBe('image/jpeg');
     const expected = { 'История': [1080, 1920], 'Публикация': [1080, 1350], 'Квадрат': [1080, 1080] }[format];
     if (expected) expect([shared.width, shared.height]).toEqual(expected);
