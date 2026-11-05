@@ -381,6 +381,7 @@ const orderContactsSchema = z
 
 export const orderDetailSchema = orderSummarySchema
   .extend({
+    sellerNameSnapshot: z.string().min(1).max(160),
     contactDeadlineAt: isoDateTimeSchema.nullable(),
     offerExpiresAt: isoDateTimeSchema.nullable(),
     buyerComment: z.string().max(500).nullable(),

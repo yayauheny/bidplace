@@ -104,6 +104,7 @@ export type AdminOrderRow = {
   amountMinor: number | bigint;
   currency: string;
   workTitle: string;
+  sellerNameSnapshot: string;
   workPublicId: string;
   coverImageId: string | null;
   createdAt: Date;
@@ -146,6 +147,7 @@ export function toAdminOrderDetail(row: AdminOrderRow): OrderDetail {
     amountMinor: Number(row.amountMinor),
     currency: currencyOf(row.currency.trim()),
     workTitle: row.workTitle,
+    sellerNameSnapshot: row.sellerNameSnapshot,
     workPublicId: row.workPublicId,
     coverImageUrl: row.coverImageId ? `/api/images/${row.coverImageId}` : null,
     role: 'admin',

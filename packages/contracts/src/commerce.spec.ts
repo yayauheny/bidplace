@@ -407,9 +407,9 @@ describe('commerce request and response schemas', () => {
     expect(
       orderSummarySchema.safeParse({ ...summary, phone: '+1234567' }).success,
     ).toBe(false);
-    expect(
-      orderDetailSchema.parse({
+    const detail = orderDetailSchema.parse({
         ...summary,
+        sellerNameSnapshot: 'Original author',
         contactDeadlineAt: '2026-10-31T09:00:00.000Z',
         offerExpiresAt: null,
         buyerComment: null,
@@ -427,8 +427,9 @@ describe('commerce request and response schemas', () => {
         },
         sellerContacts: null,
         sellerContactHint: null,
-      }).buyerContacts?.phone,
-    ).toBe('+1234567');
+      });
+    expect(detail.sellerNameSnapshot).toBe('Original author');
+    expect(detail.buyerContacts?.phone).toBe('+1234567');
   });
 
   it('parses attention, reports and trust signals', () => {

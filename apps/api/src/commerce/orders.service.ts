@@ -845,6 +845,7 @@ export class OrdersService {
     const revealContacts = role === 'admin' || order.activatedAt !== null;
     return {
       ...orderSummary(order, role),
+      sellerNameSnapshot: order.sellerNameSnapshot,
       contactDeadlineAt: order.contactDeadlineAt?.toISOString() ?? null,
       offerExpiresAt: order.offerExpiresAt?.toISOString() ?? null,
       buyerComment: order.buyerComment,
