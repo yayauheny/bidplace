@@ -5,6 +5,16 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-05 — W5 logo and link detail
+
+**Partial; NEEDS-FIGMA.** The original Figma logo SVG contains an irregular
+mark outline and a double shadow filter; inspecting the SVG without its filter
+confirmed the outline is part of the vector. The renderer preserves that brand
+geometry and supersamples it. The bottom link now uses a light translucent chip
+and dark text rather than a heavy outline. Five new local exports and before/after
+details are available for review; a perfectly straight mark would change the
+approved asset. Receipt visual acceptance remains open.
+
 ## 2026-11-05 — W5 export logo quality
 
 **Partial; NEEDS-FIGMA.** In WebKit the logo SVG previously decoded at 164×53

@@ -8,7 +8,7 @@ describe('share templates', () => {
     if (format === 'post' || format === 'square') expect(layers[0]).toMatchObject({ background: 'blur' });
     expect(JSON.stringify(layers)).toContain('Название');
     expect(JSON.stringify(layers)).toContain('Продано');
-    expect(layers.filter((layer) => layer.kind === 'text').map((layer) => layer.text)).toEqual(['bid.place/works/abcdefghijk']);
+    expect(layers).toContainEqual(expect.objectContaining({ kind: 'text', text: 'bid.place/works/abcdefghijk', color: 'dark', chip: true }));
   });
   it('includes explicit receipt data and the disclaimer', () => {
     const receipt = { workTitle: 'Работа', author: 'Автор', publicId: 'order123456', dealCode: '123456', amount: '100 BYN', completedAt: '05.11.2026', source: 'Аукцион' };

@@ -5,6 +5,14 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-05 — W5 link and logo details
+
+**Partial.** Work exports replace outlined link text with a light chip and dark
+text. The shared Canvas renderer supersamples the existing SVG without changing
+its Figma outline; receipt uses the same render path. Chromium/WebKit checks and
+local before/after crops cover the change. The irregular mark is in the original
+vector; visual acceptance and physical Safari remain open.
+
 ## 2026-11-05 — W5 logo export quality
 
 **Partial.** `share-card/logo.ts` sizes the original SVG viewBox before browser

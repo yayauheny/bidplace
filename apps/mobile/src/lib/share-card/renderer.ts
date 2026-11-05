@@ -38,7 +38,7 @@ export async function renderCard(input: {
     canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(size.width * scale));
     canvas.height = Math.max(1, Math.round(size.height * scale));
-    const logoSvg = sizedLogoSvg(logoSource, canvas.width);
+    const logoSvg = sizedLogoSvg(logoSource, canvas.width * 2);
     const logoObjectUrl = URL.createObjectURL(new Blob([logoSvg], { type: 'image/svg+xml' }));
     let logo: HTMLImageElement;
     try { logo = await decode(logoObjectUrl); } finally { URL.revokeObjectURL(logoObjectUrl); }
@@ -80,7 +80,24 @@ export async function renderCard(input: {
         lines.forEach((line, index) => {
           const x = w * layer.x;
           const y = h * layer.y + index * font * 1.3;
-          if (layer.color === 'light') { ctx.strokeStyle = lightColorMap.inkStrong; ctx.lineWidth = Math.max(1, font * 0.1); ctx.lineJoin = 'round'; ctx.strokeText(line, x, y); }
+          if (layer.chip) {
+            const padding = font * 0.5;
+            const width = ctx.measureText(line).width + padding * 2;
+            const height = font * 1.4;
+            const radius = height / 2;
+            ctx.save();
+            ctx.fillStyle = lightColorMap.white;
+            ctx.globalAlpha = 0.92;
+            ctx.beginPath();
+            ctx.moveTo(x, y - font * 0.2);
+            ctx.arcTo(x + width, y - font * 0.2, x + width, y + height, radius);
+            ctx.arcTo(x + width, y + height, x - padding, y + height, radius);
+            ctx.arcTo(x - padding, y + height, x - padding, y - font * 0.2, radius);
+            ctx.arcTo(x - padding, y - font * 0.2, x + width, y - font * 0.2, radius);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
           ctx.fillText(line, x, y);
         });
         ctx.shadowBlur = 0;

@@ -22,7 +22,7 @@ export type CardLayer =
   | { kind: 'image'; fit: 'cover' | 'contain'; x: number; y: number; width: number; height: number; background?: 'blur' }
   | { kind: 'logo'; x: number; y: number; width: number }
   | { kind: 'pills'; y: number; rows: string[][] }
-  | { kind: 'text'; x: number; y: number; width: number; text: string; size: number; lines: number; color: 'light' | 'dark' };
+  | { kind: 'text'; x: number; y: number; width: number; text: string; size: number; lines: number; color: 'light' | 'dark'; chip?: boolean };
 
 export function workTemplate(format: ShareFormat, work: WorkCard): CardLayer[] {
   const logoY = format === 'story' ? 0.244 : format === 'original' ? 0.45 : 0.04;
@@ -34,7 +34,7 @@ export function workTemplate(format: ShareFormat, work: WorkCard): CardLayer[] {
     { kind: 'logo', x: (1 - logoWidth) / 2, y: logoY, width: logoWidth },
     { kind: 'pills', y: logoY + 0.07, rows },
   ];
-  layers.push({ kind: 'text', x: 0.08, y: 0.94, width: 0.84, text: work.link, size: 0.025, lines: 1, color: 'light' });
+  layers.push({ kind: 'text', x: 0.08, y: 0.94, width: 0.84, text: work.link, size: 0.025, lines: 1, color: 'dark', chip: true });
   if (work.description) layers.push({ kind: 'text', x: 0.08, y: 0.8, width: 0.84, text: work.description, size: 0.037, lines: 3, color: 'light' });
   return layers;
 }
