@@ -47,6 +47,29 @@ describe('Cloudflare application boundary', () => {
     },
   );
 
+  it.each(['GET', 'POST', 'HEAD', 'OPTIONS'])(
+    'rejects sensitive-file API probes before the container (%s)',
+    async (method) => {
+      const h = harness();
+      for (const path of [
+        '/api/.env', '/api/.env.production', '/api/v2/.ENV',
+        '/api/v2/%2eenv', '/api/v2/%252eenv',
+        '/api/.git/config', '/api/%2egit/config',
+        '/api/v3/db.sql', '/api/v3/dbase.zip',
+        '/api/config/gcp-credentials.json', '/api/key.json',
+        '/api/v1/.env;ignored/config',
+        '/api/%E0%A4%A',
+      ]) {
+        const response = await h.request(path, { method });
+        expect(response.status).toBe(404);
+        expect(response.headers.get('Cache-Control')).toBe('no-store');
+      }
+      expect(h.getByName).not.toHaveBeenCalled();
+      expect(h.assets).not.toHaveBeenCalled();
+      expect(h.cache.match).not.toHaveBeenCalled();
+    },
+  );
+
   it('sends one authenticated tick through the private container binding', async () => {
     const h = harness(() => Response.json({ skipped: false, jobs: [{ name: 'media', processed: 1, failed: false }] }));
     const response = await runScheduledTick(h.env);
@@ -93,7 +116,7 @@ describe('Cloudflare application boundary', () => {
     expect(h.getByName).not.toHaveBeenCalled();
   });
 
-  it('routes unknown API paths to Nest rather than the SPA', async () => {
+  it('routes other unknown API paths to Nest rather than the SPA', async () => {
     const h = harness(() => new Response('missing', { status: 404 }));
     expect((await h.request('/api/unknown')).status).toBe(404);
     expect(h.assets).not.toHaveBeenCalled();

@@ -24,6 +24,29 @@ function internalApiPath(pathname: string): boolean {
   return path === '/api/internal' || path.startsWith('/api/internal/');
 }
 
+/**
+ * Reject unambiguous configuration/database probes at the edge before fetching the
+ * Container. This is deliberately NOT a full API route allowlist: valid clients
+ * may use dynamic routes, and the API owns 404s for unknown non-sensitive paths.
+ */
+function isSensitiveApiProbe(pathname: string): boolean {
+  if (!isApiPath(pathname)) return false;
+  let path = pathname;
+  try {
+    for (let pass = 0; pass < 3 && /%[0-9a-f]{2}/i.test(path); pass += 1) {
+      path = decodeURIComponent(path);
+    }
+  } catch {
+    return true;
+  }
+  const segments = path.replace(/\\/g, '/').toLowerCase().split('/')
+    .map((segment) => segment.split(';', 1)[0]);
+  return segments.some((segment) =>
+    segment === '.git' || segment === '.env' || segment.startsWith('.env.') ||
+    segment === 'db.sql' || segment === 'dbase.zip' ||
+    segment === 'gcp-credentials.json' || segment === 'key.json');
+}
+
 export async function runScheduledTick(env: RouterBindings): Promise<Response> {
   if (releaseHoldClosed(env.RELEASE_HOLD)) {
     return new Response(null, { status: 503, headers: privateResponse });
@@ -120,6 +143,9 @@ export async function routeRequest(
 ): Promise<Response> {
   const url = new URL(request.url);
   if (internalApiPath(url.pathname)) {
+    return new Response(null, { status: 404, headers: privateResponse });
+  }
+  if (isSensitiveApiProbe(url.pathname)) {
     return new Response(null, { status: 404, headers: privateResponse });
   }
   if (url.pathname === '/_release/stop' || url.pathname === '/_release/state') {
