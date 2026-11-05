@@ -5,6 +5,55 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-05 — W5 logo and link detail
+
+**Partial; NEEDS-FIGMA.** The original Figma logo SVG contains an irregular
+mark outline and a double shadow filter; inspecting the SVG without its filter
+confirmed the outline is part of the vector. The renderer preserves that brand
+geometry and supersamples it. The bottom link now uses a light translucent chip
+and dark text rather than a heavy outline. Five new local exports and before/after
+details are available for review; a perfectly straight mark would change the
+approved asset. Receipt visual acceptance remains open.
+
+## 2026-11-05 — W5 export logo quality
+
+**Partial; NEEDS-FIGMA.** In WebKit the logo SVG previously decoded at 164×53
+pixels and was enlarged to approximately 430×139 in the full export. The same
+vector viewBox is now decoded at canvas width (1080×351 for a 1080px card).
+The local review gallery includes matching JPEG/PNG and 100%/200% crops. The
+additional card fields and receipt composition still require visual acceptance.
+
+## 2026-11-05 — W5 export visual follow-up
+
+**Partial; NEEDS-FIGMA.** Work-card rendering now keeps the full image and uses
+a blurred image backdrop for fixed-size cards; missing order covers can produce a
+receipt without loading another image. Browser exports were inspected with framed
+and full-frame fixtures. Original still carries extra required title and status
+pills that obscure more artwork than Figma `5091:31443`; long title emphasis,
+light-background link contrast and exact per-format composition need visual
+resolution. Receipt has no approved design. Do not claim visual acceptance.
+
+## 2026-11-05 — W5 export implementation
+
+**Partial; NEEDS-FIGMA.** Canvas export uses the designer's four share-card
+examples identified below and the provided logo; title, status and link extend
+them under the founder's W5 decision. Five test exports were generated in
+Chromium and WebKit using a repository fixture. The receipt uses existing brand
+and type, but has no approved composition. Added fields, format parity, wider
+states and physical-device Safari remain open for visual acceptance.
+
+## 2026-11-05 — W5 share-card design intake
+
+**Partial; NEEDS-FIGMA.** The founder supplied the current Figma file
+`IqoAzm8OwzZ4BautbHLUyt`. Its work-share examples are Story `5091:30095`
+(preview `5091:30251`), Post `5091:30388` (preview `5091:30638`), Square
+`5091:30774` (preview `5091:31046`) and Original `5091:31161` (preview
+`5091:31443`). These replace the earlier missing-source report for those
+states. The examples do not show placement for all fields required by the W5
+contract; no approved receipt layout was identified. The renderer, export UI,
+five output screenshots and visual acceptance remain outstanding. No visual
+implementation or changes to Figma were made.
+
 ## 2026-11-04 — Admin ban confirmation
 
 **Partial; NEEDS-FIGMA.** Admin commerce uses the existing AppDialog and button

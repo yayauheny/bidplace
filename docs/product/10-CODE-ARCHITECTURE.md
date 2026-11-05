@@ -3,6 +3,17 @@
 Последнее обновление: 2026-10-31
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-11-05 — Share export and order receipt data
+
+`GET /api/orders/:publicId/receipt-data` uses the existing order snapshot and
+participant access check, permits only a buyer or seller of a COMPLETED order,
+and returns a strict whitelist without contacts or notes. It is private and
+no-store. Existing `OrderDetail` and admin attention responses retain their
+previous strict shapes. The web client requests receipt data only when preparing
+a confirmation and verifies its session epoch before using retained cover media.
+The API image path still enforces its existing authorization; no source image or
+schema change is introduced. Deploy the compatible API before the new client.
+
 ## 2026-11-02 — Query-aware author entry
 
 `authorProfileDestination` in `apps/mobile/src/hooks/use-seller-capability.ts` owns profile/cabinet/intro destinations and consumes the shared query classifier's confirmed absence. `header-chrome.ts` maps approved creation to `/products/new`. Guest plus resumes `/products/new?entry=create`; its route resolves availability and redirects before mounting the existing editor. This temporary resolver handles loading/error/retry without wrapping the active editor in a live capability gate. Flow details: [author application](../design/02-USER-FLOWS-AND-SCREENS.md#8-author-application).

@@ -4,6 +4,7 @@ import {
   adminOrderReasonRequestSchema,
   failOrderRequestSchema,
   orderDetailSchema,
+  orderReceiptDataSchema,
   orderNoteRequestSchema,
   ordersListQuerySchema,
   ordersListResponseSchema,
@@ -56,6 +57,12 @@ export class OrdersController {
     return orderDetailSchema.parse(
       await this.orders.get(auth.sub, orderPublicId(publicId)),
     );
+  }
+
+  @Get('orders/:publicId/receipt-data')
+  @Header('Cache-Control', 'private, no-store')
+  async receiptData(@CurrentUser() auth: AuthPrincipal, @Param('publicId') publicId: string) {
+    return orderReceiptDataSchema.parse(await this.orders.receiptData(auth.sub, orderPublicId(publicId)));
   }
 
   @Post('orders/:publicId/accept')

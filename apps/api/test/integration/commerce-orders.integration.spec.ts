@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { publishRevision } from '../../src/products/product-publication';
 
 import { type PrismaClient } from '@bidplace/database';
+import { orderDetailSchema, orderReceiptDataSchema } from '@bidplace/contracts';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -322,6 +323,7 @@ describe('order access', () => {
     const before = await purchased.buyer.get(`/images/${image.id}`);
     expect(before.status).toBe(200);
     expect(Buffer.from(await before.arrayBuffer())).toEqual(coverBytes);
+    expect((await purchased.buyer.get(`/orders/${order.publicId}/receipt-data`)).status).toBe(404);
     expect((await purchased.seller.post(`/orders/${order.publicId}/complete`)).status).toBe(200);
     const laterImage = await prisma.productImage.create({ data: {
       productId: product.id, position: 2, mimeType: 'image/png', byteLength: coverBytes.length,
@@ -344,6 +346,29 @@ describe('order access', () => {
     const retained = await purchased.buyer.get(`/images/${image.id}`);
     expect(retained.status).toBe(200);
     expect(Buffer.from(await retained.arrayBuffer())).toEqual(coverBytes);
+    expect((await purchased.buyer.get(`/images/${image.id}?source=true`)).status).toBe(404);
+    expect((await client().get(`/images/${image.id}`)).status).toBe(404);
+    const stranger = await extraBuyer('receipt-stranger');
+    const admin = await adminUser();
+    expect((await stranger.client.get(`/images/${image.id}`)).status).toBe(404);
+    for (const actor of [purchased.buyer, purchased.seller]) {
+      const result = await actor.get(`/orders/${order.publicId}/receipt-data`);
+      expect(result.status).toBe(200);
+      expect(result.headers.get('cache-control')).toBe('private, no-store');
+      const payload: unknown = await result.json();
+      const receipt = orderReceiptDataSchema.parse(payload);
+      expect(receipt.sellerNameSnapshot).toBe(order.sellerNameSnapshot);
+      expect(receipt.workTitle).toBe(order.workTitleSnapshot);
+      expect(receipt.coverImageUrl).toBe(`/api/images/${image.id}`);
+      expect(Object.keys(receipt).sort()).toEqual(['amountMinor', 'completedAt', 'coverImageUrl', 'currency', 'dealCode', 'publicId', 'sellerNameSnapshot', 'source', 'workTitle']);
+      const card = await actor.get(`/orders/${order.publicId}`);
+      const oldResponse: unknown = await card.json();
+      expect(orderDetailSchema.safeParse(oldResponse).success).toBe(true);
+      expect(oldResponse).not.toHaveProperty('sellerNameSnapshot');
+    }
+    expect((await stranger.client.get(`/orders/${order.publicId}/receipt-data`)).status).toBe(404);
+    expect((await admin.client.get(`/orders/${order.publicId}/receipt-data`)).status).toBe(404);
+    expect((await client().get(`/orders/${order.publicId}/receipt-data`)).status).toBe(401);
   });
 
   it.each([

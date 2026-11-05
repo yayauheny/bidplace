@@ -9,6 +9,8 @@ import { AppDialog } from '../ui/AppDialog';
 import { AppText, PrimaryButton, SecondaryButton } from '../ui';
 import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaButton } from './FigmaButton';
+import { ShareCardExport } from './ShareCardExport';
+import type { WorkCard } from '../../lib/share-card/templates';
 import {
   copyPublicLink,
   downloadQrPng,
@@ -21,10 +23,12 @@ export function ShareSheet({
   open,
   onClose,
   sharePath,
+  workCard,
 }: {
   open: boolean;
   onClose: () => void;
   sharePath: string;
+  workCard?: { imageId: string; publicId: string; crop: { x: number; y: number; width: number; height: number } | null; card: Omit<WorkCard, 'link'> };
 }) {
   return (
     <AppDialog
@@ -33,12 +37,12 @@ export function ShareSheet({
       title="Поделиться"
       onClose={onClose}
     >
-      {open ? <ShareContent key={sharePath} sharePath={sharePath} /> : null}
+      {open ? <ShareContent key={sharePath} sharePath={sharePath} workCard={workCard} /> : null}
     </AppDialog>
   );
 }
 
-function ShareContent({ sharePath }: { sharePath: string }) {
+function ShareContent({ sharePath, workCard }: { sharePath: string; workCard?: { imageId: string; publicId: string; crop: { x: number; y: number; width: number; height: number } | null; card: Omit<WorkCard, 'link'> } }) {
   const [qr, setQr] = useState<string>();
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -98,6 +102,7 @@ function ShareContent({ sharePath }: { sharePath: string }) {
   };
   return (
     <View style={{ gap: shareContentGap }}>
+      {workCard ? <ShareCardExport key={JSON.stringify([workCard.publicId, workCard.imageId, workCard.crop, workCard.card.title, workCard.card.handle, workCard.card.description])} publicId={workCard.publicId} imageId={workCard.imageId} crop={workCard.crop} card={workCard.card} url={target.url} /> : null}
       <View
         style={{
           width: designTokens.size.shareQr,

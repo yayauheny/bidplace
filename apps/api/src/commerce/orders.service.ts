@@ -332,6 +332,24 @@ export class OrdersService {
     return this.orderCard(this.prisma, order, viewerId);
   }
 
+  async receiptData(viewerId: string, publicId: string) {
+    const order = await this.participantOrder(publicId, viewerId);
+    if ((order.buyerUserId !== viewerId && order.sellerUserId !== viewerId) || order.status !== 'COMPLETED' || !order.completedAt) {
+      throw new NotFoundException('Order not found');
+    }
+    return {
+      publicId: order.publicId,
+      dealCode: order.dealCode,
+      workTitle: order.workTitleSnapshot,
+      sellerNameSnapshot: order.sellerNameSnapshot,
+      amountMinor: order.amountMinor,
+      currency: currencyOf(order.currency),
+      source: order.source,
+      completedAt: order.completedAt.toISOString(),
+      coverImageUrl: order.coverImageIdSnapshot ? `/api/images/${order.coverImageIdSnapshot}` : null,
+    };
+  }
+
   async list(viewerId: string, query: OrdersListQuery) {
     const statuses =
       query.state === 'open'

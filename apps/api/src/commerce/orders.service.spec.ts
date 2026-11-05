@@ -89,3 +89,54 @@ describe('createOrder', () => {
     );
   });
 });
+
+describe('order detail author snapshot', () => {
+  it('returns the stored author name to participants and rejects outsiders', async () => {
+    const stored = {
+      publicId: 'abcdefghijk', dealCode: '123456', status: 'COMPLETED',
+      source: 'FIXED_PURCHASE', amountMinor: 1500, currency: 'BYN',
+      workTitleSnapshot: 'Work', workPublicIdSnapshot: 'workpublic1',
+      sellerNameSnapshot: 'Original author', coverImageIdSnapshot: null,
+      buyerUserId: 'buyer-1', sellerUserId: 'seller-1', listingId: 'listing-1',
+      createdAt: new Date('2026-10-30T12:00:00Z'), activatedAt: null,
+      contactDeadlineAt: null, offerExpiresAt: null, buyerComment: null,
+      sellerNote: null, failReason: null, faultSide: null,
+      completedAt: new Date('2026-10-31T12:00:00Z'), failedAt: null,
+    };
+    const db = {
+      order: { findUnique: vi.fn().mockResolvedValue(stored) },
+      user: { findUnique: vi.fn().mockResolvedValue(null) },
+      sellerProfile: { findUnique: vi.fn().mockResolvedValue(null) },
+      listing: { findUnique: vi.fn().mockResolvedValue(null) },
+    };
+    const service = new OrdersService(db as never, {} as never, {} as never, {} as never);
+    expect(await service.get('buyer-1', stored.publicId)).not.toHaveProperty('sellerNameSnapshot');
+    for (const userId of ['buyer-1', 'seller-1']) {
+      expect(await service.receiptData(userId, stored.publicId)).toEqual({
+        publicId: stored.publicId, dealCode: stored.dealCode, workTitle: 'Work',
+        sellerNameSnapshot: 'Original author', amountMinor: 1500, currency: 'BYN',
+        source: 'FIXED_PURCHASE', completedAt: '2026-10-31T12:00:00.000Z', coverImageUrl: null,
+      });
+    }
+    await expect(service.receiptData('other-user', stored.publicId)).rejects.toThrow('Order not found');
+    stored.status = 'ACTIVE';
+    await expect(service.receiptData('buyer-1', stored.publicId)).rejects.toThrow();
+    await expect(service.get('other-user', stored.publicId)).rejects.toThrow('Order not found');
+  });
+});
+
+describe('admin order author snapshot', () => {
+  it('maps the stored author name with the administrative order detail', async () => {
+    const { toAdminOrderDetail } = await import('./commerce.mapper');
+    const detail = toAdminOrderDetail({
+      publicId: 'abcdefghijk', dealCode: '123456', status: 'COMPLETED', source: 'FIXED_PURCHASE',
+      amountMinor: 1500, currency: 'BYN', workTitle: 'Work', workPublicId: 'workpublic1',
+      coverImageId: null, createdAt: new Date('2026-10-30T12:00:00Z'),
+      contactDeadlineAt: null, offerExpiresAt: null, buyerComment: null, sellerNote: null,
+      failReason: null, faultSide: null, completedAt: new Date('2026-10-31T12:00:00Z'), failedAt: null,
+      buyerEmail: 'buyer@example.invalid', buyerPhone: null, buyerTelegram: null, buyerInstagram: null, buyerVk: null,
+      sellerEmail: 'seller@example.invalid', sellerPhone: null, sellerTelegram: null, sellerInstagram: null, sellerVk: null,
+    });
+    expect(detail).not.toHaveProperty('sellerNameSnapshot');
+  });
+});

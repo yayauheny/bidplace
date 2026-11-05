@@ -14,6 +14,7 @@ import {
   adminOrderOutcomeRequestSchema,
   failOrderRequestSchema,
   orderDetailSchema,
+  orderReceiptDataSchema,
   orderNoteRequestSchema,
   orderSummarySchema,
   placeBidRequestSchema,
@@ -407,8 +408,7 @@ describe('commerce request and response schemas', () => {
     expect(
       orderSummarySchema.safeParse({ ...summary, phone: '+1234567' }).success,
     ).toBe(false);
-    expect(
-      orderDetailSchema.parse({
+    const detail = orderDetailSchema.parse({
         ...summary,
         contactDeadlineAt: '2026-10-31T09:00:00.000Z',
         offerExpiresAt: null,
@@ -427,8 +427,17 @@ describe('commerce request and response schemas', () => {
         },
         sellerContacts: null,
         sellerContactHint: null,
-      }).buyerContacts?.phone,
-    ).toBe('+1234567');
+      });
+    expect(orderDetailSchema.safeParse({ ...detail, sellerNameSnapshot: 'Original author' }).success).toBe(false);
+    expect(detail.buyerContacts?.phone).toBe('+1234567');
+  });
+
+  it('accepts only receipt snapshot fields and an exact API cover path', () => {
+    const receipt = { publicId: 'q7Xf2Kd9aB1', dealCode: '123456', workTitle: 'Work', sellerNameSnapshot: 'Author', amountMinor: 1500, currency: 'BYN', source: 'FIXED_PURCHASE', completedAt: now, coverImageUrl: '/api/images/11111111-1111-4111-8111-111111111111' };
+    expect(orderReceiptDataSchema.safeParse(receipt).success).toBe(true);
+    expect(orderReceiptDataSchema.safeParse({ ...receipt, coverImageUrl: receipt.coverImageUrl + '?source=true' }).success).toBe(false);
+    expect(orderReceiptDataSchema.safeParse({ ...receipt, coverImageUrl: 'https://example.invalid' + receipt.coverImageUrl }).success).toBe(false);
+    expect(orderReceiptDataSchema.safeParse({ ...receipt, buyerContacts: {} }).success).toBe(false);
   });
 
   it('parses attention, reports and trust signals', () => {

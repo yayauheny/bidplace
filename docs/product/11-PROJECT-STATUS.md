@@ -5,6 +5,103 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-05 — W5 technical integration checks
+
+**Partial; needs device verification.** `commerce-live.spec.ts` now exercises all
+four formats, a failed cover request and retry, download fallback, auction data,
+and a completed order receipt after the public work is deleted, using the real
+API and disposable PostgreSQL. Node 22: live Chromium/WebKit 10/10 and export Chromium/WebKit 6/6; API orders
+and media integration 104/104; share/receipt unit 26/26; orders service 4/4;
+contracts 112/112 and API client 60/60. API and mobile typecheck and lint passed;
+API dependency and mobile web builds passed. Database test server used UTC to
+match timestamp fixtures. Browser Web Share was simulated; physical iOS Safari
+and a trusted HTTPS application stand remain unverified. PR #101 changes image
+security and has merged separately; verify this branch against that integrated
+code before release. Backend must precede frontend. Visual acceptance is deferred:
+see [AFTER-WAVES](../launch/AFTER-WAVES.md).
+
+## 2026-11-05 — W5 link and logo details
+
+**Partial.** Work exports replace outlined link text with a light chip and dark
+text. The shared Canvas renderer supersamples the existing SVG without changing
+its Figma outline; receipt uses the same render path. Chromium/WebKit checks and
+local before/after crops cover the change. The irregular mark is in the original
+vector; visual acceptance and physical Safari remain open.
+
+## 2026-11-05 — W5 logo export quality
+
+**Partial.** `share-card/logo.ts` sizes the original SVG viewBox before browser
+decode instead of enlarging its intrinsic 164×53 raster; the renderer checks
+Inter loading. Work-card link text uses the canonical bid.place path with a
+dark stroke for contrast. Physical Safari and visual acceptance remain open.
+
+## 2026-11-05 — W5 image and receipt follow-up
+
+**Partial.** Work templates use a contained image and blurred backdrop so framed
+photos are not automatically cropped; receipt export can render without a cover
+when the saved order cover is null. Chromium/WebKit confirmed both receipt cases.
+Original composition, title and link legibility remain NEEDS-FIGMA; screenshots
+are local review artifacts and visual acceptance is not complete.
+
+## 2026-11-05 — W5 receipt compatibility
+
+**Partial.** The old strict `OrderDetail` and admin attention shapes are restored.
+`GET /api/orders/:publicId/receipt-data` returns only saved receipt fields for
+the buyer or seller of a COMPLETED order, with `private, no-store`; the web
+client requests it at preparation time and checks its auth epoch before loading
+the saved cover. The isolated PostgreSQL 55434 order integration checks old
+responses, both participants, outsiders, admin, unfinished orders, deleted work,
+retained cover and buyer denial of the original source. Rollout is backend first,
+then frontend. The API image preview is the accepted MVP source for Original;
+visual receipt acceptance and physical Safari remain outstanding.
+
+## 2026-11-05 — W5 export implementation
+
+**Partial; Needs verification.** Web `ShareSheet` prepares one selected work
+format with the Canvas templates in `src/lib/share-card`; QR and link actions
+remain available. The published cover uses anonymous API media, the saved crop
+for non-original formats and a fresh lot read. `ReceiptExport` allows completed
+buyer/seller orders and builds its data from an explicit whitelist, including
+`sellerNameSnapshot` from the dedicated receipt endpoint rather than a live profile. The existing saved
+order cover is fetched with participant credentials and guarded by the auth
+epoch. Chromium/WebKit mocked-transport export scenarios pass; actual iOS Safari
+sharing, cross-origin deployment CORS and retained-cover database integration
+remain unverified. The API image route can return a preview derivative, so
+Original may be smaller than the published full derivative; extreme aspect
+ratios can fail when required labels cannot fit. Receipt design and the added
+card fields remain NEEDS-FIGMA. The separate receipt endpoint preserves the old strict order response; deploy
+the compatible API before the new frontend.
+
+## 2026-11-05 — W5 approved source and media boundaries
+
+**Partial.** The current Figma source and four format nodes are recorded in
+[design status](../design/04-DESIGN-STATUS.md); the earlier missing-node report
+below concerned a different file. Work and receipt export remain unimplemented.
+The selected format examples do not locate every required W5 field and a receipt
+layout was not identified. Order details do not expose the author name; public
+work lookup can be unavailable for hidden or deleted work. The saved order cover
+is session-protected, so any later implementation must use the participant's
+existing authorization, avoid private source images and reject stale session
+results. File sharing on physical Safari and cross-origin credentialed media
+loading still need device verification. No API or commerce behavior changed.
+
+## 2026-11-04 — W5 share export groundwork
+
+**Partial; NEEDS-FIGMA.** `apps/mobile/src/lib/share-card/layout.ts` provides
+format dimensions, centred cover/contain geometry and grapheme-aware text
+wrapping; `share-file.ts` provides file sharing, cancellation and download URL
+cleanup. Owner unit specs pass. Neither helper is connected to a screen; Canvas
+renderer, templates, work export and COMPLETED-order PNG are not implemented.
+Live Figma file `pAPQo6cADmG5XzVmBX76EE` did not contain requested node
+`5091:30095`; local handoff index and portfolio library search did not locate it.
+Exact layouts, five screenshots and visual acceptance remain blocked pending an
+approved source. Order cover snapshots use `/api/images/:id`, whose access is
+session-sensitive; privacy-safe export mapping and anonymous/public image access
+must be verified before connecting the renderer. `OrderDetail` has no author name;
+its existing public-work lookup and unavailable-work behavior need verification.
+No API, Prisma or trading rules changed. Mobile typecheck/lint/web build and
+unit checks are recorded in the draft PR; Chromium/WebKit export E2E not run.
+
 ## 2026-11-04 — PR 99 listing lifecycle and ban confirmation
 
 **Partial.** `useListingCommand` captures auth epoch for create/recovery and
