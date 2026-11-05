@@ -1,5 +1,5 @@
-export async function shareFile(file: File): Promise<'shared' | 'cancelled' | 'downloaded'> {
-  const payload = { files: [file] };
+export async function shareFile(file: File, shareUrl?: string): Promise<'shared' | 'cancelled' | 'downloaded'> {
+  const payload = shareUrl ? { files: [file], url: shareUrl } : { files: [file] };
   if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare(payload)) {
     try {
       await navigator.share(payload);

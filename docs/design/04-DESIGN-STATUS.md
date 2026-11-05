@@ -5,6 +5,15 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-05 — W5 export implementation
+
+**Partial; NEEDS-FIGMA.** Canvas export uses the designer's four share-card
+examples identified below and the provided logo; title, status and link extend
+them under the founder's W5 decision. Five test exports were generated in
+Chromium and WebKit using a repository fixture. The receipt uses existing brand
+and type, but has no approved composition. Added fields, format parity, wider
+states and physical-device Safari remain open for visual acceptance.
+
 ## 2026-11-05 — W5 share-card design intake
 
 **Partial; NEEDS-FIGMA.** The founder supplied the current Figma file

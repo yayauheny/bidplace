@@ -571,3 +571,93 @@ test('opens sale creation for the matching author profile, whose id differs from
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('textbox', { name: 'Цена', exact: true })).toBeEditable();
 });
+
+test('exports work cards in all four formats with a public link', async ({ page }, testInfo) => {
+  const { readFile, writeFile } = await import('node:fs/promises');
+  const { resolve } = await import('node:path');
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async (data: ShareData) => {
+      const file = data.files?.[0];
+      if (!file) throw new Error('Missing shared file');
+      const bytes = Array.from(new Uint8Array(await file.arrayBuffer()));
+      const bitmap = await createImageBitmap(file);
+      Object.assign(window, { __sharedCard: { bytes, url: data.url, type: file.type, width: bitmap.width, height: bitmap.height } });
+      bitmap.close();
+    } });
+  });
+  await install(page, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: 'null' }));
+  const imageBytes = await readFile(resolve('assets/author-intro-collage.png'));
+  await page.route('**/api/images/**', (route) => route.fulfill({ contentType: 'image/png', body: imageBytes, headers: { 'access-control-allow-origin': '*' } }));
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await page.getByRole('button', { name: 'Поделиться работой' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Поделиться' });
+  for (const format of ['История', 'Публикация', 'Квадрат', 'Оригинал']) {
+    await dialog.getByRole('button', { name: format, exact: true }).click();
+    await dialog.getByRole('button', { name: 'Подготовить изображение' }).click();
+    await expect(dialog.getByRole('img', { name: 'Превью карточки' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Подготовить файл' }).click();
+    await page.evaluate(() => Reflect.deleteProperty(window, '__sharedCard'));
+    await dialog.getByRole('button', { name: 'Поделиться изображением' }).click();
+    await expect.poll(() => page.evaluate(() => Boolean(Reflect.get(window, '__sharedCard')))).toBe(true);
+    const shared = await page.evaluate(() => Reflect.get(window, '__sharedCard') as { bytes: number[]; url: string; type: string; width: number; height: number });
+    expect(shared.url).toContain(`/works/${PUBLIC_ID}`);
+    expect(shared.type).toBe('image/jpeg');
+    const expected = { 'История': [1080, 1920], 'Публикация': [1080, 1350], 'Квадрат': [1080, 1080] }[format];
+    if (expected) expect([shared.width, shared.height]).toEqual(expected);
+    else expect(Math.max(shared.width, shared.height)).toBeLessThanOrEqual(2048);
+    expect(shared.bytes.length).toBeGreaterThan(1000);
+    await writeFile(testInfo.outputPath(`${format}.jpg`), Buffer.from(shared.bytes));
+  }
+});
+
+test('exports completed order confirmation with its retained cover', async ({ page }, testInfo) => {
+  const { readFile, writeFile } = await import('node:fs/promises');
+  const { resolve } = await import('node:path');
+  await page.addInitScript(() => {
+    const fill = CanvasRenderingContext2D.prototype.fillText;
+    const texts: string[] = [];
+    Object.assign(window, { __receiptTexts: texts });
+    CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+      texts.push(text);
+      if (maxWidth === undefined) return fill.call(this, text, x, y);
+      return fill.call(this, text, x, y, maxWidth);
+    };
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async (data: ShareData) => {
+      const file = data.files?.[0];
+      if (!file) throw new Error('Missing shared file');
+      Object.assign(window, { __receipt: Array.from(new Uint8Array(await file.arrayBuffer())) });
+    } });
+  });
+  await installAccountPresentation(page);
+  const orderId = 'order000001';
+  const imageId = '30000000-0000-4000-8000-0000000000a1';
+  let status: 'ACTIVE' | 'COMPLETED' = 'ACTIVE';
+  await page.route(`**/api/orders/${orderId}`, (route) => route.fulfill({ json: {
+    publicId: orderId, dealCode: '123456', status, source: 'FIXED_PURCHASE',
+    amountMinor: 12500, currency: 'BYN', workTitle: 'Работа', workPublicId: PUBLIC_ID,
+    coverImageUrl: `/api/images/${imageId}`, role: 'buyer', createdAt: CLOCK,
+    sellerNameSnapshot: 'Автор из снимка', contactDeadlineAt: null, offerExpiresAt: null,
+    buyerComment: null, sellerNote: null, failReason: null, faultSide: null,
+    completedAt: status === 'COMPLETED' ? CLOCK : null, failedAt: null, buyerContacts: null,
+    sellerContacts: { email: 'private@example.invalid', phone: null, telegram: null, instagram: null, vk: null },
+    sellerContactHint: null,
+  } }));
+  const imageBytes = await readFile(resolve('assets/author-intro-collage.png'));
+  await page.route('**/api/images/**', (route) => route.fulfill({ contentType: 'image/png', body: imageBytes, headers: { 'access-control-allow-origin': 'http://127.0.0.1:8094', 'access-control-allow-credentials': 'true' } }));
+  await page.goto(`/account/orders/${orderId}`);
+  await expect(page.getByText('Ждёт связи')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Подготовить подтверждение' })).toHaveCount(0);
+  status = 'COMPLETED';
+  await page.reload();
+  await page.getByRole('button', { name: 'Подготовить подтверждение' }).click();
+  await page.getByRole('button', { name: 'Поделиться подтверждением' }).click();
+  await expect.poll(() => page.evaluate(() => Boolean(Reflect.get(window, '__receipt')))).toBe(true);
+  const bytes = await page.evaluate(() => Reflect.get(window, '__receipt') as number[]);
+  const texts = await page.evaluate(() => Reflect.get(window, '__receiptTexts') as string[]);
+  expect(texts.join(' ')).toContain('Не является кассовым чеком');
+  expect(texts.join(' ')).not.toContain('private@example.invalid');
+  expect(bytes.slice(0, 8)).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+  await writeFile(testInfo.outputPath('confirmation.png'), Buffer.from(bytes));
+});

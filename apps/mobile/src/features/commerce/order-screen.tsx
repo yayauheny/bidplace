@@ -20,6 +20,7 @@ import { formatMoney } from '../../lib/money';
 import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { sellerCommerceAccess } from './create-lot-form';
 import { OrderActions } from './OrderActions';
+import { ReceiptExport } from './ReceiptExport';
 import { commerceActionError } from './use-lot-actions';
 import {
   orderContactLinks,
@@ -119,6 +120,7 @@ function OrderCard({ publicId }: { publicId: string }) {
           )}
         />
       ) : null}
+      <ReceiptExport order={detail} />
       <OrderActions
         order={detail}
         commands={commands}

@@ -53,3 +53,28 @@ export function wrapText(measure: (value: string) => number, text: string, maxWi
   result[maxLines - 1] = measure(`${last}…`) <= maxWidth ? `${last}…` : '';
   return result;
 }
+
+export function fitCroppedImage(fit: 'cover' | 'contain', image: Size, box: Box, crop: { x: number; y: number; width: number; height: number } | null) {
+  if (!crop) return fitImage(fit, image, box);
+  const result = fitImage(fit, { width: image.width * crop.width, height: image.height * crop.height }, box);
+  return { ...result, sx: result.sx + image.width * crop.x, sy: result.sy + image.height * crop.y };
+}
+
+export function pillFontSize(width: number, start: number, rows: number, bottom: number): number {
+  const available = (bottom - start) / (Math.max(rows, 1) * 1.8 * 1.12);
+  const size = Math.min(width * 0.04, available);
+  if (size < width * 0.01) throw new Error('Недостаточно места для данных на изображении.');
+  return size;
+}
+
+export function textLineLimit(maxLines: number, availableHeight: number, lineHeight: number): number {
+  const lines = Math.min(maxLines, Math.floor(availableHeight / lineHeight));
+  if (lines < 1) throw new Error('Недостаточно места для текста на изображении.');
+  return lines;
+}
+
+export function textFontSize(width: number, requested: number, availableHeight: number): number {
+  const size = Math.min(Math.max(8, width * requested), availableHeight / 1.31);
+  if (size < width * 0.008) throw new Error('Недостаточно места для текста на изображении.');
+  return size;
+}

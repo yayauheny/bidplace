@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canvasSize, fitImage, wrapText } from './layout';
+import { canvasSize, fitImage, fitCroppedImage, pillFontSize, textFontSize, textLineLimit, wrapText } from './layout';
 
 describe('share card layout', () => {
   it('sizes each format and preserves original aspect without upscaling', () => {
@@ -29,4 +29,26 @@ describe('share card layout', () => {
     expect(() => wrapText(measure, 'a', 0.5, 1)).toThrow();
     expect(() => fitImage('cover', { width: Number.NaN, height: 2 }, { x: 0, y: 0, w: 10, h: 10 })).toThrow();
   });
+});
+
+it('uses the published crop before fitting a non-original card', () => {
+  expect(fitCroppedImage('cover', { width: 1000, height: 800 }, { x: 0, y: 0, w: 100, h: 100 }, { x: 0.5, y: 0.25, width: 0.4, height: 0.5 })).toMatchObject({ sx: 500, sy: 200, sw: 400, sh: 400 });
+});
+
+it('fits original card labels inside a wide image or reports insufficient space', () => {
+  const font = pillFontSize(2000, 500, 4, 800);
+  expect(500 + font * 1.8 * 1.12 * 4).toBeLessThanOrEqual(800);
+  expect(() => pillFontSize(2000, 80, 4, 96)).toThrow();
+});
+
+it('limits description lines before the following link', () => {
+  expect(textLineLimit(3, 140, 96.2)).toBe(1);
+  expect(textLineLimit(3, 300, 96.2)).toBe(3);
+  expect(() => textLineLimit(3, 20, 96)).toThrow();
+});
+
+it('keeps the link readable within the last row of a horizontal original', () => {
+  const font = textFontSize(2000, 0.025, 60);
+  expect(font * 1.3).toBeLessThanOrEqual(60);
+  expect(font).toBeGreaterThan(16);
 });

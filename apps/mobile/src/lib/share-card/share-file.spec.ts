@@ -15,6 +15,14 @@ describe('shareFile', () => {
     expect(share).toHaveBeenCalledWith({ files: [file] });
   });
 
+  it('passes the public URL alongside the file when sharing', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { canShare: () => true, share });
+    const file = new File(['image'], 'work.jpg');
+    await shareFile(file, 'https://bid.place/works/abcdefghijk');
+    expect(share).toHaveBeenCalledWith({ files: [file], url: 'https://bid.place/works/abcdefghijk' });
+  });
+
   it('treats a dismissed share as cancellation', async () => {
     vi.stubGlobal('navigator', { canShare: () => true, share: vi.fn().mockRejectedValue(new DOMException('dismissed', 'AbortError')) });
     expect(await shareFile(new File(['image'], 'work.jpg'))).toBe('cancelled');

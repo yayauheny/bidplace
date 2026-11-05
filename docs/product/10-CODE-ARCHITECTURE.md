@@ -3,6 +3,17 @@
 Последнее обновление: 2026-10-31
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-11-05 — Share export and order author snapshot
+
+`OrderDetail` includes `sellerNameSnapshot`, sourced from the existing immutable
+order snapshot in both participant and administrative detail mappers. This is a
+strict response-contract change: older clients reject the extra field and newer
+clients require it, so deployment requires an explicit compatibility strategy.
+Web work and completed-order exports use the shared client Canvas renderer.
+Public covers load anonymously; participant receipt covers use only the exact
+saved API image path and current auth epoch. Receipt templates receive a whitelist
+of order fields, not contact data. No schema or trading transition changed.
+
 ## 2026-11-02 — Query-aware author entry
 
 `authorProfileDestination` in `apps/mobile/src/hooks/use-seller-capability.ts` owns profile/cabinet/intro destinations and consumes the shared query classifier's confirmed absence. `header-chrome.ts` maps approved creation to `/products/new`. Guest plus resumes `/products/new?entry=create`; its route resolves availability and redirects before mounting the existing editor. This temporary resolver handles loading/error/retry without wrapping the active editor in a live capability gate. Flow details: [author application](../design/02-USER-FLOWS-AND-SCREENS.md#8-author-application).

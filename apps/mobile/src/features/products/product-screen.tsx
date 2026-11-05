@@ -341,6 +341,19 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         sharePath={work.sharePath}
+        workCard={work.images[0] && (lot.status === 'ready' || lot.status === 'empty') ? {
+          imageId: work.images[0].id,
+          publicId: work.publicId,
+          crop: work.images[0].crop ?? null,
+          card: {
+            title: work.title,
+            handle: author.slug,
+            price: saleView?.priceLabel ?? null,
+            timer: saleView?.timerLabel ?? null,
+            status: saleView?.statusLabel ?? null,
+            description: work.story,
+          },
+        } : undefined}
       />
       <LotCommerce
         publicId={publicId}
