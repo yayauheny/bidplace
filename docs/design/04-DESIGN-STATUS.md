@@ -5,6 +5,18 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-05 — W5 share-card design intake
+
+**Partial; NEEDS-FIGMA.** The founder supplied the current Figma file
+`IqoAzm8OwzZ4BautbHLUyt`. Its work-share examples are Story `5091:30095`
+(preview `5091:30251`), Post `5091:30388` (preview `5091:30638`), Square
+`5091:30774` (preview `5091:31046`) and Original `5091:31161` (preview
+`5091:31443`). These replace the earlier missing-source report for those
+states. The examples do not show placement for all fields required by the W5
+contract; no approved receipt layout was identified. The renderer, export UI,
+five output screenshots and visual acceptance remain outstanding. No visual
+implementation or changes to Figma were made.
+
 ## 2026-11-04 — Admin ban confirmation
 
 **Partial; NEEDS-FIGMA.** Admin commerce uses the existing AppDialog and button

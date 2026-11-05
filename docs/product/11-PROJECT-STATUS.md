@@ -5,6 +5,19 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-05 — W5 approved source and media boundaries
+
+**Partial.** The current Figma source and four format nodes are recorded in
+[design status](../design/04-DESIGN-STATUS.md); the earlier missing-node report
+below concerned a different file. Work and receipt export remain unimplemented.
+The selected format examples do not locate every required W5 field and a receipt
+layout was not identified. Order details do not expose the author name; public
+work lookup can be unavailable for hidden or deleted work. The saved order cover
+is session-protected, so any later implementation must use the participant's
+existing authorization, avoid private source images and reject stale session
+results. File sharing on physical Safari and cross-origin credentialed media
+loading still need device verification. No API or commerce behavior changed.
+
 ## 2026-11-04 — W5 share export groundwork
 
 **Partial; NEEDS-FIGMA.** `apps/mobile/src/lib/share-card/layout.ts` provides
