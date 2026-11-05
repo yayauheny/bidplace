@@ -19,7 +19,7 @@ export type ReceiptCard = {
   source: string;
 };
 export type CardLayer =
-  | { kind: 'image'; fit: 'cover' | 'contain'; x: number; y: number; width: number; height: number }
+  | { kind: 'image'; fit: 'cover' | 'contain'; x: number; y: number; width: number; height: number; background?: 'blur' }
   | { kind: 'logo'; x: number; y: number; width: number }
   | { kind: 'pills'; y: number; rows: string[][] }
   | { kind: 'text'; x: number; y: number; width: number; text: string; size: number; lines: number; color: 'light' | 'dark' };
@@ -28,9 +28,9 @@ export function workTemplate(format: ShareFormat, work: WorkCard): CardLayer[] {
   const logoY = format === 'story' ? 0.244 : format === 'original' ? 0.45 : 0.04;
   const logoWidth = format === 'original' ? 0.455 : 0.398;
   const sale = [work.price, work.timer].filter((value): value is string => Boolean(value));
-  const rows = [[`@${work.handle}`], ...(sale.length ? [sale] : []), [work.title], ...(work.status ? [[work.status]] : [])];
+  const rows = format === 'original' ? [[`@${work.handle}`], [work.title], ...(work.status ? [[work.status]] : []), ...(sale.length ? [sale] : [])] : [[`@${work.handle}`], ...(sale.length ? [sale] : []), [work.title], ...(work.status ? [[work.status]] : [])];
   const layers: CardLayer[] = [
-    { kind: 'image', fit: format === 'original' ? 'contain' : 'cover', x: 0, y: 0, width: 1, height: 1 },
+    { kind: 'image', fit: 'contain', x: 0, y: 0, width: 1, height: 1, ...(format === 'original' ? {} : { background: 'blur' as const }) },
     { kind: 'logo', x: (1 - logoWidth) / 2, y: logoY, width: logoWidth },
     { kind: 'pills', y: logoY + 0.07, rows },
   ];

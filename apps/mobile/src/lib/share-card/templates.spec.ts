@@ -4,7 +4,8 @@ import { receiptTemplate, workTemplate } from './templates';
 describe('share templates', () => {
   it.each(['story', 'post', 'square', 'original'] as const)('includes real work data for %s and no optional description by default', (format) => {
     const layers = workTemplate(format, { title: 'Название', handle: 'artist', link: 'bid.place/works/abcdefghijk', price: '100 BYN', timer: '2 д.', status: 'Продано', description: null });
-    expect(layers[0]).toMatchObject({ kind: 'image', fit: format === 'original' ? 'contain' : 'cover' });
+    expect(layers[0]).toMatchObject({ kind: 'image', fit: 'contain' });
+    if (format === 'post' || format === 'square') expect(layers[0]).toMatchObject({ background: 'blur' });
     expect(JSON.stringify(layers)).toContain('Название');
     expect(JSON.stringify(layers)).toContain('Продано');
     expect(layers.filter((layer) => layer.kind === 'text').map((layer) => layer.text)).toEqual(['bid.place/works/abcdefghijk']);

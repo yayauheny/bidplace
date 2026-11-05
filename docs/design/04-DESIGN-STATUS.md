@@ -5,6 +5,16 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-11-05 — W5 export visual follow-up
+
+**Partial; NEEDS-FIGMA.** Work-card rendering now keeps the full image and uses
+a blurred image backdrop for fixed-size cards; missing order covers can produce a
+receipt without loading another image. Browser exports were inspected with framed
+and full-frame fixtures. Original still carries extra required title and status
+pills that obscure more artwork than Figma `5091:31443`; long title emphasis,
+light-background link contrast and exact per-format composition need visual
+resolution. Receipt has no approved design. Do not claim visual acceptance.
+
 ## 2026-11-05 — W5 export implementation
 
 **Partial; NEEDS-FIGMA.** Canvas export uses the designer's four share-card

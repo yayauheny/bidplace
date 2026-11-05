@@ -611,7 +611,7 @@ test('exports work cards in all four formats with a public link', async ({ page 
   }
 });
 
-test('exports completed order confirmation with its retained cover', async ({ page }, testInfo) => {
+for (const hasCover of [true, false]) test(`exports completed order confirmation ${hasCover ? 'with' : 'without'} a retained cover`, async ({ page }, testInfo) => {
   const { readFile, writeFile } = await import('node:fs/promises');
   const { resolve } = await import('node:path');
   await page.addInitScript(() => {
@@ -647,7 +647,7 @@ test('exports completed order confirmation with its retained cover', async ({ pa
   let receiptRequests = 0;
   await page.route(`**/api/orders/${orderId}/receipt-data`, (route) => {
     receiptRequests += 1;
-    return route.fulfill({ json: { publicId: orderId, dealCode: '123456', workTitle: 'Работа', sellerNameSnapshot: 'Автор из снимка', amountMinor: 12500, currency: 'BYN', source: 'FIXED_PURCHASE', completedAt: CLOCK, coverImageUrl: `/api/images/${imageId}` } });
+    return route.fulfill({ json: { publicId: orderId, dealCode: '123456', workTitle: 'Работа', sellerNameSnapshot: 'Автор из снимка', amountMinor: 12500, currency: 'BYN', source: 'FIXED_PURCHASE', completedAt: CLOCK, coverImageUrl: hasCover ? `/api/images/${imageId}` : null } });
   });
   const imageBytes = await readFile(resolve('assets/author-intro-collage.png'));
   await page.route('**/api/images/**', (route) => route.fulfill({ contentType: 'image/png', body: imageBytes, headers: { 'access-control-allow-origin': 'http://127.0.0.1:8094', 'access-control-allow-credentials': 'true' } }));

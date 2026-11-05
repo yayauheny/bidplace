@@ -38,8 +38,8 @@ function ReceiptExportContent({ order, epoch }: { order: OrderDetail; epoch: num
     try {
       const receipt = await api.commerce.getOrderReceiptData(order.publicId);
       if (!active()) return;
-      if (receipt.publicId !== order.publicId || !receipt.coverImageUrl) throw new Error('Данные подтверждения недоступны.');
-      const cover = await loadCover(receipt.coverImageUrl, 'participant');
+      if (receipt.publicId !== order.publicId) throw new Error('Данные подтверждения недоступны.');
+      const cover = receipt.coverImageUrl ? await loadCover(receipt.coverImageUrl, 'participant') : null;
       if (!active()) return;
       if (!logoUrl) throw new Error('Логотип недоступен.');
       const layers = receiptTemplate(receiptData(receipt));

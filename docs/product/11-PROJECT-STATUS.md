@@ -5,6 +5,14 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-05 — W5 image and receipt follow-up
+
+**Partial.** Work templates use a contained image and blurred backdrop so framed
+photos are not automatically cropped; receipt export can render without a cover
+when the saved order cover is null. Chromium/WebKit confirmed both receipt cases.
+Original composition, title and link legibility remain NEEDS-FIGMA; screenshots
+are local review artifacts and visual acceptance is not complete.
+
 ## 2026-11-05 — W5 receipt compatibility
 
 **Partial.** The old strict `OrderDetail` and admin attention shapes are restored.

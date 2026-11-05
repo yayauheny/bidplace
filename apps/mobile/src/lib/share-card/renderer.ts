@@ -15,22 +15,22 @@ async function decode(src: string): Promise<HTMLImageElement> {
 }
 
 export async function renderCard(input: {
-  cover: Blob;
+  cover: Blob | null;
   logoUrl: string;
   format: ShareFormat | 'receipt';
   layers: CardLayer[];
   preview?: boolean;
   crop?: { x: number; y: number; width: number; height: number } | null;
 }): Promise<Blob> {
-  const imageUrl = URL.createObjectURL(input.cover);
+  const imageUrl = input.cover ? URL.createObjectURL(input.cover) : null;
   let canvas: HTMLCanvasElement | undefined;
   try {
-    const [image, logo] = await Promise.all([decode(imageUrl), decode(input.logoUrl)]);
+    const [image, logo] = await Promise.all([imageUrl ? decode(imageUrl) : Promise.resolve(null), decode(input.logoUrl)]);
     const fonts = await document.fonts.load('16px Inter_500Medium');
     if (!fonts.length) throw new Error('Шрифт недоступен.');
     const size: Dimensions = input.format === 'receipt'
       ? { width: 1080, height: 1350 }
-      : canvasSize(input.format, { width: image.naturalWidth, height: image.naturalHeight });
+      : canvasSize(input.format, image ? { width: image.naturalWidth, height: image.naturalHeight } : undefined);
     const scale = input.preview ? Math.min(1, 350 / Math.max(size.width, size.height)) : 1;
     canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(size.width * scale));
@@ -44,7 +44,17 @@ export async function renderCard(input: {
     let logoBottom = 0;
     for (const layer of input.layers) {
       if (layer.kind === 'image') {
-        const fit = fitCroppedImage(layer.fit, { width: image.naturalWidth, height: image.naturalHeight }, { x: w * layer.x, y: h * layer.y, w: w * layer.width, h: h * layer.height }, input.format === 'original' || input.format === 'receipt' ? null : input.crop ?? null);
+        if (!image) continue;
+        const size = { width: image.naturalWidth, height: image.naturalHeight };
+        const box = { x: w * layer.x, y: h * layer.y, w: w * layer.width, h: h * layer.height };
+        if (layer.background === 'blur') {
+          const backdrop = fitCroppedImage('cover', size, box, null);
+          ctx.save();
+          ctx.filter = `blur(${Math.max(1, w * 0.1)}px)`;
+          ctx.drawImage(image, backdrop.sx, backdrop.sy, backdrop.sw, backdrop.sh, backdrop.dx, backdrop.dy, backdrop.dw, backdrop.dh);
+          ctx.restore();
+        }
+        const fit = fitCroppedImage(layer.fit, size, box, null);
         ctx.drawImage(image, fit.sx, fit.sy, fit.sw, fit.sh, fit.dx, fit.dy, fit.dw, fit.dh);
       } else if (layer.kind === 'logo') {
         const width = input.format === 'original' ? Math.min(w * layer.width, h * 0.3 * logo.naturalWidth / logo.naturalHeight) : w * layer.width;
@@ -105,6 +115,6 @@ export async function renderCard(input: {
     return await new Promise<Blob>((resolve, reject) => outputCanvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Не удалось сохранить изображение.')), mime, 0.9));
   } finally {
     if (canvas) { canvas.width = 0; canvas.height = 0; }
-    URL.revokeObjectURL(imageUrl);
+    if (imageUrl) URL.revokeObjectURL(imageUrl);
   }
 }
