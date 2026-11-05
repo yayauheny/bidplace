@@ -158,7 +158,6 @@ export class SellersController {
       'Cache-Control',
       getImageCacheControl({
         isPublic: photo.isPublic,
-        kind: 'seller-photo',
       }),
     );
     response.type(photo.profilePhotoMimeType);

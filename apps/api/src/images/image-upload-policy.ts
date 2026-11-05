@@ -126,11 +126,8 @@ export const PRIVATE_IMAGE_CACHE_CONTROL = 'private, no-store';
 export const MUTABLE_PUBLIC_IMAGE_CACHE_CONTROL =
   'public, max-age=0, must-revalidate';
 
-export type ImageCacheKind = 'product' | 'creation-step' | 'seller-photo';
-
 export function getImageCacheControl(input: {
   isPublic: boolean;
-  kind: ImageCacheKind;
 }): string {
   if (!input.isPublic) {
     return PRIVATE_IMAGE_CACHE_CONTROL;

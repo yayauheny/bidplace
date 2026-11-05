@@ -100,7 +100,11 @@ describe('admin user emergency controls HTTP transport', () => {
       }, { timeout: 5_000 }).toBe(true);
     } finally {
       release();
-      await holder;
+      try {
+        await holder;
+      } finally {
+        await pending;
+      }
     }
     expect((await pending).status).toBe(403);
     expect(await prisma.user.findUniqueOrThrow({ where: { id: fixture.buyer.id } })).toEqual(before);

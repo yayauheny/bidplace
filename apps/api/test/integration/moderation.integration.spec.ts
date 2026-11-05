@@ -190,7 +190,11 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       });
     } finally {
       release();
-      await holder;
+      try {
+        await holder;
+      } finally {
+        await pending;
+      }
     }
     expect((await pending).status).toBe(403);
     const stored = product

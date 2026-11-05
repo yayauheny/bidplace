@@ -1287,3 +1287,7 @@ The reported work-only right shift was not reproduced and received no speculativ
 ## 2026-11-05 — Authorization second pass (Partial)
 
 `AdminModerationService.updateSellerStatus` uses `FOR NO KEY UPDATE` to permit revoke-operation FK checks while excluding profile writers. A real HTTP/DB same-admin ban/suspension cycle changed from [200,500] to [200,200]; four catalog proposal role/ban races, two-admin moderation, ETag/hide and five historical-bid states are covered. Full API integration 642 passed (one W5 browser smoke skipped), API unit 1156 passed, Worker 46 passed; filtered build/typecheck/lint passed. [Audit](../audits/current/2026-11-05-AUTHORIZATION-AUDIT.md) recalibrates F1 to P2, records measured cache cost and keeps live storage/native/browser-history policy gaps Partial.
+
+## 2026-11-05 — Authorization review cleanup (Implemented)
+
+`admin-user-emergency.integration.spec.ts` and `moderation.integration.spec.ts` await pending HTTP requests in unconditional cleanup before fixture reset. `getImageCacheControl` no longer accepts unused `kind`; image, portfolio and seller controllers retain the same public/private headers, covered by two distinct policy cases. Filtered build/typecheck/lint and 22 HTTP/DB tests passed; 1152 API unit tests passed (four redundant kind-only cases removed). The initial unit run hit sandbox localhost EPERM; the permitted rerun passed.
