@@ -110,8 +110,17 @@ describe('order detail author snapshot', () => {
       listing: { findUnique: vi.fn().mockResolvedValue(null) },
     };
     const service = new OrdersService(db as never, {} as never, {} as never, {} as never);
-    expect((await service.get('buyer-1', stored.publicId)).sellerNameSnapshot).toBe('Original author');
-    expect((await service.get('seller-1', stored.publicId)).sellerNameSnapshot).toBe('Original author');
+    expect(await service.get('buyer-1', stored.publicId)).not.toHaveProperty('sellerNameSnapshot');
+    for (const userId of ['buyer-1', 'seller-1']) {
+      expect(await service.receiptData(userId, stored.publicId)).toEqual({
+        publicId: stored.publicId, dealCode: stored.dealCode, workTitle: 'Work',
+        sellerNameSnapshot: 'Original author', amountMinor: 1500, currency: 'BYN',
+        source: 'FIXED_PURCHASE', completedAt: '2026-10-31T12:00:00.000Z', coverImageUrl: null,
+      });
+    }
+    await expect(service.receiptData('other-user', stored.publicId)).rejects.toThrow('Order not found');
+    stored.status = 'ACTIVE';
+    await expect(service.receiptData('buyer-1', stored.publicId)).rejects.toThrow();
     await expect(service.get('other-user', stored.publicId)).rejects.toThrow('Order not found');
   });
 });
@@ -122,12 +131,12 @@ describe('admin order author snapshot', () => {
     const detail = toAdminOrderDetail({
       publicId: 'abcdefghijk', dealCode: '123456', status: 'COMPLETED', source: 'FIXED_PURCHASE',
       amountMinor: 1500, currency: 'BYN', workTitle: 'Work', workPublicId: 'workpublic1',
-      sellerNameSnapshot: 'Original author', coverImageId: null, createdAt: new Date('2026-10-30T12:00:00Z'),
+      coverImageId: null, createdAt: new Date('2026-10-30T12:00:00Z'),
       contactDeadlineAt: null, offerExpiresAt: null, buyerComment: null, sellerNote: null,
       failReason: null, faultSide: null, completedAt: new Date('2026-10-31T12:00:00Z'), failedAt: null,
       buyerEmail: 'buyer@example.invalid', buyerPhone: null, buyerTelegram: null, buyerInstagram: null, buyerVk: null,
       sellerEmail: 'seller@example.invalid', sellerPhone: null, sellerTelegram: null, sellerInstagram: null, sellerVk: null,
     });
-    expect(detail.sellerNameSnapshot).toBe('Original author');
+    expect(detail).not.toHaveProperty('sellerNameSnapshot');
   });
 });

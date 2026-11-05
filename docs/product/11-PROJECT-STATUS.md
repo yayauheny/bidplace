@@ -5,6 +5,18 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-05 — W5 receipt compatibility
+
+**Partial.** The old strict `OrderDetail` and admin attention shapes are restored.
+`GET /api/orders/:publicId/receipt-data` returns only saved receipt fields for
+the buyer or seller of a COMPLETED order, with `private, no-store`; the web
+client requests it at preparation time and checks its auth epoch before loading
+the saved cover. The isolated PostgreSQL 55434 order integration checks old
+responses, both participants, outsiders, admin, unfinished orders, deleted work,
+retained cover and buyer denial of the original source. Rollout is backend first,
+then frontend. The API image preview is the accepted MVP source for Original;
+visual receipt acceptance and physical Safari remain outstanding.
+
 ## 2026-11-05 — W5 export implementation
 
 **Partial; Needs verification.** Web `ShareSheet` prepares one selected work
@@ -12,16 +24,15 @@ format with the Canvas templates in `src/lib/share-card`; QR and link actions
 remain available. The published cover uses anonymous API media, the saved crop
 for non-original formats and a fresh lot read. `ReceiptExport` allows completed
 buyer/seller orders and builds its data from an explicit whitelist, including
-`OrderDetail.sellerNameSnapshot` rather than a live profile. The existing saved
+`sellerNameSnapshot` from the dedicated receipt endpoint rather than a live profile. The existing saved
 order cover is fetched with participant credentials and guarded by the auth
 epoch. Chromium/WebKit mocked-transport export scenarios pass; actual iOS Safari
 sharing, cross-origin deployment CORS and retained-cover database integration
 remain unverified. The API image route can return a preview derivative, so
 Original may be smaller than the published full derivative; extreme aspect
 ratios can fail when required labels cannot fit. Receipt design and the added
-card fields remain NEEDS-FIGMA. Older clients use strict order response
-schemas and can reject the added field, while the new client requires it; release
-needs a compatibility strategy rather than an API-first rollout alone.
+card fields remain NEEDS-FIGMA. The separate receipt endpoint preserves the old strict order response; deploy
+the compatible API before the new frontend.
 
 ## 2026-11-05 — W5 approved source and media boundaries
 

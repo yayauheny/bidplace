@@ -638,12 +638,17 @@ test('exports completed order confirmation with its retained cover', async ({ pa
     publicId: orderId, dealCode: '123456', status, source: 'FIXED_PURCHASE',
     amountMinor: 12500, currency: 'BYN', workTitle: 'Работа', workPublicId: PUBLIC_ID,
     coverImageUrl: `/api/images/${imageId}`, role: 'buyer', createdAt: CLOCK,
-    sellerNameSnapshot: 'Автор из снимка', contactDeadlineAt: null, offerExpiresAt: null,
+    contactDeadlineAt: null, offerExpiresAt: null,
     buyerComment: null, sellerNote: null, failReason: null, faultSide: null,
     completedAt: status === 'COMPLETED' ? CLOCK : null, failedAt: null, buyerContacts: null,
     sellerContacts: { email: 'private@example.invalid', phone: null, telegram: null, instagram: null, vk: null },
     sellerContactHint: null,
   } }));
+  let receiptRequests = 0;
+  await page.route(`**/api/orders/${orderId}/receipt-data`, (route) => {
+    receiptRequests += 1;
+    return route.fulfill({ json: { publicId: orderId, dealCode: '123456', workTitle: 'Работа', sellerNameSnapshot: 'Автор из снимка', amountMinor: 12500, currency: 'BYN', source: 'FIXED_PURCHASE', completedAt: CLOCK, coverImageUrl: `/api/images/${imageId}` } });
+  });
   const imageBytes = await readFile(resolve('assets/author-intro-collage.png'));
   await page.route('**/api/images/**', (route) => route.fulfill({ contentType: 'image/png', body: imageBytes, headers: { 'access-control-allow-origin': 'http://127.0.0.1:8094', 'access-control-allow-credentials': 'true' } }));
   await page.goto(`/account/orders/${orderId}`);
@@ -651,11 +656,15 @@ test('exports completed order confirmation with its retained cover', async ({ pa
   await expect(page.getByRole('button', { name: 'Подготовить подтверждение' })).toHaveCount(0);
   status = 'COMPLETED';
   await page.reload();
+  await expect(page.getByRole('button', { name: 'Подготовить подтверждение' })).toBeVisible();
+  expect(receiptRequests).toBe(0);
   await page.getByRole('button', { name: 'Подготовить подтверждение' }).click();
   await page.getByRole('button', { name: 'Поделиться подтверждением' }).click();
   await expect.poll(() => page.evaluate(() => Boolean(Reflect.get(window, '__receipt')))).toBe(true);
   const bytes = await page.evaluate(() => Reflect.get(window, '__receipt') as number[]);
   const texts = await page.evaluate(() => Reflect.get(window, '__receiptTexts') as string[]);
+  expect(receiptRequests).toBe(1);
+  expect(texts.join(' ')).toContain('Автор из снимка');
   expect(texts.join(' ')).toContain('Не является кассовым чеком');
   expect(texts.join(' ')).not.toContain('private@example.invalid');
   expect(bytes.slice(0, 8)).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);

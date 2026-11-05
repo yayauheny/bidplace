@@ -216,7 +216,6 @@ export class AttentionService {
         o.amount_minor AS "amountMinor",
         o.currency,
         o.work_title_snapshot AS "workTitle",
-        o.seller_name_snapshot AS "sellerNameSnapshot",
         o.work_public_id_snapshot AS "workPublicId",
         CASE WHEN product.deleted_at IS NULL THEN o.cover_image_id_snapshot ELSE NULL END AS "coverImageId",
         o.created_at AS "createdAt",

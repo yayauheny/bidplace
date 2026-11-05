@@ -33,6 +33,7 @@ import {
   listingTypeSchema,
   notificationSettingsSchema,
   orderDetailSchema,
+  orderReceiptDataSchema,
   orderNoteRequestSchema,
   orderStatusSchema,
   ordersListQuerySchema,
@@ -256,6 +257,9 @@ export function createCommerceClient(context: RequestContext) {
         orderDetailSchema,
         signalRequestOptions(options),
       );
+    },
+    getOrderReceiptData(publicId: string, options?: ReadCallOptions) {
+      return requestJson(context, `/api/orders/${publicId}/receipt-data`, orderReceiptDataSchema, signalRequestOptions(options));
     },
     acceptOrder(publicId: string) {
       return requestJson(

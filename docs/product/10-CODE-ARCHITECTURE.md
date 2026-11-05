@@ -3,16 +3,16 @@
 Последнее обновление: 2026-10-31
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
-## 2026-11-05 — Share export and order author snapshot
+## 2026-11-05 — Share export and order receipt data
 
-`OrderDetail` includes `sellerNameSnapshot`, sourced from the existing immutable
-order snapshot in both participant and administrative detail mappers. This is a
-strict response-contract change: older clients reject the extra field and newer
-clients require it, so deployment requires an explicit compatibility strategy.
-Web work and completed-order exports use the shared client Canvas renderer.
-Public covers load anonymously; participant receipt covers use only the exact
-saved API image path and current auth epoch. Receipt templates receive a whitelist
-of order fields, not contact data. No schema or trading transition changed.
+`GET /api/orders/:publicId/receipt-data` uses the existing order snapshot and
+participant access check, permits only a buyer or seller of a COMPLETED order,
+and returns a strict whitelist without contacts or notes. It is private and
+no-store. Existing `OrderDetail` and admin attention responses retain their
+previous strict shapes. The web client requests receipt data only when preparing
+a confirmation and verifies its session epoch before using retained cover media.
+The API image path still enforces its existing authorization; no source image or
+schema change is introduced. Deploy the compatible API before the new client.
 
 ## 2026-11-02 — Query-aware author entry
 

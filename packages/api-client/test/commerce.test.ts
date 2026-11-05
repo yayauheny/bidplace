@@ -65,6 +65,19 @@ function client(fetchImpl: typeof fetch) {
 }
 
 describe('commerce client', () => {
+  it('loads receipt data only from the dedicated endpoint and rejects private fields', async () => {
+    const data = { publicId: 'q7Xf2Kd9aB1', dealCode: '123456', workTitle: 'Bowl', sellerNameSnapshot: 'Author', amountMinor: 2500, currency: 'BYN', source: 'FIXED_PURCHASE', completedAt: now, coverImageUrl: null };
+    const calls: string[] = [];
+    const api = client(async (input) => {
+      calls.push(String(input));
+      return new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
+    });
+    await expect(api.commerce.getOrderReceiptData(data.publicId)).resolves.toEqual(data);
+    expect(calls).toEqual(['https://api.example.test/api/orders/q7Xf2Kd9aB1/receipt-data']);
+    const invalid = client(async () => new Response(JSON.stringify({ ...data, sellerNote: 'private' }), { headers: { 'content-type': 'application/json' } }));
+    await expect(invalid.commerce.getOrderReceiptData(data.publicId)).rejects.toThrow();
+  });
+
   it.each([
     { type: 'FIXED', startMode: 'now', currency: 'BYN', priceMinor: 1_500, contactWindowHours: 24 },
     { type: 'AUCTION', startMode: 'now', durationDays: 1, currency: 'BYN', startPriceMinor: 1_000, contactWindowHours: 24 },

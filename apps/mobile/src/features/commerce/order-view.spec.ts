@@ -16,7 +16,6 @@ function order(patch: Partial<OrderDetail> = {}): OrderDetail {
     amountMinor: 125000,
     currency: 'BYN',
     workTitle: 'Работа',
-    sellerNameSnapshot: 'Автор',
     workPublicId: 'workpublic01',
     coverImageUrl: null,
     role: 'buyer',

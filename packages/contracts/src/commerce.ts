@@ -381,7 +381,6 @@ const orderContactsSchema = z
 
 export const orderDetailSchema = orderSummarySchema
   .extend({
-    sellerNameSnapshot: z.string().min(1).max(160),
     contactDeadlineAt: isoDateTimeSchema.nullable(),
     offerExpiresAt: isoDateTimeSchema.nullable(),
     buyerComment: z.string().max(500).nullable(),
@@ -395,6 +394,19 @@ export const orderDetailSchema = orderSummarySchema
     sellerContactHint: z.string().nullable(),
   })
   .strict();
+
+export const orderReceiptDataSchema = z.object({
+  publicId: orderSummaryFields.publicId,
+  dealCode: orderSummaryFields.dealCode,
+  workTitle: orderSummaryFields.workTitle,
+  sellerNameSnapshot: z.string().min(1).max(160),
+  amountMinor: amountMinorSchema,
+  currency: currencySchema,
+  source: z.enum(ORDER_SOURCES),
+  completedAt: isoDateTimeSchema,
+  coverImageUrl: z.string().regex(/^\/api\/images\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).nullable(),
+}).strict();
+export type OrderReceiptData = z.infer<typeof orderReceiptDataSchema>;
 
 export const ordersListResponseSchema = z
   .object({
