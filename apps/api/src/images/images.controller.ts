@@ -226,7 +226,7 @@ export class ImagesController {
     );
     response.setHeader(
       'Cache-Control',
-      getImageCacheControl({ isPublic: image.isPublic, kind: 'product' }),
+      getImageCacheControl({ isPublic: image.isPublic }),
     );
     response.type(image.mimeType);
     response.send(Buffer.from(image.data));
@@ -323,7 +323,7 @@ export class ImagesController {
     );
     response.setHeader(
       'Cache-Control',
-      getImageCacheControl({ isPublic: image.isPublic, kind: 'product' }),
+      getImageCacheControl({ isPublic: image.isPublic }),
     );
     response.type(image.mimeType);
     response.send(Buffer.from(image.data));
@@ -350,7 +350,6 @@ export class ImagesController {
       'Cache-Control',
       getImageCacheControl({
         isPublic: image.isPublic,
-        kind: 'creation-step',
       }),
     );
     response.type(image.mimeType!);

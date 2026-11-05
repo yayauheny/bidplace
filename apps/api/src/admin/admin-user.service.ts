@@ -1,3 +1,4 @@
+import { assertActiveAdmin } from './admin-authorization';
 import { AntifraudService } from '../antifraud';
 import {
   type AdminUserRevokeSessionsRequest,
@@ -98,6 +99,7 @@ export class AdminUserService {
   ) {
     return runSerializableTransaction(this.prisma, async (tx) => {
       await this.antifraud.lockUsers(tx, [adminUserId, userId]);
+      await assertActiveAdmin(tx, adminUserId);
       const user = await tx.user.findUnique({
         where: { id: userId },
         select: {

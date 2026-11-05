@@ -425,3 +425,11 @@ queries, forms, client timestamps, user identity or environment are accepted.
 Database uniqueness/row locks own deduplication and inactivity sessions. New admin
 reports require the existing session/admin guards and private no-store responses.
 [Proof, configuration and production prerequisites](analytics-contract.md).
+
+## 2026-11-05 — Authorization audit (Partial)
+
+Queued moderation and emergency session-revoke writes now recheck active admin role inside the locked transaction. API product/story previews use public revalidation rather than a year-long immutable policy; private SOURCE/owner/admin/retained-cover responses remain no-store. Ten HTTP regressions were observed failing before their fixes and pass afterward. Existing downloaded/immutable-cached responses cannot be recalled. [Full matrix, reproduction, checks and remaining pilot gates](../audits/current/2026-11-05-AUTHORIZATION-AUDIT.md). Live storage/CDN and browser/device behavior remain Needs verification.
+
+## 2026-11-05 — Authorization second-pass limits
+
+The profile target lock is `FOR NO KEY UPDATE`; current-admin checks/actor locks remain. A real concurrent ban/suspension deadlock is fixed without generic error suppression. F1 is recalibrated P2 because withdrawal currently requires an operator outside the public API; no universal in-flight cancellation is promised. [Second-pass evidence](../audits/current/2026-11-05-AUTHORIZATION-AUDIT.md) separates HTTP/source/store-double evidence, measured API revalidation cost, decoded/browser/CDN/R2/server revoke mechanisms and remaining pilot checks. Public bid-history behavior is preserved pending any explicit product revision.

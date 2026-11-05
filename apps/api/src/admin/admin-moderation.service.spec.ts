@@ -26,7 +26,7 @@ function transactionPrisma(tx: object) {
   return {
     $transaction: vi.fn(
       async (callback: (client: object) => Promise<unknown>) =>
-        callback({ $queryRaw: vi.fn().mockResolvedValue([]), ...tx }),
+        callback({ $queryRaw: vi.fn().mockResolvedValue([]), user: { findUnique: vi.fn().mockResolvedValue({ role: 'admin', status: 'active' }) }, ...tx }),
     ),
   };
 }

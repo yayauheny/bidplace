@@ -40,7 +40,7 @@ describe('ImagesController binary response', () => {
     expect(response.statusCode).toBe(200);
     expect(response.type).toHaveBeenCalledWith('image/png');
     expect(response.headers.get('Cache-Control')).toBe(
-      'public, max-age=31536000, immutable',
+      'public, max-age=0, must-revalidate',
     );
     expect(response.body).toEqual(png);
     expect(response.body?.subarray(0, 8)).toEqual(png);

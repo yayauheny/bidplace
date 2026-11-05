@@ -1,3 +1,4 @@
+import { assertActiveAdmin } from './admin-authorization';
 import {
   moderationSummarySql,
   type ModerationResource,
@@ -421,7 +422,10 @@ export class AdminModerationService {
     const sellerProfile = await runSerializableTransaction(
       this.prisma,
       async (tx) => {
-        await tx.$queryRaw`SELECT id FROM seller_profiles WHERE id = ${sellerProfileId}::uuid FOR UPDATE`;
+        // Allow revoke-operation FK checks while excluding concurrent profile writers.
+        await tx.$queryRaw`SELECT id FROM seller_profiles WHERE id = ${sellerProfileId}::uuid FOR NO KEY UPDATE`;
+        await tx.$queryRaw`SELECT id FROM users WHERE id = ${adminUserId}::uuid FOR SHARE`;
+        await assertActiveAdmin(tx, adminUserId);
         const sellerProfile = await tx.sellerProfile.findUnique({
           where: { id: sellerProfileId },
           include: { editingRevision: true },
@@ -712,6 +716,8 @@ export class AdminModerationService {
       this.prisma,
       async (tx) => {
         await lockProductRowForUpdate(tx, productId);
+        await tx.$queryRaw`SELECT id FROM users WHERE id = ${adminUserId}::uuid FOR SHARE`;
+        await assertActiveAdmin(tx, adminUserId);
         const product = await tx.product.findUnique({
           where: { id: productId },
           include: {
@@ -1206,6 +1212,8 @@ export class AdminModerationService {
         throw new ConflictException('Catalog proposal is not awaiting review');
       }
       await lockProductRowForUpdate(tx, located.revision.productId);
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${adminUserId}::uuid FOR SHARE`;
+      await assertActiveAdmin(tx, adminUserId);
       const proposal = await tx.catalogProposal.findUnique({
         where: { id: proposalId },
       });

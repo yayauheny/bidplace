@@ -1,0 +1,14 @@
+{"engine":"chromium","count":10,"round":"cold","nest":10,"sql":50,"r2Get":10,"upstream200":10,"upstream304":0,"bodyBytes":680,"elapsedMs":95}
+{"engine":"chromium","count":10,"round":"remount","nest":0,"sql":0,"r2Get":0,"upstream200":0,"upstream304":0,"bodyBytes":0,"elapsedMs":2}
+{"engine":"chromium","count":10,"round":"reload","nest":10,"sql":50,"r2Get":10,"upstream200":0,"upstream304":10,"bodyBytes":0,"elapsedMs":31}
+{"engine":"chromium","count":30,"round":"cold","nest":30,"sql":150,"r2Get":30,"upstream200":30,"upstream304":0,"bodyBytes":2040,"elapsedMs":63}
+{"engine":"chromium","count":30,"round":"remount","nest":0,"sql":0,"r2Get":0,"upstream200":0,"upstream304":0,"bodyBytes":0,"elapsedMs":1}
+{"engine":"chromium","count":30,"round":"reload","nest":30,"sql":150,"r2Get":30,"upstream200":0,"upstream304":30,"bodyBytes":0,"elapsedMs":58}
+{"engine":"webkit","count":10,"round":"cold","nest":10,"sql":50,"r2Get":10,"upstream200":10,"upstream304":0,"bodyBytes":680,"elapsedMs":75}
+{"engine":"webkit","count":10,"round":"remount","nest":0,"sql":0,"r2Get":0,"upstream200":0,"upstream304":0,"bodyBytes":0,"elapsedMs":2}
+{"engine":"webkit","count":10,"round":"reload","nest":10,"sql":50,"r2Get":10,"upstream200":0,"upstream304":10,"bodyBytes":0,"elapsedMs":30}
+{"engine":"webkit","count":30,"round":"cold","nest":30,"sql":150,"r2Get":30,"upstream200":30,"upstream304":0,"bodyBytes":2040,"elapsedMs":79}
+{"engine":"webkit","count":30,"round":"remount","nest":0,"sql":0,"r2Get":0,"upstream200":0,"upstream304":0,"bodyBytes":0,"elapsedMs":3}
+{"engine":"webkit","count":30,"round":"reload","nest":30,"sql":150,"r2Get":30,"upstream200":0,"upstream304":30,"bodyBytes":0,"elapsedMs":119}
+{"authorJson":{"cacheControl":"no-store","afterBanAt29s":404,"originAfterBan":404,"after31s":404}}
+{"edgeJson":{"ttl":"public, max-age=0, s-maxage=30","afterHideAt29s":200,"imageAfterHide":404,"after31s":404},"boundary":"real Nest/DB; local router/cache model and counted S3 double; no production latency/billing"}

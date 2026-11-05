@@ -27,7 +27,7 @@ describe('AdminUserService', () => {
   it('revokes sessions and writes audit with stable labels', async () => {
     const tx = {
       user: {
-        findUnique: vi.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValueOnce({ role: 'admin', status: 'active' }).mockResolvedValue({
           id: 'user-1',
           email: 'user@example.com',
           displayName: 'User',

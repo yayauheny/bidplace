@@ -210,30 +210,8 @@ describe('image policy', () => {
   });
 
   it.each([
-    [
-      { isPublic: false, kind: 'product' as const },
-      'private, no-store',
-    ],
-    [
-      { isPublic: false, kind: 'seller-photo' as const },
-      'private, no-store',
-    ],
-    [
-      { isPublic: false, kind: 'creation-step' as const },
-      'private, no-store',
-    ],
-    [
-      { isPublic: true, kind: 'product' as const },
-      'public, max-age=31536000, immutable',
-    ],
-    [
-      { isPublic: true, kind: 'seller-photo' as const },
-      'public, max-age=0, must-revalidate',
-    ],
-    [
-      { isPublic: true, kind: 'creation-step' as const },
-      'public, max-age=0, must-revalidate',
-    ],
+    [{ isPublic: false }, 'private, no-store'],
+    [{ isPublic: true }, 'public, max-age=0, must-revalidate'],
   ])('selects cache control for %j', (input, expected) => {
     expect(getImageCacheControl(input)).toBe(expected);
   });

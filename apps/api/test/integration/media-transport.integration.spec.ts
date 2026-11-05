@@ -43,6 +43,47 @@ async function expectImageResponse(response: Response): Promise<void> {
 }
 
 describe('public media transport over HTTP and PostgreSQL', () => {
+  it.each(['hidden', 'deleted', 'suspended', 'banned'] as const)(
+    'requires API preview revalidation before a work becomes %s',
+    async (revocation) => {
+      const fixture = await createPermissionFixture(prisma);
+      const guest = new HttpTestClient(http.baseUrl);
+      const image = await prisma.productImage.findFirstOrThrow({ where: { productId: fixture.approvedProductId } });
+      const path = `/images/${image.id}`;
+      const publicImage = await guest.get(path);
+      await expectImageResponse(publicImage);
+      expect(publicImage.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate');
+      expect((await guest.get(`${path}?source=true`)).status).toBe(404);
+      if (revocation === 'hidden' || revocation === 'deleted') {
+        await prisma.product.update({ where: { id: fixture.approvedProductId }, data:
+          revocation === 'hidden' ? { status: 'ARCHIVED' } : { deletedAt: new Date() },
+        });
+      } else if (revocation === 'suspended') {
+        await prisma.sellerProfile.update({ where: { id: fixture.sellers.approved.profileId }, data: { status: 'SUSPENDED' } });
+      } else {
+        await prisma.user.update({ where: { id: fixture.sellers.approved.id }, data: { status: 'banned' } });
+      }
+      expect((await guest.get(path)).status).toBe(404);
+    },
+  );
+
+  it('rechecks current visibility before honoring a public image ETag', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const image = await prisma.productImage.findFirstOrThrow({ where: { productId: fixture.approvedProductId } });
+    const guest = new HttpTestClient(http.baseUrl);
+    const path = `/images/${image.id}`;
+    const first = await guest.get(path);
+    await expectImageResponse(first);
+    const etag = first.headers.get('etag');
+    expect(etag).toBeTruthy();
+    const headers = { 'if-none-match': etag!, 'cache-control': 'max-age=0' };
+    const unchanged = await guest.get(path, { headers });
+    expect(unchanged.status).toBe(304);
+    expect((await unchanged.arrayBuffer()).byteLength).toBe(0);
+    await prisma.product.update({ where: { id: fixture.approvedProductId }, data: { status: 'ARCHIVED' } });
+    expect((await guest.get(path, { headers })).status).toBe(404);
+  });
+
   it('enforces aggregate Product image capacity in PostgreSQL', async () => {
     const fixture = await createPermissionFixture(prisma);
     const product = await prisma.product.create({
@@ -100,7 +141,7 @@ describe('public media transport over HTTP and PostgreSQL', () => {
     const imageResponse = await guest.get(`/images/${productImage.id}`);
     await expectImageResponse(imageResponse);
     expect(imageResponse.headers.get('cache-control')).toBe(
-      'public, max-age=31536000, immutable',
+      'public, max-age=0, must-revalidate',
     );
     const bids = await guest.get(`/listings/${fixture.approvedListingId}/bids`);
     expect(bids.status).toBe(200);

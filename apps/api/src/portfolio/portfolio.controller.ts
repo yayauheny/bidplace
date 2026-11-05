@@ -102,7 +102,7 @@ export class PortfolioController {
     const photo = await this.portfolio.getApplicationPhoto(auth.sub);
     response.setHeader(
       'Cache-Control',
-      getImageCacheControl({ isPublic: false, kind: 'seller-photo' }),
+      getImageCacheControl({ isPublic: false }),
     );
     response.type(photo.mimeType);
     response.send(Buffer.from(photo.data));
@@ -157,7 +157,7 @@ export class PortfolioController {
     );
     response.setHeader(
       'Cache-Control',
-      getImageCacheControl({ isPublic: image.isPublic, kind: 'seller-photo' }),
+      getImageCacheControl({ isPublic: image.isPublic }),
     );
     response.type(image.mimeType);
     response.send(Buffer.from(image.data));

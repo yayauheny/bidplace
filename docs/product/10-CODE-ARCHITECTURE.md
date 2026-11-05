@@ -1150,3 +1150,7 @@ supplies server `ANALYTICS_WEB_ENABLED`, separate from public client configurati
 Existing PostgreSQL growth aggregation counts distinct sessions per active UTC day;
 no table, migration, service or dependency is added. The feature-owned period helper
 and single-series SVG view reuse Bidplace shells, tabs, fields and PaddedGrid.
+
+## 2026-11-05 — Administrative mutation actor invariant
+
+`apps/api/src/admin/admin-authorization.ts` owns the current active-admin assertion for moderation and emergency session revoke. Its caller holds the actor user row lock until commit: moderation takes `FOR SHARE` after the target lock; emergency revoke uses existing `AntifraudService.lockUsers`. This serializes role/status changes with the checked write. Profile moderation takes `FOR NO KEY UPDATE` on its target so a concurrent ban can complete the `media_operations.profile_id` FK `KEY SHARE` check without a profile → actor → profile deadlock; profile writers remain mutually excluded. Public contracts and persistence models are unchanged; commerce's existing actor checks remain in its owner. [Audit evidence](../audits/current/2026-11-05-AUTHORIZATION-AUDIT.md).
