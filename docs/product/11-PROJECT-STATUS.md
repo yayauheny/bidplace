@@ -1283,3 +1283,7 @@ The reported work-only right shift was not reproduced and received no speculativ
 ## 2026-11-05 — Authorization audit (Partial)
 
 `admin-moderation.service.ts` and `admin-user.service.ts` recheck the current active admin under actor row locks; six HTTP role/ban race regressions now reject unauthorized queued writes. `image-upload-policy.ts` requires API preview revalidation; four revoke/header regressions cover hide/delete/suspension/ban. API integration 630 passed (602 general + 28 isolated auth-abuse), API unit 1156 passed, client cache/commerce 161 passed; browser smoke and live storage/CDN remain Needs verification. [Matrix, findings and limits](../audits/current/2026-11-05-AUTHORIZATION-AUDIT.md). W5 code and production untouched.
+
+## 2026-11-05 — Authorization second pass (Partial)
+
+`AdminModerationService.updateSellerStatus` uses `FOR NO KEY UPDATE` to permit revoke-operation FK checks while excluding profile writers. A real HTTP/DB same-admin ban/suspension cycle changed from [200,500] to [200,200]; four catalog proposal role/ban races, two-admin moderation, ETag/hide and five historical-bid states are covered. Full API integration 642 passed (one W5 browser smoke skipped), API unit 1156 passed, Worker 46 passed; filtered build/typecheck/lint passed. [Audit](../audits/current/2026-11-05-AUTHORIZATION-AUDIT.md) recalibrates F1 to P2, records measured cache cost and keeps live storage/native/browser-history policy gaps Partial.

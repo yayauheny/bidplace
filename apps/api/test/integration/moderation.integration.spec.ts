@@ -200,6 +200,29 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     expect(await auditFor(product ? 'PRODUCT' : 'SELLER_PROFILE', id)).toEqual([]);
   });
 
+  it('permits two current admins to moderate different profiles concurrently with one audit each', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const first = await createAdmin(prisma, randomUUID());
+    const second = await createAdmin(prisma, randomUUID());
+    const firstClient = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '198.51.100.91');
+    const secondClient = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '198.51.100.92');
+    await login(firstClient, first);
+    await login(secondClient, second);
+    const ids = [fixture.sellers.approved.profileId, fixture.sellers.otherApproved.profileId];
+    const bodies = await Promise.all(ids.map((id) => sellerModerationRequest(prisma, id, 'SUSPENDED', 'Concurrent review')));
+    const responses = await Promise.all([
+      firstClient.patch(`/admin/seller-profiles/${ids[0]}/status`, bodies[0]),
+      secondClient.patch(`/admin/seller-profiles/${ids[1]}/status`, bodies[1]),
+    ]);
+    expect(responses.map((response) => response.status)).toEqual([200, 200]);
+    for (const [index, id] of ids.entries()) {
+      expect((await prisma.sellerProfile.findUniqueOrThrow({ where: { id } })).status).toBe('SUSPENDED');
+      expect(await auditFor('SELLER_PROFILE', id)).toEqual([
+        expect.objectContaining({ actorUserId: index === 0 ? first.id : second.id, newStatus: 'SUSPENDED' }),
+      ]);
+    }
+  });
+
   it('rejects approval of a submitted revision without a direction and preserves its unpublished state', async () => {
     const fixture = await createPermissionFixture(prisma);
     const { adminClient, applicantClient } = await adminAndApplicant(fixture);

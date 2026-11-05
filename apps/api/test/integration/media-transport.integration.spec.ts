@@ -67,6 +67,23 @@ describe('public media transport over HTTP and PostgreSQL', () => {
     },
   );
 
+  it('rechecks current visibility before honoring a public image ETag', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const image = await prisma.productImage.findFirstOrThrow({ where: { productId: fixture.approvedProductId } });
+    const guest = new HttpTestClient(http.baseUrl);
+    const path = `/images/${image.id}`;
+    const first = await guest.get(path);
+    await expectImageResponse(first);
+    const etag = first.headers.get('etag');
+    expect(etag).toBeTruthy();
+    const headers = { 'if-none-match': etag!, 'cache-control': 'max-age=0' };
+    const unchanged = await guest.get(path, { headers });
+    expect(unchanged.status).toBe(304);
+    expect((await unchanged.arrayBuffer()).byteLength).toBe(0);
+    await prisma.product.update({ where: { id: fixture.approvedProductId }, data: { status: 'ARCHIVED' } });
+    expect((await guest.get(path, { headers })).status).toBe(404);
+  });
+
   it('enforces aggregate Product image capacity in PostgreSQL', async () => {
     const fixture = await createPermissionFixture(prisma);
     const product = await prisma.product.create({

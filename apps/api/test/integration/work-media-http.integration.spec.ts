@@ -31,6 +31,7 @@ import {
 } from './test-database';
 import {
   attachAuthorDirection,
+  createPermissionFixture,
   fixturePasswordHash,
 } from './permission-fixtures';
 import {
@@ -827,5 +828,58 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     });
     expect((await guest.get(publishedPath)).status).toBe(404);
     expect((await owner.client.get(publishedPath)).status).toBe(200);
+  });
+
+  it('serializes profile suspension with a simultaneous ban by the same admin without a deadlock response', async () => {
+    const fixture = await createPermissionFixture(db.prisma);
+    const admin = await user('admin', `lock-admin-${randomUUID()}`);
+    const profileId = fixture.sellers.approved.profileId;
+    const mediaId = randomUUID();
+    await db.prisma.mediaAsset.create({ data: {
+      id: mediaId, ownerUserId: fixture.sellers.approved.id, purpose: 'AUTHOR_PHOTO', state: 'READY',
+      objects: { create: {
+        tier: 'PUBLIC', variant: 'PREVIEW', pipelineVersion: 'v1', state: 'READY',
+        objectKey: `assets/${mediaId}/p1/preview.webp`, publicUrl: `https://media.example.test/assets/${mediaId}/p1/preview.webp`, mimeType: 'image/webp',
+        byteLength: 8, sha256: 'a'.repeat(64), width: 1, height: 1,
+      } },
+    } });
+    const body = await sellerModerationRequest(db.prisma, profileId, 'SUSPENDED', 'Concurrent suspension');
+    let entered!: () => void;
+    let release!: () => void;
+    const ready = new Promise<void>((resolve) => { entered = resolve; });
+    const released = new Promise<void>((resolve) => { release = resolve; });
+    const original = media.enqueueRevoke.bind(media);
+    const enqueue = vi.spyOn(media, 'enqueueRevoke').mockImplementationOnce(async (...args) => {
+      entered();
+      await released;
+      return original(...args);
+    });
+    const ban = admin.client.patch(`/admin/users/${fixture.sellers.approved.id}/status`, { status: 'banned', reason: 'Concurrent ban' });
+    let suspension: Promise<Response> | undefined;
+    try {
+      await Promise.race([ready, ban.then(() => { throw new Error('Ban finished before reaching the revoke barrier'); })]);
+      suspension = admin.client.patch(`/admin/seller-profiles/${profileId}/status`, body);
+      await expect.poll(async () => {
+        const [row] = await db.prisma.$queryRaw<Array<{ waiting: boolean }>>`
+          SELECT EXISTS (
+            SELECT 1 FROM pg_locks l JOIN pg_class c ON c.oid = l.relation
+            JOIN pg_namespace n ON n.oid = c.relnamespace JOIN pg_stat_activity a ON a.pid = l.pid
+            WHERE c.relname = 'users' AND n.nspname = current_schema() AND a.wait_event_type = 'Lock'
+          ) AS waiting
+        `;
+        return row?.waiting;
+      }, { timeout: 5_000 }).toBe(true);
+      release();
+      const responses = await Promise.all([ban, suspension]);
+      expect(responses.map((response) => response.status)).toEqual([200, 200]);
+      expect((await db.prisma.user.findUniqueOrThrow({ where: { id: fixture.sellers.approved.id } })).status).toBe('banned');
+      expect((await db.prisma.sellerProfile.findUniqueOrThrow({ where: { id: profileId } })).status).toBe('SUSPENDED');
+      expect(await db.prisma.auditEvent.count({ where: { actorUserId: admin.row.id, targetId: profileId, action: 'DECISION' } })).toBe(1);
+      expect(await db.prisma.auditEvent.count({ where: { actorUserId: admin.row.id, targetId: fixture.sellers.approved.id, newStatus: 'banned' } })).toBe(1);
+    } finally {
+      release();
+      await Promise.allSettled(suspension ? [ban, suspension] : [ban]);
+      enqueue.mockRestore();
+    }
   });
 });

@@ -617,6 +617,63 @@ describe('author story, catalog, and proposals', () => {
     ).toBe('Черновая история');
   });
 
+  it.each([
+    ['map', 'demoted'], ['map', 'banned'],
+    ['reject', 'demoted'], ['reject', 'banned'],
+  ] as const)('refuses a queued catalog %s after the admin is %s and permits a fresh authorized decision', async (action, revocation) => {
+    await bootstrapCatalog(prisma as never);
+    const { owner, profile, painting } = await authorWithoutCity();
+    const admin = await user('admin');
+    const work = await draftWork(owner.id, profile.id, 'Queued proposal', painting.id);
+    await prisma.product.update({ where: { id: work.product.id }, data: { status: 'PENDING_REVIEW' } });
+    await prisma.productRevision.update({ where: { id: work.revision.id }, data: { status: 'PENDING_REVIEW' } });
+    const proposal = await prisma.catalogProposal.create({ data: {
+      authorUserId: owner.id, productRevisionId: work.revision.id,
+      kind: 'CATEGORY', rawName: 'Queued category', normalizedName: 'queued category',
+    } });
+    const beforeRevision = await prisma.productRevision.findUniqueOrThrow({ where: { id: work.revision.id } });
+    const beforeProduct = await prisma.product.findUniqueOrThrow({ where: { id: work.product.id } });
+    const beforeAudits = await prisma.auditEvent.findMany({ where: { targetId: work.product.id } });
+    let release!: () => void;
+    let acquired!: () => void;
+    const released = new Promise<void>((resolve) => { release = resolve; });
+    const ready = new Promise<void>((resolve) => { acquired = resolve; });
+    const holder = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM products WHERE id = ${work.product.id}::uuid FOR UPDATE`;
+      acquired();
+      await released;
+    }, { timeout: 15_000 });
+    await ready;
+    const path = `/admin/catalog/proposals/${proposal.id}/${action}`;
+    const body = action === 'map' ? { categoryId: painting.id } : { reason: 'Needs a known category' };
+    const pending = admin.client.post(path, body);
+    try {
+      await expect.poll(async () => {
+        const [row] = await prisma.$queryRaw<Array<{ waiting: boolean }>>`
+          SELECT EXISTS (
+            SELECT 1 FROM pg_locks l JOIN pg_class c ON c.oid = l.relation
+            JOIN pg_namespace n ON n.oid = c.relnamespace JOIN pg_stat_activity a ON a.pid = l.pid
+            WHERE c.relname = 'products' AND n.nspname = current_schema() AND a.wait_event_type = 'Lock'
+          ) AS waiting
+        `;
+        return row?.waiting;
+      }, { timeout: 5_000 }).toBe(true);
+      await prisma.user.update({ where: { id: admin.id }, data:
+        revocation === 'demoted' ? { role: 'user' } : { status: 'banned', sessionVersion: { increment: 1 } },
+      });
+    } finally { release(); await holder; await pending; }
+    expect((await pending).status).toBe(403);
+    expect(await prisma.catalogProposal.findUniqueOrThrow({ where: { id: proposal.id } })).toEqual(proposal);
+    expect(await prisma.productRevision.findUniqueOrThrow({ where: { id: work.revision.id } })).toEqual(beforeRevision);
+    expect(await prisma.product.findUniqueOrThrow({ where: { id: work.product.id } })).toEqual(beforeProduct);
+    expect(await prisma.auditEvent.findMany({ where: { targetId: work.product.id } })).toEqual(beforeAudits);
+    await prisma.user.update({ where: { id: admin.id }, data: { role: 'admin', status: 'active' } });
+    await login(admin.client, admin.email);
+    expect((await admin.client.post(path, body)).status).toBe(201);
+    expect((await prisma.catalogProposal.findUniqueOrThrow({ where: { id: proposal.id } })).status).toBe(action === 'map' ? 'APPROVED' : 'REJECTED');
+    expect(await prisma.auditEvent.count({ where: { targetId: work.product.id, actorUserId: admin.id } })).toBe(beforeAudits.length + 1);
+  });
+
   it('blocks publication until a proposal is mapped and returns a rejected proposal for changes', async () => {
     await bootstrapCatalog(prisma as never);
     const { owner, profile, painting } = await authorWithoutCity();

@@ -641,6 +641,40 @@ describe('accepted bids', () => {
 });
 
 describe('bid history', () => {
+  it.each(['hidden', 'deleted', 'author-banned', 'ended', 'cancelled'] as const)(
+    'serves only pseudonymous bid history at a saved URL after the work or lot is %s',
+    async (state) => {
+      const fixture = await createPermissionFixture(prisma);
+      await prisma.bid.create({ data: {
+        listingId: fixture.approvedListingId, bidderUserId: fixture.buyer.id,
+        amountMinor: 1_000, idempotencyKey: `history-${randomUUID()}`,
+      } });
+      const visitor = client();
+      const path = `/listings/${fixture.approvedListingId}/bids`;
+      const before = await visitor.get(path);
+      expect(before.status).toBe(200);
+      const history = await before.json();
+      if (state === 'hidden' || state === 'deleted') {
+        const owner = await signedIn(fixture.sellers.approved.email, fixture.sellers.approved.password);
+        const changed = state === 'hidden'
+          ? await owner.post(`/products/${fixture.approvedProductId}/hide`)
+          : await owner.delete(`/products/${fixture.approvedProductId}`);
+        expect(changed.status).toBe(state === 'hidden' ? 201 : 204);
+      } else if (state === 'author-banned') {
+        const admin = await extraUser('history-admin');
+        await prisma.user.update({ where: { id: admin.id }, data: { role: 'admin' } });
+        expect((await admin.client.patch(`/admin/users/${fixture.sellers.approved.id}/status`, { status: 'banned', reason: 'History boundary' })).status).toBe(200);
+      } else {
+        await prisma.listing.update({ where: { id: fixture.approvedListingId }, data: { status: state === 'ended' ? 'ENDED' : 'CANCELLED' } });
+      }
+      const after = await visitor.get(path);
+      expect(after.status).toBe(200);
+      expect(after.headers.get('cache-control')).toBe('no-store');
+      expect(await after.json()).toEqual(history);
+      expect(history).toEqual({ bids: [{ amountMinor: 1_000, createdAt: expect.any(String), participantLabel: 'Участник 1' }] });
+    },
+  );
+
   it('shows the latest 20 bids as Участник N without names or contacts', async () => {
     const fixture = await createPermissionFixture(prisma);
     const { listingId } = await liveAuction(fixture);
