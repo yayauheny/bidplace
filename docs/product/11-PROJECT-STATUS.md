@@ -5,6 +5,21 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-05 — W5 technical integration checks
+
+**Partial; needs device verification.** `commerce-live.spec.ts` now exercises all
+four formats, a failed cover request and retry, download fallback, auction data,
+and a completed order receipt after the public work is deleted, using the real
+API and disposable PostgreSQL. Node 22: live Chromium/WebKit 10/10 and export Chromium/WebKit 6/6; API orders
+and media integration 104/104; share/receipt unit 26/26; orders service 4/4;
+contracts 112/112 and API client 60/60. API and mobile typecheck and lint passed;
+API dependency and mobile web builds passed. Database test server used UTC to
+match timestamp fixtures. Browser Web Share was simulated; physical iOS Safari
+and a trusted HTTPS application stand remain unverified. PR #101 changes image
+security and has merged separately; verify this branch against that integrated
+code before release. Backend must precede frontend. Visual acceptance is deferred:
+see [AFTER-WAVES](../launch/AFTER-WAVES.md).
+
 ## 2026-11-05 — W5 link and logo details
 
 **Partial.** Work exports replace outlined link text with a light chip and dark
