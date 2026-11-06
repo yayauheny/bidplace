@@ -72,3 +72,20 @@ it('requires the internal tick secret and forwards the optional schedule', () =>
   expect(containerEnvironment({ ...env, TICK_CRON: '*/5 * * * *' } as RuntimeEnvironment).TICK_CRON)
     .toBe('*/5 * * * *');
 });
+
+it('omits every SMTP setting and credential from staging containers', () => {
+  const env = Object.fromEntries(
+    [...containerVariables, ...requiredSecrets].map((name) => [
+      name,
+      `fixture-${name}`,
+    ]),
+  );
+  env.APP_ENV = 'staging';
+  for (const key of Object.keys(env))
+    if (key.startsWith('SMTP_')) delete env[key];
+  const result = containerEnvironment(env as RuntimeEnvironment);
+  expect(Object.keys(result).some((name) => name.startsWith('SMTP_'))).toBe(
+    false,
+  );
+  expect(result.APP_ENV).toBe('staging');
+});

@@ -13,7 +13,7 @@
     "db:generate": "pnpm --filter @bidplace/database db:generate",
     "db:migrate": "pnpm --filter @bidplace/database db:migrate",
     "db:seed": "pnpm --filter @bidplace/database db:seed",
-    "db:reset:demo": "echo '\\n⚠️  ВНИМАНИЕ: База данных очищается!\\n' && pnpm --filter @bidplace/database db:seed",
+    "db:reset:demo": "echo '\\n\u26a0\ufe0f  \u0412\u041d\u0418\u041c\u0410\u041d\u0418\u0415: \u0411\u0430\u0437\u0430 \u0434\u0430\u043d\u043d\u044b\u0445 \u043e\u0447\u0438\u0449\u0430\u0435\u0442\u0441\u044f!\\n' && pnpm --filter @bidplace/database db:seed",
     "test:unit": "pnpm --filter @bidplace/config test && pnpm build:api && pnpm --filter @bidplace/api test && pnpm --filter @bidplace/contracts test && pnpm --filter @bidplace/api-client test && pnpm exec turbo run test --filter=@bidplace/database && pnpm --filter @bidplace/mobile test",
     "test:integration": "pnpm --filter @bidplace/api test:integration",
     "verify": "pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:ops && pnpm --filter @bidplace/mobile test:e2e-fence && pnpm test:integration && pnpm build",
@@ -38,7 +38,8 @@
     "cloudflare:check": "pnpm exec tsc -p deploy/cloudflare/tsconfig.json && pnpm exec eslint deploy/cloudflare scripts/cloudflare --ext .ts,.mts,.mjs,.cjs && pnpm exec vitest run --config deploy/cloudflare/vitest.config.mts && node --test scripts/cloudflare/*.spec.mjs",
     "cloudflare:image:verify": "node scripts/cloudflare/verify-image.mjs",
     "cloudflare:deploy": "node scripts/cloudflare/deploy.mjs production",
-    "cloudflare:migrate": "node scripts/cloudflare/migrate.mjs"
+    "cloudflare:migrate": "node scripts/cloudflare/migrate.mjs",
+    "cloudflare:accounts:staging": "node scripts/cloudflare/staging-accounts.mjs"
   },
   "devDependencies": {
     "@cloudflare/containers": "0.3.7",

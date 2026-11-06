@@ -28,6 +28,13 @@ const result = spawnSync(
           : 'false',
       EXPO_PUBLIC_ANALYTICS_ENABLED: config.vars.ANALYTICS_INGEST_ENABLED,
       EXPO_PUBLIC_TURNSTILE_SITE_KEY: siteKey,
+      CLOUDFLARE_API_TOKEN: secretCanary,
+      CF_ACCESS_CLIENT_ID: secretCanary,
+      CF_ACCESS_CLIENT_SECRET: secretCanary,
+      STAGING_TEST_PASSWORD: secretCanary,
+      NEON_DIRECT_URL: secretCanary,
+      RELEASE_CONTROL: secretCanary,
+      S3_ACCESS_KEY_ID: secretCanary,
       SESSION_SECRET: secretCanary,
       OTP_HASH_SECRET: secretCanary,
       GOOGLE_CLIENT_ID: secretCanary,
@@ -65,7 +72,7 @@ function verifyAssets(directory) {
     if (contents.includes(secretCanary))
       throw new Error('Non-public build setting leaked into assets');
     if (contents.includes(config.vars.API_URL)) matchingOrigin = true;
-    if (contents.includes('https://staging.bid.place'))
+    if (contents.includes(target === 'staging' ? 'https://bid.place' : 'https://staging.bid.place'))
       throw new Error('Static assets contain the other environment API origin');
   }
 }

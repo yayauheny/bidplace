@@ -232,7 +232,12 @@ Evidence checklist:
 
 ## Staging smoke
 
-The staging smoke is read-only: it checks health/readiness, public Home/Works/
+For the isolated Access-protected stand and exact-SHA operations, follow
+[Staging deployment](STAGING-DEPLOYMENT.md). Its smoke remains read-only.
+The historical generic staging smoke below predates that contract and its
+URLs/unauthenticated invocation are not supported by the current script.
+
+The historical staging smoke is read-only: it checks health/readiness, public Home/Works/
 Authors API reads and verifies that SPA host routes for login, Works, Authors,
 profile and cabinet are not host-level 404s. It does not authenticate, create
 data or invoke object storage.

@@ -82,7 +82,7 @@ test('release and internal routes reach the worker before the SPA fallback', asy
   const full = JSON.parse(readFileSync(configPath, 'utf8'));
   assert.equal(full.env.production.assets, undefined);
   assert.equal(full.assets.not_found_handling, 'single-page-application');
-  assert.deepEqual(full.assets.run_worker_first, ['/api', '/api/*', '/_release/stop', '/_release/state']);
+  assert.deepEqual(full.assets.run_worker_first, ['/api', '/api/*', '/_release/stop', '/_release/state', '/_release/version']);
   const wranglerPackage = realpathSync(
     new URL('../../node_modules/wrangler/package.json', import.meta.url),
   );
@@ -116,7 +116,7 @@ test('release and internal routes reach the worker before the SPA fallback', asy
     ],
   });
   try {
-    for (const path of ['/_release/stop', '/_release/state', '/api/internal/tick', '/api/%69nternal/tick']) {
+    for (const path of ['/_release/stop', '/_release/state', '/_release/version', '/api/internal/tick', '/api/%69nternal/tick']) {
       for (const method of ['GET', 'POST']) {
         const response = await worker.dispatchFetch(
           `https://bid.place${path}`,
@@ -276,13 +276,13 @@ test('tick schedule rejects invalid cron fields without echoing the input', () =
   }
 });
 
-test('only production is a supported deployment target', () => {
+test('staging and production are distinct targets and staging cron stays disabled', () => {
   const full = JSON.parse(readFileSync(configPath, 'utf8'));
-  assert.deepEqual(Object.keys(full.env), ['production']);
-  for (const target of ['staging', undefined, 'preview']) {
-    assert.throws(() => deploymentConfig(target), /Choose production/);
+  assert.deepEqual(Object.keys(full.env).sort(), ['production', 'staging']);
+  assert.equal(deploymentConfig('staging').vars.APP_ENV, 'staging');
+  assert.deepEqual(deploymentConfig('staging').triggers, { crons: [] });
+  assert.notEqual(deploymentConfig('staging').name, deploymentConfig('production').name);
+  for (const target of ['unknown', undefined, 'preview']) {
+    assert.throws(() => deploymentConfig(target), /Choose staging or production/);
   }
-  const scripts = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts;
-  assert.equal(Object.hasOwn(scripts, 'cloudflare:deploy:staging'), false);
-  assert.equal(Object.hasOwn(scripts, 'cloudflare:build:staging'), false);
 });

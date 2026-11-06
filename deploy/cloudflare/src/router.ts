@@ -8,6 +8,7 @@ export interface RouterBindings {
   RELEASE_CONTROL?: string;
   RELEASE_ID?: string;
   RELEASE_IMAGE?: string;
+  APP_ENV?: string;
 }
 
 const privateResponse = { 'Cache-Control': 'no-store' };
@@ -86,7 +87,11 @@ function forwardedRequest(request: Request): Request {
   const clientIp = request.headers.get('CF-Connecting-IP');
   // Trust only Cloudflare's ingress IP, never client-supplied proxy headers.
   for (const name of ['Forwarded', 'X-Forwarded-For', 'X-Real-IP',
-    'X-Forwarded-Host', 'X-Forwarded-Proto']) headers.delete(name);
+    'X-Forwarded-Host', 'X-Forwarded-Proto',
+    'CF-Access-Client-Id',
+    'CF-Access-Client-Secret',
+    'Cf-Access-Jwt-Assertion',
+  ]) headers.delete(name);
   if (clientIp) headers.set('X-Forwarded-For', clientIp);
   headers.set('X-Forwarded-Proto', 'https');
   headers.set('X-Forwarded-Host', new URL(request.url).host);
@@ -142,6 +147,11 @@ export async function routeRequest(
   cache: Cache,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === '/_release/version' && env.APP_ENV === 'staging') {
+    return request.method === 'GET'
+      ? Response.json({ releaseId: env.RELEASE_ID ?? null }, { headers: privateResponse })
+      : new Response(null, { status: 404, headers: privateResponse });
+  }
   if (internalApiPath(url.pathname)) {
     return new Response(null, { status: 404, headers: privateResponse });
   }

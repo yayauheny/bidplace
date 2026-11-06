@@ -1,16 +1,26 @@
 import { describe, expect, it } from 'vitest';
 
+import { MailDeliveryDisabledError } from '../../core/mail/mail-transport';
 import { classifyMailFailure } from './mail-outcome';
 
 describe('classifyMailFailure', () => {
+  it('treats disabled staging delivery as a guaranteed rejection', () => {
+    expect(classifyMailFailure(new MailDeliveryDisabledError())).toBe(
+      'rejected',
+    );
+  });
   it('treats a local recipient validation error as a guaranteed reject', () => {
     expect(
-      classifyMailFailure(new Error('Mail recipient must be a single email address')),
+      classifyMailFailure(
+        new Error('Mail recipient must be a single email address'),
+      ),
     ).toBe('rejected');
   });
 
   it('treats an SMTP response code as a guaranteed reject even when command is CONN', () => {
-    expect(classifyMailFailure({ command: 'CONN', responseCode: 550 })).toBe('rejected');
+    expect(classifyMailFailure({ command: 'CONN', responseCode: 550 })).toBe(
+      'rejected',
+    );
     expect(classifyMailFailure({ responseCode: 400 })).toBe('rejected');
     expect(classifyMailFailure({ responseCode: '599' })).toBe('rejected');
   });

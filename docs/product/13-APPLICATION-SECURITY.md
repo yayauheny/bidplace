@@ -3,6 +3,22 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed (engineering owner)
 
+## 2026-11-06 — Staging trust boundary
+
+**Partial / live Needs verification.** Staging uses production session/OTP,
+Turnstile and private tick checks without SMTP or email bypass. Shared disabled
+mail transport refuses auth and commerce deliveries; no local mail logging.
+Worker strips Access service headers/assertion before Nest. Workflow requires
+main source, approved branch/exact SHA and full Verify before deployment secrets;
+GitHub Environment must independently restrict source branches to main. Builds
+strip runtime/Access/account credentials and disable dotenv; SHA is the sole image
+build argument. Migration/provisioning preserve existing content and fail closed
+on wrong endpoints, nonempty initialize, running API or legacy sale/contact data.
+Provider metadata was checked read-only; CI Access policy and GitHub staging
+settings are missing. Token scope, browser Access/session, actual R2/CDN purge,
+auth, Safari and provider acceptance remain unverified. Operator owner:
+[Staging deployment](../ops/STAGING-DEPLOYMENT.md). No deploy/provider mutation.
+
 ## 2026-11-02 — Own deal contacts read
 
 **Implemented** locally. `GET /api/me/contacts` requires a session and a verified email. A guest is 401. An unverified account is 403. The handler reads `auth.sub` only; a `userId` query is ignored. The response is `userContactsResponseSchema` (`Cache-Control: private, no-store`) from `users.contact_phone`, `contact_telegram`, `contact_instagram`, and `contact_vk`. `users.phone` is not copied into that payload, and `GET /auth/me` does not return the deal fields. `showToBuyer` is the seller profile flag, or null when there is no profile. The read does not check the five-minute freshness window and does not enqueue `CONTACTS_CHANGED`. `PUT` still refuses a session whose `authenticatedAt` is older than five minutes while the session itself remains inside `SESSION_TTL_MS`.

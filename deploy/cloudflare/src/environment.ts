@@ -19,6 +19,10 @@ export const workerSecrets = [
   ...workerOnlySecrets,
 ] as const;
 
+export const stagingWorkerSecrets = workerSecrets.filter(
+  (name) => !name.startsWith('SMTP_'),
+);
+
 export const containerVariables = [
   'NODE_ENV',
   'APP_ENV',
@@ -66,9 +70,11 @@ export const optionalContainerSettings = [
 export type RuntimeEnvironment = Partial<
   Record<(typeof optionalContainerSettings)[number], string>
 > &
-  Record<
-    (typeof requiredSecrets)[number] | (typeof containerVariables)[number],
-    string
+  Partial<
+    Record<
+      (typeof requiredSecrets)[number] | (typeof containerVariables)[number],
+      string
+    >
   >;
 
 export function containerEnvironment(
@@ -76,6 +82,7 @@ export function containerEnvironment(
 ): Record<string, string> {
   const result: Record<string, string> = {};
   for (const name of [...requiredSecrets, ...containerVariables]) {
+    if (env.APP_ENV === 'staging' && name.startsWith('SMTP_')) continue;
     if (typeof env[name] !== 'string' || !env[name].trim()) {
       throw new Error(`Missing Container setting: ${name}`);
     }

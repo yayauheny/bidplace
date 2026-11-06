@@ -50,6 +50,111 @@ beforeAll(async () => {
 afterAll(async () => context?.cleanup());
 
 describe('demo seed executable contract', () => {
+  it('refuses pending commerce replacement when legacy sales contain rows', () => {
+    execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+      import assert from 'node:assert/strict';
+      import { createRequire } from 'node:module';
+      import { pathToFileURL } from 'node:url';
+      const { PrismaClient } = createRequire(process.env.STAGING_API_PACKAGE)('@bidplace/database');
+      const { stagingCommerceMigrationGuardSql } = await import(pathToFileURL(process.env.STAGING_GUARD_SCRIPT).href);
+      const db = new PrismaClient();
+      try {
+        await db.$transaction(async tx => {
+          await tx.$executeRawUnsafe("UPDATE _prisma_migrations SET migration_name = 'fixture_pending_commerce' WHERE migration_name = '20261030130000_commerce_v2'");
+          await tx.$executeRawUnsafe('CREATE TEMP TABLE listings (id integer) ON COMMIT DROP');
+          await tx.$executeRawUnsafe(stagingCommerceMigrationGuardSql);
+          await tx.$executeRawUnsafe("UPDATE _prisma_migrations SET migration_name = '20261030130000_commerce_v2' WHERE migration_name = 'fixture_pending_commerce'");
+        });
+        for (const [create, insert] of [
+          ['CREATE TEMP TABLE listings (id integer) ON COMMIT DROP', 'INSERT INTO listings VALUES (1)'],
+          ['CREATE TEMP TABLE seller_profiles (handoff_contact_value text) ON COMMIT DROP', "INSERT INTO seller_profiles VALUES ('synthetic-contact')"],
+        ]) {
+          await assert.rejects(db.$transaction(async tx => {
+            await tx.$executeRawUnsafe("UPDATE _prisma_migrations SET migration_name = 'fixture_pending_commerce' WHERE migration_name = '20261030130000_commerce_v2'");
+            await tx.$executeRawUnsafe(create);
+            await tx.$executeRawUnsafe(insert);
+            await tx.$executeRawUnsafe(stagingCommerceMigrationGuardSql);
+          }), /staging_legacy_(sales|contacts)_require_review/);
+        }
+      } finally { await db.$disconnect(); }
+    `,
+      ],
+      {
+        cwd: repositoryRoot,
+        stdio: 'pipe',
+        env: {
+          PATH: process.env.PATH,
+          DATABASE_URL: context.databaseUrl,
+          STAGING_API_PACKAGE: resolve(repositoryRoot, 'apps/api/package.json'),
+          STAGING_GUARD_SCRIPT: resolve(
+            repositoryRoot,
+            'scripts/cloudflare/staging.mjs',
+          ),
+        },
+      },
+    );
+  });
+  it('provisions staging fixture accounts transactionally without resetting existing users or content', async () => {
+    const buyer = await prisma.user.upsert({
+      where: { email: 'buyer@bidplace.test' },
+      update: { status: 'banned', sessionVersion: 3 },
+      create: {
+        email: 'buyer@bidplace.test',
+        passwordHash: 'non-login-fixture',
+        status: 'banned',
+        sessionVersion: 3,
+      },
+    });
+    const productCount = await prisma.product.count();
+    execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+      import { createRequire } from 'node:module';
+      import { pathToFileURL } from 'node:url';
+      const require = createRequire(process.env.STAGING_API_PACKAGE);
+      const { PrismaClient } = require('@bidplace/database');
+      const { provisionStagingAccounts } = await import(pathToFileURL(process.env.STAGING_ACCOUNTS_SCRIPT).href);
+      const db = new PrismaClient();
+      try { await provisionStagingAccounts(db, 'non-login-fixture'); }
+      finally { await db.$disconnect(); }
+    `,
+      ],
+      {
+        cwd: repositoryRoot,
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          DATABASE_URL: context.databaseUrl,
+          STAGING_API_PACKAGE: resolve(repositoryRoot, 'apps/api/package.json'),
+          STAGING_ACCOUNTS_SCRIPT: resolve(
+            repositoryRoot,
+            'scripts/cloudflare/staging-accounts.mjs',
+          ),
+        },
+      },
+    );
+    expect(
+      await prisma.user.findUnique({
+        where: { id: buyer.id },
+        select: { status: true, sessionVersion: true },
+      }),
+    ).toEqual({ status: 'banned', sessionVersion: 3 });
+    const admin = await prisma.user.findUnique({
+      where: { email: 'admin@bidplace.test' },
+      select: { role: true, emailVerifiedAt: true },
+    });
+    expect(admin?.role).toBe('admin');
+    expect(admin?.emailVerifiedAt).toBeInstanceOf(Date);
+    expect(await prisma.product.count()).toBe(productCount);
+  });
   it('creates the Figma local catalog without commerce fixtures', async () => {
     runSeed({ nodeEnv: 'test', appEnv: 'local' });
 
@@ -174,9 +279,7 @@ describe('demo seed executable contract', () => {
       ),
       mimeType: 'image/png',
     });
-    expect(
-      pixelp?.publishedRevision?.achievements[0]?.objectKey,
-    ).toBe(
+    expect(pixelp?.publishedRevision?.achievements[0]?.objectKey).toBe(
       `seller-achievement:${pixelp?.publishedRevision?.achievements[0]?.id}`,
     );
     expect(pixelp?.publishedRevision?.achievements[0]?.checksum).not.toBe(
@@ -269,10 +372,12 @@ describe('demo seed executable contract', () => {
         sellerProfile: { select: { slug: true } },
       },
     });
-    expect(newestHomeWorks.map((work) => work.publicId)).toContain('aliceGlass1');
-    expect(newestHomeWorks.some((work) => work.sellerProfile.slug === 'vex')).toBe(
-      true,
+    expect(newestHomeWorks.map((work) => work.publicId)).toContain(
+      'aliceGlass1',
     );
+    expect(
+      newestHomeWorks.some((work) => work.sellerProfile.slug === 'vex'),
+    ).toBe(true);
     expect(curator?.product.publicId).toBe('daliEstate1');
     expect(curator?.curator.slug).toBe('vex');
     expect(curator?.note).toContain('безупречная техника');

@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  stagingWorkerSecrets,
   workerSecrets,
   optionalContainerSettings,
 } from '../../deploy/cloudflare/src/environment.ts';
@@ -27,6 +28,12 @@ import {
   validateConfig,
 } from './config.mjs';
 
+import {
+  assertStagingConfig,
+  assertStagingDatabaseUrl,
+  assertStagingMigrationsApplied,
+} from './staging.mjs';
+
 const RELEASE_BRANCH = 'main';
 const PRODUCTION_SESSION_SECRET_MIN_LENGTH = 32;
 const GATE_ONLY_ENV = [
@@ -38,6 +45,10 @@ const GATE_ONLY_ENV = [
   'SERVICE_RULES_OWNER',
   'SERVICE_RULES_CONTACT',
   'SERVICE_RULES_TEXT',
+  'CF_ACCESS_CLIENT_ID',
+  'CF_ACCESS_CLIENT_SECRET',
+  'STAGING_TEST_PASSWORD',
+  'STAGING_SECRETS_FILE',
 ];
 
 export function assertReleaseBranch(branch) {
@@ -63,7 +74,7 @@ export function gateEnvironment(env) {
   return next;
 }
 
-export function assertSecretsFile(file, checkoutRoot) {
+export function assertSecretsFile(file, checkoutRoot, target = 'production') {
   if (typeof file !== 'string' || !isAbsolute(file)) {
     throw new Error(
       'Secrets file must be an absolute path outside the checkout',
@@ -98,7 +109,9 @@ export function assertSecretsFile(file, checkoutRoot) {
   const keys = Object.keys(parsed)
     .filter((key) => !optionalContainerSettings.includes(key))
     .sort();
-  const expected = [...workerSecrets].sort();
+  const expected = [
+    ...(target === 'staging' ? stagingWorkerSecrets : workerSecrets),
+  ].sort();
   if (JSON.stringify(keys) !== JSON.stringify(expected)) {
     throw new Error(
       'Secrets file keys must match the runtime contract; values are not logged',
@@ -109,7 +122,7 @@ export function assertSecretsFile(file, checkoutRoot) {
       throw new Error(`Secrets file is missing ${key}; value is not logged`);
     }
   }
-  if (parsed.SMTP_USERNAME !== 'api_token') {
+  if (target === 'production' && parsed.SMTP_USERNAME !== 'api_token') {
     throw new Error('SMTP_USERNAME must be the Cloudflare literal api_token');
   }
   if (parsed.SESSION_SECRET.length < PRODUCTION_SESSION_SECRET_MIN_LENGTH) {
@@ -152,6 +165,7 @@ export function assertSecretsFile(file, checkoutRoot) {
   ) {
     throw new Error('Runtime DATABASE_URL must use the Neon pooled hostname');
   }
+  return parsed;
 }
 
 export function writeProductionConfig(rules, tickCron = process.env.TICK_CRON) {
@@ -166,6 +180,10 @@ export function writeProductionConfig(rules, tickCron = process.env.TICK_CRON) {
   // Wrangler preserves deployed schedules when triggers are omitted.
   full.env.production.triggers ??= { crons: [] };
   validateConfig(full.env.production);
+  return writeWranglerConfig(full);
+}
+
+function writeWranglerConfig(full) {
   const base = dirname(configPath);
   full.main = resolve(base, full.main);
   full.assets.directory = resolve(base, full.assets.directory);
@@ -184,6 +202,32 @@ export function writeProductionConfig(rules, tickCron = process.env.TICK_CRON) {
   const file = join(directory, 'wrangler.json');
   writeFileSync(file, JSON.stringify(full), { mode: 0o600 });
   return { directory, file };
+}
+
+export function writeStagingConfig(env, releaseId, release = 'open') {
+  const full = JSON.parse(readFileSync(configPath, 'utf8'));
+  const config = full.env.staging;
+  for (const name of [
+    'SERVICE_RULES_OWNER',
+    'SERVICE_RULES_CONTACT',
+    'SERVICE_RULES_TEXT',
+  ]) {
+    config.vars[name] = assertRuleValue(name, env[name]);
+  }
+  configureTickSchedule(config, '');
+  config.triggers = { crons: [] };
+  config.vars.RELEASE_ID = assertReleaseSha(releaseId);
+  config.containers[0].image_vars = { BIDPLACE_RELEASE_SHA: releaseId };
+  if (release !== 'open' && release !== 'closed')
+    throw new Error('Staging release must be open or closed');
+  config.vars.RELEASE_HOLD = release;
+  assertStagingConfig(config);
+  validateConfig(config);
+  if (env.CLOUDFLARE_ACCOUNT_ID !== full.account_id)
+    throw new Error(
+      'Staging Cloudflare account does not match the configured account',
+    );
+  return writeWranglerConfig(full);
 }
 
 export function assertProductionReleaseMode({
@@ -399,10 +443,102 @@ function argumentValue(args, name) {
   return value;
 }
 
+function deployStaging(args) {
+  const secretsFile = argumentValue(args, '--secrets-file');
+  if (!secretsFile) throw new Error('Staging deploy requires --secrets-file');
+  const secrets = assertSecretsFile(secretsFile, root, 'staging');
+  assertStagingDatabaseUrl(
+    secrets.DATABASE_URL,
+    process.env.STAGING_NEON_ENDPOINT_ID,
+    true,
+  );
+  assertStagingDatabaseUrl(
+    process.env.NEON_DIRECT_URL,
+    process.env.STAGING_NEON_ENDPOINT_ID,
+    false,
+  );
+  if (!process.env.CLOUDFLARE_API_TOKEN?.trim())
+    throw new Error('CLOUDFLARE_API_TOKEN is required');
+  const releaseId = assertReleaseSha(
+    execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim(),
+  );
+  const status = execFileSync(
+    'git',
+    ['-c', 'core.fsmonitor=false', 'status', '--porcelain'],
+    { cwd: root, encoding: 'utf8' },
+  );
+  if (status.trim())
+    throw new Error('Staging deploy requires a clean checkout');
+  const release = argumentValue(args, '--release') ?? 'open';
+  const keepContainer = args.includes('--keep-container');
+  if (keepContainer && release !== 'closed')
+    throw new Error('Keeping the staging image requires --release closed');
+  const { directory, file } = writeStagingConfig(
+    process.env,
+    releaseId,
+    release,
+  );
+  const gates = gateEnvironment(process.env);
+  try {
+    execFileSync('node', ['scripts/cloudflare/staging.mjs', 'check-access'], {
+      cwd: root,
+      stdio: 'inherit',
+      env: gates,
+    });
+    if (release === 'open')
+      assertStagingMigrationsApplied(process.env.NEON_DIRECT_URL);
+    execFileSync('pnpm', ['cloudflare:check'], {
+      cwd: root,
+      stdio: 'inherit',
+      env: gates,
+    });
+    execFileSync('node', ['scripts/cloudflare/build-web.mjs', 'staging'], {
+      cwd: root,
+      stdio: 'inherit',
+      env: gates,
+    });
+    if (!keepContainer)
+      execFileSync('pnpm', ['cloudflare:image:verify'], {
+        cwd: root,
+        stdio: 'inherit',
+        env: { ...gates, BIDPLACE_RELEASE_SHA: releaseId },
+      });
+    execFileSync(
+      'pnpm',
+      [
+        'exec',
+        'wrangler',
+        'deploy',
+        '--config',
+        file,
+        '--env',
+        'staging',
+        '--secrets-file',
+        secretsFile,
+        ...(keepContainer ? ['--containers-rollout', 'none'] : []),
+      ],
+      {
+        cwd: root,
+        stdio: 'inherit',
+        env: {
+          ...gates,
+          CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
+        },
+      },
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
   const target = args.find((arg) => !arg.startsWith('--'));
   deploymentConfig(target);
+  if (target === 'staging') return deployStaging(args);
   const branch =
     process.env.WORKERS_CI_BRANCH ??
     execFileSync('git', ['branch', '--show-current'], {

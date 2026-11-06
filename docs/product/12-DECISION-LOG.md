@@ -3549,3 +3549,28 @@ automatic create retries. Preserve the form, block repeat POST, expose a manual
 check and ignore stale work/account responses. No operation table or create
 idempotency infrastructure at this stage. Other commerce rules and W6 are outside
 this change. Owner: [COMMERCE](../launch/COMMERCE.md).
+
+
+## DEC-154 — One isolated staging refreshed from main
+
+Date: 2026-11-06. Status: Confirmed.
+Source: founder accepted one updated PR, staging preparation followed by separate
+permission before external changes/deploy, existing three test accounts and
+owner-only browser access; explicitly requested Cron remain off until testing.
+
+One replacement PR from `feature/staging-refresh` to main supersedes the old
+#47/#48 split; no merge or old-PR closure is authorized by preparation. Preserve
+production deployment, isolate Neon/R2/Worker/domain and staging secrets. Manual
+deploy requires an explicitly approved branch/full SHA, current full Verify and
+separate operator permission. Staging mail is disabled; verified synthetic
+buyer/seller/admin use normal session/password auth, without reset or bypass.
+Migrations remain separate: empty initialization or backup/review, closed/stopped
+API and guarded migration; rollback deploys full Worker+image only when schema is
+compatible. No destructive seed. Cron stays off, so unattended commerce progress
+is not accepted. W6/W7 are not completed by this decision.
+
+Revises the no-staging contour in DEC-102 for this isolated acceptance stand.
+The old unmerged #47 used DEC-119 for staging; main DEC-119 remains the independent
+Figma decision and its history is preserved. Alternative rejected: deploying the
+October release branch or transplanting obsolete production/auth configuration.
+Operational owner: [Staging deployment](../ops/STAGING-DEPLOYMENT.md).

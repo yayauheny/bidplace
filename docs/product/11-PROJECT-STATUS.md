@@ -5,6 +5,23 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-06 — Staging refresh from main
+
+**Partial; prepared locally, not pushed/deployed/live verified.** One replacement
+branch adapts #47/#48 to main `dfa7d6bc`: `staging-deploy.yml`, shared Cloudflare
+config/deploy/migrate/image scripts, baked health identity, disabled mail,
+non-reset test-account provisioning and Access/SHA smoke. API build/typecheck/
+lint and 1159 unit tests passed; staging web export, Cloudflare checks, ops,
+provisioning and auth/tick/outbox integration passed on disposable PostgreSQL
+without seed. Image verification is **Needs verification**: Docker Hub initially
+returned EOF; subsequent Debian ca-certificates fetch repeatedly returned HTTP
+502 before application build. This required gate is not waived. Final focused
+verification is recorded in [staging runbook](../ops/STAGING-DEPLOYMENT.md).
+#102 moderation Verify is green; main integration must be rechecked before merge.
+GitHub staging variables/secrets and CI Service Auth policy are absent. Cron stays
+off; R2/CDN/Access, auth, Safari, SMTP/social and commerce lifecycle acceptance
+remain open. W6/W7 are not complete. No production changes, seed or deploy.
+
 ## 2026-11-05 — W5 technical integration checks
 
 **Partial; needs device verification.** `commerce-live.spec.ts` now exercises all

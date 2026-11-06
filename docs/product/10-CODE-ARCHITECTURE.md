@@ -3,6 +3,20 @@
 Последнее обновление: 2026-10-31
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-11-06 — Isolated staging preparation
+
+**Partial / live Needs verification.** `staging-deploy.yml` checks approved branch
+and exact SHA plus full Verify before the staging Environment job. Runtime uses
+separate Neon/R2/Worker, existing session/OTP/private-tick contracts, and disabled
+mail at `MailModule`/`MailTransport`; auth and notification outbox share guaranteed
+rejection classification. Health uses a baked image SHA; Worker exposes staging
+release identity without waking Nest. Migrations are separate, require empty
+schema on initialize or closed/stopped API and no committable sessions later;
+legacy commerce rows/contacts block destructive replacement. Account provisioning
+only inserts absent synthetic users. Cron is explicitly off. Production workflow
+and application contracts remain unchanged. Setup, trust and rollback owner:
+[Staging deployment](../ops/STAGING-DEPLOYMENT.md). W6/W7 remain open.
+
 ## 2026-11-05 — Share export and order receipt data
 
 `GET /api/orders/:publicId/receipt-data` uses the existing order snapshot and

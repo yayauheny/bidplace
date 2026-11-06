@@ -124,3 +124,13 @@
 но кодом не читаются — кандидаты на удаление. `RATE_LIMIT_MAX_BUCKETS` и
 `RATE_LIMIT_CLEANUP_INTERVAL_MS` схема сервера и контейнер больше не читают:
 счётчики частоты лежат в `rate_limit_counters`.
+
+
+## Isolated staging (2026-11-06)
+
+The staging-only settings and their operator destinations are owned by
+[Staging deployment](STAGING-DEPLOYMENT.md).
+`STAGING_DEPLOY_BRANCH` and `STAGING_DEPLOY_SHA` are explicit repository approval
+variables. Staging requires the session/OTP/private-tick contract, never the old
+`JWT_SECRET`. SMTP settings are omitted from Worker/Container and the shared
+transport refuses all Bidplace mail. Cron stays off; no auth/email bypass.

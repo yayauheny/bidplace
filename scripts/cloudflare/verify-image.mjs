@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { root } from './config.mjs';
 
+const releaseId = process.env.BIDPLACE_RELEASE_SHA ?? 'a'.repeat(40);
+if (!/^[0-9a-f]{40}$/.test(releaseId)) throw new Error('Invalid image verification SHA');
 const image = 'bidplace-cloudflare-verify:local';
 const suffix = randomUUID().slice(0, 8);
 const network = `bidplace-cf-smoke-${suffix}`;
@@ -29,6 +31,7 @@ try {
     'build',
     '--platform',
     'linux/amd64',
+    '--build-arg', `BIDPLACE_RELEASE_SHA=${releaseId}`,
     '-f',
     'apps/api/Dockerfile',
     '-t',
@@ -149,11 +152,7 @@ try {
     INTERNAL_TICK_SECRET: 'synthetic-image-tick-key-at-least-32-characters',
     CORS_ORIGIN: 'https://staging.bid.place',
     TRUST_PROXY: 'true',
-    SMTP_HOST: 'smtp.example.invalid',
-    SMTP_PORT: '587',
-    SMTP_SECURE: 'false',
-    SMTP_AUTH_MODE: 'none',
-    SMTP_FROM: 'smoke@example.invalid',
+    RELEASE_ID: 'b'.repeat(40),
     PASSWORD_RESET_URL_BASE: 'https://staging.bid.place',
     TURNSTILE_SECRET_KEY: 'local-smoke-only',
     TURNSTILE_HOSTNAME: 'staging.bid.place',
@@ -218,6 +217,10 @@ try {
     throw new Error(
       `API container did not start within the smoke budget: ${startupResult}`,
     );
+  for (const path of ['/api/health', '/api/health/ready']) {
+    const response = await fetch(origin + path);
+    if ((await response.json()).releaseId !== releaseId) throw new Error('API image SHA must come from its build');
+  }
   for (const [path, status] of [
     ['/api/health/ready', 200],
     ['/api/categories', 200],

@@ -14,9 +14,9 @@ function rejected(args, databaseUrl) {
 }
 
 test('migration requires explicit environment and production confirmation', () => {
-  assert.match(rejected([], undefined), /Choose production/);
+  assert.match(rejected([], undefined), /Choose staging or production/);
   assert.match(rejected(['production'], undefined), /confirm-production/);
-  assert.match(rejected(['staging'], undefined), /Choose production/);
+  assert.match(rejected(['staging'], undefined), /Supply DATABASE_URL/);
   assert.match(rejected(['production', '--confirm-production'], undefined), /Supply DATABASE_URL/);
 });
 

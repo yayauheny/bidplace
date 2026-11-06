@@ -1,19 +1,23 @@
 # Bidplace: Cloudflare deployment
 
-Дата проверки документации: 2026-10-06. Реального deployment пока нет.
-Текущий путь — один production contour, `DEC-102`. Конфиг и скрипты
-Cloudflare принимают только `production`; staging-команды удалены. Branch gate
-deploy-скрипта и ручного workflow совпадает: `main`. Более ранние staging-шаги
-ниже сохраняют историю и не являются обязательным deployment. Результаты:
-[deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
+Staging preparation (2026-11-06) has a separate owner:
+[STAGING-DEPLOYMENT.md](STAGING-DEPLOYMENT.md). One replacement PR adapts #47/#48
+to main; not pushed/deployed/live verified. Production workflow remains unchanged.
+
+Исторический срез 2026-10-06 (`DEC-102`) допускал только production и удалял
+тогдашние staging-команды. Подготовка 2026-11-06 (`DEC-154`) добавляет отдельный
+staging target к текущим общим скриптам; его актуальная инструкция — по ссылке
+выше. Production branch gate и ручной workflow по-прежнему принимают только main.
+Исторические staging-примеры ниже не использовать вместо нового runbook.
+Старое evidence: [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
 
 ## Текущий production path
 
 Один контур: Worker `bidplace-production`, сайт `https://bid.place`, Neon
 project `calm-rain-59989397`, default branch `production`
 `br-polished-haze-b2d6rop9`, database `neondb`. Public media
-`https://media.bid.place`. Staging Neon branch удалена основателем. Оставшиеся
-staging buckets и DNS этой волной не удаляются и в deploy не входят.
+`https://media.bid.place`. Прежняя staging Neon branch была удалена основателем. Новый staging использует
+отдельный Neon project и собственные R2/Worker; в production deploy они не входят.
 
 Ручной запуск — `.github/workflows/production-deploy.yml`, только
 `workflow_dispatch`. Push, PR и расписание deploy не запускают. GitHub
