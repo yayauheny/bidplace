@@ -1499,6 +1499,28 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       'Publication is in progress; retry to confirm the result',
     );
   }
+  async deliverRevokes(target: { profileId?: string; productId?: string }) {
+    this.arm();
+    try {
+      const operations = await this.prisma.mediaOperation.findMany({
+        where: { ...target, kind: 'REVOKE', state: { in: [...activeStates] } },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      for (const operation of operations) {
+        try {
+          const state = await this.executeOperation(operation.id);
+          if (state === 'FAILED')
+            this.logger.warn(`Post-commit media revoke failed: ${operation.id}`);
+        } catch {
+          // The committed journal remains recoverable even if claim/failure persistence is unavailable.
+          this.logger.error(`Post-commit media revoke deferred: ${operation.id}`);
+        }
+      }
+    } catch {
+      this.logger.error('Post-commit media revoke scan failed');
+    }
+  }
   async deliverOutstanding(
     target: { profileId?: string; productId?: string },
     kind: 'REVOKE' | 'PUBLISH',

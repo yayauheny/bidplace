@@ -538,7 +538,7 @@ export class FraudSignalsService {
       },
     );
     if (profileId && this.media?.enabled)
-      await this.media.deliverOutstanding({ profileId }, 'REVOKE');
+      await this.media.deliverRevokes({ profileId });
     return updatedUser;
   }
 

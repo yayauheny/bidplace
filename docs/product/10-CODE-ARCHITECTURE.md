@@ -1165,3 +1165,16 @@ and single-series SVG view reuse Bidplace shells, tabs, fields and PaddedGrid.
 ## 2026-11-05 — Administrative mutation actor invariant
 
 `apps/api/src/admin/admin-authorization.ts` owns the current active-admin assertion for moderation and emergency session revoke. Its caller holds the actor user row lock until commit: moderation takes `FOR SHARE` after the target lock; emergency revoke uses existing `AntifraudService.lockUsers`. This serializes role/status changes with the checked write. Profile moderation takes `FOR NO KEY UPDATE` on its target so a concurrent ban can complete the `media_operations.profile_id` FK `KEY SHARE` check without a profile → actor → profile deadlock; profile writers remain mutually excluded. Public contracts and persistence models are unchanged; commerce's existing actor checks remain in its owner. [Audit evidence](../audits/current/2026-11-05-AUTHORIZATION-AUDIT.md).
+
+## 2026-11-06 — Moderation post-commit media revoke
+
+Seller suspension and user ban commit their existing status/session/audit/REVOKE
+transaction before calling `MediaLifecycleService.deliverRevokes`. This method
+attempts only REVOKE through the existing executor; contention leaves the journal
+pending/running and failures remain FAILED with the existing retry ceiling.
+Post-commit database failures are logged and the recovery timer stays armed.
+Tick reuses the same journal and leases; exhausted failures still fail its health
+heartbeat and require operational intervention. Strict PUBLISH delivery and
+transaction errors retain their existing HTTP semantics. No schema or DTO change.
+Fresh repeated SUSPENDED parent decisions return without writes after actor and
+target checks; replaying the old parent snapshot remains a stale-target conflict.

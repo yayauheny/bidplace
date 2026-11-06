@@ -11,6 +11,9 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import { Logger } from '@nestjs/common';
+import { PrismaService } from '../../src/core/database';
+import { RetryableTransactionConflict } from '../../src/core/database/transaction';
 import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import {
   MediaLifecycleService,
@@ -117,6 +120,14 @@ async function user(role: 'user' | 'admin', suffix: string) {
     ).status,
   ).toBe(201);
   return { row, client };
+}
+async function moderationFixture() {
+  const fixture = await createPermissionFixture(db.prisma);
+  await db.prisma.category.update({
+    where: { id: fixture.categoryId },
+    data: { normalizedName: normalizeCatalogName(`Wave 3 category ${fixture.categoryId}`) },
+  });
+  return fixture;
 }
 async function run(
   kind: 'PUBLISH' | 'REVOKE',
@@ -831,8 +842,137 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     expect((await owner.client.get(publishedPath)).status).toBe(200);
   });
 
-  it('commits concurrent suspension and ban while reporting a busy media revoke for retry', async () => {
-    const fixture = await createPermissionFixture(db.prisma);
+  it.each(['ban', 'suspend'] as const)(
+    'rolls back %s and its media journal when the transaction conflicts before commit',
+    async (action) => {
+      const fixture = await moderationFixture();
+      const admin = await user('admin', `rollback-${randomUUID()}`);
+      const target = fixture.sellers.approved;
+      const assetId = randomUUID();
+      await db.prisma.mediaAsset.create({ data: {
+        id: assetId, ownerUserId: target.id, purpose: 'AUTHOR_PHOTO', state: 'READY',
+        objects: { create: {
+          tier: 'PUBLIC', variant: 'PREVIEW', pipelineVersion: 'p1', state: 'READY',
+          objectKey: `assets/${assetId}/p1/preview.webp`, publicUrl: `https://media.example.test/assets/${assetId}/p1/preview.webp`, mimeType: 'image/webp',
+          byteLength: 8, sha256: 'a'.repeat(64), width: 1, height: 1,
+        } },
+      } });
+      const before = await db.prisma.user.findUniqueOrThrow({ where: { id: target.id } });
+      const prisma = http.app.get(PrismaService);
+      const original = prisma.$transaction.bind(prisma);
+      const transaction = vi.spyOn(prisma, '$transaction').mockImplementation(async (callback, options) => {
+        if (typeof callback !== 'function') throw new Error('Expected interactive transaction');
+        return original(async (tx) => {
+          await callback(tx);
+          throw new RetryableTransactionConflict();
+        }, options);
+      });
+      try {
+        const response = action === 'ban'
+          ? await admin.client.patch(`/admin/users/${target.id}/status`, { status: 'banned', reason: 'Rollback' })
+          : await admin.client.patch(`/admin/seller-profiles/${target.profileId}/status`, await sellerModerationRequest(db.prisma, target.profileId, 'SUSPENDED', 'Rollback'));
+        expect(response.status).toBe(409);
+        expect(await response.json()).toMatchObject({ code: ApiErrorCode.CONFLICT, message: 'Conflict' });
+        expect(transaction).toHaveBeenCalledTimes(3);
+        expect(await db.prisma.user.findUniqueOrThrow({ where: { id: target.id } })).toMatchObject({ status: 'active', sessionVersion: before.sessionVersion });
+        expect((await db.prisma.sellerProfile.findUniqueOrThrow({ where: { id: target.profileId } })).status).toBe('APPROVED');
+        expect(await db.prisma.auditEvent.count({ where: { actorUserId: admin.row.id } })).toBe(0);
+        expect(await db.prisma.mediaOperation.count({ where: { profileId: target.profileId } })).toBe(0);
+      } finally {
+        transaction.mockRestore();
+      }
+    },
+  );
+
+  it.each(['delete', 'purge'] as const)(
+    'keeps committed moderation successful and journals %s failure until tick recovery',
+    async (failure) => {
+      const fixture = await moderationFixture();
+      const admin = await user('admin', `delivery-${randomUUID()}`);
+      const target = fixture.sellers.approved;
+      const assetId = randomUUID();
+      const key = `assets/${assetId}/p1/preview.webp`;
+      const url = `https://media.example.test/${key}`;
+      await db.prisma.mediaAsset.create({ data: {
+        id: assetId, ownerUserId: target.id, purpose: 'AUTHOR_PHOTO', state: 'READY',
+        objects: { create: [
+          { tier: 'PUBLIC', variant: 'PREVIEW', pipelineVersion: 'p1', state: 'READY', objectKey: key, publicUrl: url, mimeType: 'image/webp', byteLength: 8, sha256: 'a'.repeat(64), width: 1, height: 1 },
+          { tier: 'PRIVATE', variant: 'SOURCE', pipelineVersion: 'source', state: 'READY', objectKey: `assets/${assetId}/source.webp`, mimeType: 'image/webp', byteLength: 8, sha256: 'a'.repeat(64), width: 1, height: 1 },
+        ] },
+      } });
+      const value = { bytes: new Uint8Array(8), mimeType: 'image/webp' };
+      objects.set(`PUBLIC:${key}`, value);
+      objects.set(`PRIVATE:assets/${assetId}/source.webp`, value);
+      const deleteMock = vi.mocked(S3MediaObjectStore.prototype.delete);
+      const purgeMock = vi.mocked(CloudflarePublicMediaCache.prototype.purge);
+      const originalDelete = deleteMock.getMockImplementation()!;
+      const originalPurge = purgeMock.getMockImplementation()!;
+      const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      if (failure === 'delete') vi.mocked(S3MediaObjectStore.prototype.delete).mockRejectedValueOnce(new Error('Synthetic delete failure'));
+      else vi.mocked(CloudflarePublicMediaCache.prototype.purge).mockRejectedValueOnce(new Error('Synthetic purge failure'));
+      try {
+        const body = await sellerModerationRequest(db.prisma, target.profileId, 'SUSPENDED', 'Delivery outage');
+        expect((await admin.client.patch(`/admin/seller-profiles/${target.profileId}/status`, body)).status).toBe(200);
+        const revoke = await db.prisma.mediaOperation.findFirstOrThrow({ where: { profileId: target.profileId, kind: 'REVOKE' } });
+        expect(revoke).toMatchObject({ state: 'FAILED', errorCode: 'MEDIA_DELIVERY_FAILED', attemptCount: 1, leaseToken: null, leaseUntil: null });
+        expect(warn).toHaveBeenCalledWith(`Post-commit media revoke failed: ${revoke.id}`);
+        expect((await db.prisma.sellerProfile.findUniqueOrThrow({ where: { id: target.profileId } })).status).toBe('SUSPENDED');
+        expect(await db.prisma.auditEvent.count({ where: { actorUserId: admin.row.id, action: 'DECISION' } })).toBe(1);
+        await db.prisma.mediaOperation.update({ where: { id: revoke.id }, data: { nextAttemptAt: new Date(0) } });
+        await media.tick();
+        expect(await db.prisma.mediaOperation.findUniqueOrThrow({ where: { id: revoke.id } })).toMatchObject({ state: 'DONE', errorCode: null, leaseToken: null, leaseUntil: null });
+        expect(objects.has(`PUBLIC:${key}`)).toBe(false);
+        expect(objects.get(`PRIVATE:assets/${assetId}/source.webp`)).toEqual(value);
+        expect(purged).toContain(url);
+      } finally {
+        warn.mockRestore();
+        deleteMock.mockReset().mockImplementation(originalDelete);
+        purgeMock.mockReset().mockImplementation(originalPurge);
+      }
+    },
+  );
+
+  it('returns committed ban success when the post-commit database scan fails and tick later revokes it', async () => {
+    const fixture = await moderationFixture();
+    const target = fixture.sellers.approved;
+    const admin = await user('admin', `db-outage-${randomUUID()}`);
+    const assetId = randomUUID();
+    const key = `assets/${assetId}/p1/preview.webp`;
+    await db.prisma.mediaAsset.create({ data: {
+      id: assetId, ownerUserId: target.id, purpose: 'AUTHOR_PHOTO', state: 'READY',
+      objects: { create: {
+        tier: 'PUBLIC', variant: 'PREVIEW', pipelineVersion: 'p1', state: 'READY',
+        objectKey: key, publicUrl: `https://media.example.test/${key}`, mimeType: 'image/webp',
+        byteLength: 8, sha256: 'a'.repeat(64), width: 1, height: 1,
+      } },
+    } });
+    objects.set(`PUBLIC:${key}`, { bytes: new Uint8Array(8), mimeType: 'image/webp' });
+    const prisma = http.app.get(PrismaService);
+    const original = media.deliverRevokes.bind(media);
+    let scan: ReturnType<typeof vi.spyOn> | undefined;
+    const delivery = vi.spyOn(media, 'deliverRevokes').mockImplementationOnce(async (target) => {
+      scan = vi.spyOn(prisma.mediaOperation, 'findMany').mockRejectedValueOnce(new Error('Synthetic database outage'));
+      await original(target);
+    });
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    try {
+      expect((await admin.client.patch(`/admin/users/${target.id}/status`, { status: 'banned', reason: 'Database outage' })).status).toBe(200);
+      expect(error).toHaveBeenCalledWith('Post-commit media revoke scan failed');
+      const revoke = await db.prisma.mediaOperation.findFirstOrThrow({ where: { profileId: target.profileId, kind: 'REVOKE' } });
+      expect(revoke.state).toBe('PENDING');
+      scan?.mockRestore();
+      await media.tick();
+      expect((await db.prisma.mediaOperation.findUniqueOrThrow({ where: { id: revoke.id } })).state).toBe('DONE');
+      expect(objects.has(`PUBLIC:${key}`)).toBe(false);
+    } finally {
+      scan?.mockRestore();
+      delivery.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it('commits concurrent suspension and ban while a leased revoke recovers through tick', async () => {
+    const fixture = await moderationFixture();
     const admin = await user('admin', `lock-admin-${randomUUID()}`);
     const profileId = fixture.sellers.approved.profileId;
     const mediaId = randomUUID();
@@ -844,6 +984,11 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
         byteLength: 8, sha256: 'a'.repeat(64), width: 1, height: 1,
       } },
     } });
+    const publicKey = `assets/${mediaId}/p1/preview.webp`;
+    objects.set(`PUBLIC:${publicKey}`, { bytes: new Uint8Array(8), mimeType: 'image/webp' });
+    const initialVersion = (await db.prisma.user.findUniqueOrThrow({ where: { id: fixture.sellers.approved.id } })).sessionVersion;
+    const ownerClient = new HttpTestClient(http.baseUrl, 'http://localhost:8081', fixture.sellers.approved.id);
+    expect((await ownerClient.post('/auth/login', { email: fixture.sellers.approved.email, password: fixture.sellers.approved.password })).status).toBe(201);
     const body = await sellerModerationRequest(db.prisma, profileId, 'SUSPENDED', 'Concurrent suspension');
     let entered!: () => void;
     let release!: () => void;
@@ -857,9 +1002,17 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     });
     let releaseDelete!: () => void;
     const deleteReleased = new Promise<void>((resolve) => { releaseDelete = resolve; });
-    vi.mocked(S3MediaObjectStore.prototype.delete).mockImplementationOnce(async (tier, key) => {
-      await deleteReleased;
-      objects.delete(`${tier}:${key}`);
+    let deleteEntered!: () => void;
+    const deleting = new Promise<void>((resolve) => { deleteEntered = resolve; });
+    const deleteMock = vi.mocked(S3MediaObjectStore.prototype.delete);
+    const originalDelete = deleteMock.getMockImplementation()!;
+    deleteMock.mockImplementation(async (tier, key) => {
+      if (tier === 'PUBLIC' && key === publicKey) {
+        deleteEntered();
+        await deleteReleased;
+        expect(objects.has(`PUBLIC:${publicKey}`)).toBe(true);
+      }
+      await originalDelete(tier, key);
     });
     const ban = admin.client.patch(`/admin/users/${fixture.sellers.approved.id}/status`, { status: 'banned', reason: 'Concurrent ban' });
     let suspension: Promise<Response> | undefined;
@@ -877,22 +1030,45 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
         return row?.waiting;
       }, { timeout: 5_000 }).toBe(true);
       release();
+      await Promise.race([deleting, Promise.all([ban, suspension]).then(() => { throw new Error('Requests finished before delete'); })]);
       const first = await Promise.race([ban, suspension]);
-      expect(first.status).toBe(409);
-      expect(await first.json()).toMatchObject({
-        code: ApiErrorCode.CONFLICT,
-        message: 'Publication is in progress; retry to confirm the result',
-      });
+      expect(first.status).toBe(200);
+      const held = await db.prisma.mediaOperation.findMany({ where: { profileId, kind: 'REVOKE' }, include: { objects: true } });
+      expect(held).toHaveLength(2);
+      const running = held.find((operation) => operation.state === 'RUNNING')!;
+      const pending = held.find((operation) => operation.state === 'PENDING')!;
+      expect(running.leaseToken).toBeTruthy();
+      expect(running.leaseUntil!.getTime()).toBeGreaterThan(Date.now());
+      expect(pending.attemptCount).toBe(0);
+      expect(pending.objects.map(({ objectId }) => objectId)).toEqual(running.objects.map(({ objectId }) => objectId));
+      expect((await db.prisma.user.findUniqueOrThrow({ where: { id: fixture.sellers.approved.id } })).status).toBe('banned');
+      expect((await db.prisma.sellerProfile.findUniqueOrThrow({ where: { id: profileId } })).status).toBe('SUSPENDED');
+      expect((await ownerClient.get('/auth/me')).status).toBe(401);
       releaseDelete();
       const responses = await Promise.all([ban, suspension]);
-      expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
-      await media.deliverOutstanding({ profileId }, 'REVOKE');
+      expect(responses.map((response) => response.status)).toEqual([200, 200]);
+      deleteMock.mockImplementation(originalDelete);
+      expect((await db.prisma.mediaOperation.findUniqueOrThrow({ where: { id: running.id } })).state).toBe('DONE');
+      expect((await db.prisma.mediaOperation.findUniqueOrThrow({ where: { id: pending.id } })).state).toBe('PENDING');
+      await media.tick();
       const revokes = await db.prisma.mediaOperation.findMany({
         where: { profileId, kind: 'REVOKE' },
         select: { state: true },
       });
       expect(revokes).toHaveLength(2);
       expect(revokes.every((operation) => operation.state === 'DONE')).toBe(true);
+      expect(objects.has(`PUBLIC:${publicKey}`)).toBe(false);
+      expect(deleteMock).toHaveBeenCalledWith('PUBLIC', publicKey);
+      expect(await db.prisma.mediaOperation.count({ where: { profileId, kind: 'REVOKE', state: { not: 'DONE' } } })).toBe(0);
+      expect((await admin.client.patch(`/admin/users/${fixture.sellers.approved.id}/status`, { status: 'banned', reason: 'Retry ban' })).status).toBe(200);
+      const stale = await admin.client.patch(`/admin/seller-profiles/${profileId}/status`, body);
+      expect(stale.status).toBe(409);
+      expect(await stale.json()).toMatchObject({ code: ApiErrorCode.CONFLICT, message: 'Moderation target is stale' });
+      const fresh = await sellerModerationRequest(db.prisma, profileId, 'SUSPENDED', 'Retry suspension');
+      const retries = await Promise.all([1, 2].map(() => admin.client.patch(`/admin/seller-profiles/${profileId}/status`, fresh)));
+      expect(retries.map(({ status }) => status)).toEqual([200, 200]);
+      expect(await db.prisma.mediaOperation.count({ where: { profileId, kind: 'REVOKE' } })).toBe(2);
+      expect((await db.prisma.user.findUniqueOrThrow({ where: { id: fixture.sellers.approved.id } })).sessionVersion).toBe(initialVersion + 1);
       expect((await db.prisma.mediaObject.findFirstOrThrow({
         where: { assetId: mediaId, tier: 'PUBLIC' },
       })).state).toBe('DELETED');
@@ -906,6 +1082,7 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
       releaseDelete();
       await Promise.allSettled(suspension ? [ban, suspension] : [ban]);
       enqueue.mockRestore();
+      deleteMock.mockImplementation(originalDelete);
     }
   });
 });
