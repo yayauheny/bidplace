@@ -5,6 +5,20 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-06 — Concurrent moderation CI regression
+
+**Implemented locally; GitHub CI needs verification.**
+`work-media-http.integration.spec.ts` deterministically
+holds public-object deletion while concurrent ban and profile suspension commit.
+The regression checks the exact busy-media 409, both statuses, one audit per
+action, both REVOKE operations DONE, object deletion and CDN purge after retry.
+The previous two-200 assertion mixed transaction serialization with post-commit
+media delivery; no runtime, public contract or persistence change. Node 22:
+6/6 targeted integration tests, 1154/1154 API unit tests, API dependency build,
+and API/dependency typecheck and lint passed. Full integration: 47 files passed,
+642 tests passed, one skipped (browser smoke). Live R2/CDN is not covered by the
+synthetic store.
+
 ## 2026-11-05 — W5 technical integration checks
 
 **Partial; needs device verification.** `commerce-live.spec.ts` now exercises all

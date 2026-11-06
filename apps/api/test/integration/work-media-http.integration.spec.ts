@@ -1,4 +1,5 @@
 import {
+  ApiErrorCode,
   sellerProfileResponseSchema,
   productResponseSchema,
   sellerProductDetailResponseSchema,
@@ -830,7 +831,7 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     expect((await owner.client.get(publishedPath)).status).toBe(200);
   });
 
-  it('serializes profile suspension with a simultaneous ban by the same admin without a deadlock response', async () => {
+  it('commits concurrent suspension and ban while reporting a busy media revoke for retry', async () => {
     const fixture = await createPermissionFixture(db.prisma);
     const admin = await user('admin', `lock-admin-${randomUUID()}`);
     const profileId = fixture.sellers.approved.profileId;
@@ -854,6 +855,12 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
       await released;
       return original(...args);
     });
+    let releaseDelete!: () => void;
+    const deleteReleased = new Promise<void>((resolve) => { releaseDelete = resolve; });
+    vi.mocked(S3MediaObjectStore.prototype.delete).mockImplementationOnce(async (tier, key) => {
+      await deleteReleased;
+      objects.delete(`${tier}:${key}`);
+    });
     const ban = admin.client.patch(`/admin/users/${fixture.sellers.approved.id}/status`, { status: 'banned', reason: 'Concurrent ban' });
     let suspension: Promise<Response> | undefined;
     try {
@@ -870,14 +877,33 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
         return row?.waiting;
       }, { timeout: 5_000 }).toBe(true);
       release();
+      const first = await Promise.race([ban, suspension]);
+      expect(first.status).toBe(409);
+      expect(await first.json()).toMatchObject({
+        code: ApiErrorCode.CONFLICT,
+        message: 'Publication is in progress; retry to confirm the result',
+      });
+      releaseDelete();
       const responses = await Promise.all([ban, suspension]);
-      expect(responses.map((response) => response.status)).toEqual([200, 200]);
+      expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+      await media.deliverOutstanding({ profileId }, 'REVOKE');
+      const revokes = await db.prisma.mediaOperation.findMany({
+        where: { profileId, kind: 'REVOKE' },
+        select: { state: true },
+      });
+      expect(revokes).toHaveLength(2);
+      expect(revokes.every((operation) => operation.state === 'DONE')).toBe(true);
+      expect((await db.prisma.mediaObject.findFirstOrThrow({
+        where: { assetId: mediaId, tier: 'PUBLIC' },
+      })).state).toBe('DELETED');
+      expect(purged).toContain(`https://media.example.test/assets/${mediaId}/p1/preview.webp`);
       expect((await db.prisma.user.findUniqueOrThrow({ where: { id: fixture.sellers.approved.id } })).status).toBe('banned');
       expect((await db.prisma.sellerProfile.findUniqueOrThrow({ where: { id: profileId } })).status).toBe('SUSPENDED');
       expect(await db.prisma.auditEvent.count({ where: { actorUserId: admin.row.id, targetId: profileId, action: 'DECISION' } })).toBe(1);
       expect(await db.prisma.auditEvent.count({ where: { actorUserId: admin.row.id, targetId: fixture.sellers.approved.id, newStatus: 'banned' } })).toBe(1);
     } finally {
       release();
+      releaseDelete();
       await Promise.allSettled(suspension ? [ban, suspension] : [ban]);
       enqueue.mockRestore();
     }
