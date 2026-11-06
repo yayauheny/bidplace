@@ -465,6 +465,11 @@ export class AdminModerationService {
             });
         }
         this.assertFreshSellerTarget(sellerProfile, input);
+        if (sellerProfile.status === 'SUSPENDED' && input.status === 'SUSPENDED')
+          return tx.sellerProfile.findUniqueOrThrow({
+            where: { id: sellerProfileId },
+            select: sellerProfileResponseSelect,
+          });
 
         if (
           !isRevisionReview &&
@@ -692,10 +697,7 @@ export class AdminModerationService {
       try {
         if (deliveryId) await this.media.deliver(deliveryId);
       } finally {
-        await this.media.deliverOutstanding(
-          { profileId: sellerProfileId },
-          'REVOKE',
-        );
+        await this.media.deliverRevokes({ profileId: sellerProfileId });
       }
       if (deliveryId)
         return this.prisma.sellerProfile.findUniqueOrThrow({
@@ -994,7 +996,8 @@ export class AdminModerationService {
     }
     if (
       sellerProfile.editingRevision &&
-      !this.isSellerVisibility(sellerProfile.status, input.status)
+      !this.isSellerVisibility(sellerProfile.status, input.status) &&
+      !(sellerProfile.status === 'SUSPENDED' && input.status === 'SUSPENDED')
     ) {
       this.logger.warn(
         'Blocked parent target that would review an editing revision',

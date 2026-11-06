@@ -180,6 +180,26 @@ describe('media recovery scheduler', () => {
     } finally { warn.mockRestore(); }
   });
 
+  it('logs a post-commit database outage and leaves recovery armed without failing moderation', async () => {
+    vi.useFakeTimers();
+    const script: Script = { down: true, young: 0, pending: 1, failOperationCount: false, reads: [] };
+    const media = recoveryService(script);
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    try {
+      await expect(media.deliverRevokes({ profileId: 'profile' })).resolves.toBeUndefined();
+      expect(error).toHaveBeenCalledWith('Post-commit media revoke scan failed');
+      expect(vi.getTimerCount()).toBe(1);
+      script.down = false;
+      script.pending = 0;
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(script.reads).toContain('operation.count');
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      media.onModuleDestroy();
+      error.mockRestore();
+    }
+  });
+
   it('does not register disabled media with the central tick', async () => {
     const ticks = new TickService(
       { $executeRaw: async () => 1 } as never,

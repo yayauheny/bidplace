@@ -5,6 +5,27 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-06 — Concurrent moderation post-commit REVOKE
+
+**Implemented locally; GitHub CI needs verification.** `AdminModerationService.updateSellerStatus` and
+`FraudSignalsService.updateUserStatus` commit status, ban session invalidation,
+audit and REVOKE journal before `MediaLifecycleService.deliverRevokes` attempts
+delivery. Busy leases leave work for tick without a false HTTP failure; storage,
+purge and database failures remain journaled/recoverable or logged by operation id.
+Fresh repeated suspension is a no-op after active-admin and target validation;
+stale targets still conflict. `work-media-http.integration.spec.ts` holds enqueue
+and PUBLIC delete independently, checks both committed HTTP successes, exact
+shared-object leases, audit/session idempotency and tick completion. The same
+owner covers transaction rollback and delete/purge recovery; scheduler/database
+outage and exhausted-operation checks live in the existing recovery owners.
+Node 22: full API integration 47 files / 647 passed, one browser smoke skipped;
+API unit 81 files / 1155 passed; API/dependency typecheck, lint and build passed.
+The controlled concurrency scenario passed three additional runs; docs links and
+diff checks passed. An isolated UTC PostgreSQL removed shared-database migration
+contention, timezone failures and initial database-creation races observed during
+setup. New GitHub Verify is pending. Live R2/CDN and scheduled execution remain
+unverified; physical revocation is eventual.
+
 ## 2026-11-05 — W5 technical integration checks
 
 **Partial; needs device verification.** `commerce-live.spec.ts` now exercises all
