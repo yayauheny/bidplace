@@ -5,6 +5,21 @@
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
+## 2026-11-10 — Additive demo catalog import
+
+**Partial.** `scripts/ops/import-demo-catalog.mjs` and `lib/demo-catalog.mjs`
+prepare 12 synthetic authors and 48 published works using existing PNG fixtures.
+Dry run is the default; production apply requires explicit confirmation and the
+configured direct Neon endpoint. Imports preserve existing users and operator
+edits, reject identity collisions, serialize with an advisory transaction lock,
+and verify private R2 objects before committing the published revisions. Demo
+users have no password and use reserved `.invalid` addresses. The manual
+`demo-catalog.yml` workflow uses Environment `prod`, main only, and the existing
+production concurrency group. Local PostgreSQL integration verifies preservation,
+repeatability, publication, storage-failure rollback and collision refusal;
+database build/typecheck pass. Live import and Cloudflare release are pending.
+No API, schema or product contract changes.
+
 ## 2026-11-06 — Concurrent moderation post-commit REVOKE
 
 **Implemented locally; GitHub CI needs verification.** `AdminModerationService.updateSellerStatus` and

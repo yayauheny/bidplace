@@ -7,6 +7,19 @@ deploy-скрипта и ручного workflow совпадает: `main`. Б�
 ниже сохраняют историю и не являются обязательным deployment. Результаты:
 [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
 
+## Тестовый production: демо-каталог
+
+Ручной workflow `Import demo catalog` (`.github/workflows/demo-catalog.yml`)
+запускается из `main` с `confirm=import-production-demo`. Он использует существующие
+secrets Environment `prod`, сначала выполняет dry run, затем добавляет 12 авторов
+и 48 работ с изображениями в private R2. Общая блокировка concurrency исключает
+параллельный production deploy. Скрипт: `pnpm ops:demo-catalog` (dry run),
+`pnpm ops:demo-catalog --apply --confirm-production` (запись). Среда оператора
+должна передать прямой `DATABASE_URL` и полный набор `S3_*`; dotenv не загружается.
+Повторный запуск сохраняет существующие записи и ручные правки. Локальный
+разрушающий `db:seed` для production не использовать. Данные и изображения
+являются демонстрационными; учётные записи без пароля используют `.invalid`.
+
 ## Текущий production path
 
 Один контур: Worker `bidplace-production`, сайт `https://bid.place`, Neon
