@@ -1,0 +1,49 @@
+name: Import demo catalog
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type import-production-demo to add 12 demo authors and 48 works'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: bidplace-production-deploy
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require explicit production import
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRM" = import-production-demo
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec turbo run build --filter=@bidplace/database
+      - run: node --test scripts/ops/lib/demo-catalog.spec.mjs
+      - name: Import demo authors, works and private media
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DIRECT_URL }}
+          S3_ENDPOINT: https://56b0c4b96497366c262447d2a18bf632.r2.cloudflarestorage.com
+          S3_REGION: auto
+          S3_BUCKET: bidplace-media-private
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+        run: |
+          node scripts/ops/import-demo-catalog.mjs --confirm-production
+          node scripts/ops/import-demo-catalog.mjs --apply --confirm-production
