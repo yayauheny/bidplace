@@ -268,3 +268,18 @@ export async function importDemoCatalog(
     { timeout: 300000 },
   );
 }
+
+export function validateDemoTarget(value, confirmProduction) {
+  const url = new URL(value);
+  if (!['postgres:', 'postgresql:'].includes(url.protocol))
+    throw new Error('Unsupported database protocol');
+  if (['localhost', '127.0.0.1'].includes(url.hostname)) return;
+  if (
+    url.hostname.split('.')[0] !== 'ep-withered-shadow-b230htte' ||
+    !url.hostname.endsWith('.neon.tech') ||
+    url.pathname !== '/neondb' ||
+    url.searchParams.get('sslmode') !== 'require' ||
+    !confirmProduction
+  )
+    throw new Error('Unsupported database target');
+}

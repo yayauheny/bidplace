@@ -5,6 +5,7 @@ import {
   demoCatalog,
   fixtureImage,
   importDemoCatalog,
+  validateDemoTarget,
 } from './demo-catalog.mjs';
 
 test('catalog has 12 distinct authors, 48 works and readable image fixtures', () => {
@@ -109,3 +110,25 @@ test(
     }
   },
 );
+
+test('production target accepts regional direct Neon hosts but rejects poolers, wrong endpoints and missing confirmation', () => {
+  const direct =
+    'postgresql://ep-withered-shadow-b230htte.eu-central-1.aws.neon.tech/neondb?sslmode=require';
+  assert.doesNotThrow(() => validateDemoTarget(direct, true));
+  assert.throws(() => validateDemoTarget(direct, false));
+  assert.throws(() =>
+    validateDemoTarget(direct.replace('htte.', 'htte-pooler.'), true),
+  );
+  assert.throws(() =>
+    validateDemoTarget(direct.replace('withered', 'other'), true),
+  );
+  assert.throws(() =>
+    validateDemoTarget(direct.replace('require', 'disable'), true),
+  );
+  assert.throws(() =>
+    validateDemoTarget(
+      direct.replace('.neon.tech', '.neon.tech.example.com'),
+      true,
+    ),
+  );
+});

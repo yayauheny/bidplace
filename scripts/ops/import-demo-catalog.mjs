@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
-import { importDemoCatalog } from './lib/demo-catalog.mjs';
+import { importDemoCatalog, validateDemoTarget } from './lib/demo-catalog.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 const requireDatabase = createRequire(
@@ -14,16 +14,10 @@ const { S3Client, GetObjectCommand, PutObjectCommand } =
 const apply = process.argv.includes('--apply');
 let prisma;
 try {
-  const url = new URL(process.env.DATABASE_URL);
-  const local = ['localhost', '127.0.0.1'].includes(url.hostname);
-  if (
-    !local &&
-    (url.hostname !== 'ep-withered-shadow-b230htte.neon.tech' ||
-      url.pathname !== '/neondb' ||
-      url.searchParams.get('sslmode') !== 'require' ||
-      !process.argv.includes('--confirm-production'))
-  )
-    throw new Error('Unsupported database target');
+  validateDemoTarget(
+    process.env.DATABASE_URL,
+    process.argv.includes('--confirm-production'),
+  );
   prisma = new PrismaClient();
   if (
     apply &&
