@@ -13,6 +13,7 @@ test('catalog has 12 distinct authors, 48 works and readable image fixtures', ()
   assert.equal(authors.length, 12);
   const works = authors.flatMap((author) => author.works);
   assert.equal(works.length, 48);
+  for (const work of works) assert.match(work.publicId, /^[A-Za-z0-9_-]{11}$/);
   assert.equal(new Set(works.map((work) => work.publicId)).size, 48);
   assert.equal(new Set(authors.map((author) => author.email)).size, 12);
   for (const path of [

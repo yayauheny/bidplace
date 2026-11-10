@@ -7,18 +7,23 @@
 
 ## 2026-11-10 — Additive demo catalog import
 
-**Partial.** `scripts/ops/import-demo-catalog.mjs` and `lib/demo-catalog.mjs`
-prepare 12 synthetic authors and 48 published works using existing PNG fixtures.
-Dry run is the default; production apply requires explicit confirmation and the
-configured direct Neon endpoint. Imports preserve existing users and operator
-edits, reject identity collisions, serialize with an advisory transaction lock,
-and verify private R2 objects before committing the published revisions. Demo
-users have no password and use reserved `.invalid` addresses. The manual
-`demo-catalog.yml` workflow uses Environment `prod`, main only, and the existing
-production concurrency group. Local PostgreSQL integration verifies preservation,
-repeatability, publication, storage-failure rollback and collision refusal;
-database build/typecheck pass. Live import and Cloudflare release are pending.
-No API, schema or product contract changes.
+**Implemented.** `scripts/ops/import-demo-catalog.mjs` and `lib/demo-catalog.mjs`
+import 12 synthetic authors and 48 published works with existing PNG fixtures.
+Dry run is default; production apply requires explicit confirmation, the configured
+direct Neon endpoint and TLS. Imports preserve existing users and operator edits,
+reject identity collisions, serialize with an advisory transaction lock, and verify
+private R2 objects before committing published revisions. Demo users have no
+password and use reserved `.invalid` addresses. The manual `demo-catalog.yml`
+workflow uses Environment `prod`, main only, and production deploy concurrency.
+Local PostgreSQL tests pass for preservation, repeatability, publication,
+storage-failure rollback and collision refusal; fixture and target boundary tests
+pass. Database build/typecheck, ops tests, ESLint, docs links and the full PR Verify
+passed. Live import run `42780518015` succeeded; production contains 12 demo
+authors and 48 works. Public authors, works, individual author/work and author
+photo reads passed. The initial exact-hostname refusal and invalid 7-character
+work public IDs were corrected; generated IDs now match the 11-character API
+contract, and only the 48 imported rows were repaired. No API or schema changes.
+Cloudflare deployment `42780295749` passed; final release of script fixes pending.
 
 ## 2026-11-06 — Concurrent moderation post-commit REVOKE
 

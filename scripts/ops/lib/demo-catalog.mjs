@@ -53,7 +53,7 @@ export function demoCatalog() {
       photo: `seller-profile/${photos[index % photos.length]}.png`,
       works: titles.map((title, position) => ({
         id: demoId(`${slug}:work:${position}`),
-        publicId: `demo${String(index + 1).padStart(2, '0')}${position + 1}`,
+        publicId: `demo${String(index + 1).padStart(2, '0')}${position + 1}0000`,
         title: `${title} — ${fullName}`,
         image: `product-images/${images[(index * 4 + position) % images.length]}.png`,
       })),
