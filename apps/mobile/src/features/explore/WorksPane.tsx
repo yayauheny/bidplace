@@ -30,7 +30,7 @@ export function WorksPane({
       loading={<WorksSkeleton />}
     >
       <View style={{ gap: designTokens.space.x3 }}>
-        <WorkCoverCardGrid items={works.items} columns={2} variant="caption" />
+        <WorkCoverCardGrid items={works.items} columns={2} variant="caption" blurImage = {true}/>
         {works.isError ? (
           <InfrastructureErrorState
             presentation="inline"

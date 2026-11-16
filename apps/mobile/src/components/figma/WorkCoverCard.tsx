@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { BlurTargetView } from 'expo-blur';
+import { BlurTargetView, BlurView } from 'expo-blur';
 import { useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -73,6 +73,7 @@ export function WorkCoverCard({
   authorLabel,
   variant = 'overlay',
   onPress,
+  blurImage = false
 }: {
   href: `/product/${string}` | `/products/${string}`;
   imageUrl: string;
@@ -86,12 +87,14 @@ export function WorkCoverCard({
   authorLabel?: string;
   variant?: 'overlay' | 'caption';
   onPress?: () => void;
+  blurImage?: boolean
 }) {
   const overlay = getWorkCoverOverlay({ title, authorSlug });
   const blurTarget = useRef<View | null>(null);
   const reducedMotion = useReducedMotion();
   const palette = useAppTheme();
   const captionAuthor = authorLabel ?? overlay.authorSlug;
+
 
   if (variant === 'caption') {
     return (
@@ -115,6 +118,7 @@ export function WorkCoverCard({
                     designTokens.radius.ownerCard,
                   )}
                 >
+                  <BlurTargetView ref={blurTarget} style={StyleSheet.absoluteFill}>
                   <CroppedPhoto
                     crop={imagePresentation?.crop}
                     sourceWidth={imagePresentation?.width}
@@ -123,15 +127,19 @@ export function WorkCoverCard({
                     component="WorkCoverCard"
                     accessibilityLabel={imageLabel}
                     fallbackLabel={`Изображение недоступно: ${overlay.title}`}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      right: 0,
-                      bottom: 0,
-                      left: 0,
-                    }}
+                    style={StyleSheet.absoluteFill}
                     contentFit="cover"
                   />
+                  </BlurTargetView>
+                  {blurImage && Boolean(imageUrl) && (
+                    <BlurView
+                      blurTarget={blurTarget}
+                      blurMethod="dimezisBlurViewSdk31Plus"
+                      intensity={35}
+                      tint="default"
+                      style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}
+                    />
+                  )}
                 </View>
               </View>
               <WorkCoverCaption author={captionAuthor} title={overlay.title} />
