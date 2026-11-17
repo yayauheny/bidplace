@@ -4,7 +4,6 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { PaddedGrid } from './PaddedGrid';
 import { WorkCoverCard } from './WorkCoverCard';
-import { fa } from 'zod/v4/locales';
 
 export type WorkCoverCardGridType = {
   items: WorkCoverCardGridItem[];
