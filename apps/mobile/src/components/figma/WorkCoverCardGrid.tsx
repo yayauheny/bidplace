@@ -5,6 +5,14 @@ import { designTokens } from '@bidplace/design-tokens';
 import { PaddedGrid } from './PaddedGrid';
 import { WorkCoverCard } from './WorkCoverCard';
 
+export type WorkCoverCardGridType = {
+  items: WorkCoverCardGridItem[];
+  columns?: 1 | 2;
+  variant?: 'overlay' | 'caption';
+  onItemPress?: () => void;
+  blurImage?: boolean;
+};
+
 export type WorkCoverCardGridItem = {
   work: {
     publicId: string;
@@ -26,12 +34,8 @@ export function WorkCoverCardGrid({
   columns = 1,
   onItemPress,
   variant = 'overlay',
-}: {
-  items: WorkCoverCardGridItem[];
-  columns?: 1 | 2;
-  variant?: 'overlay' | 'caption';
-  onItemPress?: () => void;
-}) {
+  blurImage = false,
+}: WorkCoverCardGridType) {
   if (columns === 1) {
     return (
       <View style={{ width: '100%', gap: designTokens.space.sectionGap }}>
@@ -41,12 +45,12 @@ export function WorkCoverCardGrid({
             item={item}
             onItemPress={onItemPress}
             variant={variant}
+            blurImage = {blurImage}
           />
         ))}
       </View>
     );
   }
-
   return (
     <View style={{ width: '100%', gap: designTokens.space.x2 }}>
       <PaddedGrid
@@ -59,6 +63,7 @@ export function WorkCoverCardGrid({
             item={item}
             onItemPress={onItemPress}
             variant={variant}
+            blurImage = {blurImage}
           />
         )}
       />
@@ -70,10 +75,12 @@ function WorkCoverGridCard({
   item,
   onItemPress,
   variant,
+  blurImage,
 }: {
   item: WorkCoverCardGridItem;
   variant: 'overlay' | 'caption';
   onItemPress?: () => void;
+  blurImage?: boolean;
 }) {
   const image = item.work.images[0];
   return (
@@ -86,6 +93,7 @@ function WorkCoverGridCard({
       title={item.work.title}
       authorSlug={item.author.slug}
       onPress={onItemPress}
+      blurImage={blurImage}
     />
   );
 }
